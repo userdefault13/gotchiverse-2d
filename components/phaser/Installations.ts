@@ -51,6 +51,7 @@ import {
   borrowerCanAccess,
   borrowerCanBuild,
   getActiveParcelAaltarId,
+  getAaltarIdForInstallation,
   getActiveParcelByTokenId,
   getActiveParcelCollision,
   getAllDataById,
@@ -461,7 +462,11 @@ const handleOwnedInterraction = () => {
       // HARVESTER
       GlobalState.UI.dispatch({
         type: 'UPDATE_HARVESTER_STATE',
-        harvesterState: { open: true, installationId: activeInstallationId, aaltarId: getActiveParcelAaltarId(scene.activeParcel) },
+        harvesterState: {
+          open: true,
+          installationId: activeInstallationId,
+          aaltarId: getActiveParcelAaltarId(scene.activeParcel) || getAaltarIdForInstallation(activeInstallationId),
+        },
       });
       break;
 
@@ -469,7 +474,11 @@ const handleOwnedInterraction = () => {
       // RESERVOIR
       GlobalState.UI.dispatch({
         type: 'UPDATE_RESERVOIR_STATE',
-        reservoirState: { open: true, installationId: activeInstallationId, aaltarId: getActiveParcelAaltarId(scene.activeParcel) },
+        reservoirState: {
+          open: true,
+          installationId: activeInstallationId,
+          aaltarId: getActiveParcelAaltarId(scene.activeParcel) || getAaltarIdForInstallation(activeInstallationId),
+        },
       });
       break;
 

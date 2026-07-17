@@ -21,10 +21,21 @@ export default css`
   .button-container {
     width: 24rem;
     margin: 1.6rem auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+  .hint {
+    margin-top: 0.8rem;
+    opacity: 0.7;
+    font-size: 1.2rem;
   }
   .col {
     min-width: 24rem;
     display: flex;
     justify-content: center;
+    flex-direction: column;
+    align-items: center;
   }
 `;
+

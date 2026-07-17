@@ -7,26 +7,35 @@ import { getInstallationIdDataById } from 'shared_code/utils/shared.utils.instal
 import { InstallationData, InstallationTypeLocal, Tokens } from 'types';
 import installationTypes from 'shared_code/data/installations.json';
 import styles from './styles';
-import { getClaimableAlchemica, getTotalClaimed } from 'helpers/parcels.helper';
+import { getClaimableAlchemica, getHarvestRates, getTotalClaimed } from 'helpers/parcels.helper';
+import { getAaltarIdForInstallation } from 'helpers/installations.helper';
 import { AlchemicaValue, InstallationCard, Modal } from 'components/UI/component';
 import { useGame } from 'contexts/GameContext';
 
 export const HarvesterModal = (): JSX.Element => {
   const [{ harvesterState }, uiDispatch] = useUI();
-  const [{ ethersSigner, currentNetwork }] = useWeb3();
+  const [{ currentNetwork, globalProvider }] = useWeb3();
   const [{ gameConfig }] = useGame();
 
   const [installationTypeData, setInstallationTypeData] = useState<InstallationTypeLocal>();
   const [type, setType] = useState<Tokens>();
-
+  const [liveRate, setLiveRate] = useState<number>();
   const [collected, setCollected] = useState<number>();
   const [totalClaimed, setTotalClaimed] = useState<number>();
+  const [loading, setLoading] = useState(false);
 
   const alchemicas: Tokens[] = ['fud', 'fomo', 'alpha', 'kek'];
 
   useEffect(() => {
-    if (harvesterState.open && harvesterState.installationId) void getSetInstallationData(harvesterState.installationId);
-  }, [harvesterState]);
+    if (harvesterState.open && harvesterState.installationId) {
+      void getSetInstallationData(harvesterState.installationId);
+    } else {
+      setInstallationTypeData(undefined);
+      setCollected(undefined);
+      setTotalClaimed(undefined);
+      setLiveRate(undefined);
+    }
+  }, [harvesterState.open, harvesterState.installationId, currentNetwork, globalProvider]);
 
   const handleClose = () => {
     uiDispatch({
@@ -40,37 +49,46 @@ export const HarvesterModal = (): JSX.Element => {
   };
 
   const handleOpenDashboard = () => {
-    console.log('harvesterState', harvesterState);
+    const aaltarId = harvesterState.aaltarId || getAaltarIdForInstallation(harvesterState.installationId);
     handleClose();
+    if (!aaltarId) {
+      console.warn('HarvesterModal: no aaltar on parcel for dashboard');
+      return;
+    }
     uiDispatch({
       type: 'UPDATE_PARCEL_DASHBOARD',
-      parcelDashboardState: { open: true, altarId: harvesterState.aaltarId },
+      parcelDashboardState: { open: true, altarId: aaltarId },
     });
   };
 
-  const getSetInstallationData = async (id) => {
+  const getSetInstallationData = async (id: string) => {
     const installationData = getInstallationIdDataById(id) as unknown as InstallationData;
-    console.log('@getSetInstallationData:installationData', installationData);
+    if (installationData?.itemId == null) return;
 
-    // installationData is destructured from installationId(aaltarId). Look for the InstallationData to see all data
-    if (installationData?.itemId) {
-      // get InstallationTyle from local stored json file.
-      const type = installationTypes[installationData.itemId] as InstallationTypeLocal;
-      console.log('@getSetInstallationData:type', type);
-      if (type) {
-        setInstallationTypeData(type);
-        setType(alchemicas[type.alchemicaType]);
-        await getAndSetAlchemicaData(installationData.realmId, type.alchemicaType);
-      }
-    }
+    const typeData = installationTypes[installationData.itemId] as InstallationTypeLocal;
+    if (!typeData) return;
+
+    setInstallationTypeData(typeData);
+    setType(alchemicas[typeData.alchemicaType]);
+    await getAndSetAlchemicaData(Number(installationData.realmId), typeData.alchemicaType, typeData.harvestRate);
   };
 
-  const getAndSetAlchemicaData = async (realmId: number, alchemicaType: number) => {
-    const claimable = await getClaimableAlchemica(ethersSigner, currentNetwork, realmId);
-    if (claimable) setCollected(claimable[alchemicaType]);
-
-    const totalClaimed = await getTotalClaimed(ethersSigner, currentNetwork, realmId);
-    if (totalClaimed) setTotalClaimed(totalClaimed[alchemicaType]);
+  const getAndSetAlchemicaData = async (realmId: number, alchemicaType: number, fallbackRate?: number) => {
+    if (!globalProvider || !currentNetwork || !realmId) return;
+    setLoading(true);
+    try {
+      const [claimable, claimed, rates] = await Promise.all([
+        getClaimableAlchemica(globalProvider, currentNetwork, realmId),
+        getTotalClaimed(globalProvider, currentNetwork, realmId),
+        getHarvestRates(globalProvider, currentNetwork, realmId),
+      ]);
+      if (claimable) setCollected(claimable[alchemicaType] ?? 0);
+      if (claimed) setTotalClaimed(claimed[alchemicaType] ?? 0);
+      if (rates) setLiveRate(rates[alchemicaType] ?? fallbackRate ?? 0);
+      else setLiveRate(fallbackRate ?? 0);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -88,12 +106,13 @@ export const HarvesterModal = (): JSX.Element => {
                 <ParamStatus
                   label="Harvest rate/daily"
                   icon={RateIcon}
-                  value={`${installationTypeData.harvestRate || 0} ${type?.toUpperCase() || ''}`}
+                  value={`${liveRate ?? installationTypeData.harvestRate ?? 0} ${type?.toUpperCase() || ''}`}
                 />
+                {loading ? <p className="hint">Loading parcel rates…</p> : null}
               </div>
               <div className="harvest-info col">
-                <AlchemicaValue type={type} label={'HARVESTED NOW:'} value={collected} />
-                <AlchemicaValue type={type} label={'HARVESTED TOTAL:'} value={totalClaimed} />
+                <AlchemicaValue type={type} label={'IN RESERVOIR NOW:'} value={collected} />
+                <AlchemicaValue type={type} label={'CLAIMED TOTAL:'} value={totalClaimed} />
               </div>
               <div className="card-container col">
                 <InstallationCard
@@ -108,7 +127,7 @@ export const HarvesterModal = (): JSX.Element => {
           </div>
           <div className="button-container">
             <Button onClick={handleOpenDashboard} fullWidth color={gameConfig.gotchiverseTheme}>
-              Go to Dashboard
+              Empty via Dashboard
             </Button>
           </div>
         </Modal>

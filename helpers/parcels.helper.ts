@@ -682,9 +682,11 @@ export const surveyParcel = async (signer: Signer, network: NetworkNames, { real
   }
 };
 
+type ReadProvider = Provider | Signer;
+
 // Total amount of alchemica your reservoirs hold now
-export const getClaimableAlchemica = async (signer: Signer, network: NetworkNames, realmId: number): Promise<number[]> => {
-  const realmDiamond = getContract(network, signer, 'realmDiamond', true);
+export const getClaimableAlchemica = async (provider: ReadProvider, network: NetworkNames, realmId: number): Promise<number[]> => {
+  const realmDiamond = getContract(network, provider as Provider, 'realmDiamond');
   // console.log('realmDiamond', realmDiamond);
   try {
     const res = await realmDiamond.getAvailableAlchemica(realmId);
@@ -695,8 +697,8 @@ export const getClaimableAlchemica = async (signer: Signer, network: NetworkName
 };
 
 // returns all alchemica you have left on your parcel to claim
-export const getRemainingAlchemica = async (signer: Signer, network: NetworkNames, realmId: number): Promise<number[]> => {
-  const realmDiamond = getContract(network, signer, 'realmDiamond', true);
+export const getRemainingAlchemica = async (provider: ReadProvider, network: NetworkNames, realmId: number): Promise<number[]> => {
+  const realmDiamond = getContract(network, provider as Provider, 'realmDiamond');
   // console.log('realmDiamond', realmDiamond);
   try {
     const res = await realmDiamond.getRealmAlchemica(realmId);
@@ -707,8 +709,8 @@ export const getRemainingAlchemica = async (signer: Signer, network: NetworkName
 };
 
 // returns all alchemica you had on your parcel after survey in this round
-export const getRoundAlchemica = async (signer: Signer, network: NetworkNames, realmId: number): Promise<number[]> => {
-  const realmDiamond = getContract(network, signer, 'realmDiamond', true);
+export const getRoundAlchemica = async (provider: ReadProvider, network: NetworkNames, realmId: number): Promise<number[]> => {
+  const realmDiamond = getContract(network, provider as Provider, 'realmDiamond');
   // console.log('realmDiamond', realmDiamond);
   try {
     const res = await realmDiamond.getRoundAlchemica(realmId, 0);
@@ -763,8 +765,8 @@ export const getParcelCurrentRound = async (provider: Provider, network: Network
 };
 
 // returns all equipped harvester rates
-export const getHarvestRates = async (signer: Signer, network: NetworkNames, realmId: number): Promise<number[]> => {
-  const realmDiamond = getContract(network, signer, 'realmDiamond', true);
+export const getHarvestRates = async (provider: ReadProvider, network: NetworkNames, realmId: number): Promise<number[]> => {
+  const realmDiamond = getContract(network, provider as Provider, 'realmDiamond');
   // console.log('realmDiamond', realmDiamond);
   try {
     const res = await realmDiamond.getHarvestRates(realmId);
@@ -775,9 +777,9 @@ export const getHarvestRates = async (signer: Signer, network: NetworkNames, rea
   }
 };
 
-// returns all equipped harvester capacities
-export const getCapacities = async (signer: Signer, network: NetworkNames, realmId: number): Promise<number[]> => {
-  const realmDiamond = getContract(network, signer, 'realmDiamond', true);
+// returns all equipped reservoir capacities
+export const getCapacities = async (provider: ReadProvider, network: NetworkNames, realmId: number): Promise<number[]> => {
+  const realmDiamond = getContract(network, provider as Provider, 'realmDiamond');
   // console.log('realmDiamond', realmDiamond);
   try {
     const res = await realmDiamond.getCapacities(realmId);
@@ -789,8 +791,8 @@ export const getCapacities = async (signer: Signer, network: NetworkNames, realm
 };
 
 // returns total claimed alchemica for this round
-export const getTotalClaimed = async (signer: Signer, network: NetworkNames, realmId: number): Promise<number[]> => {
-  const realmDiamond = getContract(network, signer, 'realmDiamond', true);
+export const getTotalClaimed = async (provider: ReadProvider, network: NetworkNames, realmId: number): Promise<number[]> => {
+  const realmDiamond = getContract(network, provider as Provider, 'realmDiamond');
   // console.log('realmDiamond', realmDiamond);
   try {
     const res = await realmDiamond.getTotalClaimed(realmId);

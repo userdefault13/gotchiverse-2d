@@ -147,7 +147,10 @@ export const ParcelDashboard = (): JSX.Element => {
 
   // get Current alchemica data related to reservoir states
   const getAndSetAlchemicaData = async (realmId: number) => {
-    const claimable = await getClaimableAlchemica(ethersSigner, currentNetwork, realmId);
+    const reader = globalProvider || ethersSigner;
+    if (!reader || !currentNetwork) return;
+
+    const claimable = await getClaimableAlchemica(reader, currentNetwork, realmId);
     // console.log('claimable', claimable);
     if (claimable) {
       setCollected(claimable);
@@ -156,17 +159,19 @@ export const ParcelDashboard = (): JSX.Element => {
       // console.log('enoughToClaim', !!enoughToClaim);
     }
 
-    const remaining = await getRemainingAlchemica(ethersSigner, currentNetwork, realmId);
+    const remaining = await getRemainingAlchemica(reader, currentNetwork, realmId);
     // console.log('remaining', remaining);
     if (remaining) setRemaining(remaining);
 
-    const totalClaimed = await getTotalClaimed(ethersSigner, currentNetwork, realmId);
+    const totalClaimed = await getTotalClaimed(reader, currentNetwork, realmId);
     // console.log('totalClaimed', totalClaimed);
     if (totalClaimed) setTotalClaimed(totalClaimed);
 
-    const surveying = await getIsSurveying(globalProvider, currentNetwork, realmId);
-    // console.log('surveying', surveying);
-    setIsSurveying(surveying);
+    if (globalProvider) {
+      const surveying = await getIsSurveying(globalProvider, currentNetwork, realmId);
+      // console.log('surveying', surveying);
+      setIsSurveying(surveying);
+    }
 
     if (totalClaimed && remaining) {
       const hasSurveyed = _.sum(totalClaimed) + _.sum(remaining) !== 0;
@@ -174,17 +179,20 @@ export const ParcelDashboard = (): JSX.Element => {
       setHasSurveyed(hasSurveyed);
     }
 
-    const capacities = await getCapacities(ethersSigner, currentNetwork, realmId);
+    const capacities = await getCapacities(reader, currentNetwork, realmId);
     if (capacities) setHasReservoirs(_.sum(capacities) !== 0);
   };
 
-  // current reservoirs/hervesters data
+  // current reservoirs/harvesters data
   const getAndSetHarvestingData = async (realmId: number) => {
-    const rates = await getHarvestRates(ethersSigner, currentNetwork, realmId);
+    const reader = globalProvider || ethersSigner;
+    if (!reader || !currentNetwork) return;
+
+    const rates = await getHarvestRates(reader, currentNetwork, realmId);
     // console.log('rates', rates);
     if (rates) setRates(rates);
 
-    const capacities = await getCapacities(ethersSigner, currentNetwork, realmId);
+    const capacities = await getCapacities(reader, currentNetwork, realmId);
     // console.log('capacities', capacities);
     if (capacities) setCapacities(capacities);
   };
@@ -303,7 +311,7 @@ export const ParcelDashboard = (): JSX.Element => {
       const tx = await emptyReservoirs(ethersSigner, currentNetwork, channelContract);
       console.log('@handleClaim TX:', tx);
 
-      const tint = collected
+      const tint = (collected || [])
         .map((amount, index) => {
           if (amount > 0) return alchemicas[index];
           else return undefined;
@@ -312,11 +320,12 @@ export const ParcelDashboard = (): JSX.Element => {
 
       if (tx?.status) {
         GameController.handleToastNotification({
-          message: `You collected ${collected[0]} FUD, ${collected[1]} FOMO, ${collected[2]} ALPHA and ${collected[3]} KEK!`,
+          message: `You collected ${collected?.[0] ?? 0} FUD, ${collected?.[1] ?? 0} FOMO, ${collected?.[2] ?? 0} ALPHA and ${
+            collected?.[3] ?? 0
+          } KEK!`,
           autoClose: true,
           type: 'success',
         });
-        // updateLastChannelIcon
         await getAndSetAlchemicaData(realmId);
         await getSetClaimTime(realmId);
         updateTransactionNotificationStatus(notificationDispatch, id, 'success');
@@ -326,12 +335,11 @@ export const ParcelDashboard = (): JSX.Element => {
         oops();
         updateTransactionNotificationStatus(notificationDispatch, id, 'error', getErrMessage(tx));
       }
-
-      setClaimLoading(false);
     } catch (error) {
       oops();
       console.log('@handleClaim:ERROR', error?.data?.message || error.message);
       updateTransactionNotificationStatus(notificationDispatch, id, 'error', error?.data?.message || error.message);
+    } finally {
       setClaimLoading(false);
     }
   };
