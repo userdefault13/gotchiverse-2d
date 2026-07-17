@@ -20,10 +20,7 @@
     "start": "next start",
     "typecheck": "tsc --project ./tsconfig.json --noEmit",
     "lint": "yarn typecheck",
-    "verify": "yarn lint && yarn build",
-    "realm:dev": "npm --prefix realm-server run dev",
-    "realm:build": "npm --prefix realm-server run build",
-    "realm:start": "npm --prefix realm-server run start"
+    "verify": "yarn lint && yarn build"
   },
   "dependencies": {
     "@clover-network/clover-connector": "^1.1.0",

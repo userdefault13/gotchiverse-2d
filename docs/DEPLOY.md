@@ -4,10 +4,10 @@ Walkable MVP cutover guide.
 
 ## Architecture
 
-| Piece | Where | Repo path |
-|-------|--------|-----------|
-| Next.js FE | Vercel | this repo root |
-| Colyseus + HTTP BFF | DigitalOcean | [`realm-server/`](../realm-server/) |
+| Piece | Where | Repo |
+|-------|--------|------|
+| Next.js FE | Vercel | [`gotchiverse-2d`](https://github.com/userdefault13/gotchiverse-2d) |
+| Colyseus + HTTP BFF | DigitalOcean | [`gotchiverse-realm-server`](https://github.com/userdefault13/gotchiverse-realm-server) |
 | Chain indexers | Envio / Goldsky Base | [aavegotchi-envio-indexers](https://github.com/userdefault13/aavegotchi-envio-indexers) |
 
 ## 1. REALM server on DigitalOcean
@@ -15,8 +15,8 @@ Walkable MVP cutover guide.
 ```bash
 # on the droplet (aarcade host)
 cd /opt # or your apps dir
-git clone https://github.com/userdefault13/gotchiverse-2d.git
-cd gotchiverse-2d/realm-server
+git clone https://github.com/userdefault13/gotchiverse-realm-server.git
+cd gotchiverse-realm-server
 cp .env.example .env
 # set JWT_SECRET, PUBLIC_URL=https://api.YOURDOMAIN, CORS_ORIGINS=https://YOUR-VERCEL-APP.vercel.app,https://*.vercel.app
 # SKIP_OWNERSHIP_CHECK=false in production
@@ -28,7 +28,8 @@ curl -s https://api.YOURDOMAIN/health
 Local server without TLS:
 
 ```bash
-cd realm-server
+git clone https://github.com/userdefault13/gotchiverse-realm-server.git
+cd gotchiverse-realm-server
 cp .env.example .env
 npm install
 npm run dev
@@ -61,26 +62,17 @@ NEXT_PUBLIC_GOTCHIVERSE_SUBGRAPH_URL=https://api.goldsky.com/api/public/project_
 NEXT_PUBLIC_BASE_RPC=https://mainnet.base.org
 ```
 
-Prefer your Envio GraphQL proxy URLs when cut over.
-
-### CLI (if logged in)
-
-```bash
-npx vercel link
-npx vercel env add NEXT_PUBLIC_API_URL production
-# ... repeat for vars above
-npx vercel --prod
-```
+Prefer your Envio GraphQL proxy URLs when cut over. See also [vercel-env.example](./vercel-env.example).
 
 ## 3. Local full stack
 
-Terminal A:
+Terminal A — server repo:
 
 ```bash
-cd realm-server && cp .env.example .env && npm i && npm run dev
+cd gotchiverse-realm-server && cp .env.example .env && npm i && npm run dev
 ```
 
-Terminal B:
+Terminal B — this FE repo:
 
 ```bash
 cp .env.example .env
@@ -98,7 +90,3 @@ Open `http://localhost:3001`, connect a Base wallet, select a gotchi, enter the 
 - [ ] Join Colyseus `citaadel` room (no portal error toast)
 - [ ] Two browsers see each other move
 - [ ] Vercel HTTPS → WSS (no mixed content)
-
-## Note on `realm-server/`
-
-The Colyseus server lives under `realm-server/` in this monorepo so it can ship with the FE PR. It is self-contained (own `package.json`, Docker, Caddy) and can be extracted to `Gotchiverse-Server` / `gotchiverse-realm-server` later by copying that folder.

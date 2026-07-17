@@ -2,7 +2,7 @@
 
 Gotchiverse 2D is the browser game client for the Aavegotchi Gotchiverse. It is a Next.js, React, TypeScript, and Phaser application with game data and shared helpers vendored in `shared_code/`.
 
-**Walkable MVP:** set `NEXT_PUBLIC_NETCODE=colyseus` and run the Colyseus REALM server in [`realm-server/`](realm-server/). Deploy the FE to **Vercel** and the server to **DigitalOcean** — see [docs/DEPLOY.md](docs/DEPLOY.md).
+**Walkable MVP:** set `NEXT_PUBLIC_NETCODE=colyseus` and run the Colyseus REALM server from the separate repo [`gotchiverse-realm-server`](https://github.com/userdefault13/gotchiverse-realm-server). Deploy the FE to **Vercel** and the server to **DigitalOcean** — see [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ## Requirements
 
@@ -14,14 +14,14 @@ This repo uses `yarn.lock`; do not use `npm install`.
 ## Quick Start
 
 ```bash
-git clone https://github.com/userdefault13/gotchiverse-2d.git
-cd gotchiverse-2d
-
-# Terminal A — REALM server (Colyseus + HTTP BFF)
-cd realm-server && cp .env.example .env && npm install && npm run dev
+# Terminal A — REALM server (separate repo)
+git clone https://github.com/userdefault13/gotchiverse-realm-server.git
+cd gotchiverse-realm-server
+cp .env.example .env && npm install && npm run dev
 
 # Terminal B — frontend
-cd ..
+git clone https://github.com/userdefault13/gotchiverse-2d.git
+cd gotchiverse-2d
 yarn install --frozen-lockfile
 cp .env.example .env
 yarn dev
@@ -41,7 +41,7 @@ yarn verify     # Run lint and production build
 yarn start      # Start a built production app
 ```
 
-The Colyseus REALM server lives in [`realm-server/`](realm-server/) (own `package.json` + Docker). Point `NEXT_PUBLIC_API_URL` / `NEXT_PUBLIC_COLYSEUS_URL` at that host. Full Vercel + DO steps: [docs/DEPLOY.md](docs/DEPLOY.md).
+Backend API / Colyseus live in [`gotchiverse-realm-server`](https://github.com/userdefault13/gotchiverse-realm-server). Point `NEXT_PUBLIC_API_URL` / `NEXT_PUBLIC_COLYSEUS_URL` at that host. Full Vercel + DO steps: [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ## Environment Files
 
