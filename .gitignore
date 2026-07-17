@@ -50,3 +50,6 @@ yarn-error.log*
 # Sentry
 .sentryclirc
 .env*
+
+!.env.example
+!**/.env.example
