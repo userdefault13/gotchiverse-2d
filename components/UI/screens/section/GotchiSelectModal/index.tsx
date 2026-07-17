@@ -111,18 +111,29 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
   };
 
   const getAndSignNonce = async function (signer, address, gotchiId?: string) {
-    const nonceResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/nonce/get?address=${address}`);
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    let nonceResponse: Response;
+    try {
+      nonceResponse = await fetch(`${apiUrl}/user/nonce/get?address=${address}`);
+    } catch (err) {
+      toast.error(`REALM unreachable at ${apiUrl}. Deploy gotchiverse-realm-server, then retry Enter.`, { theme: 'dark' });
+      throw err;
+    }
     if (nonceResponse.status !== 200) {
-      toast.error('Error initiating wallet address validation', { theme: 'dark' });
+      toast.error(`REALM auth failed (${nonceResponse.status}). Is ${apiUrl}/health up?`, { theme: 'dark' });
       throw new Error(`An error occurred when fetching the nonce: ${nonceResponse.statusText}`);
     }
     const nonceData = await nonceResponse.json();
     const nonce = nonceData.nonce || nonceData.data?.nonce;
+    if (!nonce) {
+      toast.error('REALM returned no nonce', { theme: 'dark' });
+      throw new Error('Missing nonce from REALM');
+    }
     const signed = await signer.signMessage(nonce);
 
     const gotchiQuery = gotchiId ? `&gotchiId=${gotchiId}` : '';
     const tokenResponse = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/user/authtoken/get?address=${address}&signature=${signed}${gotchiQuery}`,
+      `${apiUrl}/user/authtoken/get?address=${address}&signature=${signed}${gotchiQuery}`,
     );
     if (tokenResponse.status !== 200) {
       toast.error('The signature of the message is invalid', { theme: 'dark' });
@@ -131,6 +142,10 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
     const tokenData = await tokenResponse.json();
     console.log('tokenData', tokenData);
     const token = tokenData.token || tokenData.authToken || tokenData.data?.token || tokenData.data?.authToken;
+    if (!token) {
+      toast.error('REALM returned no auth token', { theme: 'dark' });
+      throw new Error('Missing auth token from REALM');
+    }
     localStorage.setItem('authToken', token);
   };
 
@@ -186,7 +201,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
   const setGlobalSelectedPlayer = async (gotchi) => {
     const playerObject = getGotchiData(gotchi, currentNetwork, currentAccount, gameConfig.demoGotchiMode);
     const urls = await fetchAavegotchiURL(playerObject);
-    const backgroundColor = collateralByAddress(currentNetwork, gotchi.collateral).secondaryColor;
+    const backgroundColor = collateralByAddress(currentNetwork, gotchi.collateral)?.secondaryColor || '#516C51';
     const isAavegotchiLent = gotchi.isLent;
     let lenderParcels: ContractParcel[] = [];
     let ownedParcels = await fetchContractOwnedParcels(currentAccount, globalProvider, currentNetwork);

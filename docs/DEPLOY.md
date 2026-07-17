@@ -83,7 +83,37 @@ yarn dev
 
 Open `http://localhost:3001`, connect a Base wallet, select a gotchi, enter the citaadel.
 
-## 4. Smoke checklist
+## 4. Enter the verse (ENTER NOW)
+
+```
+Select gotchi + parcel
+  → sign nonce (GET /user/nonce/get)
+  → auth token (GET /user/authtoken/get)
+  → /play
+  → Colyseus joinOrCreate('citaadel', { token, gotchiId, name })
+  → mouse click-to-move (WASD not wired on Colyseus yet)
+```
+
+**Hard requirement:** `NEXT_PUBLIC_API_URL` / `NEXT_PUBLIC_COLYSEUS_URL` must hit a live DO host.
+
+Today `https://realm.aarcadeghst.com` still resolves to a missing Vercel deployment (`DEPLOYMENT_NOT_FOUND`). Point that DNS at the droplet (or update the Vercel envs to the droplet URL), then:
+
+```bash
+# on aarcade DO host
+git clone https://github.com/userdefault13/gotchiverse-realm-server.git
+cd gotchiverse-realm-server && cp .env.example .env
+# JWT_SECRET=...
+# PUBLIC_URL=https://realm.aarcadeghst.com
+# CORS_ORIGINS=https://gotchiverse-2d.vercel.app,https://*.vercel.app,http://localhost:3001
+# SKIP_OWNERSHIP_CHECK=true   # optional for first smoke
+export REALM_DOMAIN=realm.aarcadeghst.com
+docker compose up -d --build
+curl -s https://realm.aarcadeghst.com/health
+```
+
+Local enter without DO: run REALM on `:2567`, set FE `.env` API/Colyseus to `http://localhost:2567`, `yarn dev`, Enter from `localhost:3001`.
+
+## 5. Smoke checklist
 
 - [ ] `GET /health` on DO API
 - [ ] Wallet connect on Base

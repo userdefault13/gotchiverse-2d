@@ -556,9 +556,14 @@ export function collateralByAddress(network: string, address: string): Collatera
   //   else if (network === 'matic') return add.maticAddress.toLowerCase() === address.toLowerCase();
   //   else return add.kovanAddress.toLowerCase() === address.toLowerCase();
   // });
-  const collateral = collaterals.find((add) => add.maticAddress.toLowerCase() === address.toLowerCase());
+  if (!address) {
+    return collaterals[0];
+  }
+  const collateral = collaterals.find((add) => add.maticAddress?.toLowerCase() === address.toLowerCase());
 
   if (collateral != null) return collateral;
+  // Base collaterals may not be in the legacy matic table yet — keep enter flow alive.
+  return collaterals[0];
 }
 
 export async function addPolygon(): Promise<void> {

@@ -43,6 +43,7 @@ import { defaultGotchi } from './aavegotchi/svg';
 import { ObservorIdle, ObservorLive } from 'assets';
 import { scene } from 'components/controllers/SceneController';
 import { CollateralObject, collateralObjects } from './vars';
+import { applyGotchiTraits, applyTraitsAndWearables } from 'shared_code/utils/shared.utils.api';
 import { formatUnits } from 'ethers/lib/utils';
 import { formatDigit } from './functions';
 
@@ -68,13 +69,16 @@ export async function fetchAndSetGlobalAavegotchis(
   for (const gotchi of res) {
     let secondsUntilChannel;
 
-    const gotchiverseData = gotchiverseRes.gotchis.find((item) => item.id === gotchi.id);
+    const gotchiverseData = gotchiverseRes?.gotchis?.find((item) => item.id === gotchi.id);
     if (gotchiverseData) secondsUntilChannel = secondsUntilGotchiCanChannel(gotchiverseData.lastChanneledAlchemica);
     if (filter?.channelReady && secondsUntilChannel) continue;
 
+    const serverTraits = gotchiTraits?.data?.gotchis?.[gotchi.id];
+    const clientTraits = serverTraits ? null : computeClientCombatTraits(gotchi);
+
     const gotchiverseAavegotchi: GotchiverseAavegotchi = {
       ...gotchi,
-      ...gotchiTraits?.data?.gotchis[gotchi.id],
+      ...(serverTraits || clientTraits || {}),
       secondsUntilChannel,
       isLent: gotchi.originalOwner.id !== gotchi.owner.id,
       lastChanneledAlchemica: gotchiverseData?.lastChanneledAlchemica,
@@ -457,6 +461,27 @@ export async function getGotchiCombatTraits(account: string, map: 'citaadel' | '
   } catch (err) {
     return null;
   }
+}
+
+/** Local fallback when REALM `/user/combat-traits` is unavailable (clears NaN on select UI). */
+export function computeClientCombatTraits(gotchi: Aavegotchi | GotchiverseAavegotchi) {
+  const obj: Record<string, any> = { id: gotchi.id, socket: true };
+  applyTraitsAndWearables(obj, gotchi);
+  applyGotchiTraits(obj, true, 'citaadel');
+  return {
+    maxHealth: obj.maxHealth,
+    maxAP: obj.maxAP,
+    healthRegenAmount: obj.healthRegenAmount,
+    apRegenAmount: obj.apRegenAmount,
+    alchemicaCarryingCapacity: obj.alchemicaCarryingCapacity,
+    evasion: obj.evasion,
+    meleePower: obj.meleePower,
+    rangedPower: obj.rangedPower,
+    defense: obj.defense,
+    attackSpeed: obj.attackSpeed,
+    luck: obj.luck,
+    wearableTraitBonuses: obj.wearableTraitBonuses,
+  };
 }
 
 export function setAavegtochiToLocalStorage(gotchiData: SelectedPlayer, backgroundColor, isAavegotchiLent, ownedParcels) {
