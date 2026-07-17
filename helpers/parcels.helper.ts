@@ -202,6 +202,31 @@ export function getHoodPositionById(id: string): Vector2 {
   return { x: hoodX, y: hoodY };
 }
 
+const PARCEL_SUBGRAPH_NETWORKS: NetworkNames[] = ['matic', 'base'];
+
+const parcelOwnerAddress = (owner: GotchiverseParcel['owner'] | { id?: string } | undefined): string | undefined => {
+  if (!owner) return undefined;
+  if (typeof owner === 'string') return owner;
+  if (typeof owner === 'object' && 'id' in owner && typeof owner.id === 'string') return owner.id;
+  return undefined;
+};
+
+const normalizeParcels = (parcels: Array<Partial<GotchiverseParcel> & { tokenId?: string }> = []): GotchiverseParcel[] => {
+  const currentAccount = GlobalState.WEB3.state.currentAccount?.toLocaleLowerCase();
+  return _.map(parcels, (parcel) => {
+    const tokenId = String(parcel.tokenId ?? parcel.id ?? '');
+    const id = String(parcel.id ?? parcel.tokenId ?? '');
+    const owner = parcelOwnerAddress(parcel.owner as GotchiverseParcel['owner'] | { id?: string });
+    return {
+      ...parcel,
+      id,
+      tokenId,
+      owner,
+      isLent: owner ? owner.toLocaleLowerCase() !== currentAccount : parcel.isLent,
+    } as GotchiverseParcel;
+  }).filter((parcel) => parcel.id || parcel.tokenId || parcel.parcelId);
+};
+
 export const fetchContractOwnedParcels = async (owner: string, provider: Provider, network: NetworkNames): Promise<ContractParcel[]> => {
   const realmDiamond = getContract(network, provider);
   // console.log('realmDiamond', realmDiamond);
@@ -212,7 +237,12 @@ export const fetchContractOwnedParcels = async (owner: string, provider: Provide
     if (ownedParcelsIds?.length > 200) {
       ownedParcelsIds.length = 200;
     }
-    return ownedParcelsIds?.length ? getParcelMetadataByTokenIds(ownedParcelsIds) : [];
+    const parcels = ownedParcelsIds?.length ? getParcelMetadataByTokenIds(ownedParcelsIds) : [];
+    return _.map(parcels, (parcel) => ({
+      ...parcel,
+      id: parcel.tokenId,
+      owner,
+    }));
   } catch (error) {
     console.error('@fetchContractOwnedParcels', error);
   }
@@ -220,24 +250,21 @@ export const fetchContractOwnedParcels = async (owner: string, provider: Provide
 
 export const fetchSubgraphOwnedParcel = async (owner: string, provider: Provider, network: NetworkNames): Promise<GotchiverseParcel[]> => {
   let parcels: GotchiverseParcel[];
-  if (network === 'matic') {
+  if (PARCEL_SUBGRAPH_NETWORKS.includes(network)) {
     const query = getUsersParcels([owner]);
     try {
       const res = await useSubgraph<{ parcels: GotchiverseParcel[] }>(query, gotchiverseSubgraph);
-      parcels = res.parcels;
-      parcels = _.map(parcels, (parcel) => ({
-        ...parcel,
-        tokenId: parcel.id,
-        // isLent: parcel.owner?.toLocaleLowerCase() !== GlobalState.WEB3.state.currentAccount.toLocaleLowerCase(),
-      }));
+      parcels = normalizeParcels(res.parcels);
     } catch (error) {
       parcels = await fetchContractOwnedParcels(owner, provider, network);
+      parcels = await mapInGotchiverseParcelData(parcels || []);
     }
   } else {
     parcels = await fetchContractOwnedParcels(owner, provider, network);
+    parcels = await mapInGotchiverseParcelData(parcels || []);
   }
 
-  return parcels;
+  return normalizeParcels(parcels);
 };
 
 export const getParcelMetadataByTokenIds = (tokenIds): JsonParcel[] => {
@@ -271,22 +298,30 @@ export const fetchAndSetGlobalParcels = async (
   }
 
   if (!accounts) return;
-  if (GlobalState.WEB3.state.currentNetwork === 'matic' || (page && page !== 1)) {
-    const query = getUsersParcels(accounts, filter || {}, page || 1);
-    const res = await useSubgraph<{ parcels: GotchiverseParcel[] }>(query, gotchiverseSubgraph);
-    fetchedParcels = res?.parcels;
-    fetchedParcels = _.map(fetchedParcels, (parcel) => ({
-      ...parcel,
-      tokenId: parcel.id,
-      isLent: parcel.owner?.toLocaleLowerCase() !== GlobalState.WEB3.state.currentAccount.toLocaleLowerCase(),
-    }));
-  } else {
-    fetchedParcels = await fetchContractOwnedParcels(
+  const network = GlobalState.WEB3.state.currentNetwork;
+  const useSubgraphParcels = PARCEL_SUBGRAPH_NETWORKS.includes(network) || (page && page !== 1);
+
+  if (useSubgraphParcels) {
+    try {
+      const query = getUsersParcels(accounts, filter || {}, page || 1);
+      const res = await useSubgraph<{ parcels: GotchiverseParcel[] }>(query, gotchiverseSubgraph);
+      fetchedParcels = normalizeParcels(res?.parcels);
+    } catch (error) {
+      console.error('@fetchAndSetGlobalParcels subgraph', error);
+      fetchedParcels = undefined;
+    }
+  }
+
+  if (!fetchedParcels) {
+    const contractParcels = await fetchContractOwnedParcels(
       GlobalState.WEB3.state.currentAccount,
       GlobalState.WEB3.state.globalProvider,
-      GlobalState.WEB3.state.currentNetwork,
+      network,
     );
+    fetchedParcels = await mapInGotchiverseParcelData(contractParcels || []);
+    fetchedParcels = normalizeParcels(fetchedParcels);
   }
+
   GlobalState.USER.dispatch({
     type: 'UPDATE_OWNED_PARCELS',
     ownedParcels: fetchedParcels,
@@ -321,15 +356,26 @@ export const mapInGotchiverseParcelData = async (parcels: ContractParcel[]): Pro
     return [];
   }
   const query = getParcelLastChanneled(parcels.map((parcel) => Number(parcel.id || parcel.tokenId)));
-  const res = await useSubgraph<{
-    parcels: Array<{ lastChanneledAlchemica: string; id: string; equippedInstallations: Array<{ id: string }> }>;
-  }>(query, gotchiverseSubgraph);
+  let resParcels: Array<{ lastChanneledAlchemica: string; id: string; equippedInstallations: Array<{ id: string }>; owner?: string }> = [];
+  try {
+    const res = await useSubgraph<{
+      parcels: Array<{ lastChanneledAlchemica: string; id: string; equippedInstallations: Array<{ id: string }>; owner?: string }>;
+    }>(query, gotchiverseSubgraph);
+    resParcels = res?.parcels || [];
+  } catch (error) {
+    console.error('@mapInGotchiverseParcelData', error);
+  }
   const gotchiverseParcels: GotchiverseParcel[] = parcels.map((parcel) => {
-    if (parcel.tokenId) parcel.id = parcel.tokenId;
-    const gotchiverseData = res.parcels.find((item) => item.id === parcel.id || item.id === parcel.tokenId);
+    const tokenId = String(parcel.tokenId ?? parcel.id ?? '');
+    const id = String(parcel.id ?? parcel.tokenId ?? '');
+    const gotchiverseData = resParcels.find((item) => item.id === id || item.id === tokenId);
+    const owner = parcelOwnerAddress(parcel.owner) || parcelOwnerAddress(gotchiverseData?.owner);
     return {
       ...parcel,
-      isLent: parcel.owner?.toLocaleLowerCase() !== GlobalState.WEB3.state.currentAccount.toLocaleLowerCase(),
+      id,
+      tokenId,
+      owner,
+      isLent: owner ? owner.toLocaleLowerCase() !== GlobalState.WEB3.state.currentAccount?.toLocaleLowerCase() : false,
       lastChanneledAlchemica: gotchiverseData?.lastChanneledAlchemica,
       equippedInstallations: gotchiverseData?.equippedInstallations,
     };

@@ -116,9 +116,6 @@ export const getUsersParcels = (accounts: string[], filter?: { district?: number
   }${filter.search ? `, parcelHash_contains: "${filter.search.toLowerCase()}"` : ''} }, orderBy: district) {
         parcelId
         id
-        owner {
-          id
-        }
         parcelHash
         district
         size
@@ -175,13 +172,14 @@ export const getAavegotchiLastChanneled = (ids: number[]): string => {
 };
 
 export const getParcelLastChanneled = (ids: number[]): string => {
+  const idList = ids.map((id) => `"${id}"`).join(',');
   return `{
     parcels (
-      where: { id_in: [${ids}]}
+      where: { id_in: [${idList}]}
       first: ${ids.length !== 0 ? ids.length : 1}
     ) {
       id
-      owner,
+      owner
       lastChanneledAlchemica
       equippedInstallations {
         id

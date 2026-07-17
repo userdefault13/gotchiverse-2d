@@ -192,7 +192,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
     let ownedParcels = await fetchContractOwnedParcels(currentAccount, globalProvider, currentNetwork);
     _.map(ownedParcels, (parcel) => _.assign(parcel, { owner: currentAccount }));
 
-    if (isAavegotchiLent && currentNetwork === 'matic') {
+    if (isAavegotchiLent && (currentNetwork === 'matic' || currentNetwork === 'base')) {
       lenderParcels = await fetchContractOwnedParcels(gotchi.originalOwner.id, globalProvider, currentNetwork);
       playerObject.originalOwner = gotchi.originalOwner.id;
       // Get permissions for parcels of lended gotchi

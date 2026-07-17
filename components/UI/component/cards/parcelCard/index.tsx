@@ -29,12 +29,14 @@ const formatTimeLeft = (seconds: number) => {
 };
 
 export const ParcelCard = ({ item, altarLevel, secondsUntilChannel, isBorrowed, mode, active }: Props): JSX.Element => {
+  const parcelTokenId = item?.id ?? item?.tokenId;
+
   return (
     <>
       <div className={`parcel-card ${mode} ${active ? 'active' : ''} ${item && isBorrowed ? 'borrowed' : ''} ${!item ? 'disabled' : ''}`}>
         <div className="flex w-full gap-2">
           <div className={`img-container ${!item ? 'disabled' : ''} ${item && isBorrowed ? 'borrowed' : ''}`}>
-            {item ? <ParcelImage parcelId={item.id} size={9} /> : <CloseIcon size={35} big fill="var(--col-info-400)" opacity={0.5} />}
+            {item ? <ParcelImage parcelId={parcelTokenId} size={9} /> : <CloseIcon size={35} big fill="var(--col-info-400)" opacity={0.5} />}
           </div>
           {item ? (
             <div className="detail-wrapper">
@@ -48,7 +50,7 @@ export const ParcelCard = ({ item, altarLevel, secondsUntilChannel, isBorrowed, 
                   )}
                 </div>
                 <div className="district">
-                  District {item?.district ?? '-'} <span className="token-id">ID: {item?.id ?? '-'}</span>
+                  District {item?.district ?? '-'} <span className="token-id">ID: {parcelTokenId ?? '-'}</span>
                 </div>
               </div>
 
