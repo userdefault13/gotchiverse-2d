@@ -71,7 +71,7 @@ export default css`
   }
 
   .short .main-title-wrapper {
-    margin-bottom: 0;
+    margin-bottom: 5rem;
   }
 
   .main-title {
