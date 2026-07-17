@@ -42,6 +42,14 @@ function envCandidates(): string[] {
   ]);
 }
 
+function probeHeaders(url: string): HeadersInit {
+  // localtunnel interstitial blocks browsers unless this header is present.
+  if (url.includes('loca.lt')) {
+    return { 'Bypass-Tunnel-Reminder': 'true' };
+  }
+  return {};
+}
+
 async function fetchJsonUrls(url: string): Promise<string[]> {
   try {
     const res = await fetch(`${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`, {
@@ -60,7 +68,12 @@ async function probeHealthy(url: string, timeoutMs = 4500): Promise<boolean> {
   try {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), timeoutMs);
-    const res = await fetch(`${url}/health`, { signal: ctrl.signal, cache: 'no-store', mode: 'cors' });
+    const res = await fetch(`${url}/health`, {
+      signal: ctrl.signal,
+      cache: 'no-store',
+      mode: 'cors',
+      headers: probeHeaders(url),
+    });
     clearTimeout(timer);
     if (!res.ok) return false;
     const body = (await res.json().catch(() => null)) as { ok?: boolean } | null;
@@ -68,6 +81,11 @@ async function probeHealthy(url: string, timeoutMs = 4500): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/** Extra headers for REALM HTTP calls (e.g. localtunnel bypass). */
+export function realmFetchHeaders(url?: string): HeadersInit {
+  return probeHeaders(url || getRealmUrlSync());
 }
 
 /** Last known-good URL (may be empty before first resolve). */

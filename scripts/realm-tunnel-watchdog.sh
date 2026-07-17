@@ -191,14 +191,29 @@ publish_urls() {
   cf=$(cat "$STATE_DIR/cf.url" 2>/dev/null || true)
   lhr=$(cat "$STATE_DIR/lhr.url" 2>/dev/null || true)
   loca=$(cat "$STATE_DIR/loca.url" 2>/dev/null || true)
-  primary="${cf:-${lhr:-$loca}}"
+
+  # Re-validate before publish; drop dead hosts (CF quick tunnels often NXDOMAIN after rotate).
+  # Prefer LHR for browsers, then loca, then CF.
+  local ordered=()
+  for u in "$lhr" "$loca" "$cf"; do
+    [[ -n "$u" ]] || continue
+    if public_health "$u" 4; then
+      ordered+=("$u")
+    else
+      case "$u" in
+        "$cf") rm -f "$STATE_DIR/cf.url" ;;
+        "$lhr") rm -f "$STATE_DIR/lhr.url" ;;
+        "$loca") rm -f "$STATE_DIR/loca.url" ;;
+      esac
+    fi
+  done
+  primary="${ordered[0]:-}"
   [[ -n "$primary" ]] || return 1
 
   local tmp="$STATE_DIR/realm-smoke-url.json"
   local urls_only="$STATE_DIR/urls.list"
   : > "$urls_only"
-  for u in "$cf" "$lhr" "$loca"; do
-    [[ -n "$u" ]] || continue
+  for u in "${ordered[@]}"; do
     echo "$u" >> "$urls_only"
   done
 

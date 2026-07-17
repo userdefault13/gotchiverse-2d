@@ -116,15 +116,16 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
       const { resolveRealmBaseUrl } = await import('helpers/realm.url');
       apiUrl = await resolveRealmBaseUrl(true);
     } catch (err) {
-      const fallback = process.env.NEXT_PUBLIC_API_URL || '(unset)';
-      toast.error(`REALM unreachable at ${fallback}. Tunnel/watchdog may be down — retry Enter shortly.`, {
-        theme: 'dark',
-      });
+      const detail = err instanceof Error ? err.message : String(err);
+      toast.error(`REALM unreachable. ${detail}`, { theme: 'dark' });
       throw err;
     }
     let nonceResponse: Response;
     try {
-      nonceResponse = await fetch(`${apiUrl}/user/nonce/get?address=${address}`);
+      const { realmFetchHeaders } = await import('helpers/realm.url');
+      nonceResponse = await fetch(`${apiUrl}/user/nonce/get?address=${address}`, {
+        headers: realmFetchHeaders(apiUrl),
+      });
     } catch (err) {
       toast.error(`REALM unreachable at ${apiUrl}. Tunnel/watchdog may be down — retry Enter shortly.`, {
         theme: 'dark',
@@ -146,6 +147,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
     const gotchiQuery = gotchiId ? `&gotchiId=${gotchiId}` : '';
     const tokenResponse = await fetch(
       `${apiUrl}/user/authtoken/get?address=${address}&signature=${signed}${gotchiQuery}`,
+      { headers: (await import('helpers/realm.url')).realmFetchHeaders(apiUrl) },
     );
     if (tokenResponse.status !== 200) {
       toast.error('The signature of the message is invalid', { theme: 'dark' });
