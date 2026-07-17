@@ -9,21 +9,33 @@ import { CitaadelRoom } from './rooms/CitaadelRoom';
 
 const app = express();
 
+function originAllowed(origin: string): boolean {
+  if (env.corsOrigins.includes('*') || env.corsOrigins.includes(origin)) {
+    return true;
+  }
+  let hostname = '';
+  try {
+    hostname = new URL(origin).hostname;
+  } catch {
+    return false;
+  }
+  return env.corsOrigins.some((allowed) => {
+    // Support "*.vercel.app" and "https://*.vercel.app"
+    const star = allowed.match(/^(?:https?:\/\/)?\*\.(.+)$/i);
+    if (star) {
+      const root = star[1].toLowerCase();
+      return hostname === root || hostname.endsWith(`.${root}`);
+    }
+    return false;
+  });
+}
+
 app.use(
   cors({
     origin(origin, callback) {
       if (!origin) return callback(null, true);
-      if (env.corsOrigins.includes('*') || env.corsOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-      // Allow Vercel preview deployments when a wildcard suffix is configured
-      const ok = env.corsOrigins.some((allowed) => {
-        if (allowed.startsWith('*.')) {
-          return origin.endsWith(allowed.slice(1));
-        }
-        return false;
-      });
-      return callback(ok ? null : new Error(`CORS blocked for origin ${origin}`), ok);
+      // Never pass Error here — cors turns that into HTTP 500 and breaks browser probes.
+      return callback(null, originAllowed(origin));
     },
     credentials: true,
   }),

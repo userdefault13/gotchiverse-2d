@@ -68,11 +68,18 @@ async function probeHealthy(url: string, timeoutMs = 4500): Promise<boolean> {
   try {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), timeoutMs);
-    const res = await fetch(`${url}/health`, {
+
+    // Prefer same-origin proxy in the browser so preview CORS misconfig cannot block Enter.
+    const probeUrl =
+      typeof window !== 'undefined'
+        ? `/api/realm-health?url=${encodeURIComponent(url)}`
+        : `${url}/health`;
+
+    const res = await fetch(probeUrl, {
       signal: ctrl.signal,
       cache: 'no-store',
-      mode: 'cors',
-      headers: probeHeaders(url),
+      mode: typeof window !== 'undefined' ? 'same-origin' : 'cors',
+      headers: typeof window !== 'undefined' ? {} : probeHeaders(url),
     });
     clearTimeout(timer);
     if (!res.ok) return false;
