@@ -1,6 +1,7 @@
 import { Client, Room } from 'colyseus.js';
 import GlobalState from 'contexts/GlobalState';
 import Players from 'components/phaser/Players';
+import { scene as phaserScene } from 'components/controllers/SceneController';
 import { SelectedPlayer } from 'types';
 import { colyseusSeedParcels, colyseusUpdateCurrentParcel } from 'helpers/colyseus.parcels';
 import { getRealmUrlSync, resolveRealmBaseUrl } from 'helpers/realm.url';
@@ -23,6 +24,8 @@ let keyMoveTimer: ReturnType<typeof setInterval> | null = null;
 let keyDirection: { x: number; y: number } | null = null;
 let keySprint = false;
 let lastKeyMoveSent = 0;
+/** Fallback when the Phaser sprite isn't addressable yet. */
+let lastLocalPos: { x: number; y: number } | null = null;
 
 const WALK_SPEED = 220;
 const SPRINT_SPEED = 360;
@@ -69,19 +72,35 @@ function setConnected(connected: boolean) {
 
 function getLocalSprite(): { x: number; y: number } | undefined {
   if (!localGotchiId) return undefined;
-  const sceneObj = (globalThis as { scene?: Record<string, { x: number; y: number }> }).scene;
-  return sceneObj?.[localGotchiId];
+  // Player containers live on the Phaser SceneController scene, not globalThis.
+  const sceneObj = phaserScene as Record<string, { x?: number; y?: number }> | undefined;
+  if (sceneObj) {
+    const sprite = sceneObj[localGotchiId] || sceneObj[String(Number(localGotchiId))];
+    if (sprite && typeof sprite.x === 'number' && typeof sprite.y === 'number') {
+      lastLocalPos = { x: sprite.x, y: sprite.y };
+      return lastLocalPos;
+    }
+  }
+  return lastLocalPos || undefined;
 }
 
-function applyLocalPosition(x: number, y: number, direction?: { x: number; y: number }) {
+function applyLocalPosition(
+  x: number,
+  y: number,
+  direction?: { x: number; y: number },
+  noTween = false,
+) {
   if (!localGotchiId) return;
+  const next = { x: Math.round(x), y: Math.round(y) };
+  lastLocalPos = next;
   Players.handlePositions([
     {
       id: localGotchiId,
-      x: Math.round(x),
-      y: Math.round(y),
+      x: next.x,
+      y: next.y,
       direction,
-      noTween: false,
+      // Key prediction must snap; stacked tweens stall sprite.x for the next tick.
+      noTween,
     } as any,
   ]);
 }
@@ -132,10 +151,12 @@ function bindRoomHandlers(activeRoom: Room) {
 
   players.onRemove((player: RemotePlayer) => {
     try {
-      const sceneObj = (globalThis as { scene?: Record<string, { destroy?: (a?: boolean) => void }> }).scene;
-      const id = player.gotchiId;
+      const sceneObj = phaserScene as
+        | Record<string, { destroy?: (a?: boolean) => void } | undefined>
+        | undefined;
+      const id = String(player.gotchiId);
       if (sceneObj?.[id]) {
-        sceneObj[id].destroy?.(true);
+        sceneObj[id]?.destroy?.(true);
         sceneObj[`${id}_top`]?.destroy?.(true);
         sceneObj[`${id}_bottom`]?.destroy?.(true);
         delete sceneObj[id];
@@ -187,7 +208,7 @@ function tickKeyMove() {
   const nextX = sprite.x + keyDirection.x * step;
   const nextY = sprite.y + keyDirection.y * step;
 
-  applyLocalPosition(nextX, nextY, keyDirection);
+  applyLocalPosition(nextX, nextY, keyDirection, true);
   colyseusSeedParcels(nextX, nextY);
   colyseusUpdateCurrentParcel(nextX, nextY);
 
@@ -227,6 +248,7 @@ export async function colyseusConnect(
   }
 
   localGotchiId = String(selectedPlayer.id);
+  lastLocalPos = null;
   stopKeyMoveLoop();
   if (reconnectTimer) {
     clearTimeout(reconnectTimer);
@@ -267,6 +289,7 @@ export async function colyseusConnect(
       if (String(p.gotchiId) === String(selectedPlayer.id)) me = p;
     });
     if (me) {
+      lastLocalPos = { x: me.x, y: me.y };
       void Players.addPlayers([toPlayerPayload(me) as any]);
     }
     return true;
