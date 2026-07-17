@@ -73,9 +73,9 @@ class MyApp extends App {
             title="Enter the Gotchiverse"
             description="A play-and-earn metaverse for Aavegotchis"
             siteName="Aavegotchi Gotchiverse"
-            faviconPath="https://verse.aavegotchi.com/favicon.ico"
-            url="https://verse.aavegotchi.com"
-            image="https://verse.aavegotchi.com/gotchiverse.png"
+            faviconPath="/favicon.png"
+            url="https://gotchiverse-2d.vercel.app"
+            image="https://gotchiverse-2d.vercel.app/apple-touch-icon.png"
           />
 
           <ToastContainer
