@@ -111,6 +111,13 @@ export function colyseusUpdateCurrentParcel(pixelX: number, pixelY: number): voi
 
   GlobalState.REALM.dispatch({ type: 'UPDATE_CURRENT_PARCEL', currentParcel });
   scene.lastParcelCollisionId = parcelId;
+
+  // Lazily hydrate installations when the player steps onto a new parcel.
+  if (parcelId) {
+    void import('helpers/colyseus.installations')
+      .then(({ colyseusLoadInstallations }) => colyseusLoadInstallations([parcelId]))
+      .catch((e) => console.warn('Failed to load parcel installations', e));
+  }
 }
 
 export function colyseusResetParcelSync(): void {

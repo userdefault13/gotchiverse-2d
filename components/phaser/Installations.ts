@@ -83,6 +83,8 @@ import InputController from 'components/controllers/inputController';
 import { scene } from 'components/controllers/SceneController';
 import { fetchSubgraphParcelOwner } from 'shared_code/utils/shared.utils.parcel';
 import { throttleZoomResize } from './scenes/gameScene';
+import { isColyseusNetcode } from 'helpers/colyseus.client';
+import { postFocusStatus } from 'contexts/UIContexts/actions';
 
 const uiContainers: { marker? } = {};
 // let markerBtnContainer = null;
@@ -879,6 +881,20 @@ const toggleBuildMode = async (state: boolean): Promise<boolean | string> => {
       destroyByIds(scene.batchQueue, true);
     }
 
+    // Promote non-batch waiting placeholders into normal play-mode installs.
+    // Colyseus build mode used to leave these stuck in installationsWaiting.
+    if (scene.installationsWaiting?.size) {
+      const batchIds = new Set((scene.batchQueue || []).map((item) => item.id));
+      const promote: Array<{ id: string }> = [];
+      scene.installationsWaiting.forEach((_sprite, id: string) => {
+        if (!batchIds.has(id)) promote.push({ id });
+      });
+      if (promote.length) {
+        destroyByIds(promote, true);
+        createByIds(promote);
+      }
+    }
+
     void toggleBrush();
     showStarfield(true);
 
@@ -900,6 +916,9 @@ const toggleBuildMode = async (state: boolean): Promise<boolean | string> => {
       type: 'UPDATE_INMENU',
       inMenu: false,
     });
+    if (GlobalState.UI.dispatch) {
+      postFocusStatus(true, GlobalState.UI.dispatch);
+    }
     return false;
   } else {
     Installations.buildModeState = true;
@@ -909,33 +928,31 @@ const toggleBuildMode = async (state: boolean): Promise<boolean | string> => {
       if (scene.activeParcel.installations?.length) {
         // test local installation sapawns, if installations are not there we need to resync.
         let inSync = true;
+        const colyseus = isColyseusNetcode();
 
-        if (inSync) {
-          scene.activeParcel.installations.forEach((id) => {
-            if (!scene.installationGroup.has(id)) {
-              // installations are out of sync create placeholder
-              console.log(`Installations out of sync  ${id}`);
-
-              inSync = false;
-              createByIds([{ id }], { isWaiting: true });
-            } else if (scene.installationGroup.has(id)) {
-              setChannelContainerState(id, false);
-            }
-          });
-        }
+        scene.activeParcel.installations.forEach((id) => {
+          if (!scene.installationGroup.has(id)) {
+            console.log(`Installations out of sync  ${id}`);
+            inSync = false;
+            // Colyseus has no legacy resync — spawn real installs, not waiting placeholders.
+            createByIds([{ id }], colyseus ? undefined : { isWaiting: true });
+          } else if (scene.installationGroup.has(id)) {
+            setChannelContainerState(id, false);
+          }
+        });
         const onLocal = getLocalInstallationsByParcelId(scene.activeParcel.id);
         if (onLocal.length !== scene.activeParcel.installations?.length) inSync = false;
 
-        if (!inSync) {
+        if (!inSync && !colyseus) {
           console.log(`Parcel ${scene.activeParcel.id} is out of sync, including in the queue....`);
           GameController.sendData('installations', 'resync', scene.activeParcel.id);
-        } else {
+        } else if (inSync) {
           console.log('All good here fren!');
         }
         console.log('PARCEL GRIDS', scene.activeParcel);
       } else {
         const onLocal = getLocalInstallationsByParcelId(scene.activeParcel.id);
-        if (onLocal?.length) {
+        if (onLocal?.length && !isColyseusNetcode()) {
           GameController.sendData('installations', 'resync', scene.activeParcel.id);
           console.log('Resync no instalaltions');
         } else {

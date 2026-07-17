@@ -63,6 +63,10 @@ import {
   colyseusSpawnFromSelectedParcel,
   colyseusUpdateCurrentParcel,
 } from 'helpers/colyseus.parcels';
+import {
+  colyseusLoadInstallations,
+  colyseusResetInstallationSync,
+} from 'helpers/colyseus.installations';
 import { NFTDisplay } from 'components/phaser/NFTDisplay';
 import { scene } from 'components/controllers/SceneController';
 import MinigameController from './minigameController';
@@ -236,8 +240,17 @@ async function socketConnect(
     }
 
     colyseusResetParcelSync();
+    colyseusResetInstallationSync();
     colyseusSeedParcels(spawn.x, spawn.y, true);
     colyseusUpdateCurrentParcel(spawn.x, spawn.y);
+
+    // Colyseus has no AOI installation payloads — hydrate from Base contract grids.
+    const ownedNearSpawn = (GlobalState.REALM?.state?.ownedParcels || [])
+      .map((p: { parcelId?: string; id?: string }) => p.parcelId || p.id)
+      .filter((id: string | undefined): id is string => Boolean(id && String(id).charAt(0) === 'C'));
+    void colyseusLoadInstallations(
+      _.uniq([selectedSpawnLoc, scene.lastParcelCollisionId, ...ownedNearSpawn].filter(Boolean) as string[]),
+    );
 
     // Seed HUD traits so bars aren't "undefined / undefined"
     const defaultTraits = {
