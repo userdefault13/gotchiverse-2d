@@ -1,9 +1,9 @@
 {
-  "updatedAt": "2026-07-17T10:40:53.000Z",
+  "updatedAt": "2026-07-17T16:05:20.000Z",
   "url": "https://incl-met-darwin-marie.trycloudflare.com",
   "urls": [
     "https://incl-met-darwin-marie.trycloudflare.com",
-    "https://7b0047ead62722.lhr.life",
+    "https://05e788c71d7ce8.lhr.life",
     "https://gotchiverse-realm-mvp.loca.lt"
   ],
   "note": "Ephemeral smoke tunnels maintained by scripts/realm-tunnel-watchdog.sh. FE probes these at Enter time."
