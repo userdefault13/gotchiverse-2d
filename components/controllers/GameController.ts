@@ -50,7 +50,9 @@ import { MAP_ID_CITAADEL, DEFAULT_GOTCHI_PROPERTIES } from 'shared_code/constant
 import { handleChatEvent, unsubscribeToChatChannels } from 'contexts/ChatContext/actions';
 import {
   colyseusConnect,
+  colyseusHandleKeyMove,
   colyseusIsConnected,
+  colyseusLocalSpawn,
   colyseusSendMove,
   colyseusSendPing,
   isColyseusNetcode,
@@ -204,12 +206,13 @@ async function socketConnect(
       });
       return;
     }
+    const spawn = colyseusLocalSpawn() || { x: 42 * 64 + 10 * 64, y: 52 * 64 + 10 * 64 };
     try {
       await Players.onPlayerSocketInit({
         id: selectedPlayer.id,
         name: selectedPlayer.name,
-        x: 42 * 64 + 10 * 64,
-        y: 52 * 64 + 10 * 64,
+        x: spawn.x,
+        y: spawn.y,
         health: 1000,
         maxHealth: 1000,
         isSpectator: false,
@@ -217,6 +220,34 @@ async function socketConnect(
     } catch (e) {
       console.warn('onPlayerSocketInit (colyseus) failed', e);
     }
+
+    // Seed HUD traits so bars aren't "undefined / undefined"
+    const defaultTraits = {
+      alchemicaCarryingCapacity: 100,
+      maxHealth: 1000,
+      ap: 100,
+      maxAP: 100,
+      defense: 0,
+      evasion: 0,
+      luck: 0,
+      speed: 1,
+      melee: 0,
+      range: 0,
+      regen: 0,
+      apRegenAmount: 0,
+      healthRegenAmount: 0,
+    };
+    GlobalState.REALM.dispatch({
+      type: 'UPDATE_PLAYERS_HEALTH',
+      health: 1000,
+    });
+    GlobalState.REALM.dispatch({
+      type: 'UPDATE_USER_TRAITS',
+      userTraits: defaultTraits,
+      userTraitsBases: { ...defaultTraits },
+      userWearableTraitBonuses: {},
+    });
+
     GlobalState.PHASER.dispatch({
       type: 'UPDATE_CONNECTED',
       connected: true,
@@ -1385,8 +1416,14 @@ function sendData(channel: string, action: string | null, data): void {
     }
     if (channel === 'movement') {
       const payload = action ? data?.data || data : data;
+      if (action === 'keys' || payload?.direction !== undefined) {
+        colyseusHandleKeyMove(payload?.direction, Boolean(payload?.isSprint));
+        return;
+      }
       const position = payload?.position || payload?.data?.position;
       if (position && typeof position.x === 'number' && typeof position.y === 'number') {
+        // Click-to-move / mouse path
+        colyseusHandleKeyMove('none', false);
         colyseusSendMove(position.x, position.y);
       }
       return;

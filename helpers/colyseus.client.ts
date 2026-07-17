@@ -17,6 +17,14 @@ let client: Client | null = null;
 let room: Room | null = null;
 let localGotchiId: string | null = null;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let keyMoveTimer: ReturnType<typeof setInterval> | null = null;
+let keyDirection: { x: number; y: number } | null = null;
+let keySprint = false;
+let lastKeyMoveSent = 0;
+
+const WALK_SPEED = 220;
+const SPRINT_SPEED = 360;
+const KEY_TICK_MS = 50;
 
 export function isColyseusNetcode(): boolean {
   return process.env.NEXT_PUBLIC_NETCODE === 'colyseus';
@@ -56,14 +64,36 @@ function setConnected(connected: boolean) {
   }
 }
 
+function getLocalSprite(): { x: number; y: number } | undefined {
+  if (!localGotchiId) return undefined;
+  const sceneObj = (globalThis as { scene?: Record<string, { x: number; y: number }> }).scene;
+  return sceneObj?.[localGotchiId];
+}
+
+function applyLocalPosition(x: number, y: number, direction?: { x: number; y: number }) {
+  if (!localGotchiId) return;
+  Players.handlePositions([
+    {
+      id: localGotchiId,
+      x: Math.round(x),
+      y: Math.round(y),
+      direction,
+      noTween: false,
+    } as any,
+  ]);
+}
+
 function syncPlayerPosition(player: RemotePlayer) {
   if (!player?.gotchiId) return;
   if (String(player.gotchiId) === String(localGotchiId)) {
-    const sprite = (globalThis as { scene?: Record<string, { x: number; y: number }> }).scene?.[player.gotchiId];
+    // While driving with keys, keep client prediction authoritative.
+    if (keyDirection) return;
+    const sprite = getLocalSprite();
     if (sprite && typeof sprite.x === 'number') {
       const dist = Math.hypot(sprite.x - player.x, sprite.y - player.y);
-      if (dist > 200) {
-        Players.handlePositions([{ id: player.gotchiId, x: player.x, y: player.y } as any]);
+      // Only hard-correct meaningful desync; tiny diffs are prediction noise.
+      if (dist > 64) {
+        Players.handlePositions([{ id: player.gotchiId, x: player.x, y: player.y, noTween: dist > 200 } as any]);
       }
     }
     return;
@@ -92,6 +122,7 @@ function bindRoomHandlers(activeRoom: Room) {
   }, 100);
   activeRoom.onLeave(() => {
     clearInterval(poll);
+    stopKeyMoveLoop();
     setConnected(false);
     room = null;
   });
@@ -116,6 +147,70 @@ function bindRoomHandlers(activeRoom: Room) {
   });
 }
 
+function directionToVector(direction: string | undefined): { x: number; y: number } | null {
+  switch (String(direction || '').toLowerCase()) {
+    case 'left':
+      return { x: -1, y: 0 };
+    case 'right':
+      return { x: 1, y: 0 };
+    case 'up':
+      return { x: 0, y: -1 };
+    case 'down':
+      return { x: 0, y: 1 };
+    case 'none':
+    case '':
+      return null;
+    default:
+      return null;
+  }
+}
+
+function stopKeyMoveLoop() {
+  if (keyMoveTimer) {
+    clearInterval(keyMoveTimer);
+    keyMoveTimer = null;
+  }
+  keyDirection = null;
+  keySprint = false;
+}
+
+function tickKeyMove() {
+  if (!room || !keyDirection || !localGotchiId) return;
+  const sprite = getLocalSprite();
+  if (!sprite) return;
+
+  const speed = keySprint ? SPRINT_SPEED : WALK_SPEED;
+  const step = (speed * KEY_TICK_MS) / 1000;
+  const nextX = sprite.x + keyDirection.x * step;
+  const nextY = sprite.y + keyDirection.y * step;
+
+  applyLocalPosition(nextX, nextY, keyDirection);
+
+  const now = Date.now();
+  // Send a bit less often than the render tick to stay under server rate limits.
+  if (now - lastKeyMoveSent >= 80) {
+    lastKeyMoveSent = now;
+    room.send('move', { x: Math.round(nextX), y: Math.round(nextY) });
+  }
+}
+
+export function colyseusHandleKeyMove(direction: string, sprint = false): void {
+  if (!room) return;
+  const vector = directionToVector(direction);
+  keySprint = Boolean(sprint);
+
+  if (!vector) {
+    stopKeyMoveLoop();
+    return;
+  }
+
+  keyDirection = vector;
+  if (!keyMoveTimer) {
+    keyMoveTimer = setInterval(tickKeyMove, KEY_TICK_MS);
+    tickKeyMove();
+  }
+}
+
 export async function colyseusConnect(selectedPlayer: SelectedPlayer): Promise<boolean> {
   const token = selectedPlayer.authToken || (typeof localStorage !== 'undefined' ? localStorage.getItem('authToken') : null);
   if (!token) {
@@ -124,6 +219,7 @@ export async function colyseusConnect(selectedPlayer: SelectedPlayer): Promise<b
   }
 
   localGotchiId = String(selectedPlayer.id);
+  stopKeyMoveLoop();
   if (reconnectTimer) {
     clearTimeout(reconnectTimer);
     reconnectTimer = null;
@@ -165,6 +261,8 @@ export async function colyseusConnect(selectedPlayer: SelectedPlayer): Promise<b
 
 export function colyseusSendMove(x: number, y: number): void {
   if (!room) return;
+  // Mouse / click-to-move: predict locally so the sprite actually walks.
+  applyLocalPosition(x, y);
   room.send('move', { x: Math.round(x), y: Math.round(y) });
 }
 
@@ -174,6 +272,7 @@ export function colyseusSendPing(): void {
 }
 
 export function colyseusDisconnect(): void {
+  stopKeyMoveLoop();
   if (reconnectTimer) {
     clearTimeout(reconnectTimer);
     reconnectTimer = null;
@@ -187,4 +286,14 @@ export function colyseusDisconnect(): void {
 
 export function colyseusIsConnected(): boolean {
   return Boolean(room);
+}
+
+/** Spawn coords from the room state when available (else FE fallback). */
+export function colyseusLocalSpawn(): { x: number; y: number } | null {
+  if (!room || !localGotchiId) return null;
+  let me: RemotePlayer | undefined;
+  room.state.players.forEach((p: RemotePlayer) => {
+    if (String(p.gotchiId) === String(localGotchiId)) me = p;
+  });
+  return me ? { x: me.x, y: me.y } : null;
 }
