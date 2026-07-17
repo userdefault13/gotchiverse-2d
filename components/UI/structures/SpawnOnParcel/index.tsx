@@ -83,7 +83,7 @@ export const SpawnOnParcel = ({ spawnParcelId, handleSpawnSelect }: Props): JSX.
   };
 
   const toggleFilterChanneled = () => setFilterChanneled(!filterChanneled);
-  const handleOpenBaazaar = () => window.open(gotchiverseLinks.aavegotchi.baazar, '_blank');
+  const handleOpenBaazaar = () => window.open(gotchiverseLinks.aavegotchi.marketplace, '_blank');
   const handleOpenLending = () => window.open(gotchiverseLinks.aavegotchi.lending, '_blank');
 
   useEffect(() => {

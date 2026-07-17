@@ -109,7 +109,7 @@ export const GotchiSelectPanel = ({ placeholderCount, handleSelect, selectedId }
     [userAavegotchis, placeholderCount],
   );
 
-  const handleOpenBaazaar = () => window.open(gotchiverseLinks.aavegotchi.baazar, '_blank');
+  const handleOpenBaazaar = () => window.open(gotchiverseLinks.aavegotchi.marketplace, '_blank');
 
   const buyMoreDescription = useMemo(() => {
     if (userAavegotchis?.length === 0) {

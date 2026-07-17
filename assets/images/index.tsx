@@ -37,6 +37,7 @@ import Spider from './spider.png';
 import PinkRay from './ray_pink.png';
 import Logo from './logo.png';
 import CompanyLogo from './pixelcraft.png';
+import AarcadeLogo from './aarcade.png';
 import MainBackground from './main-bg.png';
 import Banner from './banner.png';
 import EffectLayer from './Rectangle_texture_bottom.png';
@@ -103,6 +104,7 @@ export {
   GotchiverseTitleHalloween,
   Logo,
   CompanyLogo,
+  AarcadeLogo,
   MainBackground,
   Banner,
   EffectLayer,

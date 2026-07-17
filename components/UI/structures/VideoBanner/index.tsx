@@ -49,7 +49,7 @@ export const VideoBanner = ({ isShort, setIsShort }: Props): JSX.Element => {
             <Button size={3.6} fullWidth onClick={() => setIsShort(true)}>
               PLAY NOW!
             </Button>
-            <Button size={3.6} fullWidth color="info" onClick={() => window.open(gotchiverseLinks.aavegotchi.baazar, 'blank')}>
+            <Button size={3.6} fullWidth color="info" onClick={() => window.open(gotchiverseLinks.aavegotchi.marketplace, 'blank')}>
               GET AN AAVEGOTCHI
             </Button>
           </div>
