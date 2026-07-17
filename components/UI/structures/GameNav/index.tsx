@@ -132,18 +132,22 @@ export const GameNav = (): JSX.Element => {
             <SettingsMenu />
           </div>
           <div
-            className="icon-toggle flex-c-c"
+            className="icon-toggle flex-c-c clickable"
+            title="Log out"
             onClick={() => {
+              click();
               if (exitArenaModal.open) return;
-              GameController.MAP === 'aarena' && !selectedPlayer.isSpectator
-                ? uiDispatch({
-                    type: 'UPDATE_EXIT_ARENA_MODAL',
-                    exitArenaModal: {
-                      open: true,
-                      isDead: false,
-                    },
-                  })
-                : setQuitGameModalOpen(!quitGameModalOpen);
+              if (GameController.MAP === 'aarena' && selectedPlayer && !selectedPlayer.isSpectator) {
+                uiDispatch({
+                  type: 'UPDATE_EXIT_ARENA_MODAL',
+                  exitArenaModal: {
+                    open: true,
+                    isDead: false,
+                  },
+                });
+                return;
+              }
+              setQuitGameModalOpen(true);
             }}
           >
             <Image alt="" src={ExitIcon} width={30} height={30} />
