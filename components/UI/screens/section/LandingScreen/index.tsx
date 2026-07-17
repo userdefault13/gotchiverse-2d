@@ -139,6 +139,13 @@ export const LandingScreen = (): JSX.Element => {
 
   const updateGameConfig = async () => {
     try {
+      // Probe live smoke tunnels before BFF calls (URLs rotate under the watchdog).
+      try {
+        const { resolveRealmBaseUrl } = await import('helpers/realm.url');
+        await resolveRealmBaseUrl();
+      } catch {
+        /* soft-fail below */
+      }
       const { parsedBody } = await http<{
         data: GameConfig;
       }>('/realm/config/list');

@@ -111,12 +111,24 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
   };
 
   const getAndSignNonce = async function (signer, address, gotchiId?: string) {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    let apiUrl: string;
+    try {
+      const { resolveRealmBaseUrl } = await import('helpers/realm.url');
+      apiUrl = await resolveRealmBaseUrl(true);
+    } catch (err) {
+      const fallback = process.env.NEXT_PUBLIC_API_URL || '(unset)';
+      toast.error(`REALM unreachable at ${fallback}. Tunnel/watchdog may be down — retry Enter shortly.`, {
+        theme: 'dark',
+      });
+      throw err;
+    }
     let nonceResponse: Response;
     try {
       nonceResponse = await fetch(`${apiUrl}/user/nonce/get?address=${address}`);
     } catch (err) {
-      toast.error(`REALM unreachable at ${apiUrl}. Deploy gotchiverse-realm-server, then retry Enter.`, { theme: 'dark' });
+      toast.error(`REALM unreachable at ${apiUrl}. Tunnel/watchdog may be down — retry Enter shortly.`, {
+        theme: 'dark',
+      });
       throw err;
     }
     if (nonceResponse.status !== 200) {

@@ -13,6 +13,10 @@ NEXT_PUBLIC_NETCODE=colyseus
 # Point these at the DigitalOcean REALM host (Caddy TLS) once live.
 NEXT_PUBLIC_API_URL=https://realm.aarcadeghst.com
 NEXT_PUBLIC_COLYSEUS_URL=https://realm.aarcadeghst.com
+# Optional: comma-separated smoke fallbacks (FE also reads docs/realm-smoke-url.json).
+# NEXT_PUBLIC_REALM_URLS=https://xxx.trycloudflare.com,https://yyy.lhr.life
+# Server-only upstream used by /api/realm-config
+# REALM_UPSTREAM_URL=https://realm.aarcadeghst.com
 
 NEXT_PUBLIC_CORE_SUBGRAPH_URL=https://api.goldsky.com/api/public/project_cmh3flagm0001r4p25foufjtt/subgraphs/aavegotchi-core-base/prod/gn
 NEXT_PUBLIC_GOTCHIVERSE_SUBGRAPH_URL=https://api.goldsky.com/api/public/project_cmh3flagm0001r4p25foufjtt/subgraphs/gotchiverse-base/prod/gn

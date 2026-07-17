@@ -3,6 +3,7 @@ import GlobalState from 'contexts/GlobalState';
 import Players from 'components/phaser/Players';
 import { SelectedPlayer } from 'types';
 import { colyseusSeedParcels, colyseusUpdateCurrentParcel } from 'helpers/colyseus.parcels';
+import { getRealmUrlSync, resolveRealmBaseUrl } from 'helpers/realm.url';
 
 type RemotePlayer = {
   sessionId: string;
@@ -33,6 +34,7 @@ export function isColyseusNetcode(): boolean {
 
 function endpoint(): string {
   return (
+    getRealmUrlSync() ||
     process.env.NEXT_PUBLIC_COLYSEUS_URL ||
     process.env.NEXT_PUBLIC_API_URL ||
     'http://localhost:2567'
@@ -240,6 +242,12 @@ export async function colyseusConnect(
     room = null;
   }
 
+  // Resolve a live tunnel URL at connect time (smoke URLs rotate).
+  try {
+    await resolveRealmBaseUrl();
+  } catch (e) {
+    console.warn('REALM URL resolve failed before Colyseus join', e);
+  }
   client = new Client(endpoint());
   try {
     const joinOpts: Record<string, string> = {
