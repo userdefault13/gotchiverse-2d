@@ -35,6 +35,12 @@ export default css`
     font-size: 2.4rem;
     line-height: 0.9;
   }
+  .logo-row {
+    display: flex;
+    align-items: center;
+    gap: 1.6rem;
+    flex-shrink: 0;
+  }
   .logo-container {
     min-width: 10rem;
     max-width: 10rem;
