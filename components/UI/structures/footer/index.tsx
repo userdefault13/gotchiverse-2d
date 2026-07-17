@@ -1,4 +1,4 @@
-import { AarcadeLogo, CompanyLogo } from 'assets';
+import { AarcadeLogo } from 'assets';
 import { gotchiverseLinks } from 'data/links';
 import Image from 'next/image';
 import styles from './styles';
@@ -74,21 +74,14 @@ export const Footer = (): JSX.Element => {
       <footer className="footer-container">
         <div className="logo-row hidden md:flex">
           <div className="logo-container">
-            <Image alt="Pixelcraft Studios" src={CompanyLogo} layout="fill" />
-          </div>
-          <div className="logo-container">
             <Image alt="Aarcade GHST" src={AarcadeLogo} layout="fill" />
           </div>
         </div>
         <div className="grid grid-cols-2 gap-x-20 gap-y-10 lg:grid-cols-4">
           <div className="company-info">
             <div className="copyright">
-              <div className="heading">Stewards</div>
-              <div className="legal">
-                Pixelcraft Studios — inception steward.
-                <br />
-                Aarcade GHST — continuing maintenance.
-              </div>
+              <div className="heading">Maintainer</div>
+              <div className="legal">Aarcade GHST</div>
             </div>
             <div className="section">
               <a className="link" href={gotchiverseLinks.aarcade.home} target="_blank" rel="noreferrer">
