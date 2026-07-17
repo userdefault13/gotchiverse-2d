@@ -52,7 +52,7 @@ export default css`
     background: linear-gradient(to right, rgba(0, 112, 243, 0.32) 18.13%, rgba(79, 20, 248, 0.4) 96.01%, rgba(79, 20, 248, 0) 117.01%),
       linear-gradient(180deg, rgba(0, 62, 182, 0.8) 18.13%, #3400ca 96.01%, rgba(79, 20, 248, 0) 117.01%);
     clip-path: polygon(0% 0%, 100% 0%, calc(100% - 2.2rem) 50%, 100% 100%, 0% 100%);
-    font-family: 'Alien Encounters Solid';
+    font-family: Pixelar;
     font-size: 2.5rem;
     line-height: 1;
     padding-top: 1.5rem;

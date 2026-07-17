@@ -8,7 +8,7 @@ export default css`
     align-items: flex-end;
   }
   .heading {
-    font-family: 'Alien Encounters Solid';
+    font-family: Pixelar;
     font-size: 5.8rem;
     line-height: 5rem;
     text-transform: uppercase;
@@ -147,7 +147,7 @@ export default css`
     );
   }
   .title {
-    font-family: 'Alien Encounters Solid';
+    font-family: Pixelar;
     font-size: 2.8em;
     line-height: 0.85em;
     color: var(--col-pink-300);
@@ -225,7 +225,7 @@ export default css`
 
   .title-right {
     color: var(--col-yellow-100);
-    font-family: 'Alien Encounters Solid';
+    font-family: Pixelar;
     font-size: 2.5em;
     line-hight: 0.7;
     text-transform: uppercase;
@@ -242,7 +242,7 @@ export default css`
   .simple-right-line .title {
     font-size: 3em;
     line-height: 1;
-    font-family: 'Alien Encounters Solid';
+    font-family: Pixelar;
     color: var(--col-info-400);
     text-shadow: 0px 0px 20px rgba(17, 0, 38, 0.5);
   }

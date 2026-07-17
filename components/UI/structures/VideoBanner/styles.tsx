@@ -62,7 +62,7 @@ export default css`
 
   .main-title-wrapper {
     text-transform: uppercase;
-    font-family: 'Alien Encounters Solid';
+    font-family: Pixelar;
     -webkit-text-stroke: 1px solid var(--col-black);
     text-shadow: 0px 0px 2rem rgba(0, 0, 0, 0.6), 0px 0px 2.4rem #110026;
     text-align: center;
