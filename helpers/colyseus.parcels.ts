@@ -67,7 +67,7 @@ export function colyseusSeedParcels(pixelX: number, pixelY: number, force = fals
   });
   if (toDestroy.length) Parcels.destroy(toDestroy);
 
-  Parcels.create([...keep].map((id) => ({ id })));
+  Parcels.create(Array.from(keep).map((id) => ({ id })));
   lastSeedTileX = tileX;
   lastSeedTileY = tileY;
 }
