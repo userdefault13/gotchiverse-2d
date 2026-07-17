@@ -112,6 +112,8 @@ export function chainIdToName(chainId) {
       return 'matic';
     case 5:
       return 'goerli';
+    case 8453:
+      return 'base';
     case 31337:
       return 'localhost';
     default:

@@ -580,3 +580,23 @@ export async function addPolygon(): Promise<void> {
     ],
   });
 }
+
+export async function addBase(): Promise<void> {
+  // @ts-expect-error
+  await window.ethereum?.request({
+    method: 'wallet_addEthereumChain',
+    params: [
+      {
+        chainId: '0x2105',
+        rpcUrls: [process.env.NEXT_PUBLIC_BASE_RPC || 'https://mainnet.base.org'],
+        chainName: 'Base',
+        nativeCurrency: {
+          name: 'Ether',
+          decimals: 18,
+          symbol: 'ETH',
+        },
+        blockExplorerUrls: ['https://basescan.org/'],
+      },
+    ],
+  });
+}

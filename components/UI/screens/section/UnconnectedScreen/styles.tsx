@@ -75,7 +75,7 @@ export default css`
     padding-left: 5.2rem;
   }
 
-  .connect-to-polygon {
+  .connect-to-base {
     width: 32rem;
   }
 `;

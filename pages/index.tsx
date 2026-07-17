@@ -43,12 +43,15 @@ const IndexPage = () => {
     }
   }, []);
 
+  const expectedNetwork = process.env.REALM_NETWORK || process.env.NETWORK || 'base';
+  const onExpectedNetwork = currentNetwork === expectedNetwork || (['local', 'alpha', 'development'].includes(process.env.APP_ENV || '') && currentNetwork === 'localhost');
+
   return (
     <>
       {/* <NotificationBar /> */}
-      {currentAccount && !web3Loading && ['kovan', 'matic', 'mumbai', 'localhost', 'base'].includes(currentNetwork) && <LandingScreen />}
+      {currentAccount && !web3Loading && onExpectedNetwork && <LandingScreen />}
 
-      {(!currentAccount || web3Loading || !['kovan', 'matic', 'mumbai', 'localhost', 'base'].includes(currentNetwork)) && <UnconnectedScreen />}
+      {(!currentAccount || web3Loading || !onExpectedNetwork) && <UnconnectedScreen />}
     </>
   );
 };
