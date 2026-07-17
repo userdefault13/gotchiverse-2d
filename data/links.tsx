@@ -1,30 +1,34 @@
-const AARCADE_HOME = 'https://x.com/aarcadeghst';
+const AARCADE_HOME = 'https://aarcadeghst.com';
+const AARCADE_BAAZAAR = 'https://aarcadeghst.com/baazaar';
+const AARCADE_GAX = 'https://aarcadeghst.com/gax';
 const AARCADE_YOUTUBE = 'https://www.youtube.com/@AarcadeGHST';
 
 export const gotchiverseLinks = {
   aavegotchi: {
     aavegotchi: AARCADE_HOME,
-    ghst: AARCADE_HOME,
-    baazar: AARCADE_HOME,
-    marketplace: 'https://www.aavegotchi.com/baazaar/portals',
+    ghst: AARCADE_GAX,
+    baazar: AARCADE_BAAZAAR,
+    marketplace: AARCADE_BAAZAAR,
     brand: AARCADE_HOME,
     lending: 'https://www.aavegotchi.com/lending',
-    white_paper: AARCADE_HOME,
+    white_paper: `${AARCADE_HOME}/whitepaper`,
     blog: AARCADE_HOME,
-    doc: AARCADE_HOME,
+    doc: `${AARCADE_HOME}/docs`,
   },
   governance: {
-    forum: AARCADE_HOME,
-    treasury: AARCADE_HOME,
-    vote: AARCADE_HOME,
+    forum: `${AARCADE_HOME}/forum`,
+    treasury: `${AARCADE_HOME}/treasury`,
+    vote: `${AARCADE_HOME}/vote`,
   },
   social: {
-    discord: AARCADE_HOME,
-    twitter: AARCADE_HOME,
-    youtube: AARCADE_YOUTUBE,
+    discord: 'https://discord.com/invite/aavegotchi',
+    twitter: 'https://x.com/aavegotchi',
+    youtube: 'https://www.youtube.com/c/Aavegotchi',
   },
   aarcade: {
     home: AARCADE_HOME,
+    baazaar: AARCADE_BAAZAAR,
+    gax: AARCADE_GAX,
     youtube: AARCADE_YOUTUBE,
   },
 };

@@ -11,7 +11,7 @@ export const Footer = (): JSX.Element => {
       links: [
         {
           name: 'aavegotchi',
-          label: 'Gotchiverse',
+          label: 'Aarcade',
         },
         {
           name: 'ghst',
@@ -19,11 +19,7 @@ export const Footer = (): JSX.Element => {
         },
         {
           name: 'baazar',
-          label: 'Gotchi Baazaar',
-        },
-        {
-          name: 'brand',
-          label: 'Brand Kit',
+          label: 'Aarcade Baazaar',
         },
         {
           name: 'white_paper',
@@ -82,14 +78,6 @@ export const Footer = (): JSX.Element => {
             <div className="copyright">
               <div className="heading">Maintainer</div>
               <div className="legal">Aarcade GHST</div>
-            </div>
-            <div className="section">
-              <a className="link" href={gotchiverseLinks.aarcade.home} target="_blank" rel="noreferrer">
-                Privacy Policy
-              </a>
-              <a className="link" href={gotchiverseLinks.aarcade.home} target="_blank" rel="noreferrer">
-                Terms of Service
-              </a>
             </div>
           </div>
           {sections.map(({ key, label, links }, index) => (
