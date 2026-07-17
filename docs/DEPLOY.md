@@ -36,17 +36,25 @@ Today Cloudflare points this hostname at a missing Vercel deployment (`DEPLOYMEN
 3. Re-run deploy with `ATTACH_CUSTOM_DOMAIN=1` (or add the domain in the DO dashboard)
 4. Set `PUBLIC_URL=https://realm.aarcadeghst.com` on the app and FE envs
 
-### Droplet alternative (Docker + Caddy)
+### Droplet (Docker + Caddy) — current production path
+
+Live droplet: **`gotchiverse-realm`** `167.172.135.38` (nyc1).
 
 ```bash
-# on the droplet
-git clone https://github.com/userdefault13/gotchiverse-2d.git
-cd gotchiverse-2d/infra/realm-server
-cp .env.example .env
-# JWT_SECRET=...  PUBLIC_URL=https://realm.aarcadeghst.com
-export REALM_DOMAIN=realm.aarcadeghst.com
-docker compose up -d --build
-curl -s https://realm.aarcadeghst.com/health
+# already deployed at /opt/gotchiverse-realm-server
+curl -s http://167.172.135.38:2567/health
+```
+
+**Wire `realm.aarcadeghst.com` (pick one):**
+
+1. **Cloudflare Tunnel (current DNS):** edit hostname `realm.aarcadeghst.com` service URL → `http://167.172.135.38:2567` (instead of Mac `localhost:2567`).
+2. **Direct DNS:** Cloudflare DNS — delete tunnel CNAME; add **A** `realm` → `167.172.135.38`, proxy **off** (grey cloud) so Caddy can issue TLS; then `https://realm.aarcadeghst.com/health`.
+
+FE Production/Preview envs should be:
+
+```
+NEXT_PUBLIC_API_URL=https://realm.aarcadeghst.com
+NEXT_PUBLIC_COLYSEUS_URL=https://realm.aarcadeghst.com
 ```
 
 Local server without TLS:
