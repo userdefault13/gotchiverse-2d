@@ -10,29 +10,49 @@ Walkable MVP cutover guide.
 | Colyseus + HTTP BFF | DigitalOcean | [`gotchiverse-realm-server`](https://github.com/userdefault13/gotchiverse-realm-server) |
 | Chain indexers | Envio / Goldsky Base | [aavegotchi-envio-indexers](https://github.com/userdefault13/aavegotchi-envio-indexers) |
 
-## 1. REALM server on DigitalOcean
+## 1. REALM server on DigitalOcean (App Platform)
+
+The deployable REALM server lives in [`infra/realm-server`](../infra/realm-server) (Colyseus + HTTP BFF). Spec: [`.do/app.yaml`](../.do/app.yaml).
 
 ```bash
-# on the droplet (aarcade host)
-cd /opt # or your apps dir
-git clone https://github.com/userdefault13/gotchiverse-realm-server.git
-cd gotchiverse-realm-server
+# from this repo (gotchiverse-2d)
+export DIGITALOCEAN_ACCESS_TOKEN=dop_v1_...   # write access to App Platform
+export VERCEL_TOKEN=...                       # optional: retarget FE env + Edge Config
+bash scripts/deploy-realm-digitalocean.sh
+```
+
+That script:
+1. Creates/updates the `gotchiverse-realm` App Platform app from `.do/app.yaml`
+2. Sets `JWT_SECRET`, waits until `ACTIVE`
+3. Health-checks the DO ingress URL
+4. (Optional) updates Vercel `NEXT_PUBLIC_API_URL` / Edge Config to that URL
+
+### DNS for `realm.aarcadeghst.com`
+
+Today Cloudflare points this hostname at a missing Vercel deployment (`DEPLOYMENT_NOT_FOUND`). After App Platform is live:
+
+1. In Cloudflare DNS for `aarcadeghst.com`, set **CNAME** `realm` → `<app>.ondigitalocean.app`
+2. Proxy status: **DNS only** (grey cloud) until the DO cert validates, then you can orange-cloud
+3. Re-run deploy with `ATTACH_CUSTOM_DOMAIN=1` (or add the domain in the DO dashboard)
+4. Set `PUBLIC_URL=https://realm.aarcadeghst.com` on the app and FE envs
+
+### Droplet alternative (Docker + Caddy)
+
+```bash
+# on the droplet
+git clone https://github.com/userdefault13/gotchiverse-2d.git
+cd gotchiverse-2d/infra/realm-server
 cp .env.example .env
-# set JWT_SECRET, PUBLIC_URL=https://api.YOURDOMAIN, CORS_ORIGINS=https://YOUR-VERCEL-APP.vercel.app,https://*.vercel.app
-# SKIP_OWNERSHIP_CHECK=false in production
-export REALM_DOMAIN=api.YOURDOMAIN
+# JWT_SECRET=...  PUBLIC_URL=https://realm.aarcadeghst.com
+export REALM_DOMAIN=realm.aarcadeghst.com
 docker compose up -d --build
-curl -s https://api.YOURDOMAIN/health
+curl -s https://realm.aarcadeghst.com/health
 ```
 
 Local server without TLS:
 
 ```bash
-git clone https://github.com/userdefault13/gotchiverse-realm-server.git
-cd gotchiverse-realm-server
-cp .env.example .env
-npm install
-npm run dev
+cd infra/realm-server && cp .env.example .env && npm i && npm run dev
 # or: docker compose -f docker-compose.dev.yml up --build
 ```
 

@@ -1,0 +1,35 @@
+services:
+  realm-server:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      HOST: 0.0.0.0
+      PORT: 2567
+    expose:
+      - "2567"
+    networks:
+      - realm
+
+  caddy:
+    image: caddy:2.9-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - realm-server
+    networks:
+      - realm
+
+networks:
+  realm:
+
+volumes:
+  caddy_data:
+  caddy_config:
