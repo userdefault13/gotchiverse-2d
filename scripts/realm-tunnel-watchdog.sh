@@ -70,7 +70,41 @@ ensure_realm() {
 public_health() {
   local url="$1"
   local timeout="${2:-4}"
-  curl -fsS -m "$timeout" "$url/health" 2>/dev/null | grep -q '"ok":true'
+  local headers=()
+  if [[ "$url" == *loca.lt* ]]; then
+    headers+=(-H 'Bypass-Tunnel-Reminder: true')
+  fi
+  curl -fsS -m "$timeout" "${headers[@]}" "$url/health" 2>/dev/null | grep -q '"ok":true'
+}
+
+publish_edge_config() {
+  local primary="$1"
+  local urls_csv="$2"
+  [[ -n "${VERCEL_TOKEN:-}" ]] || return 0
+  local scope="${VERCEL_SCOPE:-userdefault13s-projects}"
+  local ecfg="${EDGE_CONFIG_SLUG:-gotchiverse-realm-smoke}"
+  local urls_json
+  urls_json=$(python3 - <<PY
+import json
+print(json.dumps([u for u in """$urls_csv""".split(",") if u]))
+PY
+)
+  local patch
+  patch=$(python3 - <<PY
+import json, datetime
+urls=json.loads('''$urls_json''')
+print(json.dumps([
+  {"operation":"upsert","key":"url","value":"$primary"},
+  {"operation":"upsert","key":"urls","value":urls},
+  {"operation":"upsert","key":"updatedAt","value":datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")},
+]))
+PY
+)
+  if npx vercel edge-config update "$ecfg" --patch "$patch" --token "$VERCEL_TOKEN" --scope "$scope" >/dev/null 2>&1; then
+    log "edge-config updated primary=$primary"
+  else
+    log "edge-config update failed"
+  fi
 }
 
 ensure_cloudflared() {
@@ -259,20 +293,25 @@ EOF
     sed -i "s|^PUBLIC_URL=.*|PUBLIC_URL=$primary|" "$REALM_DIR/.env" || true
   fi
 
+  local urls_csv
+  urls_csv=$(paste -sd, "$urls_only")
   log "published smoke URLs primary=$primary"
-  if [[ -d "$WORKSPACE/.git" ]]; then
+  # Durable discovery: Edge Config updates without FE redeploy.
+  publish_edge_config "$primary" "$urls_csv"
+
+  # Optional git backup (often fails when the agent token expires).
+  if [[ "${WATCHDOG_GIT_PUSH:-0}" == "1" && -d "$WORKSPACE/.git" ]]; then
     (
       cd "$WORKSPACE" || exit 0
       git add docs/realm-smoke-url.json
       if git diff --cached --quiet; then exit 0; fi
       git commit -m "chore: refresh REALM smoke tunnel URLs"
-      # Best-effort push so raw.githubusercontent.com updates without FE redeploy
-      git push -u origin HEAD || log "git push failed (raw JSON may be stale until push succeeds)"
+      git push -u origin HEAD || log "git push failed (edge-config remains source of truth)"
     )
   fi
 
   if [[ "${WATCHDOG_SYNC_VERCEL:-0}" == "1" && -n "${VERCEL_TOKEN:-}" ]]; then
-    sync_vercel "$primary" "$cf" "$lhr" "$loca"
+    sync_vercel "$primary" "${ordered[@]}"
   fi
 }
 
@@ -300,10 +339,10 @@ log "starting interval=${INTERVAL}s workspace=$WORKSPACE"
 ensure_cloudflared_bin
 while true; do
   ensure_realm || true
-  # Prefer CF + LHR; loca is best-effort (often interstitial / flaky).
-  ensure_cloudflared || true
+  # LHR is the most browser-friendly free tunnel; loca next; CF last (DNS often flakes).
   ensure_lhr || true
   ensure_loca || true
+  ensure_cloudflared || true
   keepalive_ping
   publish_urls || true
   sleep "$INTERVAL"

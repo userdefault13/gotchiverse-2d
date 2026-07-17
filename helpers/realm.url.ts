@@ -110,9 +110,10 @@ export async function resolveRealmBaseUrl(force = false): Promise<string> {
   if (resolveInflight) return resolveInflight;
 
   resolveInflight = (async () => {
+    // Prefer /api/realm-config first — it reads live Edge Config (no redeploy).
     const candidates = uniqueUrls([
-      ...(await fetchJsonUrls(SMOKE_URL_JSON)),
       ...(typeof window !== 'undefined' ? await fetchJsonUrls('/api/realm-config') : []),
+      ...(await fetchJsonUrls(SMOKE_URL_JSON)),
       ...envCandidates(),
     ]);
 
@@ -120,16 +121,14 @@ export async function resolveRealmBaseUrl(force = false): Promise<string> {
       throw new Error('No REALM URL candidates configured');
     }
 
-    // Probe in parallel; pick first healthy in candidate order.
-    const results = await Promise.all(
-      candidates.map(async (url) => ({ url, ok: await probeHealthy(url) })),
-    );
-    const healthy = results.find((r) => r.ok)?.url;
-    if (!healthy) {
-      throw new Error(`REALM unreachable (tried ${candidates.join(', ')})`);
+    // Probe sequentially in priority order so a fresh LHR wins over stale CF.
+    for (const url of candidates) {
+      if (await probeHealthy(url)) {
+        cachedUrl = url;
+        return url;
+      }
     }
-    cachedUrl = healthy;
-    return healthy;
+    throw new Error(`REALM unreachable (tried ${candidates.join(', ')})`);
   })();
 
   try {
