@@ -60,6 +60,7 @@ Live project: `userdefault13s-projects/gotchiverse-2d` → https://gotchiverse-2
 | `NEXT_PUBLIC_COLYSEUS_URL` | `https://realm.aarcadeghst.com` | same | `http://localhost:2567` |
 | `NEXT_PUBLIC_CORE_SUBGRAPH_URL` | Base Goldsky core | same | same |
 | `NEXT_PUBLIC_GOTCHIVERSE_SUBGRAPH_URL` | Base Goldsky gotchiverse | same | same |
+| `NEXT_PUBLIC_SVG_SUBGRAPH_URL` | Base Goldsky SVG | same | same |
 | `NEXT_PUBLIC_BASE_RPC` | `https://mainnet.base.org` | same | same |
 
 After the DO REALM host is up, point DNS for `realm.aarcadeghst.com` at the droplet and set CORS for `https://gotchiverse-2d.vercel.app` + `https://*.vercel.app`. See [vercel-env.example](./vercel-env.example).

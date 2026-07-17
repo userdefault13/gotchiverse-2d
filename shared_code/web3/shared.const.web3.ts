@@ -145,6 +145,8 @@ const DEFAULT_BASE_CORE =
   'https://api.goldsky.com/api/public/project_cmh3flagm0001r4p25foufjtt/subgraphs/aavegotchi-core-base/prod/gn';
 const DEFAULT_BASE_GOTCHIVERSE =
   'https://api.goldsky.com/api/public/project_cmh3flagm0001r4p25foufjtt/subgraphs/gotchiverse-base/prod/gn';
+const DEFAULT_BASE_SVG =
+  'https://api.goldsky.com/api/public/project_cmh3flagm0001r4p25foufjtt/subgraphs/aavegotchi-svg-base/prod/gn';
 
 function defaultCoreUri(): string {
   if (process.env.REALM_NETWORK === 'base' || process.env.NETWORK === 'base') return DEFAULT_BASE_CORE;
@@ -156,6 +158,11 @@ function defaultGotchiverseUri(): string {
   return DEFAULT_GOTCHIVERSE_URI;
 }
 
+function defaultSvgUri(): string {
+  if (process.env.REALM_NETWORK === 'base' || process.env.NETWORK === 'base') return DEFAULT_BASE_SVG;
+  return DEFAULT_SVG_URI;
+}
+
 // Subgraph (env-overridable for Envio / self-hosted proxy cutover)
 export const coreURI = process.env.NEXT_PUBLIC_CORE_SUBGRAPH_URL || defaultCoreUri();
 
@@ -165,6 +172,6 @@ export const aavegotchiRealm =
 export const gbmSubgraphUser =
   process.env.NEXT_PUBLIC_GBM_SUBGRAPH_URL || 'https://api.thegraph.com/subgraphs/name/aavegotchi/aavegotchi-gbm-v2';
 
-export const aavegotchiSvgSubgraph = process.env.NEXT_PUBLIC_SVG_SUBGRAPH_URL || DEFAULT_SVG_URI;
+export const aavegotchiSvgSubgraph = process.env.NEXT_PUBLIC_SVG_SUBGRAPH_URL || defaultSvgUri();
 
 export const gotchiverseSubgraph = process.env.NEXT_PUBLIC_GOTCHIVERSE_SUBGRAPH_URL || defaultGotchiverseUri();

@@ -200,10 +200,14 @@ export const transformContractRes = async (res: AavegotchiObject): Promise<Aaveg
 // fetch aavegotchiSides from SvgViewFacet aavegotchiDiamond contract
 async function fetchContractAavegotchiSides(tokenId: string) {
   try {
-    // sides only supported for matic
-    const vars = varsForNetwork('matic');
-    const svgContract = new ethers.Contract(vars.aavegotchiDiamond, SvgViewFacet.abi, GlobalState.WEB3.state.globalProvider); // should be vars.aavegotchiDiamond
-    const svgs = await svgContract.getAavegotchiSideSvgs(tokenId); // Shoud be tokenId
+    const network = (GlobalState.WEB3.state.currentNetwork || process.env.REALM_NETWORK || process.env.NETWORK || 'base') as NetworkNames;
+    const vars = varsForNetwork(network);
+    const provider =
+      network === 'matic' && GlobalState.WEB3.state.maticProvider
+        ? GlobalState.WEB3.state.maticProvider
+        : GlobalState.WEB3.state.globalProvider;
+    const svgContract = new ethers.Contract(vars.aavegotchiDiamond, SvgViewFacet.abi, provider);
+    const svgs = await svgContract.getAavegotchiSideSvgs(tokenId);
 
     return svgs;
   } catch (error) {
@@ -345,7 +349,10 @@ export const fetchAavegotchiSideSVGs = async (id: string): Promise<string[]> => 
         subgraphQuery,
         aavegotchiSvgSubgraph,
       );
-      const sideviews = res.aavegotchis[0];
+      const sideviews = res?.aavegotchis?.[0];
+      if (!sideviews?.svg) {
+        throw new Error(`No SVG sides for gotchi ${id} on ${aavegotchiSvgSubgraph}`);
+      }
       svgs = [sideviews.svg, sideviews.left, sideviews.right, sideviews.back];
     } catch (error) {
       console.warn(`@fetchAavegotchiSideSVGs:Failed to fetch gotchi ${id} sides from subgraph.`, error);
