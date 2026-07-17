@@ -3,6 +3,7 @@ import GlobalState from 'contexts/GlobalState';
 import Players from 'components/phaser/Players';
 import { scene as phaserScene } from 'components/controllers/SceneController';
 import { SelectedPlayer } from 'types';
+import { resolveColyseusMove } from 'helpers/colyseus.collisions';
 import { colyseusSeedParcels, colyseusUpdateCurrentParcel } from 'helpers/colyseus.parcels';
 import { getRealmUrlSync, resolveRealmBaseUrl } from 'helpers/realm.url';
 
@@ -205,18 +206,20 @@ function tickKeyMove() {
 
   const speed = keySprint ? SPRINT_SPEED : WALK_SPEED;
   const step = (speed * KEY_TICK_MS) / 1000;
-  const nextX = sprite.x + keyDirection.x * step;
-  const nextY = sprite.y + keyDirection.y * step;
+  const proposedX = sprite.x + keyDirection.x * step;
+  const proposedY = sprite.y + keyDirection.y * step;
+  const resolved = resolveColyseusMove(sprite.x, sprite.y, proposedX, proposedY);
+  if (resolved.blocked) return;
 
-  applyLocalPosition(nextX, nextY, keyDirection, true);
-  colyseusSeedParcels(nextX, nextY);
-  colyseusUpdateCurrentParcel(nextX, nextY);
+  applyLocalPosition(resolved.x, resolved.y, keyDirection, true);
+  colyseusSeedParcels(resolved.x, resolved.y);
+  colyseusUpdateCurrentParcel(resolved.x, resolved.y);
 
   const now = Date.now();
   // Send a bit less often than the render tick to stay under server rate limits.
   if (now - lastKeyMoveSent >= 80) {
     lastKeyMoveSent = now;
-    room.send('move', { x: Math.round(nextX), y: Math.round(nextY) });
+    room.send('move', { x: Math.round(resolved.x), y: Math.round(resolved.y) });
   }
 }
 
@@ -302,7 +305,9 @@ export async function colyseusConnect(
 
 export function colyseusSendMove(x: number, y: number): void {
   if (!room) return;
-  // Mouse / click-to-move: predict locally so the sprite actually walks.
+  // Reject click targets that land inside a solid installation.
+  if (resolveColyseusMove(x, y, x, y).blocked) return;
+
   applyLocalPosition(x, y);
   colyseusSeedParcels(x, y);
   colyseusUpdateCurrentParcel(x, y);
