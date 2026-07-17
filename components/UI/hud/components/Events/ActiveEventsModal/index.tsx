@@ -20,11 +20,20 @@ export const ActiveEventsModal = (): JSX.Element => {
   };
   const teleport = (id: string): void => {
     click();
-    const parcelId = getParceIdByTokenId(id);
+    // EventList passes bounce-gate parcel tokenId; accept C-* ids too.
+    const parcelId = id?.charAt(0) === 'C' ? id : getParceIdByTokenId(id);
+    if (!parcelId) {
+      console.warn('ActiveEventsModal: could not resolve parcel for', id);
+      return;
+    }
     GameController.sendData('movement', 'teleport', { parcelId });
     setTimeout(() => {
       void Installations.resetStates();
       uiDispatch({ type: 'UPDATE_NFT_DISPLAY', nftDisplayState: { open: false } });
+      uiDispatch({
+        type: 'UPDATE_EVENT_HOLOGRAM',
+        eventHologramState: { open: false, installationId: undefined },
+      });
     }, 50);
 
     handleClose();

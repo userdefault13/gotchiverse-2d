@@ -67,6 +67,7 @@ export class CitaadelRoom extends Room<CitaadelState> {
   maxClients = 200;
   private lastMoveAt = new Map<string, number>();
   private joinedAt = new Map<string, number>();
+  private lastTeleportAt = new Map<string, number>();
 
   onCreate() {
     this.setState(new CitaadelState());
@@ -105,6 +106,27 @@ export class CitaadelRoom extends Room<CitaadelState> {
       player.y = Math.round(player.y + dy);
     });
 
+    // Bounce-gate / event travel — intentional long-distance snap (not walk-clamped).
+    this.onMessage('teleport', (client, message: { x?: number; y?: number; parcelId?: string }) => {
+      const player = this.state.players.get(client.sessionId);
+      if (!player) return;
+      if (typeof message?.x !== 'number' || typeof message?.y !== 'number') return;
+      if (!Number.isFinite(message.x) || !Number.isFinite(message.y)) return;
+
+      const now = Date.now();
+      const last = this.lastTeleportAt.get(client.sessionId) || 0;
+      if (now - last < 1500) return;
+      this.lastTeleportAt.set(client.sessionId, now);
+
+      // Citaadel parcels sit within a large but finite tile map.
+      const MAX = 9000 * TILE;
+      if (message.x < -TILE || message.y < -TILE || message.x > MAX || message.y > MAX) return;
+
+      player.x = Math.round(message.x);
+      player.y = Math.round(message.y);
+      this.lastMoveAt.set(client.sessionId, now);
+    });
+
     this.onMessage('ping', (client) => {
       client.send('pong', { t: Date.now() });
     });
@@ -141,5 +163,6 @@ export class CitaadelRoom extends Room<CitaadelState> {
     this.state.players.delete(client.sessionId);
     this.lastMoveAt.delete(client.sessionId);
     this.joinedAt.delete(client.sessionId);
+    this.lastTeleportAt.delete(client.sessionId);
   }
 }

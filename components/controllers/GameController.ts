@@ -55,6 +55,7 @@ import {
   colyseusLocalSpawn,
   colyseusSendMove,
   colyseusSendPing,
+  colyseusTeleportToParcel,
   isColyseusNetcode,
 } from 'helpers/colyseus.client';
 import {
@@ -1457,6 +1458,11 @@ function sendData(channel: string, action: string | null, data): void {
     }
     if (channel === 'movement') {
       const payload = action ? data?.data || data : data;
+      if (action === 'teleport') {
+        const parcelId = String(payload?.parcelId || data?.parcelId || '');
+        if (parcelId) void colyseusTeleportToParcel(parcelId);
+        return;
+      }
       if (action === 'keys' || payload?.direction !== undefined) {
         colyseusHandleKeyMove(payload?.direction, Boolean(payload?.isSprint));
         return;

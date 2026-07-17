@@ -5,7 +5,9 @@ import { scene as phaserScene } from 'components/controllers/SceneController';
 import { SelectedPlayer } from 'types';
 import { resolveColyseusMove } from 'helpers/colyseus.collisions';
 import { colyseusSeedParcels, colyseusUpdateCurrentParcel } from 'helpers/colyseus.parcels';
+import { getParcelSpawnPixels } from 'helpers/parcels.helper';
 import { getRealmUrlSync, resolveRealmBaseUrl } from 'helpers/realm.url';
+import { toggleFollowGotchi } from 'helpers/phaser.helper';
 
 type RemotePlayer = {
   sessionId: string;
@@ -312,6 +314,76 @@ export function colyseusSendMove(x: number, y: number): void {
   colyseusSeedParcels(x, y);
   colyseusUpdateCurrentParcel(x, y);
   room.send('move', { x: Math.round(x), y: Math.round(y) });
+}
+
+function freeTeleportSpot(centerX: number, centerY: number): { x: number; y: number } {
+  const UNIT = 64;
+  const offsets: Array<[number, number]> = [
+    [0, 0],
+    [1, 0],
+    [-1, 0],
+    [0, 1],
+    [0, -1],
+    [2, 0],
+    [-2, 0],
+    [0, 2],
+    [0, -2],
+    [1, 1],
+    [-1, -1],
+    [2, 2],
+    [-2, 2],
+  ];
+  for (const [ox, oy] of offsets) {
+    const x = centerX + ox * UNIT;
+    const y = centerY + oy * UNIT;
+    if (!resolveColyseusMove(x, y, x, y).blocked) return { x, y };
+  }
+  return { x: centerX, y: centerY };
+}
+
+/**
+ * Bounce-gate / event travel: snap local player to a parcel and notify the room.
+ * Bypasses walk speed clamps and installation click-block (intentional teleport).
+ */
+export async function colyseusTeleportToParcel(parcelId: string): Promise<boolean> {
+  if (!room || !parcelId || parcelId.charAt(0) !== 'C') {
+    console.warn('colyseusTeleportToParcel: invalid parcel', parcelId);
+    return false;
+  }
+
+  const spawn = getParcelSpawnPixels(parcelId);
+  if (!spawn) {
+    console.warn('colyseusTeleportToParcel: no spawn for', parcelId);
+    return false;
+  }
+
+  // Stop WASD prediction so server teleport isn't overwritten.
+  colyseusHandleKeyMove('none', false);
+
+  colyseusSeedParcels(spawn.x, spawn.y, true);
+  colyseusUpdateCurrentParcel(spawn.x, spawn.y);
+
+  try {
+    const { colyseusLoadInstallations } = await import('helpers/colyseus.installations');
+    await colyseusLoadInstallations([parcelId], { force: true });
+  } catch (e) {
+    console.warn('colyseusTeleportToParcel: install hydrate failed', e);
+  }
+
+  const spot = freeTeleportSpot(spawn.x, spawn.y);
+  applyLocalPosition(spot.x, spot.y, undefined, true);
+  try {
+    toggleFollowGotchi(true);
+  } catch {
+    /* camera follow best-effort */
+  }
+
+  room.send('teleport', {
+    x: Math.round(spot.x),
+    y: Math.round(spot.y),
+    parcelId,
+  });
+  return true;
 }
 
 export function colyseusSendPing(): void {
