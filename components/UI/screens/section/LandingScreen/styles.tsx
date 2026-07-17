@@ -37,7 +37,6 @@ export default css`
     justify-content: space-evenly;
   }
   .join-event {
-    padding-top: 5rem;
     position: relative;
     z-index: 2;
     flex: 1 0 calc(50% - 2.5rem);
@@ -52,7 +51,6 @@ export default css`
     display: flex;
     flex-direction: column;
     gap: 2rem;
-    margin-top: -3rem;
     flex: 1 0 calc(50% - 2.5rem);
   }
   .blue-bg {
