@@ -54,24 +54,30 @@ export const EventHologram = (): JSX.Element => {
   const fetchEvent = async () => {
     InputController.updateDisableKeyboard(eventHologramState.open);
     if (eventHologramState?.open && eventHologramState.installationId) {
-      //  Update Alchemica
-      const isOwned = isOwnedById(eventHologramState.installationId);
-      setIsOwned(!!isOwned);
+      setLoading(true);
+      try {
+        const owned = isOwnedById(eventHologramState.installationId);
+        setIsOwned(!!owned);
 
-      // get parcelEvent;
-      const installationData = getInstallationIdDataById(eventHologramState.installationId);
-      const parcelEvent: JsonParcel = PARCELS_BY_ID[installationData.parcelId];
-      // console.log('parcelEvent', parcelEvent);
+        const installationData = getInstallationIdDataById(eventHologramState.installationId);
+        const parcelEvent: JsonParcel = installationData ? PARCELS_BY_ID[installationData.parcelId] : undefined;
 
-      if (parcelEvent) {
-        const events = await fetchEventsList(currentNetwork);
-        const myEvent = events.find((e: RealmEvent) => e.id === parcelEvent.tokenId);
-        setEvent(myEvent);
+        if (parcelEvent?.tokenId) {
+          const events = await fetchEventsList(currentNetwork);
+          const myEvent = (events || []).find((e: RealmEvent) => String(e.id) === String(parcelEvent.tokenId));
+          setEvent(myEvent);
+        } else {
+          setEvent(undefined);
+        }
+      } catch (err) {
+        console.warn('EventHologram: failed to load bounce gate event', err);
+        setEvent(undefined);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     } else {
       setEvent(undefined);
-      setLoading(true);
+      setLoading(false);
     }
   };
 
@@ -85,7 +91,7 @@ export const EventHologram = (): JSX.Element => {
 
   return (
     <>
-      {eventHologramState.open && !loading && (
+      {eventHologramState.open && (
         <div className="hologram-container absolute-centered" onMouseDown={blockPropagation}>
           <div className="event-container">
             <div className="event-image-container">
@@ -104,7 +110,7 @@ export const EventHologram = (): JSX.Element => {
                       <div className="toolbox-wrapper">
                         <Image alt="" src={ToolboxIcon} layout="fill" />
                       </div>
-                      <div className="text">No active event on this Bounce Gate</div>
+                      <div className="text">{loading ? 'Loading Bounce Gate…' : 'No active event on this Bounce Gate'}</div>
                     </div>
                   </div>
                 </>

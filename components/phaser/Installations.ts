@@ -358,8 +358,15 @@ const createInstallationBuildModeUI = (installationContainer) => {
 
     if (!Installations.buildModeState) {
       const installationType = getTypeById(installationId);
-      // console.log('installationType:', installationType);
-      if (installationType?.installationType !== 8 && (!isUpgradable(id) || installationType?.installationType === 5)) {
+      // Bounce gates always open the event hologram in play mode (owned or not).
+      // Dedicated path avoids activeId early-return and disableKeyboard blocks.
+      if (installationType?.installationType === 8) {
+        SFXController.playFX('click');
+        void setActiveInstallation(id);
+        handleBounceGaate(id);
+        return;
+      }
+      if (!isUpgradable(id) || installationType?.installationType === 5) {
         resetStates();
         return;
       }
@@ -504,16 +511,15 @@ const handleBounceGaate = (id: string): void => {
   if (Installations.buildModeState) return;
   toggleFocus(id, true);
   InputController.updateDisableKeyboard(true);
-  setTimeout(() => {
-    if (!scene) return;
-    GlobalState.UI.dispatch({
-      type: 'UPDATE_EVENT_HOLOGRAM',
-      eventHologramState: {
-        open: true,
-        installationId: id,
-      },
-    });
-  }, 500);
+  // Open immediately so a slow/failing events fetch cannot hide the hologram.
+  if (!scene || !GlobalState?.UI?.dispatch) return;
+  GlobalState.UI.dispatch({
+    type: 'UPDATE_EVENT_HOLOGRAM',
+    eventHologramState: {
+      open: true,
+      installationId: id,
+    },
+  });
 };
 
 const handleMove = async (id: string, container) => {

@@ -7,6 +7,8 @@ export default css`
     display: flex;
     flex-direction: column;
     justify-content: flex-end;
+    z-index: 200;
+    pointer-events: auto;
   }
   .event-container {
     display: flex;
