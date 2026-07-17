@@ -87,6 +87,39 @@ export const EventHologram = (): JSX.Element => {
       eventsModal: eventHologramState,
     });
   };
+
+  const openEventsList = (title?: string) => {
+    uiDispatch({
+      type: 'UPDATE_ACTIVE_EVENTS_MODAL',
+      activeEventsModal: {
+        open: true,
+        title,
+      },
+    });
+  };
+
+  const actionButtons = (
+    <div className="btn-wrapper">
+      {isOwned && (
+        <div className="cta">
+          <Button size={1.6} color="secondary" onClick={handleCreate}>
+            Create Event
+          </Button>
+        </div>
+      )}
+      <div className="cta">
+        <Button size={1.6} onClick={() => openEventsList('Active Events')}>
+          More Events
+        </Button>
+      </div>
+      <div className="cta">
+        <Button size={1.6} color="info" onClick={() => openEventsList('Travel to Bounce Gate')}>
+          Travel
+        </Button>
+      </div>
+    </div>
+  );
+
   const blockPropagation = (e) => e.stopPropagation();
 
   return (
@@ -152,58 +185,10 @@ export const EventHologram = (): JSX.Element => {
                           <p className="text">{event.count}</p>
                         </div>
                       </div>
-                      <div className="btn-wrapper">
-                        {isOwned && (
-                          <div className="cta">
-                            <Button size={1.8} color="secondary" onClick={handleCreate}>
-                              Create Event
-                            </Button>
-                          </div>
-                        )}
-                        <div className="cta">
-                          <Button
-                            size={1.8}
-                            onClick={() =>
-                              uiDispatch({
-                                type: 'UPDATE_ACTIVE_EVENTS_MODAL',
-                                activeEventsModal: {
-                                  open: true,
-                                },
-                              })
-                            }
-                          >
-                            More Events
-                          </Button>
-                        </div>
-                      </div>
+                      {actionButtons}
                     </>
                   ) : (
-                    <>
-                      <div className="btn-wrapper">
-                        {isOwned && (
-                          <div className="cta">
-                            <Button size={1.8} color="secondary" onClick={handleCreate} fullWidth>
-                              Create Event
-                            </Button>
-                          </div>
-                        )}
-                        <div className="cta">
-                          <Button
-                            size={1.8}
-                            onClick={() =>
-                              uiDispatch({
-                                type: 'UPDATE_ACTIVE_EVENTS_MODAL',
-                                activeEventsModal: {
-                                  open: true,
-                                },
-                              })
-                            }
-                          >
-                            More Events
-                          </Button>
-                        </div>
-                      </div>
-                    </>
+                    actionButtons
                   )}
                 </div>
               </div>

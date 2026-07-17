@@ -15,6 +15,7 @@ export const ActiveEventsModal = (): JSX.Element => {
       type: 'UPDATE_ACTIVE_EVENTS_MODAL',
       activeEventsModal: {
         open: false,
+        title: undefined,
       },
     });
   };
@@ -40,7 +41,7 @@ export const ActiveEventsModal = (): JSX.Element => {
   };
   return (
     <>
-      <Modal title="Active Events" open={activeEventsModal.open} onClose={handleClose}>
+      <Modal title={activeEventsModal.title || 'Active Events'} open={activeEventsModal.open} onClose={handleClose}>
         <div className="events-wrapper">
           <EventList onSelect={(parcelId) => teleport(parcelId)} />
         </div>

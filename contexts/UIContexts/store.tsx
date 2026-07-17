@@ -66,6 +66,7 @@ export interface State {
   };
   activeEventsModal: {
     open: boolean;
+    title?: string;
   };
 
   eventHologramState: {

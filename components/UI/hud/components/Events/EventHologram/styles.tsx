@@ -102,7 +102,7 @@ export default css`
     right: 0;
   }
   .event-info-container.empty {
-    width: 36rem;
+    width: 42rem;
   }
   .event-info-container .bg-wrapper {
     height: 100%;
@@ -202,11 +202,18 @@ export default css`
   .btn-wrapper {
     margin: auto;
     display: flex;
-    gap: 10px;
+    gap: 0.6rem;
     width: 100%;
+    flex-wrap: nowrap;
+    align-items: center;
   }
   .cta {
-    max-width: 50%;
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: none;
+  }
+  .cta :global(.button-container) {
+    width: 100% !important;
   }
   .ray-container {
     position: relative;
