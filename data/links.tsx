@@ -16,9 +16,9 @@ export const gotchiverseLinks = {
     doc: `${AARCADE_HOME}/docs`,
   },
   governance: {
-    forum: `${AARCADE_HOME}/forum`,
-    treasury: `${AARCADE_HOME}/treasury`,
-    vote: `${AARCADE_HOME}/vote`,
+    forum: `${AARCADE_HOME}/dao/forum`,
+    treasury: `${AARCADE_HOME}/dao?election=2026-stewardship-1&tab=candidates`,
+    vote: `${AARCADE_HOME}/dao/proposals`,
   },
   social: {
     discord: 'https://discord.com/invite/aavegotchi',
