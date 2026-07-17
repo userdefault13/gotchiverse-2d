@@ -193,20 +193,23 @@ export const ParcelDashboard = (): JSX.Element => {
     if (!installationId || !realmId) return;
 
     const parcelLastChannel = await getContractParcelLastChannel(globalProvider, currentNetwork, realmId);
+    const lastChanneledStr = parcelLastChannel != null ? parcelLastChannel.toString() : '0';
     // console.log('parcelLastChannel', parcelLastChannel);
-    const secondsUntilChannel = secondsUntilParcelCanChannel(parcelLastChannel, installationId.toString());
+    const secondsUntilChannel = secondsUntilParcelCanChannel(lastChanneledStr, installationId.toString());
     // console.log('secondsUntilChannel', secondsUntilChannel);
     setSecondsUntilChannel(secondsUntilChannel);
 
-    // Reset Aaltar Icon
-    if (scene && parcelLastChannel) Installations.updateParcelLastChannel(parcelDashboardState.altarId, parcelLastChannel.toString());
+    // Reset Aaltar Icon (including never-channeled `0`)
+    if (scene && parcelDashboardState.altarId) {
+      Installations.updateParcelLastChannel(parcelDashboardState.altarId, lastChanneledStr);
+    }
 
     if (channelInterval) clearInterval(channelInterval);
     channelInterval = setInterval(() => {
-      const secondsUntilChannel = secondsUntilParcelCanChannel(currentNetwork, parcelLastChannel);
-      // console.log('secondsUntilChannel', secondsUntilChannel);
-      setSecondsUntilChannel(secondsUntilChannel);
-      if (secondsUntilChannel === 0) clearInterval(channelInterval);
+      const next = secondsUntilParcelCanChannel(lastChanneledStr, installationId.toString());
+      // console.log('secondsUntilChannel', next);
+      setSecondsUntilChannel(next);
+      if (next === 0) clearInterval(channelInterval);
     }, 60 * 1000);
   };
 
@@ -255,13 +258,8 @@ export const ParcelDashboard = (): JSX.Element => {
       await Installations.addFlamesToAaltar(parcelDashboardState.altarId, true);
       const tx = await channelAlchemica(ethersSigner, currentNetwork, channelContract);
       // console.log('@handleChannel TX:', tx);
-      await Installations.addFlamesToAaltar(parcelDashboardState.altarId, false);
 
       if (tx?.status) {
-        // parcelDashboardState.altarId
-        // getInstallationIdDataById(parcelDashboardState.altarId);
-        // getInstallationTypeById(parcelDashboardState.altarId);
-
         GameController.handleToastNotification({
           message: `You channelled ${results.fud.toFixed(3)} FUD, ${results.fomo.toFixed(3)} FOMO, ${results.alpha.toFixed(
             3,
@@ -281,12 +279,12 @@ export const ParcelDashboard = (): JSX.Element => {
         oops();
         updateTransactionNotificationStatus(notificationDispatch, id, 'error', getErrMessage(tx));
       }
-
-      setChannelLoading(false);
     } catch (error) {
       oops();
       // console.log('@handleChannel:ERROR', error?.data?.message || error.message || '');
       updateTransactionNotificationStatus(notificationDispatch, id, 'error', error?.data?.message || error.message || '');
+    } finally {
+      await Installations.addFlamesToAaltar(parcelDashboardState.altarId, false);
       setChannelLoading(false);
     }
   };

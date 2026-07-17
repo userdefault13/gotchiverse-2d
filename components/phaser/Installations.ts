@@ -231,7 +231,8 @@ const spawnSprite = async (installationData: InstallationMetadata, options?: Cre
       if (parcel) {
         // check if installation is aaltar
         if (installationType === 0) {
-          createAaltarChannelContainer(id, installationContainer, parcel.lastChanneledAlchemica);
+          // Missing subgraph field → treat as never channeled so the ready icon still appears.
+          createAaltarChannelContainer(id, installationContainer, parcel.lastChanneledAlchemica ?? 0);
           // upgrade installation, close UI etc
         }
         createInstallationBuildModeUI(installationContainer);
@@ -550,7 +551,8 @@ const removeInstallationBuildModeUI = (installationContainer) => {
 };
 
 const createAaltarChannelContainer = (id: string, installationContainer, lastChanneledAlchemica) => {
-  if (!id || !installationContainer || !lastChanneledAlchemica) return;
+  // `0` / `"0"` means never channeled — still show the ready icon.
+  if (!id || !installationContainer || lastChanneledAlchemica == null || lastChanneledAlchemica === '') return;
 
   const oldChannelingContainer = installationContainer.getByName('channelingContainer');
   const oldChannelLight = installationContainer.getByName('channelState');
@@ -1204,7 +1206,7 @@ const setChannelContainerState = (id: string, state: boolean) => {
 };
 
 const calculateChannelState = (id, installationContainer, lastChanneledAlchemica) => {
-  if (!id || !installationContainer || !lastChanneledAlchemica) return;
+  if (!id || !installationContainer || lastChanneledAlchemica == null || lastChanneledAlchemica === '') return;
   const channelingContainer = installationContainer.getByName('channelingContainer');
   const channelState = installationContainer.getByName('channelState');
   if (!channelingContainer || !channelState) return;
@@ -1213,7 +1215,7 @@ const calculateChannelState = (id, installationContainer, lastChanneledAlchemica
   const countDownText = channelingContainer.getByName('countdown');
   if (!channelIcon || !channelIconMain || !countDownText) return;
 
-  const channelSeconds = secondsUntilParcelCanChannel(lastChanneledAlchemica, id.split('_')[1]);
+  const channelSeconds = secondsUntilParcelCanChannel(String(lastChanneledAlchemica), id.split('_')[1]);
   // console.log('@calculateChannelState:channelSeconds', id, channelSeconds);
 
   if (channelSeconds > 0) {

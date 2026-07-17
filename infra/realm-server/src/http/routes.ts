@@ -123,6 +123,24 @@ export function createHttpRouter(): Router {
   });
 
   /**
+   * Base migration: channelAlchemica / claimAvailableAlchemica accept empty `0x`.
+   * Stub for FE clients that still hit the legacy signature endpoint.
+   */
+  router.post('/realm/alchemica/signature/channel/get', (req: Request, res: Response) => {
+    const { parcelId, gotchiId, lastChanneled } = req.body || {};
+    if (parcelId === undefined || gotchiId === undefined || lastChanneled === undefined) {
+      res.status(400).json({ error: 'parcelId, gotchiId, lastChanneled are required' });
+      return;
+    }
+    res.json({
+      signature: '0x',
+      network: 'base',
+      note: 'Empty signature for Base RealmDiamond channel/claim',
+      data: { parcelId, gotchiId, lastChanneled },
+    });
+  });
+
+  /**
    * Compatibility shim for the legacy FE socket lookup.
    * Returns Colyseus endpoint info instead of a raw zone WebSocket URL.
    */

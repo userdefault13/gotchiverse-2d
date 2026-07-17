@@ -104,16 +104,40 @@ export async function fetchItemStoreAvilable(): Promise<{ [id: string]: number }
 
 export async function fetchChannelSigniture(params) {
   try {
-    const r = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/realm/alchemica/signature/channel/get`, {
+    const { getRealmUrlSync, resolveRealmBaseUrl, realmFetchHeaders } = await import('helpers/realm.url');
+    let base = getRealmUrlSync();
+    if (!base) {
+      try {
+        base = await resolveRealmBaseUrl();
+      } catch {
+        base = String(process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
+      }
+    }
+    if (!base) {
+      console.warn('@fetchChannelSigniture: no REALM URL configured');
+      return undefined;
+    }
+
+    const response = await fetch(`${base}/realm/alchemica/signature/channel/get`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...realmFetchHeaders(base),
       },
       body: JSON.stringify(params),
-    })
-      .then(async (response) => await response.json())
-      .then((data) => data);
-    return r;
+    });
+    if (!response.ok) {
+      console.warn('@fetchChannelSigniture: HTTP', response.status);
+      return undefined;
+    }
+    const data = await response.json();
+    if (typeof data?.signature === 'string' && data.signature.startsWith('0x')) {
+      return data;
+    }
+    if (typeof data === 'string' && data.startsWith('0x')) {
+      return { signature: data };
+    }
+    return data;
   } catch (error) {
     console.log('@fetchChannelSigniture: err', error);
   }

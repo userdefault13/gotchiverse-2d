@@ -411,10 +411,15 @@ export const mapInGotchiverseParcelData = async (parcels: ContractParcel[]): Pro
 };
 
 /** Base migration recipes use empty `0x` signatures; Polygon still needs the REALM signer API. */
-const EMPTY_EQUIP_SIGNATURE = '0x';
+const EMPTY_REALM_SIGNATURE = '0x';
 
-function usesEmptyEquipSignatures(network: NetworkNames): boolean {
+function usesEmptyRealmSignatures(network: NetworkNames): boolean {
   return network === 'base';
+}
+
+/** @deprecated alias — equip/channel/claim all share the Base empty-sig path */
+function usesEmptyEquipSignatures(network: NetworkNames): boolean {
+  return usesEmptyRealmSignatures(network);
 }
 
 function isBytesLikeSignature(value: unknown): value is string | Uint8Array {
@@ -422,17 +427,45 @@ function isBytesLikeSignature(value: unknown): value is string | Uint8Array {
   return value instanceof Uint8Array;
 }
 
+/** Normalize legacy Object.values byte-maps without corrupting a hex string `'0x…'`. */
+function coerceRealmSignature(signature: unknown): string | Uint8Array | unknown[] | undefined {
+  if (isBytesLikeSignature(signature)) return signature;
+  if (signature && typeof signature === 'object') {
+    const values = Object.values(signature as Record<string, unknown>);
+    if (values.length === 1 && isBytesLikeSignature(values[0])) return values[0];
+    if (values.length > 1) return values;
+  }
+  return undefined;
+}
+
 async function resolveEquipSignature(
   network: NetworkNames,
   installation: { parcelId: number; gotchiId: number; itemId: number; x: number; y: number },
 ): Promise<string | Uint8Array> {
-  if (usesEmptyEquipSignatures(network)) {
-    return EMPTY_EQUIP_SIGNATURE;
+  if (usesEmptyRealmSignatures(network)) {
+    return EMPTY_REALM_SIGNATURE;
   }
   const signature = await fetchEquipSigniture(installation);
   if (!isBytesLikeSignature(signature)) {
     throw new Error(
       'Equip signature unavailable. The REALM signature API did not return a valid signature for this action.',
+    );
+  }
+  return signature;
+}
+
+async function resolveChannelSignature(
+  network: NetworkNames,
+  params: { parcelId: number | string; gotchiId: number; lastChanneled: string },
+): Promise<string | Uint8Array | unknown[]> {
+  if (usesEmptyRealmSignatures(network)) {
+    return EMPTY_REALM_SIGNATURE;
+  }
+  const signatureJSON = await fetchChannelSigniture(params);
+  const signature = coerceRealmSignature(signatureJSON?.signature ?? signatureJSON);
+  if (!signature) {
+    throw new Error(
+      'Channel signature unavailable. The REALM signature API did not return a valid signature for this action.',
     );
   }
   return signature;
@@ -574,25 +607,24 @@ export const channelAlchemica = async (signer: Signer, network: NetworkNames, { 
     const lastChanneled = await realmDiamond.getLastChanneled(network === 'mumbai' ? 0 : gotchiId);
     console.log('@channelAlchemica:lastChanneled', lastChanneled);
 
-    const signatureJSON = await fetchChannelSigniture({ parcelId: realmId, gotchiId, lastChanneled: Number(lastChanneled).toString() });
-    if (signatureJSON) {
-      if (signatureJSON.signature) {
-        signatureJSON.signature = Object.values(signatureJSON.signature);
-        // const gasPrice = (await gasPriceDict(signer)).gasPrice;
-        const tx = await realmDiamond.channelAlchemica(realmId, network === 'mumbai' ? 0 : gotchiId, lastChanneled, signatureJSON.signature);
-        if (tx) {
-          SFXController.playFX('channeling_start');
-          console.log('channelAlchemicaTx', tx);
-        }
-        const res = await tx.wait();
-        // TODO: Apply calculation for alchemica based on aaltar level
+    const signature = await resolveChannelSignature(network, {
+      parcelId: realmId,
+      gotchiId,
+      lastChanneled: lastChanneled?.toString?.() ?? String(lastChanneled),
+    });
 
-        // console.log('channelAlchemica', res);
-        return res;
-      } else {
-        return signatureJSON;
-      }
-    } else return;
+    const tx = await realmDiamond.channelAlchemica(
+      realmId,
+      network === 'mumbai' ? 0 : gotchiId,
+      lastChanneled,
+      signature,
+    );
+    if (tx) {
+      SFXController.playFX('channeling_start');
+      console.log('channelAlchemicaTx', tx);
+    }
+    const res = await tx.wait();
+    return res;
   } catch (error) {
     // console.log('@channelAlchemica:REVERTED', error);
     return error;
@@ -605,26 +637,24 @@ export const emptyReservoirs = async (signer: Signer, network: NetworkNames, { r
     const lastClaimed = await realmDiamond.lastClaimedAlchemica(realmId);
     // console.log('lastClaimed', lastClaimed);
 
-    const signatureJSON = await fetchChannelSigniture({ parcelId: realmId, gotchiId, lastChanneled: Number(lastClaimed).toString() });
-    if (signatureJSON) {
-      if (signatureJSON.signature) {
-        signatureJSON.signature = Object.values(signatureJSON.signature);
-        // const gasPrice = (await gasPriceDict(signer)).gasPrice;
-        const tx = await realmDiamond.claimAvailableAlchemica(realmId.toString(), network === 'mumbai' ? 0 : gotchiId, signatureJSON.signature);
-        // {
-        //   gasPrice,
-        //   gasLimit: 210000,
-        // }
-        if (tx) {
-          console.log('emptyReservoirsTX', tx);
-        }
-        const res = await tx.wait();
-        console.log('emptyReservoirs', res);
-        return res;
-      } else {
-        return signatureJSON;
-      }
-    } else return;
+    // claimAvailableAlchemica shares the channel signature endpoint on legacy REALM.
+    const signature = await resolveChannelSignature(network, {
+      parcelId: realmId,
+      gotchiId,
+      lastChanneled: lastClaimed?.toString?.() ?? String(lastClaimed),
+    });
+
+    const tx = await realmDiamond.claimAvailableAlchemica(
+      realmId.toString(),
+      network === 'mumbai' ? 0 : gotchiId,
+      signature,
+    );
+    if (tx) {
+      console.log('emptyReservoirsTX', tx);
+    }
+    const res = await tx.wait();
+    console.log('emptyReservoirs', res);
+    return res;
   } catch (error) {
     return error;
   }
