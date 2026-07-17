@@ -112,8 +112,8 @@ export const getUsersParcels = (accounts: string[], filter?: { district?: number
 
   return `{
       parcels (first: ${first}, skip: ${skip}, where: { owner_in: [${accounts.map((account) => `"${account.toLocaleLowerCase()}"`)}]${
-    filter.district ? `, district: ${filter.district}` : ''
-  }${filter.search ? `, parcelHash_contains: "${filter.search.toLowerCase()}"` : ''} }, orderBy: district) {
+    filter?.district ? `, district: ${filter.district}` : ''
+  }${filter?.search ? `, parcelHash_contains: "${filter.search.toLowerCase()}"` : ''} }, orderBy: district) {
         parcelId
         id
         parcelHash

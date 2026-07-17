@@ -49,10 +49,19 @@ const GOTCHI = 64;
 const HOOD_SIZE = 1056;
 
 export const transformParcelFormat = (parcels: GotchiverseParcel[]): Parcel[] => {
-  return _.map(parcels, (parcel) => {
-    const parcelData: Parcel = getParcelDataById(parcel.parcelId);
-    return _.assign(parcel, parcelData);
-  });
+  return _.compact(
+    _.map(parcels, (parcel) => {
+      const tokenId = String(parcel.tokenId ?? parcel.id ?? '');
+      const meta = PARCELS_BY_TOKEN_ID[tokenId] || PARCELS_BY_TOKEN_ID[Number(tokenId)];
+      const parcelId =
+        parcel.parcelId && String(parcel.parcelId).charAt(0) === 'C'
+          ? String(parcel.parcelId)
+          : meta?.parcelId;
+      if (!parcelId) return null;
+      const parcelData: Parcel = getParcelDataById(parcelId);
+      return _.assign({}, parcel, { parcelId }, parcelData) as Parcel;
+    }),
+  );
 };
 
 export function getParcelDataById(id: string): Parcel {
@@ -216,16 +225,34 @@ const normalizeParcels = (parcels: Array<Partial<GotchiverseParcel> & { tokenId?
   return _.map(parcels, (parcel) => {
     const tokenId = String(parcel.tokenId ?? parcel.id ?? '');
     const id = String(parcel.id ?? parcel.tokenId ?? '');
+    const meta = PARCELS_BY_TOKEN_ID[tokenId] || PARCELS_BY_TOKEN_ID[Number(tokenId)];
+    const rawParcelId = parcel.parcelId ? String(parcel.parcelId) : '';
+    const parcelId = rawParcelId.charAt(0) === 'C' ? rawParcelId : meta?.parcelId || rawParcelId;
     const owner = parcelOwnerAddress(parcel.owner as GotchiverseParcel['owner'] | { id?: string });
     return {
       ...parcel,
       id,
       tokenId,
+      parcelId,
       owner,
       isLent: owner ? owner.toLocaleLowerCase() !== currentAccount : parcel.isLent,
     } as GotchiverseParcel;
   }).filter((parcel) => parcel.id || parcel.tokenId || parcel.parcelId);
 };
+
+/** Pixel center of a Citaadel parcel id (`C-x-y-T`), or null if invalid. */
+export function getParcelSpawnPixels(parcelId?: string): { x: number; y: number } | null {
+  if (!parcelId || parcelId.charAt(0) !== 'C') return null;
+  try {
+    const data = getParcelDataById(parcelId);
+    return {
+      x: Math.round(data.bounds.x + (data.size.width * GOTCHI) / 2),
+      y: Math.round(data.bounds.y + (data.size.height * GOTCHI) / 2),
+    };
+  } catch {
+    return null;
+  }
+}
 
 export const fetchContractOwnedParcels = async (owner: string, provider: Provider, network: NetworkNames): Promise<ContractParcel[]> => {
   const realmDiamond = getContract(network, provider);

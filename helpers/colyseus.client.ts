@@ -2,6 +2,7 @@ import { Client, Room } from 'colyseus.js';
 import GlobalState from 'contexts/GlobalState';
 import Players from 'components/phaser/Players';
 import { SelectedPlayer } from 'types';
+import { colyseusSeedParcels, colyseusUpdateCurrentParcel } from 'helpers/colyseus.parcels';
 
 type RemotePlayer = {
   sessionId: string;
@@ -185,6 +186,8 @@ function tickKeyMove() {
   const nextY = sprite.y + keyDirection.y * step;
 
   applyLocalPosition(nextX, nextY, keyDirection);
+  colyseusSeedParcels(nextX, nextY);
+  colyseusUpdateCurrentParcel(nextX, nextY);
 
   const now = Date.now();
   // Send a bit less often than the render tick to stay under server rate limits.
@@ -211,7 +214,10 @@ export function colyseusHandleKeyMove(direction: string, sprint = false): void {
   }
 }
 
-export async function colyseusConnect(selectedPlayer: SelectedPlayer): Promise<boolean> {
+export async function colyseusConnect(
+  selectedPlayer: SelectedPlayer,
+  opts?: { spawnLocId?: string },
+): Promise<boolean> {
   const token = selectedPlayer.authToken || (typeof localStorage !== 'undefined' ? localStorage.getItem('authToken') : null);
   if (!token) {
     console.warn('Colyseus connect missing authToken');
@@ -236,11 +242,15 @@ export async function colyseusConnect(selectedPlayer: SelectedPlayer): Promise<b
 
   client = new Client(endpoint());
   try {
-    room = await client.joinOrCreate('citaadel', {
+    const joinOpts: Record<string, string> = {
       token,
       gotchiId: String(selectedPlayer.id),
       name: selectedPlayer.name || `Gotchi #${selectedPlayer.id}`,
-    });
+    };
+    if (opts?.spawnLocId) {
+      joinOpts.spawnLocId = opts.spawnLocId;
+    }
+    room = await client.joinOrCreate('citaadel', joinOpts);
     bindRoomHandlers(room);
     setConnected(true);
 
@@ -263,6 +273,8 @@ export function colyseusSendMove(x: number, y: number): void {
   if (!room) return;
   // Mouse / click-to-move: predict locally so the sprite actually walks.
   applyLocalPosition(x, y);
+  colyseusSeedParcels(x, y);
+  colyseusUpdateCurrentParcel(x, y);
   room.send('move', { x: Math.round(x), y: Math.round(y) });
 }
 

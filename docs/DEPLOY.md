@@ -90,8 +90,9 @@ Select gotchi + parcel
   → sign nonce (GET /user/nonce/get)
   → auth token (GET /user/authtoken/get)
   → /play
-  → Colyseus joinOrCreate('citaadel', { token, gotchiId, name })
-  → mouse click-to-move (WASD not wired on Colyseus yet)
+  → Colyseus joinOrCreate('citaadel', { token, gotchiId, name, spawnLocId })
+  → spawn at selected parcel center; client seeds nearby parcel grids
+  → WASD / click-to-move
 ```
 
 **Hard requirement:** `NEXT_PUBLIC_API_URL` / `NEXT_PUBLIC_COLYSEUS_URL` must hit a live DO host.
@@ -122,5 +123,7 @@ Local enter without DO: run REALM on `:2567`, set FE `.env` API/Colyseus to `htt
 - [ ] Wallet connect on Base
 - [ ] Nonce → signature → authToken
 - [ ] Join Colyseus `citaadel` room (no portal error toast)
+- [ ] Spawn lands on selected parcel (not the default random band)
+- [ ] Parcel grids visible around spawn; owned parcels tinted
 - [ ] Two browsers see each other move
 - [ ] Vercel HTTPS → WSS (no mixed content)

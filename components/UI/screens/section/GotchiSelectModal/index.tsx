@@ -217,7 +217,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
       if (selectedSpawn?.charAt(0) === 'C') {
         // convert selected parcel ID into it's tokenId equivalent
         const parcelData: JsonParcel = _.find(PARCELS_BY_TOKEN_ID, (val: JsonParcel) => val.parcelId === selectedSpawn);
-        if (parcelData && !parcelIds.includes(parcelData.parcelId)) {
+        if (parcelData && !parcelIds.includes(parcelData.tokenId)) {
           // and if it wasn't already in the list to look up access rights, add it
           parcelIds.push(parcelData.tokenId);
           // add it to lenderParcels as required below as well, convert to ContractParcel type

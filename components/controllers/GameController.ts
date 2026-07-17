@@ -57,6 +57,12 @@ import {
   colyseusSendPing,
   isColyseusNetcode,
 } from 'helpers/colyseus.client';
+import {
+  colyseusResetParcelSync,
+  colyseusSeedParcels,
+  colyseusSpawnFromSelectedParcel,
+  colyseusUpdateCurrentParcel,
+} from 'helpers/colyseus.parcels';
 import { NFTDisplay } from 'components/phaser/NFTDisplay';
 import { scene } from 'components/controllers/SceneController';
 import MinigameController from './minigameController';
@@ -197,7 +203,8 @@ async function socketConnect(
 
   // Walkable MVP: Colyseus room instead of legacy zone WebSocket protocol
   if (isColyseusNetcode()) {
-    const ok = await colyseusConnect(selectedPlayer);
+    const selectedSpawnLoc = spawnId && spawnId.charAt(0) === 'C' ? spawnId : undefined;
+    const ok = await colyseusConnect(selectedPlayer, { spawnLocId: selectedSpawnLoc });
     if (!ok) {
       handleToastNotification({
         message: 'Ruh roh, error connecting to the portal. Try refreshing your browser to try again.',
@@ -206,7 +213,9 @@ async function socketConnect(
       });
       return;
     }
-    const spawn = colyseusLocalSpawn() || { x: 42 * 64 + 10 * 64, y: 52 * 64 + 10 * 64 };
+    // Prefer selected parcel center; then server spawn; then default band.
+    const parcelSpawn = colyseusSpawnFromSelectedParcel(selectedSpawnLoc);
+    const spawn = parcelSpawn || colyseusLocalSpawn() || { x: 42 * 64 + 10 * 64, y: 52 * 64 + 10 * 64 };
     try {
       await Players.onPlayerSocketInit({
         id: selectedPlayer.id,
@@ -220,6 +229,15 @@ async function socketConnect(
     } catch (e) {
       console.warn('onPlayerSocketInit (colyseus) failed', e);
     }
+
+    // Snap server position to selected parcel when the room ignored spawnLocId.
+    if (parcelSpawn) {
+      colyseusSendMove(parcelSpawn.x, parcelSpawn.y);
+    }
+
+    colyseusResetParcelSync();
+    colyseusSeedParcels(spawn.x, spawn.y, true);
+    colyseusUpdateCurrentParcel(spawn.x, spawn.y);
 
     // Seed HUD traits so bars aren't "undefined / undefined"
     const defaultTraits = {
