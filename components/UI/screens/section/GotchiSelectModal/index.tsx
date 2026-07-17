@@ -110,23 +110,28 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
     setParcel(parcelData);
   };
 
-  const getAndSignNonce = async function (signer, address) {
+  const getAndSignNonce = async function (signer, address, gotchiId?: string) {
     const nonceResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/nonce/get?address=${address}`);
     if (nonceResponse.status !== 200) {
       toast.error('Error initiating wallet address validation', { theme: 'dark' });
       throw new Error(`An error occurred when fetching the nonce: ${nonceResponse.statusText}`);
     }
     const nonceData = await nonceResponse.json();
-    const signed = await signer.signMessage(nonceData.nonce);
+    const nonce = nonceData.nonce || nonceData.data?.nonce;
+    const signed = await signer.signMessage(nonce);
 
-    const tokenResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/authtoken/get?address=${address}&signature=${signed}`);
+    const gotchiQuery = gotchiId ? `&gotchiId=${gotchiId}` : '';
+    const tokenResponse = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/user/authtoken/get?address=${address}&signature=${signed}${gotchiQuery}`,
+    );
     if (tokenResponse.status !== 200) {
       toast.error('The signature of the message is invalid', { theme: 'dark' });
       throw new Error(`An error occurred when validating the signed nonce: ${tokenResponse.statusText}`);
     }
     const tokenData = await tokenResponse.json();
     console.log('tokenData', tokenData);
-    localStorage.setItem('authToken', tokenData.token);
+    const token = tokenData.token || tokenData.authToken || tokenData.data?.token || tokenData.data?.authToken;
+    localStorage.setItem('authToken', token);
   };
 
   const handleGotchiSelect = (gotchi: GotchiverseAavegotchi) => {
@@ -167,7 +172,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
       try {
         if (gameConfig.requireMetaMaskSign) {
           sending();
-          await getAndSignNonce(ethersSigner, currentAccount);
+          await getAndSignNonce(ethersSigner, currentAccount, selectedGotchi?.id);
         }
         await setGlobalSelectedPlayer(selectedGotchi);
         void enterRealm();

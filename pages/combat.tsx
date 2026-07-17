@@ -68,7 +68,12 @@ const Combat = () => {
 
   // Reroute if selected player address doesnt match, or network not correct
   useEffect(() => {
-    if (!['local', 'alpha', 'development'].includes(process.env.APP_ENV) && currentNetwork !== 'matic') {
+    if (
+      !['local', 'alpha', 'development'].includes(process.env.APP_ENV) &&
+      currentNetwork !== process.env.REALM_NETWORK &&
+      currentNetwork !== 'matic' &&
+      currentNetwork !== 'base'
+    ) {
       void router.push('/');
     }
   }, [selectedPlayer, currentAccount, currentNetwork]);

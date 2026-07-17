@@ -69,7 +69,7 @@ export async function getLeaderboardAll(filter?: string, page?: number, limit = 
 
 export async function fetchParcelMetadataByTokenIds(tokenIds: string[]): Promise<ParcelData[]> {
   try {
-    return await fetch(`https://api.gotchiverse.io/realm/parcel/info?tokenId=${tokenIds.join(',')}`)
+    return await fetch(`${process.env.NEXT_PUBLIC_API_URL}/realm/parcel/info?tokenId=${tokenIds.join(',')}`)
       .then(async (response) => await response.json())
       .then(({ data }) => data);
   } catch (e) {
@@ -78,7 +78,9 @@ export async function fetchParcelMetadataByTokenIds(tokenIds: string[]): Promise
 }
 
 export async function fetchParcelImageData(parcelId: string, size: string | number) {
-  return await fetch(`https://api.gotchiverse.io/realm/map/load?map=citaadel&format=rgba-buffer-integers&parcel=${parcelId},${size}`)
+  return await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/realm/map/load?map=citaadel&format=rgba-buffer-integers&parcel=${parcelId},${size}`,
+  )
     .then(async (response) => await response.json())
     .then((data) => data);
 }

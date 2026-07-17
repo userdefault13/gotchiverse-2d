@@ -1,0 +1,9 @@
+# Replace api.example.com with your REALM API hostname before deploying.
+# Caddy terminates TLS and proxies HTTP + WebSocket upgrades to Colyseus.
+
+{$REALM_DOMAIN:localhost} {
+	encode gzip
+
+	# Health and BFF + Colyseus share one origin (PUBLIC_URL).
+	reverse_proxy realm-server:2567
+}

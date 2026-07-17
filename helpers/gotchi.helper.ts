@@ -405,8 +405,10 @@ export function getGotchiData(
     leftHand = getHandWearables(equippedWearables[4]);
   }
 
+  const authToken = typeof localStorage !== 'undefined' ? localStorage.getItem('authToken') || '' : '';
+
   return {
-    authToken: '',
+    authToken,
     isSpectator: gotchi.isSpectator,
     id: 'tokenId' in gotchi ? gotchi.tokenId.toString() : gotchi.id,
     name,

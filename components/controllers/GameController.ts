@@ -48,6 +48,13 @@ import { binarySchemas, decode, decodeSchemaName } from 'shared_code/utils/share
 import _ from 'lodash';
 import { MAP_ID_CITAADEL, DEFAULT_GOTCHI_PROPERTIES } from 'shared_code/constants/const.game';
 import { handleChatEvent, unsubscribeToChatChannels } from 'contexts/ChatContext/actions';
+import {
+  colyseusConnect,
+  colyseusIsConnected,
+  colyseusSendMove,
+  colyseusSendPing,
+  isColyseusNetcode,
+} from 'helpers/colyseus.client';
 import { NFTDisplay } from 'components/phaser/NFTDisplay';
 import { scene } from 'components/controllers/SceneController';
 import MinigameController from './minigameController';
@@ -185,6 +192,37 @@ async function socketConnect(
   }
 
   scene.onSocketReconnect = undefined;
+
+  // Walkable MVP: Colyseus room instead of legacy zone WebSocket protocol
+  if (isColyseusNetcode()) {
+    const ok = await colyseusConnect(selectedPlayer);
+    if (!ok) {
+      handleToastNotification({
+        message: 'Ruh roh, error connecting to the portal. Try refreshing your browser to try again.',
+        autoClose: false,
+        type: 'error',
+      });
+      return;
+    }
+    try {
+      await Players.onPlayerSocketInit({
+        id: selectedPlayer.id,
+        name: selectedPlayer.name,
+        x: 42 * 64 + 10 * 64,
+        y: 52 * 64 + 10 * 64,
+        health: 1000,
+        maxHealth: 1000,
+        isSpectator: false,
+      } as any);
+    } catch (e) {
+      console.warn('onPlayerSocketInit (colyseus) failed', e);
+    }
+    GlobalState.PHASER.dispatch({
+      type: 'UPDATE_CONNECTED',
+      connected: true,
+    });
+    return;
+  }
 
   let socketUrl = transferObj?.socketUrl;
   let zoneId = transferObj?.zoneId;
@@ -1340,6 +1378,23 @@ function clearDynamicData() {
 
 // avoid socket idletimeout of around 30 seconds by sending a 'ping' event every 30 seconds of inactivity
 function sendData(channel: string, action: string | null, data): void {
+  if (isColyseusNetcode()) {
+    if (channel === 'ping') {
+      colyseusSendPing();
+      return;
+    }
+    if (channel === 'movement') {
+      const payload = action ? data?.data || data : data;
+      const position = payload?.position || payload?.data?.position;
+      if (position && typeof position.x === 'number' && typeof position.y === 'number') {
+        colyseusSendMove(position.x, position.y);
+      }
+      return;
+    }
+    // Other legacy channels are no-ops in the walkable Colyseus MVP
+    return;
+  }
+
   if (action) data = { action, data };
   // send the timestamp that each msg was sent
   if (socket?.readyState === 1) {
@@ -1350,6 +1405,16 @@ function sendData(channel: string, action: string | null, data): void {
 }
 
 function sendPing() {
+  if (isColyseusNetcode()) {
+    if (colyseusIsConnected()) {
+      colyseusSendPing();
+      Performance.start('ping');
+    } else {
+      clearInterval(idleTimer);
+    }
+    return;
+  }
+
   if (socket.readyState === 1) {
     // console.log('ping server');
     sendData('ping', null, {});

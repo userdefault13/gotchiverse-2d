@@ -96,7 +96,12 @@ const Play = () => {
 
   // Reroute if selected player address doesnt match, or network not correct
   useEffect(() => {
-    if (!['local', 'alpha', 'development'].includes(process.env.APP_ENV) && currentNetwork !== 'matic') {
+    if (
+      !['local', 'alpha', 'development'].includes(process.env.APP_ENV) &&
+      currentNetwork !== process.env.REALM_NETWORK &&
+      currentNetwork !== 'matic' &&
+      currentNetwork !== 'base'
+    ) {
       const event = eventLocation ? `?routerId=${eventLocation}` : '';
       void router.push('/' + event);
     }

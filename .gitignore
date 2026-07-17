@@ -3,6 +3,8 @@
 
 # dependencies
 /node_modules
+/realm-server/node_modules
+/realm-server/build
 /.pnp
 .pnp.js
 

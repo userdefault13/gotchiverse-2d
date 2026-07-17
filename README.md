@@ -2,6 +2,8 @@
 
 Gotchiverse 2D is the browser game client for the Aavegotchi Gotchiverse. It is a Next.js, React, TypeScript, and Phaser application with game data and shared helpers vendored in `shared_code/`.
 
+**Walkable MVP:** set `NEXT_PUBLIC_NETCODE=colyseus` and run the Colyseus REALM server in [`realm-server/`](realm-server/). Deploy the FE to **Vercel** and the server to **DigitalOcean** — see [docs/DEPLOY.md](docs/DEPLOY.md).
+
 ## Requirements
 
 - Node.js 20 or newer
@@ -12,16 +14,22 @@ This repo uses `yarn.lock`; do not use `npm install`.
 ## Quick Start
 
 ```bash
-git clone https://github.com/aavegotchi/gotchiverse-2d.git
+git clone https://github.com/userdefault13/gotchiverse-2d.git
 cd gotchiverse-2d
+
+# Terminal A — REALM server (Colyseus + HTTP BFF)
+cd realm-server && cp .env.example .env && npm install && npm run dev
+
+# Terminal B — frontend
+cd ..
 yarn install --frozen-lockfile
 cp .env.example .env
 yarn dev
 ```
 
-Open [http://localhost:3001](http://localhost:3001).
+Open [http://localhost:3001](http://localhost:3001). Use a **Base** wallet when `REALM_NETWORK=base`.
 
-The default `.env.example` values are safe placeholders. Some wallet, captcha, NFT, Discord, Sentry, and backend-backed flows need real environment values before they work end to end.
+The default `.env.example` values point at local Colyseus (`:2567`) and Base Goldsky subgraphs. Optional wallet, captcha, Discord, and Sentry keys can stay blank for local UI work.
 
 ## Common Scripts
 
@@ -33,7 +41,7 @@ yarn verify     # Run lint and production build
 yarn start      # Start a built production app
 ```
 
-There is no separate server package in this public repo. Backend API calls are configured with `NEXT_PUBLIC_API_URL` and related environment variables.
+The Colyseus REALM server lives in [`realm-server/`](realm-server/) (own `package.json` + Docker). Point `NEXT_PUBLIC_API_URL` / `NEXT_PUBLIC_COLYSEUS_URL` at that host. Full Vercel + DO steps: [docs/DEPLOY.md](docs/DEPLOY.md).
 
 ## Environment Files
 

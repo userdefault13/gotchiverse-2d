@@ -9,6 +9,9 @@ const moduleExports = {
   //   optimizeImages: true,
   // },
 
+  // Keep Moralis out of the SSR graph; it is browser-initialized via dynamic import.
+  serverExternalPackages: ['moralis', '@moralisweb3/common-evm-utils'],
+
   images: {
     disableStaticImages: true,
     dangerouslyAllowSVG: true,
@@ -34,6 +37,12 @@ const moduleExports = {
     SERVER_URL: process.env.SERVER_URL,
 
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+    NEXT_PUBLIC_COLYSEUS_URL: process.env.NEXT_PUBLIC_COLYSEUS_URL,
+    NEXT_PUBLIC_NETCODE: process.env.NEXT_PUBLIC_NETCODE,
+    NEXT_PUBLIC_CORE_SUBGRAPH_URL: process.env.NEXT_PUBLIC_CORE_SUBGRAPH_URL,
+    NEXT_PUBLIC_GOTCHIVERSE_SUBGRAPH_URL: process.env.NEXT_PUBLIC_GOTCHIVERSE_SUBGRAPH_URL,
+    NEXT_PUBLIC_SVG_SUBGRAPH_URL: process.env.NEXT_PUBLIC_SVG_SUBGRAPH_URL,
+    NEXT_PUBLIC_BASE_RPC: process.env.NEXT_PUBLIC_BASE_RPC,
     ALCHEMICA_API_URL: process.env.ALCHEMICA_API_URL,
     MORALIS_API_KEY: process.env.MORALIS_API_KEY,
     GHOST_API_KEY: process.env.GHOST_API_KEY,

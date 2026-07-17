@@ -79,6 +79,28 @@ const kovanVars = {
   gbmDiamond: '0xa44c8e0eCAEFe668947154eE2b803Bd4e6310EFe',
   realmDiamond: '0x1D0360BaC7299C86Ec8E99d0c1C9A95FEfaF2a11',
 };
+
+// Base mainnet (Aavegotchi migration / Envio indexers)
+const baseVars = {
+  jsonRPC: process.env.NEXT_PUBLIC_BASE_RPC || 'https://mainnet.base.org',
+
+  ghstAddress: '0xcd2f22236dd9dfe005a84ce06011817129309328',
+  maticAddress: '0x0000000000000000000000000000000000000000',
+
+  realmDiamond: '0x4B0040c3646D3c44B8a28Ad7055cfCF536c05372',
+  installationDiamond: '0xebba5b725A2889f7f089a6cAE0246A32cad4E26b',
+  tileDiamond: '0x617fdB8093b309e4699107F48812b407A7c37938',
+  aavegotchiDiamond: '0xA99c4B08201F2913Db8D28e71d020c4298F29dBF',
+
+  fudAddress: '0x2028b4043e6722Ea164946c82fe806c4a43a0fF4',
+  fomoAddress: '0xA32137bfb57d2b6A9Fd2956Ba4B54741a6D54b58',
+  alphaAddress: '0x15e7CaC885e3730ce6389447BC0f7AC032f31947',
+  kekAddress: '0xE52b9170fF4ece4C35E796Ffd74B57Dec68Ca0e5',
+  gltrAddress: '0x4D140CE792bEdc430498c2d219AfBC33e2992c9D',
+
+  gotchiLending: '0xA99c4B08201F2913Db8D28e71d020c4298F29dBF',
+};
+
 export interface WEB_3_VARS {
   jsonRPC?: string;
 
@@ -105,8 +127,10 @@ export interface WEB_3_VARS {
   gotchiLending?: string;
 }
 export function varsForNetwork(currentNetwork): WEB_3_VARS {
+  if (!currentNetwork && process.env.REALM_NETWORK === 'base') return baseVars;
   if (!currentNetwork && process.env.APP_ENV === 'production') return maticVars;
   if (!currentNetwork && process.env.APP_ENV !== 'production') return mumbaiVars;
+  else if (currentNetwork === 'base') return baseVars;
   else if (currentNetwork === 'matic') return maticVars;
   else if (currentNetwork === 'mumbai') return mumbaiVars;
   else if (currentNetwork === 'kovan') return kovanVars;
@@ -114,13 +138,33 @@ export function varsForNetwork(currentNetwork): WEB_3_VARS {
   else return maticVars;
 }
 
-// Subgraph
-export const coreURI = 'https://subgraph.satsuma-prod.com/tWYl5n5y04oz/aavegotchi/aavegotchi-core-matic/api';
+const DEFAULT_CORE_URI = 'https://subgraph.satsuma-prod.com/tWYl5n5y04oz/aavegotchi/aavegotchi-core-matic/api';
+const DEFAULT_GOTCHIVERSE_URI = 'https://subgraph.satsuma-prod.com/tWYl5n5y04oz/aavegotchi/gotchiverse-matic/api';
+const DEFAULT_SVG_URI = 'https://subgraph.satsuma-prod.com/tWYl5n5y04oz/aavegotchi/aavegotchi-svg-matic/api';
+const DEFAULT_BASE_CORE =
+  'https://api.goldsky.com/api/public/project_cmh3flagm0001r4p25foufjtt/subgraphs/aavegotchi-core-base/prod/gn';
+const DEFAULT_BASE_GOTCHIVERSE =
+  'https://api.goldsky.com/api/public/project_cmh3flagm0001r4p25foufjtt/subgraphs/gotchiverse-base/prod/gn';
 
-export const aavegotchiRealm = 'https://api.thegraph.com/subgraphs/name/aavegotchi/aavegotchi-realm-matic';
+function defaultCoreUri(): string {
+  if (process.env.REALM_NETWORK === 'base' || process.env.NETWORK === 'base') return DEFAULT_BASE_CORE;
+  return DEFAULT_CORE_URI;
+}
 
-export const gbmSubgraphUser = 'https://api.thegraph.com/subgraphs/name/aavegotchi/aavegotchi-gbm-v2';
+function defaultGotchiverseUri(): string {
+  if (process.env.REALM_NETWORK === 'base' || process.env.NETWORK === 'base') return DEFAULT_BASE_GOTCHIVERSE;
+  return DEFAULT_GOTCHIVERSE_URI;
+}
 
-export const aavegotchiSvgSubgraph = 'https://subgraph.satsuma-prod.com/tWYl5n5y04oz/aavegotchi/aavegotchi-svg-matic/api';
+// Subgraph (env-overridable for Envio / self-hosted proxy cutover)
+export const coreURI = process.env.NEXT_PUBLIC_CORE_SUBGRAPH_URL || defaultCoreUri();
 
-export const gotchiverseSubgraph = 'https://subgraph.satsuma-prod.com/tWYl5n5y04oz/aavegotchi/gotchiverse-matic/api';
+export const aavegotchiRealm =
+  process.env.NEXT_PUBLIC_REALM_SUBGRAPH_URL || 'https://api.thegraph.com/subgraphs/name/aavegotchi/aavegotchi-realm-matic';
+
+export const gbmSubgraphUser =
+  process.env.NEXT_PUBLIC_GBM_SUBGRAPH_URL || 'https://api.thegraph.com/subgraphs/name/aavegotchi/aavegotchi-gbm-v2';
+
+export const aavegotchiSvgSubgraph = process.env.NEXT_PUBLIC_SVG_SUBGRAPH_URL || DEFAULT_SVG_URI;
+
+export const gotchiverseSubgraph = process.env.NEXT_PUBLIC_GOTCHIVERSE_SUBGRAPH_URL || defaultGotchiverseUri();
