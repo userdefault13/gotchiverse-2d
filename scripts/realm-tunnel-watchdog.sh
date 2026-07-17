@@ -195,6 +195,30 @@ publish_urls() {
   [[ -n "$primary" ]] || return 1
 
   local tmp="$STATE_DIR/realm-smoke-url.json"
+  local urls_only="$STATE_DIR/urls.list"
+  : > "$urls_only"
+  for u in "$cf" "$lhr" "$loca"; do
+    [[ -n "$u" ]] || continue
+    echo "$u" >> "$urls_only"
+  done
+
+  # Skip publish when the URL set is unchanged (ignore updatedAt churn).
+  if [[ -f "$URL_JSON" ]]; then
+    local prev
+    prev=$(python3 - <<'PY' "$URL_JSON" 2>/dev/null || true
+import json,sys
+doc=json.load(open(sys.argv[1]))
+print(doc.get("url",""))
+print("\n".join(doc.get("urls") or []))
+PY
+)
+    local next
+    next=$(printf '%s\n%s\n' "$primary" "$(cat "$urls_only")")
+    if [[ "$prev" == "$next" ]]; then
+      return 0
+    fi
+  fi
+
   cat > "$tmp" <<EOF
 {
   "updatedAt": "$(date -u +%Y-%m-%dT%H:%M:%S.000Z)",
@@ -202,21 +226,17 @@ publish_urls() {
   "urls": [
 $(
   first=1
-  for u in "$cf" "$lhr" "$loca"; do
+  while IFS= read -r u; do
     [[ -n "$u" ]] || continue
     if [[ $first -eq 1 ]]; then first=0; else echo ","; fi
     printf '    "%s"' "$u"
-  done
+  done < "$urls_only"
   echo
 )
   ],
   "note": "Ephemeral smoke tunnels maintained by scripts/realm-tunnel-watchdog.sh. FE probes these at Enter time."
 }
 EOF
-
-  if [[ -f "$URL_JSON" ]] && cmp -s "$tmp" "$URL_JSON"; then
-    return 0
-  fi
 
   cp "$tmp" "$URL_JSON"
   # Keep REALM PUBLIC_URL aligned with primary
