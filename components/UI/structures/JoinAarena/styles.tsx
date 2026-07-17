@@ -78,7 +78,7 @@ export default css`
     margin: 0.5rem;
   }
   .content {
-    font-family: Alien Encounters Solid;
+    font-family: Pixelar;
     font-size: 3rem;
     line-height: 1;
     color: var(--col-white);
@@ -104,7 +104,7 @@ export default css`
     width: 50%;
     text-transform: uppercase;
     color: var(--col-yellow-100);
-    font-family: Alien Encounters Solid;
+    font-family: Pixelar;
     text-align: right;
     margin-top: -10px;
   }
@@ -166,7 +166,7 @@ export default css`
     border: 4px solid var(--col-yellow-border);
     border-radius: 3px;
     color: var(--col-yellow-100);
-    font-family: 'Alien Encounters Solid';
+    font-family: Pixelar;
     font-size: 2rem;
     line-height: 1;
     position: absolute;
@@ -207,7 +207,7 @@ export default css`
     border-top: 0.8rem solid var(--col-yellow-100);
     border-bottom: 0.8rem solid var(--col-yellow-200);
     background: var(--col-yellow-300);
-    font-family: 'Alien Encounters Solid';
+    font-family: Pixelar;
     font-size: 2em;
     padding: 1.2rem 0;
     line-height: 1;

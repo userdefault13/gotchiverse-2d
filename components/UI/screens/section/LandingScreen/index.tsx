@@ -265,7 +265,7 @@ export const LandingScreen = (): JSX.Element => {
                 <div className="img-container">
                   <Image alt="" src={UpOnlyAavegotchi} />
                 </div>
-                <Button size={2.4} fullWidth secondary onClick={() => window.open(gotchiverseLinks.aavegotchi.baazar, 'new')}>
+                <Button size={2.4} fullWidth secondary onClick={() => window.open(gotchiverseLinks.aavegotchi.marketplace, 'new')}>
                   GET AN AAVEGOTCHI
                 </Button>
               </div>

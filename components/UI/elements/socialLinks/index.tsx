@@ -1,4 +1,4 @@
-import { DiscordIcon, RedditIcon, TelegramIcon, TwitterIcon, YoutubeIcon } from 'assets';
+import { DiscordIcon, TwitterIcon, YoutubeIcon } from 'assets';
 import { gotchiverseLinks } from 'data/links';
 import Image from 'next/image';
 import { ArrowIcon } from '../svgs';
@@ -18,14 +18,6 @@ export const SocialLinks = (): JSX.Element => {
     {
       key: 'discord',
       icon: DiscordIcon,
-    },
-    {
-      key: 'reddit',
-      icon: RedditIcon,
-    },
-    {
-      key: 'telegram',
-      icon: TelegramIcon,
     },
   ];
   return (

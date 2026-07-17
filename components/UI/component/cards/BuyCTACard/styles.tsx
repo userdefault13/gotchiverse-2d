@@ -80,7 +80,7 @@ export default css`
   }
 
   h1 {
-    font-family: 'Alien Encounters Solid';
+    font-family: Pixelar;
     font-style: normal;
     font-weight: 700;
     font-size: 1.8rem;
