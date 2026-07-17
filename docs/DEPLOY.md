@@ -96,6 +96,9 @@ Select gotchi + parcel
 
 **Hard requirement:** `NEXT_PUBLIC_API_URL` / `NEXT_PUBLIC_COLYSEUS_URL` must hit a live DO host.
 
+
+**Temporary smoke host (agent tunnel):** `https://118a89c5ebaefb.lhr.life` — replace with DO/`realm.aarcadeghst.com` when ready.
+
 Today `https://realm.aarcadeghst.com` still resolves to a missing Vercel deployment (`DEPLOYMENT_NOT_FOUND`). Point that DNS at the droplet (or update the Vercel envs to the droplet URL), then:
 
 ```bash
