@@ -71,15 +71,13 @@ function setConnected(connected: boolean) {
 }
 
 function getLocalSprite(): { x: number; y: number } | undefined {
-  if (!localGotchiId) return undefined;
+  if (!localGotchiId || !phaserScene) return lastLocalPos || undefined;
   // Player containers live on the Phaser SceneController scene, not globalThis.
-  const sceneObj = phaserScene as Record<string, { x?: number; y?: number }> | undefined;
-  if (sceneObj) {
-    const sprite = sceneObj[localGotchiId] || sceneObj[String(Number(localGotchiId))];
-    if (sprite && typeof sprite.x === 'number' && typeof sprite.y === 'number') {
-      lastLocalPos = { x: sprite.x, y: sprite.y };
-      return lastLocalPos;
-    }
+  const sceneObj = phaserScene as unknown as Record<string, { x?: number; y?: number } | undefined>;
+  const sprite = sceneObj[localGotchiId] || sceneObj[String(Number(localGotchiId))];
+  if (sprite && typeof sprite.x === 'number' && typeof sprite.y === 'number') {
+    lastLocalPos = { x: sprite.x, y: sprite.y };
+    return lastLocalPos;
   }
   return lastLocalPos || undefined;
 }
@@ -151,11 +149,13 @@ function bindRoomHandlers(activeRoom: Room) {
 
   players.onRemove((player: RemotePlayer) => {
     try {
-      const sceneObj = phaserScene as
-        | Record<string, { destroy?: (a?: boolean) => void } | undefined>
-        | undefined;
+      if (!phaserScene) return;
+      const sceneObj = phaserScene as unknown as Record<
+        string,
+        { destroy?: (a?: boolean) => void } | undefined
+      >;
       const id = String(player.gotchiId);
-      if (sceneObj?.[id]) {
+      if (sceneObj[id]) {
         sceneObj[id]?.destroy?.(true);
         sceneObj[`${id}_top`]?.destroy?.(true);
         sceneObj[`${id}_bottom`]?.destroy?.(true);
