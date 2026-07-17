@@ -43,7 +43,6 @@ import { defaultGotchi } from './aavegotchi/svg';
 import { ObservorIdle, ObservorLive } from 'assets';
 import { scene } from 'components/controllers/SceneController';
 import { CollateralObject, collateralObjects } from './vars';
-import { applyGotchiTraits, applyTraitsAndWearables } from 'shared_code/utils/shared.utils.api';
 import { formatUnits } from 'ethers/lib/utils';
 import { formatDigit } from './functions';
 
@@ -463,24 +462,43 @@ export async function getGotchiCombatTraits(account: string, map: 'citaadel' | '
   }
 }
 
-/** Local fallback when REALM `/user/combat-traits` is unavailable (clears NaN on select UI). */
+/**
+ * Lightweight client fallback when REALM `/user/combat-traits` is unavailable.
+ * Avoids importing server-only shared.utils.api (dotenv/fs) into the Next bundle.
+ * Roughly mirrors shared combat formulas for select-screen display only.
+ */
 export function computeClientCombatTraits(gotchi: Aavegotchi | GotchiverseAavegotchi) {
-  const obj: Record<string, any> = { id: gotchi.id, socket: true };
-  applyTraitsAndWearables(obj, gotchi);
-  applyGotchiTraits(obj, true, 'citaadel');
+  const traits = gotchi.withSetsNumericTraits || [50, 50, 50, 50, 0, 0];
+  const nrg = Number(traits[0]) || 50;
+  const agg = Number(traits[1]) || 50;
+  const spk = Number(traits[2]) || 50;
+  const brn = Number(traits[3]) || 50;
+  const brs = Number(gotchi.withSetsRarityScore) || 0;
+
+  const maxHealth = Math.min(2500, Math.max(200, 500 + (50 - nrg) * 10 + Math.floor(brs / 20)));
+  const maxAP = Math.min(500, Math.max(50, 100 + (nrg - 50) * 2));
+  const defense = Math.max(0, Math.round(50 + (spk - 50) * 1.5));
+  const meleePower = Math.max(1, Math.round(20 + (agg - 50) * 0.8));
+  const rangedPower = Math.max(1, Math.round(20 + (brn - 50) * 0.8));
+  const evasion = Math.max(0, Number(((spk < 50 ? (50 - spk) * 0.002 : 0) + 0.05).toFixed(3)));
+  const attackSpeed = Math.max(0.5, Number((1 + Math.max(0, agg - 50) * 0.01).toFixed(2)));
+  const healthRegenAmount = Math.max(0, Number((1 + Math.max(0, 50 - spk) * 0.02).toFixed(2)));
+  const apRegenAmount = Math.max(0, Number((1 + Math.max(0, nrg - 50) * 0.02).toFixed(2)));
+  const alchemicaCarryingCapacity = Math.max(1, Math.round(100 + brs / 10));
+
   return {
-    maxHealth: obj.maxHealth,
-    maxAP: obj.maxAP,
-    healthRegenAmount: obj.healthRegenAmount,
-    apRegenAmount: obj.apRegenAmount,
-    alchemicaCarryingCapacity: obj.alchemicaCarryingCapacity,
-    evasion: obj.evasion,
-    meleePower: obj.meleePower,
-    rangedPower: obj.rangedPower,
-    defense: obj.defense,
-    attackSpeed: obj.attackSpeed,
-    luck: obj.luck,
-    wearableTraitBonuses: obj.wearableTraitBonuses,
+    maxHealth,
+    maxAP,
+    healthRegenAmount,
+    apRegenAmount,
+    alchemicaCarryingCapacity,
+    evasion,
+    meleePower,
+    rangedPower,
+    defense,
+    attackSpeed,
+    luck: Math.max(0, spk),
+    wearableTraitBonuses: {},
   };
 }
 
