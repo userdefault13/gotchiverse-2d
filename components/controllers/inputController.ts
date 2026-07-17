@@ -741,7 +741,7 @@ function handleExitBuildMode() {
     if (scene.buildInstallation) {
       Installations.toggleBrush();
       setActiveBrush(undefined, GlobalState.USER.dispatch);
-    } else if (Installations.buildModeState) {
+    } else if (Installations.buildModeState || GlobalState.UI?.state?.hud === 'BUILD') {
       void Installations.toggleBuildMode(false);
       SFXController.playFX('click');
     }

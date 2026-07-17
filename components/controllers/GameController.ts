@@ -248,9 +248,19 @@ async function socketConnect(
     const ownedNearSpawn = (GlobalState.REALM?.state?.ownedParcels || [])
       .map((p: { parcelId?: string; id?: string }) => p.parcelId || p.id)
       .filter((id: string | undefined): id is string => Boolean(id && String(id).charAt(0) === 'C'));
-    void colyseusLoadInstallations(
-      _.uniq([selectedSpawnLoc, scene.lastParcelCollisionId, ...ownedNearSpawn].filter(Boolean) as string[]),
+    const installTargets = _.uniq(
+      [selectedSpawnLoc, scene.lastParcelCollisionId, ...ownedNearSpawn].filter(Boolean) as string[],
     );
+    void colyseusLoadInstallations(installTargets).then(() => {
+      // Retry current/spawn parcel once provider + textures have settled.
+      const retryIds = _.uniq(
+        [selectedSpawnLoc, scene.lastParcelCollisionId].filter(Boolean) as string[],
+      );
+      if (!retryIds.length) return;
+      window.setTimeout(() => {
+        void colyseusLoadInstallations(retryIds, { force: true });
+      }, 1500);
+    });
 
     // Seed HUD traits so bars aren't "undefined / undefined"
     const defaultTraits = {

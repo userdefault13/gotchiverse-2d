@@ -85,6 +85,7 @@ import { fetchSubgraphParcelOwner } from 'shared_code/utils/shared.utils.parcel'
 import { throttleZoomResize } from './scenes/gameScene';
 import { isColyseusNetcode } from 'helpers/colyseus.client';
 import { postFocusStatus } from 'contexts/UIContexts/actions';
+import AssetsController from 'components/controllers/assetsController';
 
 const uiContainers: { marker? } = {};
 // let markerBtnContainer = null;
@@ -93,7 +94,7 @@ const USE_DUMMY = false;
 interface InstallationInterface {
   isActive: boolean;
   buildModeState: boolean;
-  createByIds: (ids: Id[], options?: CreateInstallationOptions) => void;
+  createByIds: (ids: Id[], options?: CreateInstallationOptions) => Promise<void>;
   toggleBrush: (installation?: InstallationTypeLocal) => void;
   updateBuildMarkerPosition: (pointer) => void;
   handleEquipUnequipMove: (installation: EquipUnequipMoveData, callMethod: 'equip' | 'unequip' | 'move') => void;
@@ -111,45 +112,45 @@ interface InstallationInterface {
 }
 
 // Create Destroy by ID
-const createByIds = (ids: InstallationIdNFT[], options?: CreateInstallationOptions) => {
-  if (ids?.length) {
-    _.each(ids, async ({ id, nft }) => {
-      if (!options?.isWaiting && scene.installationGroup.has(id) && !options?.isMove) return;
+const createByIds = async (ids: InstallationIdNFT[], options?: CreateInstallationOptions): Promise<void> => {
+  if (!ids?.length || !scene?.installationGroup) return;
 
-      const installationData = await getAllDataById(id);
+  await Promise.all(
+    ids.map(async ({ id, nft }) => {
+      try {
+        if (!options?.isWaiting && scene.installationGroup.has(id) && !options?.isMove) return;
 
-      if (!installationData) return;
-      // console.log('createId', id, scene.installationsWaiting);
-      // destroy and replace waiting installations
+        const installationData = await getAllDataById(id);
 
-      if (!options?.isWaiting && scene.installationsWaiting.has(id)) {
-        destroyByIds([{ id }], true);
-        if (!options?.isMove) handleEquipFX(installationData);
+        if (!installationData) return;
+        // destroy and replace waiting installations
+
+        if (!options?.isWaiting && scene.installationsWaiting.has(id)) {
+          destroyByIds([{ id }], true);
+          if (!options?.isMove) handleEquipFX(installationData);
+        }
+
+        // destroy upgrade on sync
+        if (options?.isWaiting && !options?.isMove) {
+          const upgrade = getLocalUpgrade(id);
+          if (upgrade) destroyByIds([{ id: upgrade }]);
+        }
+
+        const installation = await spawnSprite(installationData, options);
+        if (!installation) return;
+        if (installationData.typeData.type === 'INSTALLATION') SFXController.handleEquipSounds(id, installation.x, installation.y);
+        options?.isWaiting ? scene.installationsWaiting.set(id, installation) : scene.installationGroup.set(id, installation);
+        checkInstallationAnimations(id, true);
+
+        if (installationData.typeData.installationType === 5) {
+          // NFTDIsplay
+          await NFTDisplay.displayPhaserImage(nft, id);
+        }
+      } catch (e) {
+        console.warn('createByIds failed for', id, e);
       }
-
-      // destroy upgrade on sync
-      if (options?.isWaiting && !options?.isMove) {
-        const upgrade = getLocalUpgrade(id);
-        if (upgrade) destroyByIds([{ id: upgrade }]);
-      }
-
-      const installation = await spawnSprite(installationData, options);
-      if (installationData.typeData.type === 'INSTALLATION') SFXController.handleEquipSounds(id, installation.x, installation.y);
-      options?.isWaiting ? scene.installationsWaiting.set(id, installation) : scene.installationGroup.set(id, installation);
-      checkInstallationAnimations(id, true);
-
-      if (installationData.typeData.installationType === 5) {
-        // NFTDIsplay
-        await NFTDisplay.displayPhaserImage(nft, id);
-      }
-    });
-  }
-  // const nfts = _.filter(ids, 'nftId');
-  // // NFTDisplay
-  // for (let i = 0; i < nfts.length; i++) {
-  //   const { id, nftId } = nfts[i];
-  //   await NFTDisplay.displayPhaserImage(nftId, id);
-  // }
+    }),
+  );
 };
 
 const spawnSprite = async (installationData: InstallationMetadata, options?: CreateInstallationOptions) => {
@@ -165,6 +166,8 @@ const spawnSprite = async (installationData: InstallationMetadata, options?: Cre
 
   let installationImage;
   if (type === 'INSTALLATION') {
+    // Dynamic load may not have queued this sheet yet — ensure texture exists before spawn.
+    if (key) await AssetsController.checkLocalTexture(key);
     const offset = { x: jsonData?.offset?.x || 0, y: jsonData?.offset?.y || 0 };
     installationImage = scene.add
       .sprite((-width * GOTCHI_SIZE.UNIT) / 2 + offset.x, (-height * GOTCHI_SIZE.UNIT) / 2 + offset.y, key, frame)
@@ -868,6 +871,25 @@ const updatePlaceQueue = (id: string, action: 'EQUIP' | 'UNEQUIP' | 'CANCEL') =>
 };
 
 // INTERACT installation (channeling etc)
+/** Clear build-mode-only visuals so installs look normal in play mode. */
+const normalizePlayModeInstallations = () => {
+  if (!scene) return;
+
+  // Hide every build-mode button tray (not only the active install).
+  Object.keys(uiContainers).forEach((key) => {
+    if (key === 'marker') return;
+    uiContainers[key]?.setVisible?.(false);
+  });
+
+  scene.installationGroup?.forEach((container) => {
+    const sprite = container?.getByName?.('sprite');
+    if (sprite) {
+      scene.tweens?.killTweensOf?.(sprite);
+      if (typeof sprite.setAlpha === 'function') sprite.setAlpha(1);
+    }
+  });
+};
+
 const toggleBuildMode = async (state: boolean): Promise<boolean | string> => {
   throttleZoomResize();
   scene.scale.resize(scene.scale.gameSize.width, scene.scale.gameSize.height);
@@ -875,10 +897,9 @@ const toggleBuildMode = async (state: boolean): Promise<boolean | string> => {
   if (!state && scene) {
     if (scene.batchQueue.length) {
       // need to recreate the initial items
-      _.each(scene.batchQueue, (item) => {
-        if (item.action === 'UNEQUIP') createByIds([{ id: item.id }]);
-      });
+      const restore = scene.batchQueue.filter((item) => item.action === 'UNEQUIP').map((item) => ({ id: item.id }));
       destroyByIds(scene.batchQueue, true);
+      if (restore.length) await createByIds(restore);
     }
 
     // Promote non-batch waiting placeholders into normal play-mode installs.
@@ -891,7 +912,7 @@ const toggleBuildMode = async (state: boolean): Promise<boolean | string> => {
       });
       if (promote.length) {
         destroyByIds(promote, true);
-        createByIds(promote);
+        await createByIds(promote);
       }
     }
 
@@ -905,9 +926,12 @@ const toggleBuildMode = async (state: boolean): Promise<boolean | string> => {
 
     Installations.buildModeState = false;
     removeInstallationBuildModeUI(scene.activeInstallation);
-    // add back channelContainers
-    _.each(scene.buildModeInstallations, (id) => setChannelContainerState(id, true));
+    // add back channelContainers (copy ids — setChannelContainerState mutates the array)
+    const channelIds = [...(scene.buildModeInstallations || [])];
+    _.each(channelIds, (id) => setChannelContainerState(id, true));
     scene.batchQueue = [];
+    scene.buildModeInstallations = [];
+    normalizePlayModeInstallations();
     GlobalState.UI.dispatch({
       type: 'UPDATE_HUD',
       hud: 'PLAY',
@@ -919,6 +943,7 @@ const toggleBuildMode = async (state: boolean): Promise<boolean | string> => {
     if (GlobalState.UI.dispatch) {
       postFocusStatus(true, GlobalState.UI.dispatch);
     }
+    InputController.updateDisableKeyboard(false);
     return false;
   } else {
     Installations.buildModeState = true;
@@ -929,17 +954,23 @@ const toggleBuildMode = async (state: boolean): Promise<boolean | string> => {
         // test local installation sapawns, if installations are not there we need to resync.
         let inSync = true;
         const colyseus = isColyseusNetcode();
+        const missing: Array<{ id: string }> = [];
 
         scene.activeParcel.installations.forEach((id) => {
           if (!scene.installationGroup.has(id)) {
             console.log(`Installations out of sync  ${id}`);
             inSync = false;
-            // Colyseus has no legacy resync — spawn real installs, not waiting placeholders.
-            createByIds([{ id }], colyseus ? undefined : { isWaiting: true });
+            missing.push({ id });
           } else if (scene.installationGroup.has(id)) {
             setChannelContainerState(id, false);
           }
         });
+
+        if (missing.length) {
+          // Colyseus has no legacy resync — spawn real installs, not waiting placeholders.
+          await createByIds(missing, colyseus ? undefined : { isWaiting: true });
+        }
+
         const onLocal = getLocalInstallationsByParcelId(scene.activeParcel.id);
         if (onLocal.length !== scene.activeParcel.installations?.length) inSync = false;
 
@@ -1160,8 +1191,12 @@ const setActiveInstallation = async (id?: string): Promise<boolean> => {
 
 const setChannelContainerState = (id: string, state: boolean) => {
   if (!isAaltar(id)) return;
-  if (!state) scene.buildModeInstallations.push(id);
-  else scene.buildModeInstallations = _.remove(scene.buildModeInstallations, id);
+  if (!scene.buildModeInstallations) scene.buildModeInstallations = [];
+  if (!state) {
+    if (!scene.buildModeInstallations.includes(id)) scene.buildModeInstallations.push(id);
+  } else {
+    scene.buildModeInstallations = scene.buildModeInstallations.filter((item) => item !== id);
+  }
   const installationContainer = scene.installationGroup.get(id);
 
   const channelingContainer = installationContainer?.getByName ? installationContainer.getByName('channelingContainer') : undefined;

@@ -115,7 +115,14 @@ export function colyseusUpdateCurrentParcel(pixelX: number, pixelY: number): voi
   // Lazily hydrate installations when the player steps onto a new parcel.
   if (parcelId) {
     void import('helpers/colyseus.installations')
-      .then(({ colyseusLoadInstallations }) => colyseusLoadInstallations([parcelId]))
+      .then(({ colyseusLoadInstallations }) =>
+        colyseusLoadInstallations([parcelId]).then(() => {
+          // Retry once — covers web3 race and failed first fetches.
+          window.setTimeout(() => {
+            void colyseusLoadInstallations([parcelId]);
+          }, 1200);
+        }),
+      )
       .catch((e) => console.warn('Failed to load parcel installations', e));
   }
 }
