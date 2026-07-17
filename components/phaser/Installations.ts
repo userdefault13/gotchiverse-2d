@@ -1305,8 +1305,18 @@ const handleBatchEquip = async () => {
     };
 
     try {
+      if (!GlobalState.WEB3.state.ethersSigner || !GlobalState.WEB3.state.currentNetwork) {
+        throw new Error('Wallet not connected. Connect on Base and try Confirm again.');
+      }
+      if (!batchEquipContract.gotchiId && batchEquipContract.gotchiId !== 0) {
+        throw new Error('Missing gotchi id for batch equip.');
+      }
+      if (!batchEquipContract.realmId && batchEquipContract.realmId !== 0) {
+        throw new Error('Missing parcel token id for batch equip.');
+      }
+
       const tx = await batchEquipOnParcel(GlobalState.WEB3.state.ethersSigner, GlobalState.WEB3.state.currentNetwork, batchEquipContract);
-      if (tx) {
+      if (tx?.wait) {
         if (scene.batchQueue.length) {
           // remove x button
           _.each(scene.batchQueue, ({ id }) => {
@@ -1315,8 +1325,6 @@ const handleBatchEquip = async () => {
             delete uiContainers[`${id}-cancel`];
           });
         }
-      }
-      if (tx?.wait) {
         SFXController.playFX('send');
         const res = await tx.wait();
         // console.log('@batchEquip', res);
@@ -1330,17 +1338,14 @@ const handleBatchEquip = async () => {
           updateTransactionNotificationStatus(GlobalState.NOTIFICATION.dispatch, notificationId, 'success');
         }
       } else {
-        void toggleBuildMode(false);
         SFXController.playFX('oops');
         if (notificationId) updateTransactionNotificationStatus(GlobalState.NOTIFICATION.dispatch, notificationId, 'error', getErrMessage(tx));
+        // Keep build mode open so the player can adjust the queue and retry.
       }
     } catch (error) {
-      if (scene.batchQueue.length) {
-        _.each(scene.batchQueue, ({ id }) => updatePlaceQueue(id, 'CANCEL'));
-      }
-      void toggleBuildMode(false);
-
+      SFXController.playFX('oops');
       if (notificationId) updateTransactionNotificationStatus(GlobalState.NOTIFICATION.dispatch, notificationId, 'error', getErrMessage(error));
+      // Keep queue + build mode so a signature/wallet failure is not destructive.
     }
     // use consumers to listen for EquipInstallation events to equip it on server.
   } else SFXController.fadeIn('collisionSound');

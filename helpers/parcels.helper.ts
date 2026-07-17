@@ -410,6 +410,34 @@ export const mapInGotchiverseParcelData = async (parcels: ContractParcel[]): Pro
   return gotchiverseParcels;
 };
 
+/** Base migration recipes use empty `0x` signatures; Polygon still needs the REALM signer API. */
+const EMPTY_EQUIP_SIGNATURE = '0x';
+
+function usesEmptyEquipSignatures(network: NetworkNames): boolean {
+  return network === 'base';
+}
+
+function isBytesLikeSignature(value: unknown): value is string | Uint8Array {
+  if (typeof value === 'string') return value.startsWith('0x');
+  return value instanceof Uint8Array;
+}
+
+async function resolveEquipSignature(
+  network: NetworkNames,
+  installation: { parcelId: number; gotchiId: number; itemId: number; x: number; y: number },
+): Promise<string | Uint8Array> {
+  if (usesEmptyEquipSignatures(network)) {
+    return EMPTY_EQUIP_SIGNATURE;
+  }
+  const signature = await fetchEquipSigniture(installation);
+  if (!isBytesLikeSignature(signature)) {
+    throw new Error(
+      'Equip signature unavailable. The REALM signature API did not return a valid signature for this action.',
+    );
+  }
+  return signature;
+}
+
 export const equipUnequipOnParcel = async (
   signer: Signer,
   network: NetworkNames,
@@ -425,14 +453,10 @@ export const equipUnequipOnParcel = async (
     y: position.y,
   };
   try {
-    const signature = await fetchEquipSigniture(installation);
-    // console.log('equip signature', installation, signature);
-
-    if (signature) {
-      const gasPrice = (await gasPriceDict(signer)).gasPrice;
-      const tx = await realmDiamond[method](realmId, gotchiId, itemId, position.x, position.y, signature, { gasPrice });
-      return tx;
-    }
+    const signature = await resolveEquipSignature(network, installation);
+    const gasPrice = (await gasPriceDict(signer)).gasPrice;
+    const tx = await realmDiamond[method](realmId, gotchiId, itemId, position.x, position.y, signature, { gasPrice });
+    return tx;
   } catch (error) {
     return error;
   }
@@ -444,34 +468,35 @@ export const batchEquipOnParcel = async (signer: Signer, network: NetworkNames, 
   // const fixGrid = getFixGridStartPositions();
   // console.log('fixGrid', fixGrid);
   try {
-    // get all sig
-    const signature = await getMultipleSig(realmId, gotchiId);
-
-    if (signature) {
-      // const gasPrice = (await gasPriceDict(signer)).gasPrice;
-      const tx = await realmDiamond.batchEquip(realmId, gotchiId, batchData, signature);
-      return tx;
+    if (!scene?.batchQueue?.length) {
+      throw new Error('Nothing queued to equip. Place or remove installations first.');
     }
+    const signature = await getMultipleSig(network, realmId, gotchiId);
+    // const gasPrice = (await gasPriceDict(signer)).gasPrice;
+    const tx = await realmDiamond.batchEquip(realmId, gotchiId, batchData, signature);
+    return tx;
   } catch (error) {
     return error;
   }
 };
 
-const getMultipleSig = async (realmId, gotchiId) => {
+const getMultipleSig = async (network: NetworkNames, realmId, gotchiId) => {
   const signature = [];
 
   for (let i = 0; i < scene.batchQueue.length; i++) {
     const item = scene.batchQueue[i];
     const data = getInstallationDataById(item.id);
+    if (!data?.itemId && data?.itemId !== 0) {
+      throw new Error(`Missing installation data for queued item ${item.id}`);
+    }
     const installation = {
       parcelId: realmId,
       gotchiId,
-      itemId: data?.itemId,
+      itemId: data.itemId,
       x: data.relativePosisiton.x,
       y: data.relativePosisiton.y,
     };
-    const installationSig = await fetchEquipSigniture(installation);
-    signature.push(installationSig);
+    signature.push(await resolveEquipSignature(network, installation));
   }
   return signature;
 };

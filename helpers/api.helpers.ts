@@ -120,16 +120,49 @@ export async function fetchChannelSigniture(params) {
 }
 export async function fetchEquipSigniture(params) {
   try {
-    const r = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/realm/installation/signature/equip/get`, {
+    const { getRealmUrlSync, resolveRealmBaseUrl, realmFetchHeaders } = await import('helpers/realm.url');
+    let base = getRealmUrlSync();
+    if (!base) {
+      try {
+        base = await resolveRealmBaseUrl();
+      } catch {
+        base = String(process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
+      }
+    }
+    if (!base) {
+      console.warn('@fetchEquipSigniture: no REALM URL configured');
+      return undefined;
+    }
+
+    const response = await fetch(`${base}/realm/installation/signature/equip/get`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...realmFetchHeaders(base),
       },
       body: JSON.stringify(params),
-    })
-      .then(async (response) => await response.json())
-      .then((data) => Object.values(data));
-    return r;
+    });
+    if (!response.ok) {
+      console.warn('@fetchEquipSigniture: HTTP', response.status);
+      return undefined;
+    }
+    const data = await response.json();
+    // Prefer an explicit signature field; fall back to legacy Object.values payload.
+    if (typeof data?.signature === 'string' && data.signature.startsWith('0x')) {
+      return data.signature;
+    }
+    if (typeof data === 'string' && data.startsWith('0x')) {
+      return data;
+    }
+    const values = Object.values(data || {});
+    if (values.length === 1 && typeof values[0] === 'string' && values[0].startsWith('0x')) {
+      return values[0];
+    }
+    // Legacy polygon signer returned a byte-map / fragmented payload.
+    if (values.length > 1) {
+      return values as any;
+    }
+    return undefined;
   } catch (error) {
     console.log('@fetchEquipSigniture: err', error);
   }

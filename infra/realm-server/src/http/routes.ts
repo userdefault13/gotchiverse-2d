@@ -98,6 +98,31 @@ export function createHttpRouter(): Router {
   });
 
   /**
+   * Base migration: equip/unequip no longer requires a REALM backend signer.
+   * Return empty `0x` signatures so legacy FE clients that still call this
+   * endpoint can batchEquip without crashing.
+   */
+  router.post('/realm/installation/signature/equip/get', (req: Request, res: Response) => {
+    const { parcelId, gotchiId, itemId, x, y } = req.body || {};
+    if (
+      parcelId === undefined ||
+      gotchiId === undefined ||
+      itemId === undefined ||
+      x === undefined ||
+      y === undefined
+    ) {
+      res.status(400).json({ error: 'parcelId, gotchiId, itemId, x, y are required' });
+      return;
+    }
+    res.json({
+      signature: '0x',
+      network: 'base',
+      note: 'Empty signature for Base RealmDiamond equip/unequip',
+      data: { parcelId, gotchiId, itemId, x, y },
+    });
+  });
+
+  /**
    * Compatibility shim for the legacy FE socket lookup.
    * Returns Colyseus endpoint info instead of a raw zone WebSocket URL.
    */

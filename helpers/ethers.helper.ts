@@ -23,6 +23,10 @@ export function getErrMessage(tx): string {
       errMsg = 'Max parcel upgrades already in progress. Speed them up with GLTR or leverage Maaker installation.';
     } else if (errMsg.includes('invalid arrayify value')) {
       errMsg = 'Wrong Signature';
+    } else if (errMsg.includes("reading 'toHexString'") || errMsg.includes('toHexString')) {
+      errMsg = 'Equip signature missing. On Base, retry Confirm; otherwise the REALM signature API may be down.';
+    } else if (errMsg.includes('Equip signature unavailable')) {
+      errMsg = 'Equip signature unavailable. REALM signature API is not configured for this network.';
     }
   }
 
