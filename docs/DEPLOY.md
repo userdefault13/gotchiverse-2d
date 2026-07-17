@@ -47,22 +47,22 @@ Create a **new** Vercel project from `userdefault13/gotchiverse-2d`.
 - Install: `yarn install --frozen-lockfile`
 - Build: `yarn build`
 
-### Environment variables (Production + Preview)
+### Environment variables
 
-```bash
-APP_ENV=production
-REALM_NETWORK=base
-NETWORK=base
-ALCHEMICA_NETWORK=base
-NEXT_PUBLIC_NETCODE=colyseus
-NEXT_PUBLIC_API_URL=https://api.YOURDOMAIN
-NEXT_PUBLIC_COLYSEUS_URL=https://api.YOURDOMAIN
-NEXT_PUBLIC_CORE_SUBGRAPH_URL=https://api.goldsky.com/api/public/project_cmh3flagm0001r4p25foufjtt/subgraphs/aavegotchi-core-base/prod/gn
-NEXT_PUBLIC_GOTCHIVERSE_SUBGRAPH_URL=https://api.goldsky.com/api/public/project_cmh3flagm0001r4p25foufjtt/subgraphs/gotchiverse-base/prod/gn
-NEXT_PUBLIC_BASE_RPC=https://mainnet.base.org
-```
+Live project: `userdefault13s-projects/gotchiverse-2d` → https://gotchiverse-2d.vercel.app
 
-Prefer your Envio GraphQL proxy URLs when cut over. See also [vercel-env.example](./vercel-env.example).
+| Variable | Production | Preview | Development |
+|----------|------------|---------|-------------|
+| `APP_ENV` | `production` | `preview` | `local` |
+| `REALM_NETWORK` / `NETWORK` / `ALCHEMICA_NETWORK` | `base` | `base` | `base` |
+| `NEXT_PUBLIC_NETCODE` | `colyseus` | `colyseus` | `colyseus` |
+| `NEXT_PUBLIC_API_URL` | `https://realm.aarcadeghst.com` | same | `http://localhost:2567` |
+| `NEXT_PUBLIC_COLYSEUS_URL` | `https://realm.aarcadeghst.com` | same | `http://localhost:2567` |
+| `NEXT_PUBLIC_CORE_SUBGRAPH_URL` | Base Goldsky core | same | same |
+| `NEXT_PUBLIC_GOTCHIVERSE_SUBGRAPH_URL` | Base Goldsky gotchiverse | same | same |
+| `NEXT_PUBLIC_BASE_RPC` | `https://mainnet.base.org` | same | same |
+
+After the DO REALM host is up, point DNS for `realm.aarcadeghst.com` at the droplet and set CORS for `https://gotchiverse-2d.vercel.app` + `https://*.vercel.app`. See [vercel-env.example](./vercel-env.example).
 
 ## 3. Local full stack
 
