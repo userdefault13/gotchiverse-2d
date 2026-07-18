@@ -3,6 +3,7 @@ import Parcels from 'components/phaser/Parcels';
 import { scene } from 'components/controllers/SceneController';
 import GlobalState from 'contexts/GlobalState';
 import { PARCELS, PARCELS_BY_ID } from 'shared_code/models/model.realm';
+import { getDistrictIdByHoodPos, getHoodByPosition } from 'shared_code/utils/shared.utils.map';
 import { getActiveParcelCollision } from 'helpers/installations.helper';
 import { getParcelDataById, getParcelSpawnPixels } from 'helpers/parcels.helper';
 import { Parcel } from 'types';
@@ -72,6 +73,16 @@ export function colyseusSeedParcels(pixelX: number, pixelY: number, force = fals
   lastSeedTileY = tileY;
 }
 
+function districtFromPixels(pixelX: number, pixelY: number): number | undefined {
+  try {
+    const hood = getHoodByPosition(pixelX, pixelY);
+    const id = getDistrictIdByHoodPos(hood.x, hood.y);
+    return id != null ? Number(id) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /** Resolve current parcel under the player and update REALM + scene collision id. */
 export function colyseusUpdateCurrentParcel(pixelX: number, pixelY: number): void {
   if (!scene) return;
@@ -99,12 +110,19 @@ export function colyseusUpdateCurrentParcel(pixelX: number, pixelY: number): voi
   }
 
   const parcelId = hit?.id;
+  const meta = parcelId ? PARCELS_BY_ID[parcelId] : undefined;
+  const district = meta?.district != null ? Number(meta.district) : districtFromPixels(pixelX, pixelY);
+
+  if (district != null && GlobalState.REALM?.state?.currentDistrict !== district) {
+    GlobalState.REALM.dispatch({ type: 'UPDATE_CURRENT_DISTRICT', currentDistrict: district });
+  }
+
   if (parcelId === lastCollisionParcelId) return;
   lastCollisionParcelId = parcelId;
 
   let currentParcel = null;
-  if (parcelId && PARCELS_BY_ID[parcelId]) {
-    currentParcel = _.pick(PARCELS_BY_ID[parcelId], ['tokenId', 'parcelHash', 'owner']);
+  if (parcelId && meta) {
+    currentParcel = _.pick(meta, ['tokenId', 'parcelHash', 'owner', 'district']);
     const ownedMatch = owned.find((p) => p.parcelId === parcelId || p.id === parcelId) as Parcel & { owner?: string };
     if (ownedMatch?.owner) _.assign(currentParcel, { owner: ownedMatch.owner });
   }

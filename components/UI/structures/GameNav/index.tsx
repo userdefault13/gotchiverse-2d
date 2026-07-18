@@ -22,6 +22,7 @@ import { useEffect, useState } from 'react';
 import styles from './styles';
 import { smartTrim } from 'helpers/ethers.helper';
 import { MAP_ID_CITAADEL } from 'shared_code/constants/const.game';
+import { PARCELS_BY_TOKEN_ID } from 'shared_code/models/model.realm';
 
 export const GameNav = (): JSX.Element => {
   const [{ selectedPlayer, isAavegotchiLent, escrow, currentDistrict, currentParcel }] = useRealm();
@@ -178,17 +179,23 @@ export const GameNav = (): JSX.Element => {
         </div>
         {GameController.MAP === MAP_ID_CITAADEL && (
           <div className="location-info">
-            {!currentParcel && (
-              <div className="flex justify-between align-center">
-                <span className="purple"> District {currentDistrict}</span>
-                <div className="position flex ">
-                  <Image alt="" src={PinIcon} />
-                  <span className="global-pos">
-                    {playerPosition.x}, {playerPosition.y}
-                  </span>
-                </div>
+            <div className="flex justify-between align-center location-row">
+              <span className="purple">
+                District{' '}
+                {currentDistrict ??
+                  (currentParcel?.tokenId != null
+                    ? PARCELS_BY_TOKEN_ID[String(currentParcel.tokenId)]?.district ??
+                      PARCELS_BY_TOKEN_ID[Number(currentParcel.tokenId)]?.district
+                    : undefined) ??
+                  '—'}
+              </span>
+              <div className="position flex">
+                <Image alt="" src={PinIcon} />
+                <span className="global-pos">
+                  {playerPosition.x}, {playerPosition.y}
+                </span>
               </div>
-            )}
+            </div>
 
             {currentParcel && (
               <div className="parcel-info">

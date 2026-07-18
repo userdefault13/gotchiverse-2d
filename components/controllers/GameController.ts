@@ -746,7 +746,10 @@ async function socketConnect(
           if (data?.parcel?.type) {
             currentParcel = PARCELS_BY_ID[data.parcel.id];
             if (data.parcel.owner && currentParcel) _.assign(currentParcel, { owner: data.parcel.owner });
-            if (currentParcel) currentParcel = _.pick(currentParcel, ['tokenId', 'parcelHash', 'owner']);
+            if (currentParcel?.district != null) {
+              GlobalState.REALM.dispatch({ type: 'UPDATE_CURRENT_DISTRICT', currentDistrict: Number(currentParcel.district) });
+            }
+            if (currentParcel) currentParcel = _.pick(currentParcel, ['tokenId', 'parcelHash', 'owner', 'district']);
           }
 
           GlobalState.REALM.dispatch({ type: 'UPDATE_CURRENT_PARCEL', currentParcel });

@@ -178,6 +178,12 @@ export default css`
     color: white;
     font-weight: bold;
     line-height: 0.9;
+    margin-top: 0.4rem;
+  }
+
+  .location-row {
+    width: 100%;
+    gap: 0.4rem;
   }
 
   .super-chat-toggle {
