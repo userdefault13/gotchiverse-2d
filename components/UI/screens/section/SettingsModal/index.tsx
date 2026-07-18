@@ -123,6 +123,13 @@ export const SettingsModal = ({ open, onClose }: Props): JSX.Element => {
             <AlertBox
               icon={VerifyIcon}
               href={aarcadeConnectUrl}
+              handleClick={() => {
+                if (!currentAccount) {
+                  window.open('https://aarcadeghst.com', '_blank', 'noopener,noreferrer');
+                  return;
+                }
+                window.open(aarcadeConnectUrl, '_blank', 'noopener,noreferrer');
+              }}
               title="Connect Discord on Aarcade"
               message="Link Discord on Aarcade and join the Aavegotchi server to unlock features"
               type="warning"

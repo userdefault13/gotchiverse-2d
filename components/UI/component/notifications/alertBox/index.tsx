@@ -10,9 +10,11 @@ interface Props extends Omit<Notification, 'type'> {
   icon?: string;
   href?: string;
   handleClick?: () => void;
+  /** Open href in a new tab (default true when href is set). */
+  openInNewTab?: boolean;
 }
 
-export const AlertBox = ({ type, title, message, icon, href, handleClick }: Props): JSX.Element => {
+export const AlertBox = ({ type, title, message, icon, href, handleClick, openInNewTab = true }: Props): JSX.Element => {
   const renderIcon = () => {
     switch (type) {
       case 'info':
@@ -26,15 +28,49 @@ export const AlertBox = ({ type, title, message, icon, href, handleClick }: Prop
     }
   };
 
+  const openHref = () => {
+    if (!href) return;
+    if (openInNewTab) {
+      window.open(href, '_blank', 'noopener,noreferrer');
+    } else {
+      window.location.assign(href);
+    }
+  };
+
+  const onActivate = (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    if (handleClick) {
+      handleClick();
+      return;
+    }
+    openHref();
+  };
+
   return (
     <>
-      <div className={`toast-container ${type}`}>
+      <div
+        className={`toast-container ${type} ${(href || handleClick) ? 'clickable' : ''}`}
+        onClick={href || handleClick ? onActivate : undefined}
+        onKeyDown={(e) => {
+          if (!(href || handleClick)) return;
+          if (e.key === 'Enter' || e.key === ' ') onActivate();
+        }}
+        role={href || handleClick ? 'link' : undefined}
+        tabIndex={href || handleClick ? 0 : undefined}
+      >
         <div className="toast-inner">
           {type === 'pending' ? <Loader size={0.3} /> : <Image alt="" src={icon || renderIcon()} height={32} width={32} />}
           <div className="content-container">
             {(href || handleClick) && (
-              <div className="flex items-center gap-2" onClick={() => (handleClick ? handleClick() : null)}>
-                <a className="title" href={href || '#'}>
+              <div className="flex items-center gap-2">
+                <a
+                  className="title"
+                  href={href || '#'}
+                  target={openInNewTab ? '_blank' : undefined}
+                  rel={openInNewTab ? 'noreferrer' : undefined}
+                  onClick={onActivate}
+                >
                   {title}
                 </a>
                 <PopupIcon />
