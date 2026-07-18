@@ -74,7 +74,7 @@ const PhaserGameLoader = (props: PhaserGameLoaderProps) => {
   // Wait until everything has loaded to load the initial scene
   if (gameConfig) {
     return (
-      <div id="pahserGameLoader" className="fixed" style={{ height, top, width: '100vw' }}>
+      <div id="pahserGameLoader" className="fixed" style={{ height, top, width: '100vw', zIndex: 0 }}>
         <IonPhaserComponent
           // @ts-ignore */
           game={gameConfig.game}

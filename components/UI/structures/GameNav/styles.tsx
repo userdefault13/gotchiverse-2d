@@ -3,12 +3,16 @@ import css from 'styled-jsx/css';
 export default css`
   .game-nav-component {
     height: 5rem;
-    position: absolute;
+    position: fixed;
+    top: 0;
+    left: 0;
     width: 100%;
     border-bottom: 2px solid var(--col-purple-300);
     display: flex;
     justify-content: space-between;
-    z-index: 100;
+    /* Above Phaser canvas (fixed, full viewport) */
+    z-index: 10000;
+    pointer-events: auto;
   }
 
   .content {

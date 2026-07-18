@@ -8,13 +8,14 @@ import { WalletActivity } from 'components/UI/component';
 import { TippingManager } from 'components/UI/component/alchemica/tippingManager';
 import { TokenManager } from 'components/UI/component/alchemica/tokenManager';
 import { ToggleIcon } from 'components/UI/elements';
-import { GotchiPocket, QuitGameModal, SettingsMenu, WalletToggle } from 'components/UI/hud/components';
+import { GotchiPocket, SettingsMenu, WalletToggle } from 'components/UI/hud/components';
 import { useGame } from 'contexts/GameContext';
 import { usePhaser } from 'contexts/PhaserContext';
 import { useRealm } from 'contexts/RealmContext';
 import { useUI } from 'contexts/UIContexts';
 import { useWeb3 } from 'contexts/Web3Context';
 import { blockPropagation } from 'helpers/functions';
+import { performLogOut } from 'helpers/logout.helper';
 import useAavegotchiSound from 'hooks/useAavegotchiSound';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
@@ -34,7 +35,6 @@ export const GameNav = (): JSX.Element => {
   const [{ inMenu, exitArenaModal }, uiDispatch] = useUI();
   const [tippingManager, setTippingManagerOpen] = useState(false);
   const [manageTokensOpen, setManageTokensOpen] = useState(false);
-  const [quitGameModalOpen, setQuitGameModalOpen] = useState(false);
 
   const [tokenManageMode, setTokenManageMode] = useState<'TRANSFER' | 'ACTIVITY'>('TRANSFER');
 
@@ -62,9 +62,30 @@ export const GameNav = (): JSX.Element => {
   const toggleMode = () => {
     setTokenManageMode(tokenManageMode === 'TRANSFER' ? 'ACTIVITY' : 'TRANSFER');
   };
+  const handleLogOut = (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    try {
+      click();
+    } catch {
+      // ignore SFX errors
+    }
+    if (exitArenaModal.open) return;
+    if (GameController.MAP === 'aarena' && selectedPlayer && !selectedPlayer.isSpectator) {
+      uiDispatch({
+        type: 'UPDATE_EXIT_ARENA_MODAL',
+        exitArenaModal: {
+          open: true,
+          isDead: false,
+        },
+      });
+      return;
+    }
+    performLogOut();
+  };
+
   return (
     <>
-      <QuitGameModal open={quitGameModalOpen} onClose={() => setQuitGameModalOpen(false)} />
       <div className="game-nav-component gradient-purple-simple">
         <div className="content alchemica">
           {/* <div className="logo-wrapper">
@@ -136,26 +157,11 @@ export const GameNav = (): JSX.Element => {
             className="icon-toggle flex-c-c clickable logout-btn"
             title="Log out"
             aria-label="Log out"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              click();
-              if (exitArenaModal.open) return;
-              if (GameController.MAP === 'aarena' && selectedPlayer && !selectedPlayer.isSpectator) {
-                uiDispatch({
-                  type: 'UPDATE_EXIT_ARENA_MODAL',
-                  exitArenaModal: {
-                    open: true,
-                    isDead: false,
-                  },
-                });
-                return;
-              }
-              setQuitGameModalOpen(true);
-            }}
+            onClick={handleLogOut}
             onMouseDown={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
           >
-            <Image alt="" src={ExitIcon} width={30} height={30} />
+            <Image alt="" src={ExitIcon} width={30} height={30} style={{ pointerEvents: 'none' }} />
           </button>
         </div>
       </div>
