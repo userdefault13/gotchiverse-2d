@@ -3,12 +3,13 @@ import styles from './styles';
 import { useSettings } from 'contexts/SettingsContext';
 import { updateSetting } from 'contexts/SettingsContext/actions';
 import { GraphicSettingAction, InputSettingsAction, SoundSettingAction } from 'contexts/SettingsContext/reducer';
-import { oauthLink } from 'helpers/auth.helper';
+import { getAarcadeDiscordConnectUrl, getAarcadeProfileUrl } from 'helpers/auth.helper';
 import { VerifyIcon } from 'assets';
 import { AlertBox } from 'components/UI/component';
 import { Radio, Toggle } from 'components/UI/elements';
 import { useUser } from 'contexts/UserContext';
 import { useGame } from 'contexts/GameContext';
+import { useWeb3 } from 'contexts/Web3Context';
 import type { CombatControlScheme } from 'types/phaser';
 
 interface Props {
@@ -19,7 +20,11 @@ interface Props {
 export const SettingsModal = ({ open, onClose }: Props): JSX.Element => {
   const [{ gameConfig }] = useGame();
   const [{ isVerified }] = useUser();
+  const [{ currentAccount }] = useWeb3();
+  const aarcadeConnectUrl = getAarcadeDiscordConnectUrl(currentAccount);
+  const aarcadeProfileUrl = getAarcadeProfileUrl(currentAccount);
   const [
+
     {
       allowAnimatedTiles,
       allowPlayerAnimation,
@@ -94,14 +99,6 @@ export const SettingsModal = ({ open, onClose }: Props): JSX.Element => {
     },
   ];
 
-  const handleUnverify = () => {
-    localStorage.setItem('oauth', 'UNLINK');
-  };
-
-  const handleVerify = () => {
-    localStorage.setItem('oauth', 'VERIFY');
-  };
-
   return (
     <Modal open={open} title="Settings" onClose={onClose} secondaryColor>
       <div className={`settings-container ${gameConfig.gotchiverseTheme}`}>
@@ -111,9 +108,13 @@ export const SettingsModal = ({ open, onClose }: Props): JSX.Element => {
           )}
           {isVerified && (
             <>
-              <AlertBox title="Verified" message="Your account has been verified on Discord" type="success" />
-              <a onClick={handleUnverify} href={oauthLink}>
-                Disconnect
+              <AlertBox
+                title="Verified"
+                message="Your wallet is linked on Aarcade and you are in the Aavegotchi Discord"
+                type="success"
+              />
+              <a href={aarcadeProfileUrl} target="_blank" rel="noreferrer">
+                Manage on Aarcade
               </a>
             </>
           )}
@@ -121,10 +122,9 @@ export const SettingsModal = ({ open, onClose }: Props): JSX.Element => {
           {!isVerified && isVerified !== undefined && (
             <AlertBox
               icon={VerifyIcon}
-              href={oauthLink}
-              handleClick={handleVerify}
-              title="Sign in with Discord"
-              message="Verify your account and get access to all features"
+              href={aarcadeConnectUrl}
+              title="Connect Discord on Aarcade"
+              message="Link Discord on Aarcade and join the Aavegotchi server to unlock features"
               type="warning"
             />
           )}

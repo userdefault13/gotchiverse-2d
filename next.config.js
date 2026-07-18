@@ -54,6 +54,7 @@ const moduleExports = {
     INFURA_ID: process.env.INFURA_ID,
     VENLY_CLIENT_ID: process.env.VENLY_CLIENT_ID,
     OAUTH_LINK: process.env.OAUTH_LINK,
+    NEXT_PUBLIC_AARCADE_HOME: process.env.NEXT_PUBLIC_AARCADE_HOME,
 
     // Analytics
     ARCX_API_KEY: process.env.ARCX_API_KEY,

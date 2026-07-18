@@ -1,6 +1,26 @@
 import { toast } from 'react-toastify';
 import Router from 'next/router';
+
+/** @deprecated Prefer Aarcade Discord connect — kept for legacy callback routes. */
 export const oauthLink = process.env.OAUTH_LINK;
+
+const AARCADE_HOME = (process.env.NEXT_PUBLIC_AARCADE_HOME || 'https://aarcadeghst.com').replace(/\/$/, '');
+
+/** Open Aarcade profile Discord OAuth (wallet must be linked there). */
+export const getAarcadeDiscordConnectUrl = (wallet?: string): string => {
+  const address = String(wallet || '').trim();
+  if (!address) return `${AARCADE_HOME}`;
+  const returnTo = `/player/${address}`;
+  return `${AARCADE_HOME}/api/profile-discord-oauth/start?wallet=${encodeURIComponent(address)}&returnTo=${encodeURIComponent(
+    returnTo,
+  )}`;
+};
+
+export const getAarcadeProfileUrl = (wallet?: string): string => {
+  const address = String(wallet || '').trim();
+  if (!address) return AARCADE_HOME;
+  return `${AARCADE_HOME}/player/${address}`;
+};
 
 export const postAuthUnlink = async (code: string | string[]): Promise<boolean> => {
   try {
@@ -70,12 +90,23 @@ export const postAuthValidation = async (address: string, code: string | string[
   }
 };
 
+/**
+ * Check Aarcade verification (discordLinked && inAavegotchiGuild)
+ * via Gotchiverse server proxy — secret never reaches the browser.
+ */
 export const getIsValidated = async (address: string): Promise<boolean> => {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/discord/isvalidated?address=${address}`);
-    const data = response.status === 200 && (await response.json());
-    return Boolean(data);
+    if (!address) return false;
+    const response = await fetch(`/api/aarcade-verify?wallet=${encodeURIComponent(address)}`, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+      cache: 'no-store',
+    });
+    if (!response.ok) return false;
+    const data = await response.json();
+    return Boolean(data?.verified);
   } catch (err) {
+    console.warn('getIsValidated failed', err);
     return false;
   }
 };
