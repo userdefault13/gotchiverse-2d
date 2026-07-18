@@ -70,4 +70,13 @@ export default css`
     grid-column-gap: 5rem;
     grid-row-gap: 1.2rem;
   }
+
+  .empty-recipes {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 4rem 1rem;
+    font-size: 2.4rem;
+    color: var(--col-pink-200);
+    opacity: 0.85;
+  }
 `;

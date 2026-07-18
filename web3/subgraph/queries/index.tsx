@@ -236,6 +236,7 @@ export const getTileTypes = (name: string): string => {
         craftTime
         tileType
         deprecated
+        deprecatedAt
       }
     }
   `;
