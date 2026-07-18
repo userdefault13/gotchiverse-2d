@@ -66,6 +66,7 @@ import {
 } from 'helpers/colyseus.parcels';
 import {
   colyseusLoadInstallations,
+  colyseusPreloadNearbyInstallations,
   colyseusResetInstallationSync,
 } from 'helpers/colyseus.installations';
 import { NFTDisplay } from 'components/phaser/NFTDisplay';
@@ -246,12 +247,18 @@ async function socketConnect(
     colyseusUpdateCurrentParcel(spawn.x, spawn.y);
 
     // Colyseus has no AOI installation payloads — hydrate from Base contract grids.
+    // Prefetch nearby parcels first so collisions exist before the player walks onto them.
     const ownedNearSpawn = (GlobalState.REALM?.state?.ownedParcels || [])
       .map((p: { parcelId?: string; id?: string }) => p.parcelId || p.id)
       .filter((id: string | undefined): id is string => Boolean(id && String(id).charAt(0) === 'C'));
     const installTargets = _.uniq(
       [selectedSpawnLoc, scene.lastParcelCollisionId, ...ownedNearSpawn].filter(Boolean) as string[],
     );
+    colyseusPreloadNearbyInstallations(spawn.x, spawn.y, {
+      force: true,
+      prioritize: selectedSpawnLoc || scene.lastParcelCollisionId,
+      maxParcels: 20,
+    });
     void colyseusLoadInstallations(installTargets).then(() => {
       // Retry current/spawn parcel once provider + textures have settled.
       const retryIds = _.uniq(
@@ -260,6 +267,7 @@ async function socketConnect(
       if (!retryIds.length) return;
       window.setTimeout(() => {
         void colyseusLoadInstallations(retryIds, { force: true });
+        colyseusPreloadNearbyInstallations(spawn.x, spawn.y, { force: true });
       }, 1500);
     });
 

@@ -130,17 +130,18 @@ export function colyseusUpdateCurrentParcel(pixelX: number, pixelY: number): voi
   GlobalState.REALM.dispatch({ type: 'UPDATE_CURRENT_PARCEL', currentParcel });
   scene.lastParcelCollisionId = parcelId;
 
-  // Lazily hydrate installations when the player steps onto a new parcel.
+  // Safety net: ensure the parcel underfoot is queued (nearby preload usually beats this).
   if (parcelId) {
     void import('helpers/colyseus.installations')
-      .then(({ colyseusLoadInstallations }) =>
-        colyseusLoadInstallations([parcelId]).then(() => {
+      .then(({ colyseusLoadInstallations, colyseusPreloadNearbyInstallations }) => {
+        colyseusPreloadNearbyInstallations(pixelX, pixelY, { prioritize: parcelId });
+        return colyseusLoadInstallations([parcelId]).then(() => {
           // Retry once — covers web3 race and failed first fetches.
           window.setTimeout(() => {
             void colyseusLoadInstallations([parcelId]);
           }, 1200);
-        }),
-      )
+        });
+      })
       .catch((e) => console.warn('Failed to load parcel installations', e));
   }
 }

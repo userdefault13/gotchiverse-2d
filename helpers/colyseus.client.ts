@@ -5,6 +5,7 @@ import { scene as phaserScene } from 'components/controllers/SceneController';
 import { SelectedPlayer } from 'types';
 import { resolveColyseusMove } from 'helpers/colyseus.collisions';
 import { colyseusSeedParcels, colyseusUpdateCurrentParcel } from 'helpers/colyseus.parcels';
+import { colyseusPreloadNearbyInstallations } from 'helpers/colyseus.installations';
 import { getParcelSpawnPixels } from 'helpers/parcels.helper';
 import { getRealmUrlSync, resolveRealmBaseUrl } from 'helpers/realm.url';
 import { toggleFollowGotchi } from 'helpers/phaser.helper';
@@ -216,6 +217,7 @@ function tickKeyMove() {
   applyLocalPosition(resolved.x, resolved.y, keyDirection, true);
   colyseusSeedParcels(resolved.x, resolved.y);
   colyseusUpdateCurrentParcel(resolved.x, resolved.y);
+  colyseusPreloadNearbyInstallations(resolved.x, resolved.y);
 
   const now = Date.now();
   // Send a bit less often than the render tick to stay under server rate limits.
@@ -313,7 +315,25 @@ export function colyseusSendMove(x: number, y: number): void {
   applyLocalPosition(x, y);
   colyseusSeedParcels(x, y);
   colyseusUpdateCurrentParcel(x, y);
+  colyseusPreloadNearbyInstallations(x, y);
   room.send('move', { x: Math.round(x), y: Math.round(y) });
+}
+
+/**
+ * If installations just spawned under the local player, slide to the nearest free tile.
+ * Prevents the classic "walk onto empty parcel → solids load → trapped" soft-lock.
+ */
+export function colyseusNudgeIfTrapped(): void {
+  if (!room) return;
+  const sprite = getLocalSprite();
+  if (!sprite) return;
+  if (!resolveColyseusMove(sprite.x, sprite.y, sprite.x, sprite.y).blocked) return;
+
+  const spot = freeTeleportSpot(sprite.x, sprite.y);
+  if (spot.x === sprite.x && spot.y === sprite.y) return;
+
+  applyLocalPosition(spot.x, spot.y, undefined, true);
+  room.send('move', { x: Math.round(spot.x), y: Math.round(spot.y) });
 }
 
 function freeTeleportSpot(centerX: number, centerY: number): { x: number; y: number } {
@@ -364,8 +384,14 @@ export async function colyseusTeleportToParcel(parcelId: string): Promise<boolea
   colyseusUpdateCurrentParcel(spawn.x, spawn.y);
 
   try {
-    const { colyseusLoadInstallations } = await import('helpers/colyseus.installations');
+    const { colyseusLoadInstallations, colyseusPreloadNearbyInstallations } = await import(
+      'helpers/colyseus.installations'
+    );
     await colyseusLoadInstallations([parcelId], { force: true });
+    colyseusPreloadNearbyInstallations(spawn.x, spawn.y, {
+      force: true,
+      prioritize: parcelId,
+    });
   } catch (e) {
     console.warn('colyseusTeleportToParcel: install hydrate failed', e);
   }
