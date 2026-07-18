@@ -14,20 +14,21 @@ import { getParceIdByTokenId } from 'shared_code/utils/shared.utils.parcel';
 import { GotchiverseParcel, Parcel } from 'types';
 
 const toGotchiverseParcel = (parcel: Parcel): GotchiverseParcel => {
-  const parcelId = parcel.parcelId || (String(parcel.id || '').charAt(0) === 'C' ? String(parcel.id) : undefined);
+  const asAny = parcel as Parcel & Partial<GotchiverseParcel>;
+  const parcelId = asAny.parcelId || (String(asAny.id || '').charAt(0) === 'C' ? String(asAny.id) : undefined);
   const meta =
-    (parcel.tokenId != null && (PARCELS_BY_TOKEN_ID[String(parcel.tokenId)] || PARCELS_BY_TOKEN_ID[Number(parcel.tokenId)])) ||
+    (asAny.tokenId != null && (PARCELS_BY_TOKEN_ID[String(asAny.tokenId)] || PARCELS_BY_TOKEN_ID[Number(asAny.tokenId)])) ||
     (parcelId && PARCELS_BY_ID[parcelId]) ||
     undefined;
-  const tokenId = String(parcel.tokenId ?? meta?.tokenId ?? '');
+  const tokenId = String(asAny.tokenId ?? meta?.tokenId ?? '');
   return {
-    ...(parcel as unknown as GotchiverseParcel),
-    id: tokenId || parcel.id,
+    ...asAny,
+    id: tokenId || asAny.id,
     tokenId: tokenId || undefined,
     parcelId: parcelId || meta?.parcelId,
-    parcelHash: parcel.parcelHash || meta?.parcelHash,
-    district: (parcel as GotchiverseParcel).district ?? meta?.district,
-    owner: parcel.owner,
+    parcelHash: asAny.parcelHash || meta?.parcelHash,
+    district: asAny.district ?? meta?.district,
+    owner: asAny.owner,
   };
 };
 
