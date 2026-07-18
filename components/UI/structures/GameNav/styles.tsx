@@ -62,6 +62,17 @@ export default css`
     height: 100%;
   }
 
+  .logout-btn {
+    appearance: none;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: url('/cursors/pointer.png'), pointer;
+  }
+
   .settings-menu-container {
     margin: 0 0.5rem;
   }

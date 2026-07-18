@@ -3,9 +3,9 @@ import { Modal } from 'components/UI/component';
 import { Button } from 'components/UI/elements';
 import { useUserWalletDataContext } from 'components/utility/WalletConnect';
 import { useGame } from 'contexts/GameContext';
+import { useRealm } from 'contexts/RealmContext';
 import { colyseusDisconnect, isColyseusNetcode } from 'helpers/colyseus.client';
 import useAavegotchiSound from 'hooks/useAavegotchiSound';
-import Router from 'next/router';
 import { useEffect } from 'react';
 import styles from './styles';
 
@@ -16,6 +16,7 @@ interface Props {
 
 export const QuitGameModal = ({ open, onClose }: Props): JSX.Element => {
   const [{ gameConfig }] = useGame();
+  const [, realmDispatch] = useRealm();
   const { back } = useAavegotchiSound();
   const { disconnectWallet } = useUserWalletDataContext();
 
@@ -36,8 +37,24 @@ export const QuitGameModal = ({ open, onClose }: Props): JSX.Element => {
     try {
       localStorage.removeItem('selectedPlayer');
       localStorage.removeItem('gotchiExtras');
+      localStorage.removeItem('selectedAccount');
+      localStorage.removeItem('currentProvider');
     } catch {
       // ignore storage errors
+    }
+
+    try {
+      realmDispatch({
+        type: 'UPDATE_SELECTED_PLAYER',
+        selectedPlayer: undefined,
+        gotchiUrl: undefined,
+        backgroundColor: undefined,
+        isAavegotchiLent: undefined,
+        escrow: undefined,
+        ownedParcels: undefined,
+      });
+    } catch (err) {
+      console.warn('QuitGameModal: clear selected player failed', err);
     }
 
     try {
@@ -46,8 +63,8 @@ export const QuitGameModal = ({ open, onClose }: Props): JSX.Element => {
       console.warn('QuitGameModal: wallet disconnect failed', err);
     }
 
-    // Prefer push('/') over back() — play is often opened with replace/empty history.
-    void Router.push('/');
+    // Hard navigate so Phaser / socket teardown cannot block leaving play.
+    window.location.href = '/';
   };
 
   return (

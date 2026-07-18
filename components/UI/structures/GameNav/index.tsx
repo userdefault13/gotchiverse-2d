@@ -131,10 +131,14 @@ export const GameNav = (): JSX.Element => {
           <div className="settings-menu-container flex-c-c">
             <SettingsMenu />
           </div>
-          <div
-            className="icon-toggle flex-c-c clickable"
+          <button
+            type="button"
+            className="icon-toggle flex-c-c clickable logout-btn"
             title="Log out"
-            onClick={() => {
+            aria-label="Log out"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
               click();
               if (exitArenaModal.open) return;
               if (GameController.MAP === 'aarena' && selectedPlayer && !selectedPlayer.isSpectator) {
@@ -149,9 +153,10 @@ export const GameNav = (): JSX.Element => {
               }
               setQuitGameModalOpen(true);
             }}
+            onMouseDown={(e) => e.stopPropagation()}
           >
             <Image alt="" src={ExitIcon} width={30} height={30} />
-          </div>
+          </button>
         </div>
       </div>
       <div className={`minimap-container ${toggleMinimap ? 'show' : 'hidden'}`} onClick={blockPropagation} onMouseDown={blockPropagation}>

@@ -65,7 +65,13 @@ export const ModalWrapper = ({
   if (!open) return <></>;
   return (
     <Portal>
-      <div className={`overlay ${light ? 'light' : ''}`} onClick={() => !hideClose && handleClick} onMouseDown={(e) => e.stopPropagation()}>
+      <div
+        className={`overlay ${light ? 'light' : ''}`}
+        onClick={(e) => {
+          if (!hideClose) handleClick(e);
+        }}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
         {isHalloween && <Image alt="" src={SpiderWebDark} layout="fill" />}
         <div
           className="panel-wrapper"
