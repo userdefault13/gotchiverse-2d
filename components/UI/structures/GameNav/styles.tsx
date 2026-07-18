@@ -70,11 +70,17 @@ export default css`
     appearance: none;
     background: transparent;
     border: 0;
-    padding: 0;
+    padding: 0 0.6rem;
+    min-width: 4.4rem;
+    min-height: 4.4rem;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: url('/cursors/pointer.png'), pointer;
+    position: relative;
+    z-index: 10001;
+    pointer-events: auto;
+    isolation: isolate;
   }
 
   .settings-menu-container {

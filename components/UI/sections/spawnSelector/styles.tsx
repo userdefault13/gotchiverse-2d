@@ -3,7 +3,7 @@ import css from 'styled-jsx/css';
 export default css`
   .overlay {
     position: fixed;
-    z-index: 1000;
+    z-index: 200000;
     top: 0;
     right: 0;
     left: 0;

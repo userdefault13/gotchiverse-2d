@@ -28,8 +28,9 @@ const PhaserGameLoader = (props: PhaserGameLoaderProps) => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const Phaser = require('phaser');
     setPhaser(Phaser);
-    setHeight(`${GameController.MAP === 'aarena' ? 'calc(100vh - 5rem)' : '100vh'}`);
-    setTop(`${GameController.MAP === 'aarena' ? '5rem' : '0rem'}`);
+    // Keep the Phaser canvas below the fixed GameNav so HUD controls stay clickable.
+    setHeight('calc(100vh - 5rem)');
+    setTop('5rem');
   }, []);
 
   useEffect(() => {
