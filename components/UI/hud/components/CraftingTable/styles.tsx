@@ -38,6 +38,9 @@ export default css`
     margin-top: 3.2rem;
     display: flex;
     justify-content: space-between;
+    align-items: center;
+    position: relative;
+    z-index: 4;
   }
 
   .crafting-table-container.loading .anvil-container {
@@ -46,26 +49,33 @@ export default css`
 
   .glitter-container {
     position: absolute;
-    bottom: 20rem;
+    bottom: 12rem;
     left: 50%;
     transform: translateX(-50%);
     z-index: 2;
   }
   .anvil-img {
     position: absolute;
-    max-height: 20rem;
-    width: 47rem;
-    bottom: 0;
+    max-height: 12rem;
+    width: 21.4rem;
+    bottom: 0.4rem;
     left: 50%;
     transform: translateX(-50%);
     z-index: 1;
+    pointer-events: none;
+  }
+
+  .anvil-img :global(img) {
+    width: 100% !important;
+    height: auto !important;
+    object-fit: contain;
   }
 
   .ready-container {
     position: absolute;
     left: 50%;
     transform: translate(-50%);
-    bottom: 18rem;
+    bottom: 11rem;
     width: 19rem;
     z-index: 3;
   }

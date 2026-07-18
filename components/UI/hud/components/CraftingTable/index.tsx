@@ -291,7 +291,7 @@ export const CraftingTable = ({ open, onClose }: Props): JSX.Element => {
               <CraftingGlitter show={crafting} />
             </div>
             <span className="anvil-img">
-              <Image alt="" src={AnvilImage} height={200} width={468} />
+              <Image alt="" src={AnvilImage} height={120} width={214} />
             </span>
             {selectedRecipe && (
               <div className="ready-container">
