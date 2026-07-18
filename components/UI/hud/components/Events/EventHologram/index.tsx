@@ -98,6 +98,17 @@ export const EventHologram = (): JSX.Element => {
     });
   };
 
+  const openTravelParcels = () => {
+    uiDispatch({
+      type: 'UPDATE_TRAVEL_PARCELS_MODAL',
+      travelParcelsModal: { open: true },
+    });
+    uiDispatch({
+      type: 'UPDATE_EVENT_HOLOGRAM',
+      eventHologramState: { open: false, installationId: undefined },
+    });
+  };
+
   const actionButtons = (
     <div className="btn-wrapper">
       {isOwned && (
@@ -113,7 +124,7 @@ export const EventHologram = (): JSX.Element => {
         </Button>
       </div>
       <div className="cta">
-        <Button size={1.6} color="info" onClick={() => openEventsList('Travel to Bounce Gate')}>
+        <Button size={1.6} color="info" onClick={openTravelParcels}>
           Travel
         </Button>
       </div>

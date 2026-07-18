@@ -1,6 +1,7 @@
 export * from './SideTray';
 export * from './AccessRightsModal';
 export * from './Events/ActiveEventsModal';
+export * from './Events/TravelParcelsModal';
 export * from './CarriedAlchemicaPanel';
 export * from './ChatBox';
 export * from './ChatBar';
