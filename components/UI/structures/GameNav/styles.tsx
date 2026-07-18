@@ -136,7 +136,7 @@ export default css`
     position: absolute;
     top: 6.9rem;
     width: 200px;
-    height: 202px;
+    height: 200px;
     left: 10px;
   }
 

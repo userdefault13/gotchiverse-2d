@@ -140,10 +140,8 @@ export const getGameScene = (type: SceneType, loadedCallback: () => void) => {
 
       this.scale.on('resize', function () {
         throttleZoomResize();
-        if (scene.minimapCam && GameController.MAP === 'citaadel') {
-          // adjust minimap position
-          const ypos = Number(window.innerWidth) > 1400 ? 70 : 60;
-          scene.minimapCam?.setPosition(scene.minimapCam.x, ypos);
+        if (scene.minimapCam) {
+          MapController.syncMinimapViewport();
         }
       });
     },

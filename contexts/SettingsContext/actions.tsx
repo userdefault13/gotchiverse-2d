@@ -18,7 +18,7 @@ export const fetchLocalSettings = (dispatch: React.Dispatch<Action>): void => {
     const value = window.localStorage.getItem(key.replace('UPDATE_', ''));
 
     if (value !== null) {
-      const action = getAction(key, ['TURE', 'FALSE'].includes(value) ? value === 'TRUE' : value);
+      const action = getAction(key, ['TRUE', 'FALSE'].includes(value) ? value === 'TRUE' : value);
 
       dispatch(action);
     }

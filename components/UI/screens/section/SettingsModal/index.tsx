@@ -13,6 +13,7 @@ import { useWeb3 } from 'contexts/Web3Context';
 import type { CombatControlScheme } from 'types/phaser';
 import { useEffect, useState } from 'react';
 import GlobalState from 'contexts/GlobalState';
+import SFXController from 'components/controllers/SFXController';
 
 interface Props {
   open: boolean;
@@ -197,7 +198,18 @@ export const SettingsModal = ({ open, onClose }: Props): JSX.Element => {
                       <p>{item.name}</p>
                       <Toggle
                         checked={item.value}
-                        onChange={() => updateSetting({ type: item.action, value: !item.value }, dispatch)}
+                        onChange={() => {
+                          // Sound toggles must also start/stop Phaser audio (flag-only left music silent).
+                          if (item.action === 'UPDATE_ALLOW_MUSIC') {
+                            SFXController.toggleSettings('MUSIC');
+                            return;
+                          }
+                          if (item.action === 'UPDATE_ALLOW_SOUND') {
+                            SFXController.toggleSettings('FX');
+                            return;
+                          }
+                          updateSetting({ type: item.action, value: !item.value }, dispatch);
+                        }}
                         useTheme={true}
                         color="purple"
                       />

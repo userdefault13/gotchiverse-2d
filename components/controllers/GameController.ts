@@ -302,6 +302,15 @@ async function socketConnect(
       type: 'UPDATE_CONNECTED',
       connected: true,
     });
+
+    // Legacy zone sockets start music in onopen; Colyseus has no onopen — start BGM here.
+    SFXController.musicPlay(
+      GlobalState.GAME.state.gameConfig.miniGameRoundActive
+        ? MinigameController.getMusicTheme()
+        : SFXController.getDefaultMusicTheme(),
+    );
+    SFXController.ensureMusicUnlocked();
+
     return;
   }
 
