@@ -9,6 +9,11 @@ import { colyseusPreloadNearbyInstallations } from 'helpers/colyseus.installatio
 import { getParcelSpawnPixels } from 'helpers/parcels.helper';
 import { getRealmUrlSync, resolveRealmBaseUrl } from 'helpers/realm.url';
 import { toggleFollowGotchi } from 'helpers/phaser.helper';
+import { getColyseusMap, setColyseusMap } from 'helpers/colyseus.map';
+
+function isCitaadelMap(): boolean {
+  return getColyseusMap() !== 'aarena';
+}
 
 type RemotePlayer = {
   sessionId: string;
@@ -215,9 +220,11 @@ function tickKeyMove() {
   if (resolved.blocked) return;
 
   applyLocalPosition(resolved.x, resolved.y, keyDirection, true);
-  colyseusSeedParcels(resolved.x, resolved.y);
-  colyseusUpdateCurrentParcel(resolved.x, resolved.y);
-  colyseusPreloadNearbyInstallations(resolved.x, resolved.y);
+  if (isCitaadelMap()) {
+    colyseusSeedParcels(resolved.x, resolved.y);
+    colyseusUpdateCurrentParcel(resolved.x, resolved.y);
+    colyseusPreloadNearbyInstallations(resolved.x, resolved.y);
+  }
 
   const now = Date.now();
   // Send a bit less often than the render tick to stay under server rate limits.
@@ -246,7 +253,7 @@ export function colyseusHandleKeyMove(direction: string, sprint = false): void {
 
 export async function colyseusConnect(
   selectedPlayer: SelectedPlayer,
-  opts?: { spawnLocId?: string },
+  opts?: { spawnLocId?: string; map?: 'citaadel' | 'aarena' },
 ): Promise<boolean> {
   const token = selectedPlayer.authToken || (typeof localStorage !== 'undefined' ? localStorage.getItem('authToken') : null);
   if (!token) {
@@ -278,16 +285,19 @@ export async function colyseusConnect(
     console.warn('REALM URL resolve failed before Colyseus join', e);
   }
   client = new Client(endpoint());
+  const roomName: 'citaadel' | 'aarena' = opts?.map === 'aarena' ? 'aarena' : 'citaadel';
+  setColyseusMap(roomName);
   try {
     const joinOpts: Record<string, string> = {
       token,
       gotchiId: String(selectedPlayer.id),
       name: selectedPlayer.name || `Gotchi #${selectedPlayer.id}`,
     };
-    if (opts?.spawnLocId) {
+    // Parcel spawn is citaadel-only; aarena uses server SPAWN_BOUNDS.
+    if (roomName === 'citaadel' && opts?.spawnLocId) {
       joinOpts.spawnLocId = opts.spawnLocId;
     }
-    room = await client.joinOrCreate('citaadel', joinOpts);
+    room = await client.joinOrCreate(roomName, joinOpts);
     bindRoomHandlers(room);
     setConnected(true);
 
@@ -313,9 +323,11 @@ export function colyseusSendMove(x: number, y: number): void {
   if (resolveColyseusMove(x, y, x, y).blocked) return;
 
   applyLocalPosition(x, y);
-  colyseusSeedParcels(x, y);
-  colyseusUpdateCurrentParcel(x, y);
-  colyseusPreloadNearbyInstallations(x, y);
+  if (isCitaadelMap()) {
+    colyseusSeedParcels(x, y);
+    colyseusUpdateCurrentParcel(x, y);
+    colyseusPreloadNearbyInstallations(x, y);
+  }
   room.send('move', { x: Math.round(x), y: Math.round(y) });
 }
 
@@ -427,6 +439,7 @@ export function colyseusDisconnect(): void {
     room.leave(true).catch(() => undefined);
     room = null;
   }
+  setColyseusMap('citaadel');
   setConnected(false);
 }
 

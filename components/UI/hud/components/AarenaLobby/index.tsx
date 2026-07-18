@@ -7,6 +7,7 @@ import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import styles from './styles';
 import { useUI } from 'contexts/UIContexts';
+import { isColyseusNetcode } from 'helpers/colyseus.client';
 
 export const AarenaLobby = (): JSX.Element => {
   const winningConditions = ['Defeat at least 1 gotchi', 'Survive for at least 3 minutes'];
@@ -30,7 +31,10 @@ export const AarenaLobby = (): JSX.Element => {
   }, [aarenaQueue]);
 
   const closeLobby = () => {
-    GameController.sendData('game-actions', 'spawn-player', null);
+    // Colyseus MVP: player is already spawned on join — just dismiss the lobby.
+    if (!isColyseusNetcode()) {
+      GameController.sendData('game-actions', 'spawn-player', null);
+    }
     realmDispatch({
       type: 'UPDATE_AARENA_QUEUE',
       aarenaQueue: { state: false },

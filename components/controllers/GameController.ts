@@ -46,7 +46,12 @@ import { createTestBodies, getDefaultCameraSettings, getGroupMemberById, toggleU
 import { toast } from 'react-toastify';
 import { binarySchemas, decode, decodeSchemaName } from 'shared_code/utils/shared.utils.binary';
 import _ from 'lodash';
-import { MAP_ID_CITAADEL, DEFAULT_GOTCHI_PROPERTIES } from 'shared_code/constants/const.game';
+import {
+  MAP_ID_CITAADEL,
+  MAP_ID_AARENA,
+  DEFAULT_GOTCHI_PROPERTIES,
+  MAP_CONFIG_BY_ID,
+} from 'shared_code/constants/const.game';
 import { handleChatEvent, unsubscribeToChatChannels } from 'contexts/ChatContext/actions';
 import {
   colyseusConnect,
@@ -209,8 +214,10 @@ async function socketConnect(
 
   // Walkable MVP: Colyseus room instead of legacy zone WebSocket protocol
   if (isColyseusNetcode()) {
-    const selectedSpawnLoc = spawnId && spawnId.charAt(0) === 'C' ? spawnId : undefined;
-    const ok = await colyseusConnect(selectedPlayer, { spawnLocId: selectedSpawnLoc });
+    const map = GameController.MAP === 'aarena' ? 'aarena' : 'citaadel';
+    const selectedSpawnLoc =
+      map === 'citaadel' && spawnId && spawnId.charAt(0) === 'C' ? spawnId : undefined;
+    const ok = await colyseusConnect(selectedPlayer, { spawnLocId: selectedSpawnLoc, map });
     if (!ok) {
       handleToastNotification({
         message: 'Ruh roh, error connecting to the portal. Try refreshing your browser to try again.',
@@ -219,9 +226,24 @@ async function socketConnect(
       });
       return;
     }
-    // Prefer selected parcel center; then server spawn; then default band.
-    const parcelSpawn = colyseusSpawnFromSelectedParcel(selectedSpawnLoc);
-    const spawn = parcelSpawn || colyseusLocalSpawn() || { x: 42 * 64 + 10 * 64, y: 52 * 64 + 10 * 64 };
+
+    const aarenaBounds = (MAP_CONFIG_BY_ID as Record<string, { SPAWN_BOUNDS?: { left: number; right: number; top: number; bottom: number } }>)[
+      MAP_ID_AARENA
+    ]?.SPAWN_BOUNDS;
+    const aarenaFallback =
+      aarenaBounds != null
+        ? {
+            x: Math.round((aarenaBounds.left + aarenaBounds.right) / 2),
+            y: Math.round((aarenaBounds.top + aarenaBounds.bottom) / 2),
+          }
+        : { x: 4096, y: 4096 };
+
+    // Prefer selected parcel (citaadel); then server spawn; then map default.
+    const parcelSpawn = map === 'citaadel' ? colyseusSpawnFromSelectedParcel(selectedSpawnLoc) : null;
+    const spawn =
+      parcelSpawn ||
+      colyseusLocalSpawn() ||
+      (map === 'aarena' ? aarenaFallback : { x: 42 * 64 + 10 * 64, y: 52 * 64 + 10 * 64 });
     try {
       await Players.onPlayerSocketInit({
         id: selectedPlayer.id,
@@ -241,35 +263,35 @@ async function socketConnect(
       colyseusSendMove(parcelSpawn.x, parcelSpawn.y);
     }
 
-    colyseusResetParcelSync();
-    colyseusResetInstallationSync();
-    colyseusSeedParcels(spawn.x, spawn.y, true);
-    colyseusUpdateCurrentParcel(spawn.x, spawn.y);
+    if (map === 'citaadel') {
+      colyseusResetParcelSync();
+      colyseusResetInstallationSync();
+      colyseusSeedParcels(spawn.x, spawn.y, true);
+      colyseusUpdateCurrentParcel(spawn.x, spawn.y);
 
-    // Colyseus has no AOI installation payloads — hydrate from Base contract grids.
-    // Prefetch nearby parcels first so collisions exist before the player walks onto them.
-    const ownedNearSpawn = (GlobalState.REALM?.state?.ownedParcels || [])
-      .map((p: { parcelId?: string; id?: string }) => p.parcelId || p.id)
-      .filter((id: string | undefined): id is string => Boolean(id && String(id).charAt(0) === 'C'));
-    const installTargets = _.uniq(
-      [selectedSpawnLoc, scene.lastParcelCollisionId, ...ownedNearSpawn].filter(Boolean) as string[],
-    );
-    colyseusPreloadNearbyInstallations(spawn.x, spawn.y, {
-      force: true,
-      prioritize: selectedSpawnLoc || scene.lastParcelCollisionId,
-      maxParcels: 20,
-    });
-    void colyseusLoadInstallations(installTargets).then(() => {
-      // Retry current/spawn parcel once provider + textures have settled.
-      const retryIds = _.uniq(
-        [selectedSpawnLoc, scene.lastParcelCollisionId].filter(Boolean) as string[],
+      // Colyseus has no AOI installation payloads — hydrate from Base contract grids.
+      const ownedNearSpawn = (GlobalState.REALM?.state?.ownedParcels || [])
+        .map((p: { parcelId?: string; id?: string }) => p.parcelId || p.id)
+        .filter((id: string | undefined): id is string => Boolean(id && String(id).charAt(0) === 'C'));
+      const installTargets = _.uniq(
+        [selectedSpawnLoc, scene.lastParcelCollisionId, ...ownedNearSpawn].filter(Boolean) as string[],
       );
-      if (!retryIds.length) return;
-      window.setTimeout(() => {
-        void colyseusLoadInstallations(retryIds, { force: true });
-        colyseusPreloadNearbyInstallations(spawn.x, spawn.y, { force: true });
-      }, 1500);
-    });
+      colyseusPreloadNearbyInstallations(spawn.x, spawn.y, {
+        force: true,
+        prioritize: selectedSpawnLoc || scene.lastParcelCollisionId,
+        maxParcels: 20,
+      });
+      void colyseusLoadInstallations(installTargets).then(() => {
+        const retryIds = _.uniq(
+          [selectedSpawnLoc, scene.lastParcelCollisionId].filter(Boolean) as string[],
+        );
+        if (!retryIds.length) return;
+        window.setTimeout(() => {
+          void colyseusLoadInstallations(retryIds, { force: true });
+          colyseusPreloadNearbyInstallations(spawn.x, spawn.y, { force: true });
+        }, 1500);
+      });
+    }
 
     // Seed HUD traits so bars aren't "undefined / undefined"
     const defaultTraits = {
@@ -302,6 +324,18 @@ async function socketConnect(
       type: 'UPDATE_CONNECTED',
       connected: true,
     });
+    GlobalState.PHASER.dispatch({
+      type: 'UPDATE_SOCKET_CONNECTED',
+      socketConnected: true,
+    });
+
+    // Simple ENTER NOW lobby (no real queue) — use 'approved' so ENTER NOW is shown.
+    if (map === 'aarena') {
+      GlobalState.REALM.dispatch({
+        type: 'UPDATE_AARENA_QUEUE',
+        aarenaQueue: { state: true, status: 'approved' },
+      });
+    }
 
     // Legacy zone sockets start music in onopen; Colyseus has no onopen — start BGM here.
     SFXController.musicPlay(

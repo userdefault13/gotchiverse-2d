@@ -84,7 +84,7 @@ export const getGameScene = (type: SceneType, loadedCallback: () => void) => {
       });
 
       await AssetsController.loadPlugins();
-      await AssetsController.loadMap('citaadel');
+      await AssetsController.loadMap(type);
       await AssetsController.loadExtra();
       await AssetsController.startDynamicLoad();
 

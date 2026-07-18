@@ -21,10 +21,12 @@ export function createHttpRouter(): Router {
     res.json({
       data: {
         requireMetaMaskSign: true,
-        maps: ['citaadel'],
+        maps: ['citaadel', 'aarena'],
         netcode: 'colyseus',
         colyseusUrl: env.publicUrl,
         roomName: 'citaadel',
+        // Keep false until AarenaRoom is deployed and join is verified, then flip true.
+        combatIsLive: env.combatIsLive,
       },
     });
   });
@@ -148,11 +150,12 @@ export function createHttpRouter(): Router {
     const owner = String(req.query.owner || '');
     const gotchi = String(req.query.gotchi || '');
     const map = String(req.query.map || 'citaadel');
+    const roomName = map === 'aarena' ? 'aarena' : 'citaadel';
 
     res.json({
       socketUrl: env.publicUrl,
-      id: 'citaadel-0',
-      roomName: map === 'aarena' ? 'citaadel' : 'citaadel',
+      id: `${roomName}-0`,
+      roomName,
       netcode: 'colyseus',
       owner,
       gotchi,

@@ -1,8 +1,17 @@
 import { scene } from 'components/controllers/SceneController';
-import { GOTCHI_SIZE } from 'shared_code/constants/const.game';
+import { GOTCHI_SIZE, TILE_SIZE } from 'shared_code/constants/const.game';
 import { getInstallationIdDataById } from 'shared_code/utils/shared.utils.installations';
+import aarenaBlocksJSON from 'shared_code/data/maps/aarena/collisions/blocks.json';
+import aarenaHazardBlocksJSON from 'shared_code/data/maps/aarena/collisions/hazardBlocks.json';
+import { isColyseusAarenaMap } from 'helpers/colyseus.map';
 
 type Rect = { left: number; top: number; right: number; bottom: number };
+
+type CollisionBlock = {
+  type?: string;
+  position?: { x?: number; y?: number };
+  dimensions?: { width?: number; height?: number };
+};
 
 function playerRect(x: number, y: number): Rect {
   const halfW = GOTCHI_SIZE.WIDTH / 2;
@@ -56,13 +65,56 @@ function installationBlockers(): Rect[] {
   return out;
 }
 
+/** Match shared_code parseCollisionsFile tile → pixel AABB (center-based). */
+function tileBlockToRect(block: CollisionBlock): Rect | null {
+  const x = Number(block?.position?.x);
+  const y = Number(block?.position?.y);
+  const w = Number(block?.dimensions?.width);
+  const h = Number(block?.dimensions?.height);
+  if (![x, y, w, h].every(Number.isFinite) || w <= 0 || h <= 0) return null;
+
+  const inset = 2;
+  const px = x * TILE_SIZE;
+  const py = y * TILE_SIZE;
+  const width = w * TILE_SIZE;
+  const height = h * TILE_SIZE;
+  return {
+    left: px + inset,
+    top: py + inset,
+    right: px + width - inset,
+    bottom: py + height - inset,
+  };
+}
+
+let aarenaBlockersCache: Rect[] | null = null;
+
+function aarenaStaticBlockers(): Rect[] {
+  if (aarenaBlockersCache) return aarenaBlockersCache;
+
+  const sources = [
+    ...(Array.isArray(aarenaBlocksJSON) ? aarenaBlocksJSON : []),
+    ...(Array.isArray(aarenaHazardBlocksJSON) ? aarenaHazardBlocksJSON : []),
+  ] as CollisionBlock[];
+
+  aarenaBlockersCache = sources.map(tileBlockToRect).filter((r): r is Rect => Boolean(r));
+  return aarenaBlockersCache;
+}
+
+function collectBlockers(): Rect[] {
+  if (isColyseusAarenaMap()) {
+    return aarenaStaticBlockers();
+  }
+  return installationBlockers();
+}
+
 function isBlocked(x: number, y: number, blockers: Rect[]): boolean {
   const player = playerRect(x, y);
   return blockers.some((blocker) => overlaps(player, blocker));
 }
 
 /**
- * Resolve a proposed Colyseus move against solid installations.
+ * Resolve a proposed Colyseus move against solid installations (citaadel)
+ * or static aarena wall/block AABBs.
  * Supports simple axis sliding so players can walk along walls.
  */
 export function resolveColyseusMove(
@@ -71,7 +123,7 @@ export function resolveColyseusMove(
   toX: number,
   toY: number,
 ): { x: number; y: number; blocked: boolean } {
-  const blockers = installationBlockers();
+  const blockers = collectBlockers();
   if (!blockers.length) {
     return { x: toX, y: toY, blocked: false };
   }

@@ -157,7 +157,14 @@ export const LandingScreen = (): JSX.Element => {
       gameDispatch({
         type: 'UPDATE_GAME_CONFIG',
         // Keep portal open for Colyseus MVP even if server omits isLive.
-        gameConfig: { isLive: true, ...gameConfig },
+        // Explicitly pass combatIsLive so JoinAarena unlocks when BFF flips it.
+        gameConfig: {
+          isLive: true,
+          ...gameConfig,
+          ...(typeof (gameConfig as { combatIsLive?: boolean }).combatIsLive === 'boolean'
+            ? { combatIsLive: (gameConfig as { combatIsLive: boolean }).combatIsLive }
+            : {}),
+        },
       });
     } catch (err) {
       console.error('@updateGameConfig:API error: ', err);
