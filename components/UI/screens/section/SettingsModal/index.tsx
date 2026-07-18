@@ -3,7 +3,7 @@ import styles from './styles';
 import { useSettings } from 'contexts/SettingsContext';
 import { updateSetting } from 'contexts/SettingsContext/actions';
 import { GraphicSettingAction, InputSettingsAction, SoundSettingAction } from 'contexts/SettingsContext/reducer';
-import { getAarcadeDiscordConnectUrl, getAarcadeProfileUrl } from 'helpers/auth.helper';
+import { getAarcadeDiscordConnectUrl, getAarcadeProfileUrl, getAarcadeVerifyStatus } from 'helpers/auth.helper';
 import { VerifyIcon } from 'assets';
 import { AlertBox } from 'components/UI/component';
 import { Radio, Toggle } from 'components/UI/elements';
@@ -11,6 +11,8 @@ import { useUser } from 'contexts/UserContext';
 import { useGame } from 'contexts/GameContext';
 import { useWeb3 } from 'contexts/Web3Context';
 import type { CombatControlScheme } from 'types/phaser';
+import { useEffect, useState } from 'react';
+import GlobalState from 'contexts/GlobalState';
 
 interface Props {
   open: boolean;
@@ -19,10 +21,51 @@ interface Props {
 
 export const SettingsModal = ({ open, onClose }: Props): JSX.Element => {
   const [{ gameConfig }] = useGame();
-  const [{ isVerified }] = useUser();
+  const [{ isVerified }, userDispatch] = useUser();
   const [{ currentAccount }] = useWeb3();
+  const [verifyDetail, setVerifyDetail] = useState<{ discordLinked: boolean; inGuild: boolean } | null>(null);
+  const [checking, setChecking] = useState(false);
   const aarcadeConnectUrl = getAarcadeDiscordConnectUrl(currentAccount);
   const aarcadeProfileUrl = getAarcadeProfileUrl(currentAccount);
+
+  const refreshVerification = async () => {
+    if (!currentAccount) return;
+    // Skip real checks in local/dev (matches LandingScreen).
+    if (!process.env.APP_ENV || process.env.APP_ENV === 'local' || process.env.APP_ENV === 'alpha' || process.env.APP_ENV === 'development') {
+      userDispatch({ type: 'UPDATE_USER_IS_VERIFIED', isVerified: true });
+      GlobalState.USER?.dispatch?.({ type: 'UPDATE_USER_IS_VERIFIED', isVerified: true });
+      return;
+    }
+    setChecking(true);
+    try {
+      const status = await getAarcadeVerifyStatus(currentAccount, { fresh: true });
+      const verified = Boolean(status?.verified);
+      setVerifyDetail(
+        status
+          ? { discordLinked: status.discordLinked, inGuild: status.inAavegotchiGuild }
+          : null,
+      );
+      userDispatch({ type: 'UPDATE_USER_IS_VERIFIED', isVerified: verified });
+      GlobalState.USER?.dispatch?.({ type: 'UPDATE_USER_IS_VERIFIED', isVerified: verified });
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!open || !currentAccount) return;
+    void refreshVerification();
+  }, [open, currentAccount]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onFocus = () => {
+      void refreshVerification();
+    };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [open, currentAccount]);
+
   const [
 
     {
@@ -103,10 +146,10 @@ export const SettingsModal = ({ open, onClose }: Props): JSX.Element => {
     <Modal open={open} title="Settings" onClose={onClose} secondaryColor>
       <div className={`settings-container ${gameConfig.gotchiverseTheme}`}>
         <div className="auth pt-10">
-          {isVerified === undefined && (
-            <AlertBox title="Checking verification" message="Verify your account and get access to all features" type="pending" />
+          {(isVerified === undefined || checking) && (
+            <AlertBox title="Checking verification" message="Checking Aarcade Discord link and Aavegotchi guild membership…" type="pending" />
           )}
-          {isVerified && (
+          {!checking && isVerified && (
             <>
               <AlertBox
                 title="Verified"
@@ -119,7 +162,7 @@ export const SettingsModal = ({ open, onClose }: Props): JSX.Element => {
             </>
           )}
 
-          {!isVerified && isVerified !== undefined && (
+          {!checking && !isVerified && isVerified !== undefined && (
             <AlertBox
               icon={VerifyIcon}
               href={aarcadeConnectUrl}
@@ -130,8 +173,12 @@ export const SettingsModal = ({ open, onClose }: Props): JSX.Element => {
                 }
                 window.open(aarcadeConnectUrl, '_blank', 'noopener,noreferrer');
               }}
-              title="Connect Discord on Aarcade"
-              message="Link Discord on Aarcade and join the Aavegotchi server to unlock features"
+              title={verifyDetail?.discordLinked ? 'Join Aavegotchi Discord' : 'Connect Discord on Aarcade'}
+              message={
+                verifyDetail?.discordLinked && !verifyDetail?.inGuild
+                  ? 'Discord is linked on Aarcade, but you are not in the Aavegotchi server yet (or the verify bot is not invited). Join the server, then return here — Settings refreshes when this window is focused.'
+                  : 'Opens Discord authorize. Scroll to the bottom → Authorize. Then return to this tab; Settings will refresh automatically.'
+              }
               type="warning"
             />
           )}

@@ -46,8 +46,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(503).json({ error: 'Verification not configured', verified: false });
   }
 
+  const fresh = String(req.query.fresh || '') === '1' || String(req.query.fresh || '') === 'true';
   const cached = cache.get(wallet);
-  if (cached && cached.expiresAt > Date.now()) {
+  if (!fresh && cached && cached.expiresAt > Date.now()) {
     return res.status(200).json(cached.body);
   }
 

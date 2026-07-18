@@ -10,7 +10,8 @@ const AARCADE_HOME = (process.env.NEXT_PUBLIC_AARCADE_HOME || 'https://aarcadegh
 export const getAarcadeDiscordConnectUrl = (wallet?: string): string => {
   const address = String(wallet || '').trim();
   if (!address) return `${AARCADE_HOME}`;
-  const returnTo = `/player/${address}`;
+  // Aarcade only accepts relative returnTo paths on aarcadeghst.com.
+  const returnTo = `/player/${address}?discord=linked`;
   return `${AARCADE_HOME}/api/profile-discord-oauth/start?wallet=${encodeURIComponent(address)}&returnTo=${encodeURIComponent(
     returnTo,
   )}`;
@@ -90,23 +91,47 @@ export const postAuthValidation = async (address: string, code: string | string[
   }
 };
 
+export type AarcadeVerifyStatus = {
+  verified: boolean;
+  discordLinked: boolean;
+  inAavegotchiGuild: boolean;
+  checkedAt?: string | null;
+  stale?: boolean;
+};
+
 /**
  * Check Aarcade verification (discordLinked && inAavegotchiGuild)
  * via Gotchiverse server proxy — secret never reaches the browser.
  */
-export const getIsValidated = async (address: string): Promise<boolean> => {
+export const getAarcadeVerifyStatus = async (
+  address: string,
+  opts?: { fresh?: boolean },
+): Promise<AarcadeVerifyStatus | null> => {
   try {
-    if (!address) return false;
-    const response = await fetch(`/api/aarcade-verify?wallet=${encodeURIComponent(address)}`, {
+    if (!address) return null;
+    const qs = new URLSearchParams({ wallet: address });
+    if (opts?.fresh) qs.set('fresh', '1');
+    const response = await fetch(`/api/aarcade-verify?${qs.toString()}`, {
       method: 'GET',
       headers: { Accept: 'application/json' },
       cache: 'no-store',
     });
-    if (!response.ok) return false;
+    if (!response.ok) return null;
     const data = await response.json();
-    return Boolean(data?.verified);
+    return {
+      verified: Boolean(data?.verified),
+      discordLinked: Boolean(data?.discordLinked),
+      inAavegotchiGuild: Boolean(data?.inAavegotchiGuild),
+      checkedAt: data?.checkedAt ?? null,
+      stale: Boolean(data?.stale),
+    };
   } catch (err) {
-    console.warn('getIsValidated failed', err);
-    return false;
+    console.warn('getAarcadeVerifyStatus failed', err);
+    return null;
   }
+};
+
+export const getIsValidated = async (address: string, opts?: { fresh?: boolean }): Promise<boolean> => {
+  const status = await getAarcadeVerifyStatus(address, opts);
+  return Boolean(status?.verified);
 };
