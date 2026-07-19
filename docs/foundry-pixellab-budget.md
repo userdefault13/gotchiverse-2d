@@ -2,38 +2,32 @@
 
 Hard cap: **500** images (API generations).
 
-API images used: 0
+API images used: 18
 
-## Local placeholders (do not count)
-
-Procedural 64×64 / 32×32 PNG sheets generated into:
-
-- `public/animations/spritesheets/foundry/`
-- `public/animations/installations/foundry/`
-
-These cover demo-critical wild nodes, antennas, receiver, machines, link-breaker, and UI icons until `PIXELLAB_API_TOKEN` is available.
-
-## Budget allocation (plan)
-
-| Bucket | Cap | Status |
-|--------|-----|--------|
-| Wild nodes | 80 | placeholders ready; API pending |
-| Antenna Spine | 100 | placeholders ready; API pending |
-| Foundry machines | 120 | placeholders ready; API pending |
-| Faction / raid | 80 | placeholders ready; API pending |
-| UI / cargo icons | 60 | placeholders ready; API pending |
-| Reserve | 60 | unused |
-
-## Replace with PixelLab
-
-```bash
-export PIXELLAB_API_TOKEN=...
-node scripts/foundry/pixellab-generate.mjs --bucket nodes
-node scripts/foundry/pixellab-generate.mjs --bucket antennas
-node scripts/foundry/pixellab-generate.mjs --bucket machines
-node scripts/foundry/pixellab-generate.mjs --bucket faction
-```
+API base: `https://api.pixellab.ai`
 
 ## Log
 
-- BOOTSTRAP: local procedural sheets written (API used 0)
+- PROBE create-image-pixflux schema check (1 gen)
+- KEEP foundry_yield_node.png (bucket=all) via https://api.pixellab.ai
+- KEEP foundry_desert_node.png (bucket=all) via https://api.pixellab.ai
+- KEEP foundry_antenna.png (bucket=all) via https://api.pixellab.ai
+- KEEP foundry_receiver.png (bucket=all) via https://api.pixellab.ai
+- KEEP foundry_sparkworks.png (bucket=all) via https://api.pixellab.ai
+- KEEP foundry_coreforge.png (bucket=all) via https://api.pixellab.ai
+- KEEP foundry_remembrane.png (bucket=all) via https://api.pixellab.ai
+- KEEP foundry_callspire.png (bucket=all) via https://api.pixellab.ai
+- KEEP foundry_linkbreaker.png (bucket=all) via https://api.pixellab.ai
+- KEEP icon_salvage_antenna.png (bucket=all) via https://api.pixellab.ai
+- KEEP icon_salvage_dish.png (bucket=all) via https://api.pixellab.ai
+- KEEP icon_salvage_slag.png (bucket=all) via https://api.pixellab.ai
+- KEEP icon_pulsecore.png (bucket=all) via https://api.pixellab.ai
+- KEEP icon_motebank.png (bucket=all) via https://api.pixellab.ai
+- KEEP icon_netherlink.png (bucket=all) via https://api.pixellab.ai
+- KEEP icon_walk_ledger.png (bucket=all) via https://api.pixellab.ai
+- KEEP icon_tithe.png (bucket=all) via https://api.pixellab.ai
+
+## Notes
+
+- Token/URL loaded from `.env` or `.env.example` (`PIXELLAB_API_TOKEN`, `PIXELLAB_API_URL`).
+- Run: `node scripts/foundry/pixellab-generate.mjs --bucket nodes|antennas|machines|faction|ui|all`

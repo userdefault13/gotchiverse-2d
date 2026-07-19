@@ -1,11 +1,12 @@
 #!/usr/bin/env node
 /**
  * PixelLab.ai Foundry art generator.
- * Requires PIXELLAB_API_TOKEN. Counts every successful API image against the 500 budget.
+ * Reads PIXELLAB_API_TOKEN (and optional PIXELLAB_API_URL) from env or .env.example.
+ * Counts every successful API image against the 500 budget.
  *
  * Usage:
- *   PIXELLAB_API_TOKEN=... node scripts/foundry/pixellab-generate.mjs
- *   PIXELLAB_API_TOKEN=... node scripts/foundry/pixellab-generate.mjs --bucket nodes
+ *   node scripts/foundry/pixellab-generate.mjs --bucket nodes
+ *   node scripts/foundry/pixellab-generate.mjs --bucket all
  */
 import fs from 'fs';
 import path from 'path';
@@ -16,32 +17,95 @@ const ROOT = path.resolve(__dirname, '../..');
 const BUDGET_FILE = path.join(ROOT, 'docs/foundry-pixellab-budget.md');
 const OUT_SHEETS = path.join(ROOT, 'public/animations/spritesheets/foundry');
 const OUT_INSTALL = path.join(ROOT, 'public/animations/installations/foundry');
-const API = 'https://api.pixellab.ai/v2/create-image-pixflux';
 const HARD_CAP = 500;
 
+function loadEnvFile(filePath) {
+  if (!fs.existsSync(filePath)) return;
+  for (const line of fs.readFileSync(filePath, 'utf8').split('\n')) {
+    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*'([^']*)'\s*$/) || line.match(/^\s*([A-Z0-9_]+)\s*=\s*"([^"]*)"\s*$/) || line.match(/^\s*([A-Z0-9_]+)\s*=\s*([^\s#]+)\s*$/);
+    if (!m) continue;
+    if (!process.env[m[1]]) process.env[m[1]] = m[2];
+  }
+}
+
+loadEnvFile(path.join(ROOT, '.env'));
+loadEnvFile(path.join(ROOT, '.env.example'));
+
 const TOKEN = process.env.PIXELLAB_API_TOKEN || process.env.PIXEL_LAB_API_KEY || process.env.PIXELLAB_TOKEN;
+const API_BASE = (process.env.PIXELLAB_API_URL || 'https://api.pixellab.ai').replace(/\/$/, '');
+const API = `${API_BASE}/v2/create-image-pixflux`;
+
 if (!TOKEN) {
-  console.error('Missing PIXELLAB_API_TOKEN — local placeholder sheets remain in public/animations/*/foundry/');
+  console.error('Missing PIXELLAB_API_TOKEN — set in .env or .env.example');
   process.exit(1);
 }
 
+const STYLE =
+  'Gotchiverse frenly top-down pixel art game sprite, readable at 64px, clean outline, transparent background, no text, no UI chrome';
+
 const BUCKETS = {
   nodes: [
-    { file: 'foundry_yield_node.png', dir: OUT_SHEETS, description: 'top-down pixel art alchemica vein node in lush green yield fields, glowing gold crystal, 64x64 game sprite, transparent background, gotchiverse frenly style' },
-    { file: 'foundry_desert_node.png', dir: OUT_SHEETS, description: 'top-down pixel art satellite dish salvage node in sandy defi desert, cyan dish, transparent background, 64x64 gotchiverse style' },
+    {
+      file: 'foundry_yield_node.png',
+      dir: OUT_SHEETS,
+      description: `${STYLE}, lush green yield fields alchemica vein node with glowing gold crystal cluster`,
+    },
+    {
+      file: 'foundry_desert_node.png',
+      dir: OUT_SHEETS,
+      description: `${STYLE}, sandy defi desert salvage node with cyan satellite dish`,
+    },
   ],
   antennas: [
-    { file: 'foundry_antenna.png', dir: OUT_SHEETS, description: 'top-down pixel art tesla antenna relay tower, cyan powered glow, transparent background, 64x64 gotchiverse' },
-    { file: 'foundry_receiver.png', dir: OUT_SHEETS, description: 'top-down pixel art citaadel wall receiver dish purple and gold, transparent background, 64x64 gotchiverse' },
+    {
+      file: 'foundry_antenna.png',
+      dir: OUT_SHEETS,
+      description: `${STYLE}, tesla-style antenna relay tower with cyan powered glow`,
+    },
+    {
+      file: 'foundry_receiver.png',
+      dir: OUT_SHEETS,
+      description: `${STYLE}, citaadel wall receiver dish in purple and gold`,
+    },
   ],
   machines: [
-    { file: 'foundry_sparkworks.png', dir: OUT_INSTALL, description: 'top-down pixel art alchemica sparkworks power plant, orange glow, transparent, 64x64 gotchiverse' },
-    { file: 'foundry_coreforge.png', dir: OUT_INSTALL, description: 'top-down pixel art coreforge CPU maker machine cyan presses, transparent, 64x64 gotchiverse' },
-    { file: 'foundry_remembrane.png', dir: OUT_INSTALL, description: 'top-down pixel art remembrane mill memory weaver purple, transparent, 64x64 gotchiverse' },
-    { file: 'foundry_callspire.png', dir: OUT_INSTALL, description: 'top-down pixel art callspire RPC spire with antenna brain, cyan, transparent, 64x64 gotchiverse' },
+    {
+      file: 'foundry_sparkworks.png',
+      dir: OUT_INSTALL,
+      description: `${STYLE}, alchemica sparkworks power plant with warm orange glow`,
+    },
+    {
+      file: 'foundry_coreforge.png',
+      dir: OUT_INSTALL,
+      description: `${STYLE}, coreforge CPU maker machine with cyan presses`,
+    },
+    {
+      file: 'foundry_remembrane.png',
+      dir: OUT_INSTALL,
+      description: `${STYLE}, remembrane mill memory weaver purple spectral frames`,
+    },
+    {
+      file: 'foundry_callspire.png',
+      dir: OUT_INSTALL,
+      description: `${STYLE}, callspire RPC spire antenna brain cyan beacon`,
+    },
   ],
   faction: [
-    { file: 'foundry_linkbreaker.png', dir: OUT_SHEETS, description: 'top-down pixel art desert link-breaker lickquidator scout enemy red, transparent, 64x64 gotchiverse' },
+    {
+      file: 'foundry_linkbreaker.png',
+      dir: OUT_SHEETS,
+      description: `${STYLE}, desert link-breaker lickquidator scout enemy red top-down`,
+    },
+  ],
+  ui: [
+    { file: 'icon_salvage_antenna.png', dir: OUT_SHEETS, description: `${STYLE}, small cyan antenna salvage icon` },
+    { file: 'icon_salvage_dish.png', dir: OUT_SHEETS, description: `${STYLE}, small sand dish salvage icon` },
+    { file: 'icon_salvage_slag.png', dir: OUT_SHEETS, description: `${STYLE}, small orange slag fuel icon` },
+    { file: 'icon_pulsecore.png', dir: OUT_SHEETS, description: `${STYLE}, small gold pulsecore CPU die icon` },
+    { file: 'icon_motebank.png', dir: OUT_SHEETS, description: `${STYLE}, small purple motebank memory icon` },
+    { file: 'icon_netherlink.png', dir: OUT_SHEETS, description: `${STYLE}, small cyan netherlink mesh icon` },
+    { file: 'icon_walk_ledger.png', dir: OUT_SHEETS, description: `${STYLE}, small green walk ledger scroll icon` },
+    { file: 'icon_tithe.png', dir: OUT_SHEETS, description: `${STYLE}, small gold portal tithe coin icon` },
   ],
 };
 
@@ -58,14 +122,16 @@ Hard cap: **500** images (API generations).
 
 API images used: ${used}
 
+API base: \`${API_BASE}\`
+
 ## Log
 
 ${lines.join('\n')}
 
 ## Notes
 
-- Local procedural placeholders do **not** count against the API budget.
-- Run \`node scripts/foundry/pixellab-generate.mjs\` with \`PIXELLAB_API_TOKEN\` to replace placeholders.
+- Token/URL loaded from \`.env\` or \`.env.example\` (\`PIXELLAB_API_TOKEN\`, \`PIXELLAB_API_URL\`).
+- Run: \`node scripts/foundry/pixellab-generate.mjs --bucket nodes|antennas|machines|faction|ui|all\`
 `;
   fs.mkdirSync(path.dirname(BUDGET_FILE), { recursive: true });
   fs.writeFileSync(BUDGET_FILE, body);
@@ -80,27 +146,62 @@ async function generateOne(item) {
     },
     body: JSON.stringify({
       description: item.description,
-      width: 64,
-      height: 64,
+      image_size: { width: item.size || 64, height: item.size || 64 },
       no_background: true,
     }),
   });
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`PixelLab ${res.status}: ${text.slice(0, 200)}`);
+    throw new Error(`PixelLab ${res.status}: ${text.slice(0, 240)}`);
   }
   const data = await res.json();
-  const b64 = data?.image?.base64 || data?.base64 || data?.image;
+  const b64 = data?.image?.base64 || data?.base64;
   if (!b64 || typeof b64 !== 'string') {
     throw new Error(`Unexpected PixelLab response keys: ${Object.keys(data || {})}`);
   }
   const buf = Buffer.from(b64.replace(/^data:image\/\w+;base64,/, ''), 'base64');
   fs.mkdirSync(item.dir, { recursive: true });
-  fs.writeFileSync(path.join(item.dir, item.file), buf);
+  const outPath = path.join(item.dir, item.file);
+  fs.writeFileSync(outPath, buf);
+
+  // Keep Phaser 4-frame sheet compatibility: tile the single frame into 256x64
+  if (!item.file.startsWith('icon_')) {
+    await writeFourFrameSheet(outPath, buf);
+  }
+}
+
+/** Duplicate a 64x64 PNG into a horizontal 4-frame sheet for existing loaders. */
+async function writeFourFrameSheet(outPath, singlePngBuf) {
+  // Prefer sharp if present; else keep single frame file (FoundryNodes uses frame 0).
+  try {
+    const sharp = (await import('sharp')).default;
+    const frame = sharp(singlePngBuf).resize(64, 64, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } });
+    const { data, info } = await frame.ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    const sheet = Buffer.alloc(256 * 64 * 4);
+    for (let fi = 0; fi < 4; fi++) {
+      for (let y = 0; y < 64; y++) {
+        for (let x = 0; x < 64; x++) {
+          const src = (y * info.width + x) * 4;
+          const dst = (y * 256 + fi * 64 + x) * 4;
+          sheet[dst] = data[src];
+          sheet[dst + 1] = data[src + 1];
+          sheet[dst + 2] = data[src + 2];
+          sheet[dst + 3] = data[src + 3];
+        }
+      }
+    }
+    await sharp(sheet, { raw: { width: 256, height: 64, channels: 4 } }).png().toFile(outPath);
+  } catch {
+    // leave single 64x64 png
+  }
 }
 
 const bucketArg = process.argv.includes('--bucket') ? process.argv[process.argv.indexOf('--bucket') + 1] : 'nodes';
-const jobs = BUCKETS[bucketArg] || BUCKETS.nodes;
+const jobs =
+  bucketArg === 'all'
+    ? Object.values(BUCKETS).flat()
+    : BUCKETS[bucketArg] || BUCKETS.nodes;
+
 let used = readBudgetCount();
 const log = [];
 
@@ -113,7 +214,7 @@ for (const item of jobs) {
   try {
     await generateOne(item);
     used += 1;
-    log.push(`- KEEP ${item.file} (bucket=${bucketArg})`);
+    log.push(`- KEEP ${item.file} (bucket=${bucketArg}) via ${API_BASE}`);
     console.log('ok');
   } catch (e) {
     log.push(`- FAIL ${item.file}: ${e.message}`);

@@ -32,6 +32,7 @@ function ensureTextures(): Promise<void> {
     Object.entries(TEXTURE_URLS).forEach(([key, url]) => {
       if (scene.textures.exists(key)) return;
       pending += 1;
+      // PixelLab exports are often single 64x64 frames; sheet loader still works (frame 0).
       scene.load.spritesheet(key, url, { frameWidth: 64, frameHeight: 64 });
     });
     if (!pending) {
