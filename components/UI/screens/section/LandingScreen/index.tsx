@@ -13,7 +13,7 @@ import { NewsList } from 'components/UI/widgets';
 import { GotchiSelectModal } from 'components/UI/screens/section';
 import { http } from 'data/actions';
 import _ from 'lodash';
-import { getIsValidated } from 'helpers/auth.helper';
+import { getAarcadeCartridgeStatus, getIsValidated } from 'helpers/auth.helper';
 import GlobalState from 'contexts/GlobalState';
 import { gotchiverseLinks } from 'data/links';
 import { Parallax } from 'react-scroll-parallax';
@@ -66,6 +66,26 @@ export const LandingScreen = (): JSX.Element => {
     const queryParams = new Proxy<any>(new URLSearchParams(window.location.search), {
       get: (searchParams, prop: string) => searchParams.get(prop),
     });
+
+    // Soft-launch deep link from Aarcade Games catalog (?cartridgeId=&playerId=)
+    const launchCartridgeId = String(queryParams?.cartridgeId || '').trim();
+    if (launchCartridgeId) {
+      userDispatch({
+        type: 'UPDATE_USER_CARTRIDGE',
+        cartridgeId: launchCartridgeId,
+        hasCartridge: true,
+      });
+      GlobalState.USER?.dispatch?.({
+        type: 'UPDATE_USER_CARTRIDGE',
+        cartridgeId: launchCartridgeId,
+        hasCartridge: true,
+      });
+      try {
+        localStorage.setItem('aarcadeCartridgeId', launchCartridgeId);
+      } catch {
+        /* ignore */
+      }
+    }
 
     const gotchiId = queryParams?.gotchi;
     if (gotchiId) {
@@ -227,8 +247,29 @@ export const LandingScreen = (): JSX.Element => {
     });
   };
 
+  const checkCartridge = async (address: string) => {
+    const status = await getAarcadeCartridgeStatus(address);
+    if (!status) return;
+    // Prefer an explicit launch cartridgeId from the query string over a sim lookup miss.
+    const launchId =
+      String(new URLSearchParams(window.location.search).get('cartridgeId') || '').trim() ||
+      (typeof localStorage !== 'undefined' ? localStorage.getItem('aarcadeCartridgeId') || '' : '');
+    const cartridgeId = status.cartridgeId || launchId || null;
+    const payload = {
+      type: 'UPDATE_USER_CARTRIDGE' as const,
+      cartridgeId,
+      hasCartridge: Boolean(status.hasCartridge || cartridgeId),
+      cartridgeCatalogUrl: status.catalogUrl,
+    };
+    userDispatch(payload);
+    GlobalState.USER?.dispatch?.(payload);
+  };
+
   useEffect(() => {
-    if (currentAccount) void checkValidation(currentAccount);
+    if (currentAccount) {
+      void checkValidation(currentAccount);
+      void checkCartridge(currentAccount);
+    }
   }, [currentAccount]);
 
   // useEffect(() => {

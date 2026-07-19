@@ -135,3 +135,55 @@ export const getIsValidated = async (address: string, opts?: { fresh?: boolean }
   const status = await getAarcadeVerifyStatus(address, opts);
   return Boolean(status?.verified);
 };
+
+export type AarcadeCartridgeStatus = {
+  wallet: string;
+  gameId: string;
+  hasCartridge: boolean;
+  cartridgeId: string | null;
+  catalogUrl: string;
+  checkedAt?: string | null;
+};
+
+const AARCADE_CARTRIDGE_GAME_ID = (
+  process.env.NEXT_PUBLIC_AARCADE_CARTRIDGE_GAME_ID || 'gotchiverse'
+).toLowerCase();
+
+/** Aarcade Games catalog (mint / buy cartridge). */
+export const getAarcadeGamesCatalogUrl = (): string => `${AARCADE_HOME}/games`;
+
+/**
+ * Look up Aarcade cartridge-sim ownership for this wallet via Gotchiverse proxy.
+ * Soft launch: does not gate play; used for identity + catalog CTA.
+ */
+export const getAarcadeCartridgeStatus = async (
+  address: string,
+  opts?: { fresh?: boolean; gameId?: string },
+): Promise<AarcadeCartridgeStatus | null> => {
+  try {
+    if (!address) return null;
+    const qs = new URLSearchParams({
+      wallet: address,
+      gameId: String(opts?.gameId || AARCADE_CARTRIDGE_GAME_ID),
+    });
+    if (opts?.fresh) qs.set('fresh', '1');
+    const response = await fetch(`/api/aarcade-cartridge?${qs.toString()}`, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+      cache: 'no-store',
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    return {
+      wallet: String(data?.wallet || address).toLowerCase(),
+      gameId: String(data?.gameId || AARCADE_CARTRIDGE_GAME_ID),
+      hasCartridge: Boolean(data?.hasCartridge),
+      cartridgeId: data?.cartridgeId ? String(data.cartridgeId) : null,
+      catalogUrl: String(data?.catalogUrl || getAarcadeGamesCatalogUrl()),
+      checkedAt: data?.checkedAt ?? null,
+    };
+  } catch (err) {
+    console.warn('getAarcadeCartridgeStatus failed', err);
+    return null;
+  }
+};

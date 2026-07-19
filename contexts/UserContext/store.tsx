@@ -15,10 +15,17 @@ export interface State {
   parcelAccessOwners?: string[];
   eventInitialFilter?: string;
   isVerified: boolean;
+  /** Soft-launch Aarcade cartridge identity (from query or cartridge-sim lookup). */
+  cartridgeId?: string | null;
+  hasCartridge?: boolean;
+  cartridgeCatalogUrl?: string;
 }
 
 export const initialState: State = {
   ghstBalance: BigNumber.from(0),
   isVerified: false,
   parcelAccessOwners: [],
+  cartridgeId: null,
+  hasCartridge: false,
+  cartridgeCatalogUrl: undefined,
 };
