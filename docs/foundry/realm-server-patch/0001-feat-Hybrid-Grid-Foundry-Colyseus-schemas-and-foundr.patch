@@ -1,0 +1,551 @@
+From a32431006268902c9207f4f56d04604046205529 Mon Sep 17 00:00:00 2001
+From: Cursor Agent <cursoragent@cursor.com>
+Date: Sun, 19 Jul 2026 03:20:17 +0000
+Subject: [PATCH] feat: Hybrid Grid Foundry Colyseus schemas and
+ /foundry/config
+
+---
+ src/config/foundry.ts              |  80 +++++++++++
+ src/foundry/mesh.ts                |  62 +++++++++
+ src/http/routes.ts                 |   5 +
+ src/rooms/CitaadelRoom.ts          | 212 +++++++++++++++++++++++++++++
+ src/schema/CitaadelState.ts        |   8 ++
+ src/schema/foundry/Antenna.ts      |  10 ++
+ src/schema/foundry/FoundryCargo.ts |  13 ++
+ src/schema/foundry/WallReceiver.ts |   7 +
+ src/schema/foundry/WildNode.ts     |   9 ++
+ 9 files changed, 406 insertions(+)
+ create mode 100644 src/config/foundry.ts
+ create mode 100644 src/foundry/mesh.ts
+ create mode 100644 src/schema/foundry/Antenna.ts
+ create mode 100644 src/schema/foundry/FoundryCargo.ts
+ create mode 100644 src/schema/foundry/WallReceiver.ts
+ create mode 100644 src/schema/foundry/WildNode.ts
+
+diff --git a/src/config/foundry.ts b/src/config/foundry.ts
+new file mode 100644
+index 0000000..f1c4320
+--- /dev/null
++++ b/src/config/foundry.ts
+@@ -0,0 +1,80 @@
++/**
++ * Hybrid Grid Foundry PoC constants.
++ * Coordinates are approximate citaadel map pixels aligned with gotchiverse-2d plan.
++ */
++export const FOUNDRY_CONFIG = {
++  enableParcelFoundryPoC: true,
++  antennaLinkRangePx: 8000,
++  maxAntennasPerPlayer: 3,
++  gatherRangePx: 2000,
++  factionTickMs: 5000,
++  antennaDamagePerTick: 5,
++
++  /** Yield Fields — richer alchemica vein */
++  yieldFields: {
++    id: 'yield-fields',
++    x: 320000,
++    y: 140000,
++    veinType: 'yield' as const,
++    remaining: 10000,
++  },
++
++  /** DeFi Desert — salvage vein */
++  defiDesert: {
++    id: 'defi-desert',
++    x: 180000,
++    y: 120000,
++    veinType: 'desert_salvage' as const,
++    remaining: 10000,
++  },
++
++  /** South beach / west gate rim — tithe deposit receiver */
++  wallReceiverSouth: {
++    id: 'wall-receiver-south',
++    x: 270000,
++    y: 230000,
++  },
++} as const;
++
++export type FoundryConfigResponse = {
++  enableParcelFoundryPoC: boolean;
++  antennaLinkRangePx: number;
++  maxAntennasPerPlayer: number;
++  gatherRangePx: number;
++  factionTickMs: number;
++  antennaDamagePerTick: number;
++  nodes: Array<{ id: string; x: number; y: number; veinType: string }>;
++  wallReceivers: Array<{ id: string; x: number; y: number }>;
++};
++
++export function getFoundryConfigResponse(): FoundryConfigResponse {
++  return {
++    enableParcelFoundryPoC: FOUNDRY_CONFIG.enableParcelFoundryPoC,
++    antennaLinkRangePx: FOUNDRY_CONFIG.antennaLinkRangePx,
++    maxAntennasPerPlayer: FOUNDRY_CONFIG.maxAntennasPerPlayer,
++    gatherRangePx: FOUNDRY_CONFIG.gatherRangePx,
++    factionTickMs: FOUNDRY_CONFIG.factionTickMs,
++    antennaDamagePerTick: FOUNDRY_CONFIG.antennaDamagePerTick,
++    nodes: [
++      {
++        id: FOUNDRY_CONFIG.yieldFields.id,
++        x: FOUNDRY_CONFIG.yieldFields.x,
++        y: FOUNDRY_CONFIG.yieldFields.y,
++        veinType: FOUNDRY_CONFIG.yieldFields.veinType,
++      },
++      {
++        id: FOUNDRY_CONFIG.defiDesert.id,
++        x: FOUNDRY_CONFIG.defiDesert.x,
++        y: FOUNDRY_CONFIG.defiDesert.y,
++        veinType: FOUNDRY_CONFIG.defiDesert.veinType,
++      },
++    ],
++    wallReceivers: [
++      {
++        id: FOUNDRY_CONFIG.wallReceiverSouth.id,
++        x: FOUNDRY_CONFIG.wallReceiverSouth.x,
++        y: FOUNDRY_CONFIG.wallReceiverSouth.y,
++      },
++    ],
++  };
++}
+diff --git a/src/foundry/mesh.ts b/src/foundry/mesh.ts
+new file mode 100644
+index 0000000..9e57c1a
+--- /dev/null
++++ b/src/foundry/mesh.ts
+@@ -0,0 +1,62 @@
++export type MeshNode = {
++  id: string;
++  x: number;
++  y: number;
++  powered: boolean;
++  hp: number;
++};
++
++export type MeshPoint = {
++  x: number;
++  y: number;
++};
++
++/**
++ * BFS over powered antennas (hp > 0) within link range to see if the wall receiver is reachable.
++ */
++export function canReachReceiver(
++  antennas: MeshNode[],
++  receiver: MeshPoint,
++  range: number,
++): boolean {
++  const active = antennas.filter((a) => a.powered && a.hp > 0);
++  if (active.length === 0) return false;
++
++  for (const antenna of active) {
++    if (Math.hypot(antenna.x - receiver.x, antenna.y - receiver.y) <= range) {
++      return true;
++    }
++  }
++
++  const visited = new Set<string>();
++  const queue: string[] = [];
++
++  for (const antenna of active) {
++    visited.add(antenna.id);
++    queue.push(antenna.id);
++  }
++
++  while (queue.length > 0) {
++    const id = queue.shift()!;
++    const node = active.find((a) => a.id === id);
++    if (!node) continue;
++
++    for (const other of active) {
++      if (visited.has(other.id)) continue;
++      if (Math.hypot(node.x - other.x, node.y - other.y) <= range) {
++        visited.add(other.id);
++        queue.push(other.id);
++      }
++    }
++  }
++
++  for (const id of visited) {
++    const node = active.find((a) => a.id === id);
++    if (!node) continue;
++    if (Math.hypot(node.x - receiver.x, node.y - receiver.y) <= range) {
++      return true;
++    }
++  }
++
++  return false;
++}
+diff --git a/src/http/routes.ts b/src/http/routes.ts
+index 50be9c7..b375d65 100644
+--- a/src/http/routes.ts
++++ b/src/http/routes.ts
+@@ -1,6 +1,7 @@
+ import { Router, Request, Response } from 'express';
+ import { verifyMessage } from 'ethers';
+ import { env } from '../config/env';
++import { getFoundryConfigResponse } from '../config/foundry';
+ import { buildSignMessage, consumeNonce, issueNonce, peekNonce } from '../auth/nonce';
+ import { signAuthToken } from '../auth/jwt';
+ 
+@@ -29,6 +30,10 @@ export function createHttpRouter(): Router {
+     });
+   });
+ 
++  router.get('/foundry/config', (_req, res) => {
++    res.json(getFoundryConfigResponse());
++  });
++
+   router.get('/user/nonce/get', (req: Request, res: Response) => {
+     const address = String(req.query.address || '');
+     if (!/^0x[a-fA-F0-9]{40}$/.test(address)) {
+diff --git a/src/rooms/CitaadelRoom.ts b/src/rooms/CitaadelRoom.ts
+index b3a5a26..5388394 100644
+--- a/src/rooms/CitaadelRoom.ts
++++ b/src/rooms/CitaadelRoom.ts
+@@ -1,9 +1,15 @@
+ import { Room, Client } from 'colyseus';
+ import { CitaadelState } from '../schema/CitaadelState';
+ import { Player } from '../schema/Player';
++import { WildNode } from '../schema/foundry/WildNode';
++import { Antenna } from '../schema/foundry/Antenna';
++import { WallReceiver } from '../schema/foundry/WallReceiver';
++import { FoundryCargo } from '../schema/foundry/FoundryCargo';
+ import { verifyAuthToken } from '../auth/jwt';
+ import { assertGotchiOwnedBy } from '../auth/ownership';
+ import { MOVE, SPAWN } from '../config/env';
++import { FOUNDRY_CONFIG } from '../config/foundry';
++import { canReachReceiver } from '../foundry/mesh';
+ 
+ type JoinOptions = {
+   token?: string;
+@@ -16,19 +22,29 @@ type AuthData = {
+   gotchiId: string;
+ };
+ 
++const GATHER_AMOUNT = 10;
++const RECEIVER_ID = FOUNDRY_CONFIG.wallReceiverSouth.id;
++
+ function randomSpawn(): { x: number; y: number } {
+   const x = SPAWN.minX + Math.random() * (SPAWN.maxX - SPAWN.minX);
+   const y = SPAWN.minY + Math.random() * (SPAWN.maxY - SPAWN.minY);
+   return { x: Math.round(x), y: Math.round(y) };
+ }
+ 
++function distancePx(ax: number, ay: number, bx: number, by: number): number {
++  return Math.hypot(ax - bx, ay - by);
++}
++
+ export class CitaadelRoom extends Room<CitaadelState> {
+   maxClients = 200;
+   private lastMoveAt = new Map<string, number>();
++  private antennaSeq = 0;
+ 
+   onCreate() {
+     this.setState(new CitaadelState());
+     this.setMetadata({ mapId: 'citaadel' });
++    this.seedFoundryState();
++    this.registerFoundryMessages();
+ 
+     this.onMessage('move', (client, message: { x?: number; y?: number }) => {
+       const player = this.state.players.get(client.sessionId);
+@@ -57,6 +73,190 @@ export class CitaadelRoom extends Room<CitaadelState> {
+     this.onMessage('ping', (client) => {
+       client.send('pong', { t: Date.now() });
+     });
++
++    this.setSimulationInterval(() => this.factionTick(), FOUNDRY_CONFIG.factionTickMs);
++  }
++
++  private seedFoundryState() {
++    const yieldNode = new WildNode();
++    yieldNode.id = FOUNDRY_CONFIG.yieldFields.id;
++    yieldNode.x = FOUNDRY_CONFIG.yieldFields.x;
++    yieldNode.y = FOUNDRY_CONFIG.yieldFields.y;
++    yieldNode.veinType = FOUNDRY_CONFIG.yieldFields.veinType;
++    yieldNode.remaining = FOUNDRY_CONFIG.yieldFields.remaining;
++    this.state.wildNodes.set(yieldNode.id, yieldNode);
++
++    const desertNode = new WildNode();
++    desertNode.id = FOUNDRY_CONFIG.defiDesert.id;
++    desertNode.x = FOUNDRY_CONFIG.defiDesert.x;
++    desertNode.y = FOUNDRY_CONFIG.defiDesert.y;
++    desertNode.veinType = FOUNDRY_CONFIG.defiDesert.veinType;
++    desertNode.remaining = FOUNDRY_CONFIG.defiDesert.remaining;
++    this.state.wildNodes.set(desertNode.id, desertNode);
++
++    const receiver = new WallReceiver();
++    receiver.id = FOUNDRY_CONFIG.wallReceiverSouth.id;
++    receiver.x = FOUNDRY_CONFIG.wallReceiverSouth.x;
++    receiver.y = FOUNDRY_CONFIG.wallReceiverSouth.y;
++    this.state.wallReceivers.set(receiver.id, receiver);
++  }
++
++  private registerFoundryMessages() {
++    this.onMessage('foundry.gather', (client, message: { nodeId?: string }) => {
++      const nodeId = String(message?.nodeId || '');
++      const node = this.state.wildNodes.get(nodeId);
++      const player = this.state.players.get(client.sessionId);
++      const cargo = this.getOrCreateCargo(client.sessionId);
++      if (!node || !player || node.remaining <= 0) return;
++
++      if (
++        distancePx(player.x, player.y, node.x, node.y) > FOUNDRY_CONFIG.gatherRangePx
++      ) {
++        return;
++      }
++
++      node.remaining = Math.max(0, node.remaining - GATHER_AMOUNT);
++
++      if (node.veinType === 'yield') {
++        cargo.fud += GATHER_AMOUNT;
++        cargo.fomo += GATHER_AMOUNT;
++        cargo.alpha += GATHER_AMOUNT;
++        cargo.kek += GATHER_AMOUNT;
++      } else if (node.veinType === 'desert_salvage') {
++        cargo.salvageAntenna += GATHER_AMOUNT;
++        cargo.salvageDish += GATHER_AMOUNT;
++        cargo.salvageSlag += GATHER_AMOUNT;
++      }
++    });
++
++    this.onMessage('foundry.deposit', (client) => {
++      const player = this.state.players.get(client.sessionId);
++      const cargo = this.getOrCreateCargo(client.sessionId);
++      const receiver = this.state.wallReceivers.get(RECEIVER_ID);
++      if (!player || !receiver) return;
++
++      this.depositAlchemicaToTithe(cargo);
++    });
++
++    this.onMessage('foundry.placeAntenna', (client, message: { x?: number; y?: number }) => {
++      if (typeof message?.x !== 'number' || typeof message?.y !== 'number') return;
++      if (!Number.isFinite(message.x) || !Number.isFinite(message.y)) return;
++
++      const owned = this.countAntennasForSession(client.sessionId);
++      if (owned >= FOUNDRY_CONFIG.maxAntennasPerPlayer) return;
++
++      const antenna = new Antenna();
++      antenna.id = `antenna-${++this.antennaSeq}`;
++      antenna.ownerSessionId = client.sessionId;
++      antenna.x = Math.round(message.x);
++      antenna.y = Math.round(message.y);
++      antenna.hp = 100;
++      antenna.powered = true;
++      this.state.antennas.set(antenna.id, antenna);
++    });
++
++    this.onMessage('foundry.bounceFreight', (client) => {
++      const cargo = this.getOrCreateCargo(client.sessionId);
++      this.depositAlchemicaToTithe(cargo);
++    });
++
++    this.onMessage(
++      'foundry.damageAntenna',
++      (client, message: { antennaId?: string; amount?: number }) => {
++        const antennaId = String(message?.antennaId || '');
++        const amount = Number(message?.amount ?? FOUNDRY_CONFIG.antennaDamagePerTick);
++        const antenna = this.state.antennas.get(antennaId);
++        if (!antenna || !Number.isFinite(amount) || amount <= 0) return;
++
++        antenna.hp = Math.max(0, antenna.hp - amount);
++        if (antenna.hp <= 0) {
++          antenna.powered = false;
++        }
++      },
++    );
++
++    this.onMessage('foundry.meshTransfer', (client) => {
++      const cargo = this.getOrCreateCargo(client.sessionId);
++      const receiver = this.state.wallReceivers.get(RECEIVER_ID);
++      if (!receiver) return;
++
++      const antennas = Array.from(this.state.antennas.values()).map((a) => ({
++        id: a.id,
++        x: a.x,
++        y: a.y,
++        powered: a.powered,
++        hp: a.hp,
++      }));
++
++      if (!canReachReceiver(antennas, receiver, FOUNDRY_CONFIG.antennaLinkRangePx)) {
++        return;
++      }
++
++      const playerAntennas = Array.from(this.state.antennas.values()).filter(
++        (a) => a.ownerSessionId === client.sessionId && a.powered && a.hp > 0,
++      );
++      if (playerAntennas.length === 0) return;
++
++      this.depositAlchemicaToTithe(cargo);
++    });
++  }
++
++  private factionTick() {
++    const receiver = this.state.wallReceivers.get(RECEIVER_ID);
++    if (!receiver) return;
++
++    const active = Array.from(this.state.antennas.values()).filter(
++      (a) => a.powered && a.hp > 0,
++    );
++    if (active.length === 0) return;
++
++    let target: Antenna;
++
++    if (Math.random() < 0.5) {
++      const midCandidates = active.filter((a) => a.hp > 30);
++      const pool = midCandidates.length > 0 ? midCandidates : active;
++      target = pool[Math.floor(Math.random() * pool.length)];
++    } else {
++      target = active.reduce((farthest, antenna) => {
++        const farthestDist = distancePx(farthest.x, farthest.y, receiver.x, receiver.y);
++        const antennaDist = distancePx(antenna.x, antenna.y, receiver.x, receiver.y);
++        return antennaDist > farthestDist ? antenna : farthest;
++      });
++    }
++
++    target.hp = Math.max(0, target.hp - FOUNDRY_CONFIG.antennaDamagePerTick);
++    if (target.hp <= 0) {
++      target.powered = false;
++    }
++  }
++
++  private getOrCreateCargo(sessionId: string): FoundryCargo {
++    let cargo = this.state.cargos.get(sessionId);
++    if (!cargo) {
++      cargo = new FoundryCargo();
++      cargo.sessionId = sessionId;
++      this.state.cargos.set(sessionId, cargo);
++    }
++    return cargo;
++  }
++
++  private countAntennasForSession(sessionId: string): number {
++    let count = 0;
++    this.state.antennas.forEach((antenna) => {
++      if (antenna.ownerSessionId === sessionId) count += 1;
++    });
++    return count;
++  }
++
++  private depositAlchemicaToTithe(cargo: FoundryCargo) {
++    const total = cargo.fud + cargo.fomo + cargo.alpha + cargo.kek;
++    if (total <= 0) return;
++
++    cargo.titheAccrued += total;
++    cargo.fud = 0;
++    cargo.fomo = 0;
++    cargo.alpha = 0;
++    cargo.kek = 0;
+   }
+ 
+   async onAuth(_client: Client, options: JoinOptions): Promise<AuthData> {
+@@ -83,10 +283,22 @@ export class CitaadelRoom extends Room<CitaadelState> {
+     player.y = spawn.y;
+     this.state.players.set(client.sessionId, player);
+     this.lastMoveAt.set(client.sessionId, Date.now());
++    this.getOrCreateCargo(client.sessionId);
+   }
+ 
+   onLeave(client: Client) {
+     this.state.players.delete(client.sessionId);
++    this.state.cargos.delete(client.sessionId);
+     this.lastMoveAt.delete(client.sessionId);
++
++    const toRemove: string[] = [];
++    this.state.antennas.forEach((antenna, id) => {
++      if (antenna.ownerSessionId === client.sessionId) {
++        toRemove.push(id);
++      }
++    });
++    for (const id of toRemove) {
++      this.state.antennas.delete(id);
++    }
+   }
+ }
+diff --git a/src/schema/CitaadelState.ts b/src/schema/CitaadelState.ts
+index fef653c..cc3707a 100644
+--- a/src/schema/CitaadelState.ts
++++ b/src/schema/CitaadelState.ts
+@@ -1,7 +1,15 @@
+ import { Schema, type, MapSchema } from '@colyseus/schema';
+ import { Player } from './Player';
++import { WildNode } from './foundry/WildNode';
++import { Antenna } from './foundry/Antenna';
++import { WallReceiver } from './foundry/WallReceiver';
++import { FoundryCargo } from './foundry/FoundryCargo';
+ 
+ export class CitaadelState extends Schema {
+   @type({ map: Player }) players = new MapSchema<Player>();
++  @type({ map: WildNode }) wildNodes = new MapSchema<WildNode>();
++  @type({ map: Antenna }) antennas = new MapSchema<Antenna>();
++  @type({ map: WallReceiver }) wallReceivers = new MapSchema<WallReceiver>();
++  @type({ map: FoundryCargo }) cargos = new MapSchema<FoundryCargo>();
+   @type('string') mapId: string = 'citaadel';
+ }
+diff --git a/src/schema/foundry/Antenna.ts b/src/schema/foundry/Antenna.ts
+new file mode 100644
+index 0000000..c77522f
+--- /dev/null
++++ b/src/schema/foundry/Antenna.ts
+@@ -0,0 +1,10 @@
++import { Schema, type } from '@colyseus/schema';
++
++export class Antenna extends Schema {
++  @type('string') id: string = '';
++  @type('string') ownerSessionId: string = '';
++  @type('number') x: number = 0;
++  @type('number') y: number = 0;
++  @type('number') hp: number = 100;
++  @type('boolean') powered: boolean = true;
++}
+diff --git a/src/schema/foundry/FoundryCargo.ts b/src/schema/foundry/FoundryCargo.ts
+new file mode 100644
+index 0000000..cd2652a
+--- /dev/null
++++ b/src/schema/foundry/FoundryCargo.ts
+@@ -0,0 +1,13 @@
++import { Schema, type } from '@colyseus/schema';
++
++export class FoundryCargo extends Schema {
++  @type('string') sessionId: string = '';
++  @type('number') fud: number = 0;
++  @type('number') fomo: number = 0;
++  @type('number') alpha: number = 0;
++  @type('number') kek: number = 0;
++  @type('number') salvageAntenna: number = 0;
++  @type('number') salvageDish: number = 0;
++  @type('number') salvageSlag: number = 0;
++  @type('number') titheAccrued: number = 0;
++}
+diff --git a/src/schema/foundry/WallReceiver.ts b/src/schema/foundry/WallReceiver.ts
+new file mode 100644
+index 0000000..0b5d7d2
+--- /dev/null
++++ b/src/schema/foundry/WallReceiver.ts
+@@ -0,0 +1,7 @@
++import { Schema, type } from '@colyseus/schema';
++
++export class WallReceiver extends Schema {
++  @type('string') id: string = '';
++  @type('number') x: number = 0;
++  @type('number') y: number = 0;
++}
+diff --git a/src/schema/foundry/WildNode.ts b/src/schema/foundry/WildNode.ts
+new file mode 100644
+index 0000000..c9f78d0
+--- /dev/null
++++ b/src/schema/foundry/WildNode.ts
+@@ -0,0 +1,9 @@
++import { Schema, type } from '@colyseus/schema';
++
++export class WildNode extends Schema {
++  @type('string') id: string = '';
++  @type('number') x: number = 0;
++  @type('number') y: number = 0;
++  @type('string') veinType: string = '';
++  @type('number') remaining: number = 0;
++}
+-- 
+2.43.0
+

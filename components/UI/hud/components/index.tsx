@@ -29,3 +29,4 @@ export * from './Events/EventHologram';
 export * from './ExitArenaModal';
 export * from './AarenaLobby';
 export * from './Leaderboard';
+export * from './FoundryPanel';

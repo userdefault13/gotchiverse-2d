@@ -673,6 +673,8 @@ export const GAME_CONFIG: GameConfig = {
   eventParcels: false, // set to true to display hard coded event parcels logic like GMI Summit
   enableCollisionsParcel: true, // set to true to have physics engine listen for and dispatch collisions for parcels
   enableCollisionsInstallation: true, // set to true to have physics engine listen for and dispatch collisions for installations (also enable installations as wall boundries for players)
+  // Hybrid Grid Foundry PoC (off-chain wild veins + Antenna Spine). Also toggled via NEXT_PUBLIC_ENABLE_FOUNDRY_POC=true
+  enableParcelFoundryPoC: false,
   providersRiskVeryHigh: ['GHOSTnet GmbH', 'PVimpelCom', 'Hosting technology LTD', 'Cloud assets LLC', 'Plusinfo OOO'],
   providersRiskHigh: [
     'M247 Ltd', // worldwide vpn

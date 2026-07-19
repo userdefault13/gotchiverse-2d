@@ -1,0 +1,1149 @@
+From 7a5bb9ea7c225c0a4d4e97db053319f5cc9481dd Mon Sep 17 00:00:00 2001
+From: Cursor Agent <cursoragent@cursor.com>
+Date: Sun, 19 Jul 2026 03:21:23 +0000
+Subject: [PATCH] =?UTF-8?q?docs:=20hybrid=20Grid=20Foundry=20lore=20?=
+ =?UTF-8?q?=E2=80=94=20Citaadel=20baseload=20+=20wild=20veins/salvage?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ docs/LORE-README.md                  |  13 ++
+ docs/START-HERE.md                   |   1 +
+ docs/alchemica-factory-brainstorm.md |  36 ++++-
+ docs/grid-power-transmute-lore.md    |  55 ++++---
+ docs/lore-quick-reference.md         |  17 ++-
+ docs/lore-roadmap.md                 |  10 +-
+ docs/lore-visual-map.md              |  82 +++++-----
+ docs/wild-grid-logistics.md          | 104 +++++++++++++
+ scripts/grid-power-canon-data.cjs    | 216 +++++++++++++++++----------
+ scripts/seed-canon-world.mjs         |   9 +-
+ scripts/wild-grid-canon-data.cjs     | 180 ++++++++++++++++++++++
+ 11 files changed, 564 insertions(+), 159 deletions(-)
+ create mode 100644 docs/wild-grid-logistics.md
+ create mode 100644 scripts/wild-grid-canon-data.cjs
+
+diff --git a/docs/LORE-README.md b/docs/LORE-README.md
+index 26707d9..e4f45b7 100644
+--- a/docs/LORE-README.md
++++ b/docs/LORE-README.md
+@@ -103,6 +103,15 @@ Lore for **Lighting the Grid**: refine Alchemica to fuel plants and compute (dat
+ 
+ **Use this when:** Designing frontier logistics, power progression, or transmute vs caravan gameplay.
+ 
++### 5c. 🗺️ [wild-grid-logistics.md](./wild-grid-logistics.md)
++**Best for:** Hybrid Foundry geography, biome salvage tables, logistics triangle (Walk / Bounce / Antenna Spine)
++
++Wild Grid enrichment lore: Citaadel baseload vs wild veins, Bounce Gates, daisy-chain wall receivers, biome factions.
++
++**Canon seed:** `/workspace/scripts/wild-grid-canon-data.cjs`
++
++**Use this when:** Designing wild biome hauls, mid-hop raids, or off-chain logistics PoC.
++
+ ---
+ 
+ ### 6. 🦸 [captain-aave-brainstorm.md](./captain-aave-brainstorm.md)
+@@ -166,6 +175,10 @@ Feature parity tracking between systems.
+ - Seed: `/workspace/scripts/grid-power-canon-data.cjs`
+ - Design: [grid-power-transmute-lore.md](./grid-power-transmute-lore.md)
+ 
++### 13. 🗺️ Wild Grid / Hybrid Haul (seed + design)
++- Seed: `/workspace/scripts/wild-grid-canon-data.cjs`
++- Design: [wild-grid-logistics.md](./wild-grid-logistics.md)
++
+ ---
+ 
+ ## How the Lore System Works
+diff --git a/docs/START-HERE.md b/docs/START-HERE.md
+index 61dca8f..793e949 100644
+--- a/docs/START-HERE.md
++++ b/docs/START-HERE.md
+@@ -18,6 +18,7 @@
+ | 7️⃣ | [**LORE-README.md**](./LORE-README.md) | Master navigation hub |
+ | 8️⃣ | [**alchemica-factory-brainstorm.md**](./alchemica-factory-brainstorm.md) | Alchemica economy + Factorio-like Foundry design |
+ | 9️⃣ | [**grid-power-transmute-lore.md**](./grid-power-transmute-lore.md) | Power plants, Netherlink, transmute vs caravan haul |
++| 🔟 | [**wild-grid-logistics.md**](./wild-grid-logistics.md) | Hybrid Foundry — Citaadel baseload + wild veins/salvage haul |
+ 
+ **Total:** ~120K words of comprehensive documentation
+ 
+diff --git a/docs/alchemica-factory-brainstorm.md b/docs/alchemica-factory-brainstorm.md
+index e79a04b..bbf68e2 100644
+--- a/docs/alchemica-factory-brainstorm.md
++++ b/docs/alchemica-factory-brainstorm.md
+@@ -37,6 +37,28 @@ Burned Ether Realm matter decays in the Burn Address → becomes Alchemica → b
+ 
+ ---
+ 
++## Hybrid Geography (Citaadel + Wild Grid)
++
++**Hybrid thesis (locked):** The Foundry is not one map — it is two cooperating geographies.
++
++| Zone | Role | Yield profile |
++|------|------|---------------|
++| **Citaadel parcels** | Safe dense Alchemica Foundry — primary **baseload** | Reliable FUD/FOMO throughput inside Force Field; limited expansion |
++| **Wild Grid** (outside walls) | Enrichment + salvage frontier | Richer/rarer veins **plus** salvage mats (antenna parts, dish shards, slag kits) — **not** a second currency pantheon |
++
++Wild surplus must still reach the Portal. Three logistics paths form the **logistics triangle**:
++
++1. **Walk Ledger** — caravan contingency when mesh is dark
++2. **Bounce Freight** — relay hops through Bounce Gates (mid-grid freight)
++3. **Antenna Spine** — Tesla-style daisy-chain from wild relays to Citaadel **wall receivers**
++
++Antennas are hard to obtain and must daisy-chain back to the Citaadel to work. Biome factions beyond the walls actively destroy progress (Link-breakers, ruin wardens, peak raiders).
++
++See **[wild-grid-logistics.md](./wild-grid-logistics.md)** for biome tables, faction jobs, and demo routes.  
++See **[grid-power-transmute-lore.md](./grid-power-transmute-lore.md)** for power/compute/transmute chain.
++
++---
++
+ ## Element Temperaments (Design-Facing)
+ 
+ Use these as recipe and UX flavor, not only flavor text:
+@@ -63,8 +85,9 @@ SURVEY → CHANNEL → EXTRACT → STORE → REFINE → CRAFT → DEFEND → TIT
+ ## Mode Concepts (Pick a Vertical Slice)
+ 
+ ### A. Parcel Foundry (solo / async)
+-- One REALM Parcel as the factory floor
+-- Place Haarvesters, Reservoirs, Waalls, Towers (if Grid rules allow)
++- **Primary floor:** Citaadel REALM parcels — safe dense baseload Foundry inside the Force Field
++- **Enrichment layer:** Wild Grid veins + salvage hauls (antenna parts, dish shards, slag kits) feed back through the logistics triangle — not a parallel ore economy
++- Place Haarvesters, Reservoirs, Waalls, Towers (Grid parcels add raid/faction pressure)
+ - Channeling is the only "player character" verb on cooldown
+ - Goal: sustain tithe quota across N in-game days without bankruptcy of Kinship
+ 
+@@ -181,10 +204,11 @@ STORE → REFINE → POWER → COMPUTE → LINK → TRANSMUTE → CITADEL
+ 
+ 1. Seed + review Alchemica ecology pages in canon world
+ 2. Draft recipe spreadsheet: 12 starter Installation recipes with 2–4 element costs
+-3. Prototype Parcel Foundry vertical slice (place → extract → spill → raid scout)
+-4. Write Tome one-shot: Alchemical Guild initiation
+-5. Prototype Lighting the Grid slice: caravan → Sparkworks → RPC transmute → blackout walk
+-6. Pass through Aarcade / Gotchiverse Lite constraints (Phaser, low-tech, DAO governable)
++3. **Hybrid PoC:** Citaadel baseload parcel → Yield Fields wild vein → Walk Ledger vs Bounce hop vs Antenna Spine daisy-chain to wall receiver
++4. Wire `wild-grid-canon-data.cjs` + feature-flag off-chain logistics sim
++5. Write Tome one-shot: Alchemical Guild initiation
++6. Prototype Lighting the Grid slice: Citaadel Sparkworks → wild surplus mesh transmute → Desert Link-breaker mid-hop raid → blackout Walk Ledger march
++7. Pass through Aarcade / Gotchiverse Lite constraints (Phaser, low-tech, DAO governable)
+ 
+ ---
+ 
+diff --git a/docs/grid-power-transmute-lore.md b/docs/grid-power-transmute-lore.md
+index 0cd3051..c82bedc 100644
+--- a/docs/grid-power-transmute-lore.md
++++ b/docs/grid-power-transmute-lore.md
+@@ -1,16 +1,32 @@
+ # Lighting the Grid — Power, Compute & Transmute Logistics
+ 
+-Lore + design for refining Alchemica into fuel for power plants and compute, so the Grid can run a Netherlink (internet) and **digitally ship Alchemica to the Citaadel** instead of walking caravans.
++Lore + design for the **Hybrid Foundry**: Citaadel parcels produce baseload Alchemica; the Wild Grid supplies richer veins and salvage mats that must be hauled home via the logistics triangle.
+ 
+-**Canon seed:** `/workspace/scripts/grid-power-canon-data.cjs`  
++**Canon seed:** `/workspace/scripts/grid-power-canon-data.cjs` + `/workspace/scripts/wild-grid-canon-data.cjs`  
+ **Parent:** `gameplay/farming-alchemica/grid-power`  
+-**Related:** [alchemica-factory-brainstorm.md](./alchemica-factory-brainstorm.md)
++**Related:** [alchemica-factory-brainstorm.md](./alchemica-factory-brainstorm.md) · [wild-grid-logistics.md](./wild-grid-logistics.md)
+ 
+ ---
+ 
+ ## One-Line Premise
+ 
+-Refine Alchemica → power plants (up to nuclear-scale Corestacks) → data centers / miners / RPCs / indexers / servers → Netherlink uptime → transmute Alchemica to the Citaadel. **If the lights die, you walk it back.**
++**Citaadel baseload** keeps the Portal fed. **Wild Grid surplus + salvage** (antenna parts, dish shards, slag kits) powers the enrichment layer. Refine Alchemica → plants → compute → **Netherlink** → transmute to wall receivers — or **Walk Ledger** when the mesh breaks.
++
++---
++
++## Logistics Triangle
++
++Three paths home; every Foundry plans all three:
++
++| Path | Role | Fail-over |
++|------|------|-----------|
++| **Walk Ledger** | Caravan contingency — barrels and salvage crates on foot/ROFL | Always available; slow; Lickquidator pressure |
++| **Bounce Freight** | Mid-grid **Bounce Gates** hop sealed lots toward wall receivers | Link-breakers desync hops → Walk Ledger |
++| **Antenna Spine** | Daisy-chain powered Antennas (Tesla-style) to Citaadel **wall receivers** | Break any hop → Walk Ledger; transmute requires full spine + compute |
++
++**Antenna rules:** Antennas are scarce. A wild Antenna alone does nothing — it must daisy-chain hop-by-hop until a Citaadel wall receiver accepts the handshake. Range and power per hop are tuning knobs; salvage mats reduce build cost.
++
++Full biome tables, faction jobs, and demo route: **[wild-grid-logistics.md](./wild-grid-logistics.md)**
+ 
+ ---
+ 
+@@ -23,6 +39,8 @@ Refine Alchemica → power plants (up to nuclear-scale Corestacks) → data cent
+ | **Netherlink** | Mesh internet: Antennas, Callspires, relays → Citaadel receivers |
+ | **Transmute** | Convert physical Alchemica into packet-form for digital shipping |
+ | **Walk Ledger** | Contingency: travel cost home if Netherlink is dark |
++| **Bounce Freight** | Mid-grid Bounce Gate hops for physical salvage/Alchemica lots |
++| **Antenna Spine** | Daisy-chain Antennas → Citaadel wall receivers (transmute path) |
+ | **Sparkworks → Dynamo → Netherforge → Corestack** | Plant tiers 1–4 |
+ 
+ ---
+@@ -85,12 +103,14 @@ Break any link → fall back to **caravan**.
+ 
+ ## Main Objective
+ 
+-Sustain **Netherlink transmute** from Grid Foundries to Citaadel receivers at a rate that keeps Portal tithe healthy — without relying on caravans — through Great Battle pressure.
++Sustain **Netherlink transmute** from Citaadel baseload + Wild Grid enrichment to Citaadel wall receivers at a rate that keeps Portal tithe healthy — using the **logistics triangle** (Walk / Bounce / Antenna Spine) without relying on caravans alone — through Great Battle pressure and biome faction sabotage.
+ 
+ Secondary objectives:
++- Keep Citaadel parcels as reliable baseload Foundries
++- Haul wild surplus and salvage (antenna parts, dish shards, slag kits) home — not a second currency pantheon
+ - Keep RPC honesty (ALPHA Flux)
+ - Keep indexer freshness (dispute prevention)
+-- Survive raids on glowing plants
++- Survive raids on plants, mid-hop relays, and Bounce Gates
+ - Maintain Walk Ledger readiness for blackouts
+ 
+ ---
+@@ -113,13 +133,13 @@ Secondary objectives:
+ 
+ | Chapter | Beats |
+ |---------|--------|
+-| 1 Barrel Road | Claim edge parcel → Defi Desert toll → gate delivery |
+-| 2 First Sparkworks | Fuel grades → plant online → failed transmute (no RPC) |
+-| 3 Callspire Rising | Component Run (Pulsecores + MoteBanks) → Rackhollow → first transmute |
+-| 4 Raid Scent | Gloam raid → disputed shipment → indexer need |
++| 1 Citaadel Spark | Citaadel baseload → first wild Yield Fields vein → Walk vs haul decision |
++| 2 Rim Sparkworks | Fuel grades on Citaadel rim; plant online; failed transmute (no spine) |
++| 3 Spine & Bounce | Antenna Spine + Bounce Freight → first mesh transmute of wild surplus |
++| 4 Mid-Hop Raid | Desert Link-breakers break desert relay — not only Gloam on plant |
+ | 5 Miner Quorum & Dynamo | Proof Halls → Citaadel notices Grid independence |
+ | 6 Corestack Gambit | License vs freeboot → containment night |
+-| 7 Blackout March | Mesh dies → march or mend |
++| 7 Blackout March | Mesh dies → Walk Ledger through Grid to west gate |
+ | 8 Receiver Gate | Citaadel / DAO vote on inbound transmute |
+ | 9 Stable Haul | Tithe-sustain victory check + epilogue |
+ 
+@@ -131,11 +151,11 @@ Secondary objectives:
+ 
+ Playable prototype order (maps to Chapters 1–4 + 7):
+ 
+-1. Tutorial caravan (teach Walk Ledger) — Ch.1
+-2. Sparkworks + Antenna (power, still no ship) — Ch.2
+-3. Servers + RPC (first successful smol transmute) — Ch.3
+-4. Lickquidator raid on plant Spillover — Ch.4
+-5. Blackout + emergency caravan encore — Ch.7
++1. Citaadel baseload + Yield Fields wild vein (teach hybrid geography) — Ch.1
++2. Rim Sparkworks + Antenna stub (power, still no ship) — Ch.2
++3. Antenna Spine + Bounce hop + first wild-surplus transmute — Ch.3
++4. Desert Link-breakers raid mid-hop relay — Ch.4
++5. Blackout + Walk Ledger march through Grid to gate — Ch.7
+ 
+ ---
+ 
+@@ -150,6 +170,7 @@ Playable prototype order (maps to Chapters 1–4 + 7):
+ 
+ ## Files
+ 
+-- Seed pages: `scripts/grid-power-canon-data.cjs`
++- Seed pages: `scripts/grid-power-canon-data.cjs` + `scripts/wild-grid-canon-data.cjs`
++- Wild logistics: `docs/wild-grid-logistics.md`
+ - Factory loop context: `docs/alchemica-factory-brainstorm.md`
+ - Quick ref: Alchemica + Grid Power sections in `lore-quick-reference.md`
+diff --git a/docs/lore-quick-reference.md b/docs/lore-quick-reference.md
+index a56fe1f..27954c8 100644
+--- a/docs/lore-quick-reference.md
++++ b/docs/lore-quick-reference.md
+@@ -139,14 +139,17 @@ A condensed cheat sheet for the most essential Aavegotchi worldbuilding elements
+ `Survey → Channel → Extract → Store → Refine → Craft → Defend → Tithe → Replenish`  
+ See [alchemica-factory-brainstorm.md](./alchemica-factory-brainstorm.md) and canon pages under `gameplay/farming-alchemica/*`.
+ 
+-### Lighting the Grid (Power → Netherlink → Transmute)
+-- **Problem:** Outer Grid Alchemica must reach the Citaadel; caravans walk it through Lickquidator country
+-- **Solution:** Refine Alchemica into fuel → power plants (Sparkworks → Corestack) → compute stack → **Netherlink** internet → **transmute** packets to Citaadel receivers
++### Lighting the Grid (Hybrid Foundry → Power → Transmute)
++- **Hybrid geography:** Citaadel parcels = safe dense **baseload** Foundry; Wild Grid = richer veins + salvage mats (antenna parts, dish shards, slag kits) — **not** a second currency pantheon
++- **Logistics triangle:** **Walk Ledger** (caravan) · **Bounce Freight** (mid-grid hops) · **Antenna Spine** (daisy-chain to wall receivers)
++- **Problem:** Wild enrichment must reach Citaadel wall receivers for Portal tithe
++- **Solution:** Citaadel baseload + wild surplus → refine fuel → plants (Sparkworks → Corestack) → compute stack → **Netherlink** → **transmute** packets — or walk when blacked out
++- **Antennas:** scarce; must daisy-chain to Citaadel to work; break any hop → Walk Ledger
+ - **Compute stack:** Coreforges (Pulsecores/CPU) + Remembrane Mills (MoteBanks/memory) → data centers, servers, RPCs, indexers, miners
+-- **Fail state:** Blackout → open the Walk Ledger → caravan home
+-- **Tithe:** Carved at transmute time for digital shipping
+-- Full lore: [grid-power-transmute-lore.md](./grid-power-transmute-lore.md) · seed `scripts/grid-power-canon-data.cjs`
+-- **Tome arc:** Light the Haul (Barrel Road → Stable Haul) with Linker/Walker tension
++- **Biome factions:** Desert Link-breakers, Daark Host, Ruin Wardens, Peak Raiders destroy relays beyond the walls
++- Full lore: [grid-power-transmute-lore.md](./grid-power-transmute-lore.md) · [wild-grid-logistics.md](./wild-grid-logistics.md)
++- Seeds: `scripts/grid-power-canon-data.cjs` + `scripts/wild-grid-canon-data.cjs`
++- **Tome arc:** Light the Haul (Citaadel Spark → Spine & Bounce → Mid-Hop Raid → Blackout March)
+ 
+ ### Alchemical Channeling
+ - Ritual that summons Alchemica near a Gotchi
+diff --git a/docs/lore-roadmap.md b/docs/lore-roadmap.md
+index 6880420..3609c77 100644
+--- a/docs/lore-roadmap.md
++++ b/docs/lore-roadmap.md
+@@ -277,17 +277,19 @@ A prioritized checklist for expanding the gotchi-lore system with new content.
+ - [ ] **Tome one-shot:** Alchemical Guild initiation ("Foundry of the Four")
+ - [ ] **Guild intermediate machines** (Crucible / Loom / Kiln) — DAO review
+ 
+-### Lighting the Grid (Power → Transmute)
++### Lighting the Grid (Power → Transmute) — Hybrid Foundry
+ 
+ - [x] **Grid Power canon pages** (`scripts/grid-power-canon-data.cjs`)
+-- [x] **Design doc** (`docs/grid-power-transmute-lore.md`)
++- [x] **Wild Grid logistics pages** (`scripts/wild-grid-canon-data.cjs`)
++- [x] **Design docs** (`grid-power-transmute-lore.md`, `wild-grid-logistics.md`)
++- [x] **Hybrid thesis** — Citaadel baseload + wild veins/salvage; logistics triangle (Walk / Bounce / Antenna Spine)
+ - [x] **Fuel grades + plant tiers + compute stack** (lore framing)
+-- [x] **Light the Haul campaign beats** (seeded outline)
++- [x] **Light the Haul campaign beats** (retuned for Hybrid — seeded outline)
+ - [x] **Tome campaign nodes** for Light the Haul (`LIGHT_THE_HAUL_CAMPAIGN_NODES`)
+ - [x] **Named haul roles** (Pip, Wattz, Nettle, Echo-9, Brii, Rex Spill, Chipz, Mnem, Vael, Gloam)
+ - [x] **Component makers** (Coreforge Pulsecores + Remembrane MoteBanks)
+ - [x] **Linkers vs Walkers** faction page
+-- [ ] **Vertical slice:** caravan → Sparkworks → RPC transmute → blackout walk
++- [ ] **Vertical slice:** Citaadel baseload → wild vein → spine/Bounce transmute → Link-breaker mid-hop → blackout Walk Ledger
+ - [ ] **Receiver politics** playable sub-branch polish
+ - [ ] **Corestack containment rules** — DAO review
+ 
+diff --git a/docs/lore-visual-map.md b/docs/lore-visual-map.md
+index 514e3d7..8b1d520 100644
+--- a/docs/lore-visual-map.md
++++ b/docs/lore-visual-map.md
+@@ -409,52 +409,50 @@ See `docs/alchemica-factory-brainstorm.md` for design pillars and vertical-slice
+ 
+ ---
+ 
+-## Lighting the Grid (Transmute Logistics)
++## Lighting the Grid (Hybrid Transmute Logistics)
+ 
+ ```
+-  GRID PARCEL FOUNDATION
+-           |
+-     REFINE FUEL GRADES
+-    FUD Slag / FOMO Plasma
+-    ALPHA Flux / KEK Vapor
+-           |
+-           ↓
+-   POWER PLANTS (tiers)
+-   Sparkworks → Dynamo
+-   → Netherforge → Corestack
+-           |
+-           ↓
+-   COMPONENT MAKERS
+-   ┌────────┴────────┐
+-   ↓                 ↓
+- Coreforge      Remembrane Mill
+- (Pulsecores)    (MoteBanks)
+-   CPU               Memory
+-           |
+-           ↓
+-      COMPUTE STACK
+-   ┌───────┼───────┬────────┬─────────┐
+-   ↓       ↓       ↓        ↓         ↓
+- Servers  RPC   Indexers  Miners   Data Centers
+-(Haunthost)(Callspire)(Loreloom)(Proof Hall)(Rackhollow)
+-           |
+-           ↓
+-      NETHERLINK MESH
+-    (internet on the Grid)
+-           |
+-      ┌────┴────┐
+-      ↓         ↓
+-  TRANSMUTE   BLACKOUT
+-  (packets)   (Walk Ledger)
+-      ↓         ↓
+-  CITADEL    CARAVAN
+-  receivers  through raids
+-      ↓         ↓
+-   PORTAL TITHE (either path, if it arrives)
++  CITAADEL BASELOAD          WILD GRID ENRICHMENT
++  (safe dense Foundry)       (veins + salvage mats)
++           \                       /
++            \                     /
++             └──── LOGISTICS TRIANGLE ────┐
++                      |                  |
++        ┌─────────────┼─────────────┐    |
++        ↓             ↓             ↓    |
++   WALK LEDGER   BOUNCE FREIGHT  ANTENNA SPINE
++   (caravan)     (mid-hop gates) (daisy-chain)
++        |             |             |
++        └─────────────┴─────────────┘
++                      |
++                REFINE FUEL GRADES
++                      |
++                      ↓
++              POWER PLANTS (tiers)
++              Sparkworks → Dynamo
++              → Netherforge → Corestack
++                      |
++                      ↓
++              COMPONENT MAKERS
++              Coreforge / Remembrane Mill
++                      |
++                      ↓
++                 COMPUTE STACK
++                      |
++                      ↓
++                 NETHERLINK MESH
++                      |
++                 ┌────┴────┐
++                 ↓         ↓
++             TRANSMUTE   BLACKOUT
++                 ↓         ↓
++            WALL RCVR   WALK LEDGER
++                 ↓         ↓
++            PORTAL TITHE (either path)
+ ```
+ 
+-Main objective: keep Netherlink green so Alchemica ships home without walking.  
+-See `docs/grid-power-transmute-lore.md`.
++Main objective: Citaadel baseload + wild enrichment home via spine/Bounce — Walk Ledger when the mesh dies.  
++See `docs/grid-power-transmute-lore.md` and `docs/wild-grid-logistics.md`.
+ 
+ ---
+ 
+diff --git a/docs/wild-grid-logistics.md b/docs/wild-grid-logistics.md
+new file mode 100644
+index 0000000..7559c57
+--- /dev/null
++++ b/docs/wild-grid-logistics.md
+@@ -0,0 +1,104 @@
++# Wild Grid Logistics — Hybrid Foundry Haul
++
++Lore + design for moving Wild Grid enrichment (richer veins + salvage mats) home to the Citaadel without inventing a second currency pantheon.
++
++**Canon seed:** `/workspace/scripts/wild-grid-canon-data.cjs`  
++**Parent:** `gameplay/farming-alchemica/grid-power/wild-grid`  
++**Related:** [grid-power-transmute-lore.md](./grid-power-transmute-lore.md) · [alchemica-factory-brainstorm.md](./alchemica-factory-brainstorm.md)
++
++---
++
++## Hybrid Overview
++
++| Geography | Job | What you get |
++|-----------|-----|--------------|
++| **Citaadel parcels** | Safe dense Alchemica Foundry | Primary **baseload** — reliable FUD/FOMO throughput inside Force Field |
++| **Wild Grid** (outside walls) | Enrichment + salvage frontier | Richer/rarer Alchemica veins **plus** salvage mats: antenna parts, dish shards, slag kits |
++
++Wild yield is still the four elements (FUD / FOMO / ALPHA / KEK). Salvage mats are **installation inputs**, not new currencies.
++
++**Logistics triangle** — every Wild Foundry must plan all three:
++
++| Path | When | Cost / risk |
++|------|------|-------------|
++| **Walk Ledger** | Mesh dark, relay broken, political blackout | Slow; honest; Lickquidator roadmaps |
++| **Bounce Freight** | Mid-grid hops when spine is incomplete | Gate tolls; faction sabotage on hops |
++| **Antenna Spine** | Daisy-chain powered Antennas → Citaadel **wall receivers** | Antennas scarce; range limits; power hungry |
++
++**Rule:** Antennas are hard to obtain. A lone wild Antenna does nothing — it must **daisy-chain** hop-by-hop until a Citaadel wall receiver accepts the handshake. Break any hop → fall back to Walk Ledger.
++
++Biome factions beyond the walls destroy progress: cut relays, raid Bounce Gates, salt salvage routes.
++
++---
++
++## Biome → Vein / Salvage Table
++
++| Biome | Alchemica vein bias | Salvage mats | Notes |
++|-------|---------------------|--------------|-------|
++| **Yield Fields** | FOMO-rich topsoil; steady ALPHA trace | Slag kits (field crucible scrap) | Tutorial wild vein; shallow raids |
++| **DeFi Desert** | FOMO spikes; dry ALPHA pockets | Dish shards (old relay dishes) | Link-breaker territory; blackout caravan washes |
++| **Daark Forest** | FUD-dense roots; rare KEK spores | Antenna parts (tree-mounted relays) | Tree of FUD omens; Host ambushes |
++| **Maagma Springs** | FUD/FOMO thermal vents | Slag kits (cooled vent plates) | Heat plumes attract Lickquidators |
++| **Laughing Peaks** | KEK vapor vents; thin FOMO | Dish shards (wind-scoured arrays) | Peak Raiders toll the high hops |
++| **Liquidator Ruins** | ALPHA salvage from dead tech | Antenna parts + dish shards | Forward-base raids; highest risk |
++| **Genesis Blocks** | Balanced four-element bedrock | Slag kits (primordial forge stone) | Slow channel; stable ratios |
++| **Poly Lakes** | KEK-rich shallows; FUD silt | Antenna parts (drowned mesh buoys) | Bounce Gate anchor biome |
++
++Salvage feeds Sparkworks boot, Antenna Spine construction, and Crucible repair — not a parallel mint.
++
++---
++
++## Faction Jobs (Beyond the Walls)
++
++| Faction | Biome | What they destroy |
++|---------|-------|-------------------|
++| **Desert Link-breakers** | DeFi Desert | Mid-hop relays; Bounce Gate timing windows |
++| **Daark Host** | Daark Forest | Antenna daisy-chains; forest relay camouflage |
++| **Ruin Wardens** | Liquidator Ruins | Salvage hauls; dish-shard convoys |
++| **Lickquidators** | All wild biomes | Spillover plumes; bright Antenna chains |
++| **Peak Raiders** | Laughing Peaks | High-elevation hops; KEK festival bait |
++
++Citaadel politics still throttle **wall receivers** — Wild Grid independence scares Isolationists.
++
++---
++
++## Bounce Gate (Freight Hop)
++
++**Bounce Gates** are mid-grid freight relays — not full Netherlink nodes. They accept a sealed salvage/Alchemica lot, hold it one cycle, and **bounce** it toward the next hop or wall receiver.
++
++- Requires KEK handshake stability (operators joke about "frenly packet volleyball")
++- Each hop pays a toll (ALPHA or salvage mat barter)
++- Link-breakers win by desyncing the bounce window — cargo falls to Walk Ledger
++- Bounce does **not** replace Antenna Spine for transmute clearance; it moves **physical** lots until a powered spine can transmute
++
++Doctrine: Bounce for bulk salvage; Spine for digital tithe batches.
++
++---
++
++## Demo Route (PoC Narrative)
++
++**Yield Fields → DeFi Desert mid-relay → South Beach / west-gate receiver → Great Portal**
++
++1. **Yield Fields** — crew channels a wild FOMO vein; loads slag kits + motes into Bounce crates
++2. **DeFi Desert mid-relay** — Bounce Gate hop; Desert Link-breakers scout the timing window
++3. **South Beach / west-gate receiver** — Antenna Spine daisy-chain terminates at Citaadel wall; Keeper Vael's post accepts handshake
++4. **Great Portal** — Nettle carves tithe; Force Field ledger ticks green
++
++Failure branch: Link-breakers break the desert hop → Pip opens Walk Ledger through the Grid to the west gate.
++
++---
++
++## PoC Notes (Off-Chain, Feature-Flagged)
++
++- Logistics sim can run **off-chain** for vertical slice — no on-chain salvage token
++- Feature flag: `wildGridLogistics` gates Bounce + Spine UI until DAO review
++- Minimum viable: one Citaadel baseload parcel + one wild biome + one Bounce hop + one wall receiver
++- Faction raids as PvE events on mid-hop timers, not full open-world sim
++- Salvage mats map to existing Installation recipes (Antenna, Sparkworks repair) — no new currencies
++
++**Seed pages:** `scripts/wild-grid-canon-data.cjs` (merged in `seed-canon-world.mjs`)
++
++---
++
++_"Baseload in the Citaadel. Enrichment in the wild. Pay the hop, or walk the Ledger."_  
++— Alchemical Guild freight proverb
+diff --git a/scripts/grid-power-canon-data.cjs b/scripts/grid-power-canon-data.cjs
+index d5d18ba..f86252c 100644
+--- a/scripts/grid-power-canon-data.cjs
++++ b/scripts/grid-power-canon-data.cjs
+@@ -1,11 +1,9 @@
+ /**
+  * Grid Power & Alchemica Transmute Logistics — canon expansion.
+  *
+- * Premise: Grid settlers refine Alchemica to fuel compute infrastructure
+- * (data centers, block miners, RPC nodes, indexers, servers, power plants).
+- * The objective is to light the Grid with Netherlink (internet), so Alchemica
+- * can be transmuted and shipped digitally to the Citaadel. Without power/link,
+- * caravans must walk it home under Lickquidator pressure.
++ * Premise: Hybrid Foundry — Citaadel parcels produce baseload Alchemica;
++ * Wild Grid supplies richer veins + salvage mats hauled via Walk Ledger,
++ * Bounce Freight, and Antenna Spine daisy-chains to wall receivers.
+  *
+  * Nested under gameplay/farming-alchemica (world-power economy branch).
+  * Marked canon-expansion / game-design — not litepaper text.
+@@ -26,13 +24,16 @@ const GRID_POWER_PAGES = [
+       { label: 'grid-power', color: 'cyan' },
+       { label: 'canon-expansion', color: 'cyan' },
+     ],
+-    content: `Beyond the Force Field, the Grid is not only wilderness — it is a power project.
++    content: `**Hybrid Foundry:** Citaadel parcels are the safe dense Alchemica Foundry — primary **baseload** inside the Force Field. The **Wild Grid** outside the walls holds richer veins and salvage mats (antenna parts, dish shards, slag kits) — still the four elements, not a second currency pantheon.
+ 
+-Gotchis who farm the outer parcels face a brutal logistics truth: Alchemica harvested far from the Citaadel is useless to the Portal tithe and the Baazaar until it arrives home. For ages that meant **caravans** — Gotchis walking motes and Reservoir carts across Lickquidator country, spilling FOMO at every ambush.
++Gotchis who enrich the wild face a logistics truth: surplus must reach Citaadel **wall receivers** for Portal tithe and Baazaar credit. Three paths form the **logistics triangle**:
++• **Walk Ledger** — caravans when the mesh is dark
++• **Bounce Freight** — mid-grid Bounce Gate hops for physical lots
++• **Antenna Spine** — daisy-chain powered Antennas home (transmute path)
+ 
+-The Alchemical Guild's answer is **Lighting the Grid**: refine Alchemica into fuel for power plants and compute, raise a **Netherlink** (internet mesh) across parcels, then **transmute** Alchemica into packet-form and ship it to Citaadel receivers in a blink.
++**Lighting the Grid** adds compute: refine Alchemica → fuel plants → raise **Netherlink** → **transmute** packets to receivers. Antennas are scarce; a wild Antenna alone does nothing until it daisy-chains to the Citaadel.
+ 
+-No Netherlink, no transmute. No power, no Netherlink. Fail the chain and you walk.`,
++No spine, no transmute. No power, no spine. Fail the chain and you walk.`,
+   },
+   {
+     pageKey: `${GRID_POWER_ROOT}/caravan-age`,
+@@ -164,22 +165,23 @@ Guild doctrine: every Foundry Dynamo must site at least one Coreforge press and
+       { label: 'grid-power', color: 'cyan' },
+       { label: 'alchemica', color: 'gold' },
+     ],
+-    content: `**Netherlink** is the Guild name for internet across the Grid: a mesh of powered Antennas, Callspires, and relay Lodges that stitches outer parcels to Citaadel receivers.
++    content: `**Netherlink** is the Guild name for internet across the Hybrid Foundry: a mesh of powered Antennas, Callspires, and relay Lodges that stitches **Citaadel baseload parcels**, **wild enrichment nodes**, and **wall receivers** into one auditable haul.
+ 
+ Lighting the Grid means more than lamps. It means:
+-• Persistent routes from Parcel → regional Rackhollow → Citaadel gateways
++• Persistent routes from Citaadel rim → wild relay → Bounce hop → wall receiver
++• Antenna Spine daisy-chains (wild Antennas must chain home — lone relays are inert)
+ • Enough uptime for transmute handshakes to finalize
+ • Indexer freshness so shipments are auditable
+-• Redundant paths when Lickquidators chew a relay
++• Redundant paths when biome factions chew a mid-hop relay
+ 
+-Netherlink is powered, not wished. A dark Antenna is a scenic ruin. A brownout turns digital shipping into packet rain — Alchemica that "arrives" incomplete and must be walked as residue.
++Netherlink is powered, not wished. A dark Antenna is scenic scrap. A brownout turns digital shipping into packet rain — Alchemica that "arrives" incomplete and must be walked as residue.
+ 
+ Cultural split:
+-• **Linkers** — Grid settlers who believe Netherlink is the only way to outpace Lickquidators.
+-• **Walkers** — Caravan traditionalists who trust boots over packets.
+-• **Citaadel Receivers** — Portal-adjacent operators who accept inbound transmute and skim the tithe automatically.
++• **Linkers** — believe spine + Netherlink outpace Lickquidators and Link-breakers
++• **Walkers** — trust boots when receivers close for politics
++• **Citaadel Receivers** — wall operators who accept inbound transmute and skim tithe automatically
+ 
+-Prophecy joke among Tithe Wardens: the Tree of FUD once answered "How do we win?" with "Check the latency."`,
++See \`wild-grid-logistics\` canon pages for Bounce Freight and biome faction jobs.`,
+   },
+   {
+     pageKey: `${GRID_POWER_ROOT}/transmute-shipping`,
+@@ -268,22 +270,22 @@ Defense patterns: Waall killboxes around plants, Black Holes as decoy plumes, KE
+       { label: 'grid-power', color: 'cyan' },
+       { label: 'game-design', color: 'cyan' },
+     ],
+-    content: `Suggested Tome / gameplay arc: **Light the Haul**.
++    content: `Suggested Tome / gameplay arc: **Light the Haul** (Hybrid Foundry edition).
+ 
+ Act beats:
+-1. **Barrel Road** — Run a caravan; feel the tax of walking
+-2. **First Sparkworks** — Build Tier-1 plant; power one Antenna; fail a transmute (no RPC)
+-3. **Callspire Rising** — Component run (Pulsecores + MoteBanks); stand up servers + RPC; ship a smol batch; celebrate; get raided
+-4. **Indexer Truth** — After a disputed shipment, build a Loreloom; learn why proofs matter
+-5. **Miner Quorum** — Proof Halls unlock larger batches; Spillover draws a serious Lickquidator
+-6. **District Dynamo** — Tier-2/3 plants link parcels; Citaadel notices Grid independence
++1. **Citaadel Spark** — Baseload parcel online; first wild Yield Fields vein; Walk vs haul choice
++2. **Rim Sparkworks** — Tier-1 plant on Citaadel rim; power one Antenna stub; fail transmute (no spine)
++3. **Spine & Bounce** — Antenna Spine + Bounce Freight; first mesh transmute of wild surplus
++4. **Mid-Hop Raid** — Desert Link-breakers break desert relay; disputed shipment; indexer need
++5. **Miner Quorum** — Proof Halls unlock larger batches; Spillover draws serious Lickquidator
++6. **District Dynamo** — Tier-2/3 plants link parcels; Citaadel notices Wild enrichment
+ 7. **Corestack Gambit** — Optional nuclear-scale reactor; triumph or scramble
+-8. **Blackout March** — Enemy kills the mesh on Great Battle eve; Walk Ledger time
+-9. **Receiver Gate** — Politics: open Citaadel receivers or force Grid to stay self-sufficient
+-10. **Stable Haul** — Sustained transmute paying Portal tithe without caravans — victory condition for the arc
++8. **Blackout March** — Mesh dies on Great Battle eve; Walk Ledger through Grid to west gate
++9. **Receiver Gate** — Politics: open wall receivers or force Walk doctrine
++10. **Stable Haul** — Sustained transmute paying Portal tithe — victory condition
+ 
+-Win condition: **Citaadel receives Grid Alchemica via Netherlink at tithe-sustain rate for N consecutive cycles.**  
+-Lose condition: **Chronic blackout + caravan attrition empties Portal stores before the next Great Battle.**`,
++Win condition: **Citaadel receives baseload + wild enrichment via Netherlink at tithe-sustain rate for N consecutive cycles.**  
++Lose condition: **Chronic blackout + Walk Ledger attrition empties Portal stores before the next Great Battle.**`,
+   },
+   {
+     pageKey: `${GRID_POWER_ROOT}/design-hooks`,
+@@ -410,73 +412,73 @@ const LIGHT_THE_HAUL_CAMPAIGN_NODES = [
+     type: 'arc',
+     title: 'Light the Haul',
+     content:
+-      'Grid Power campaign — refine Alchemica into plants and compute, light the Netherlink, transmute yield to the Citaadel, or walk it home when the mesh dies.',
++      'Hybrid Grid Power campaign — Citaadel baseload + Wild Grid enrichment, Antenna Spine and Bounce Freight, light the Netherlink, transmute yield to wall receivers, or Walk Ledger home when the mesh dies.',
+     choices: [],
+     roles: [],
+     order: 0,
+     branchIndex: 0,
+   },
+ 
+-  chapter('barrel-road', LIGHT_THE_HAUL_ARC, 'Chapter 1 — Barrel Road', 0),
++  chapter('barrel-road', LIGHT_THE_HAUL_ARC, 'Chapter 1 — Citaadel Spark', 0),
+   scene(
+-    'claim-the-edge',
++    'citaadel-baseload',
+     `${LIGHT_THE_HAUL_ARC}/barrel-road`,
+-    'Claim the Edge Parcel',
+-    'Your crew holds a Grid parcel far from Citaadel gates. Reservoirs fill. The Walk Ledger says six hard watches to the nearest receiver — through Defi Desert scent trails Gloam already knows.',
++    'Citaadel Baseload Online',
++    'Your crew runs a Citaadel parcel inside the Force Field — dense, safe, boring FUD throughput. Nettle smiles: "Baseload feeds the Portal." Wattz yawns: "Baseload does not feed ambition."',
+     {
+       choices: [
+-        { label: 'Load the caravan', outcome: 'Begin Barrel Road' },
+-        { label: 'Hoard and wait for a plant plan', outcome: 'Wattz drafts Sparkworks' },
++        { label: 'Optimize baseload ratios', outcome: 'Stable tithe margin; slow enrichment' },
++        { label: 'Scout wild enrichment', outcome: 'Yield Fields vein marked on Walk Ledger' },
+       ],
+       roles: [
+-        { player: 'Pip the Barrel-Walker', action: 'Mark the chalk route' },
+-        { player: 'Nettle the Tithe Warden', action: 'Weigh Portal share on barrels' },
++        { player: 'Wattz the Foundry Wright', action: 'Tune baseload Crucibles' },
++        { player: 'Nettle the Tithe Warden', action: 'Chart Portal share from safe veins' },
+       ],
+       order: 0,
+     },
+   ),
+   scene(
+-    'desert-toll',
++    'yield-fields-vein',
+     `${LIGHT_THE_HAUL_ARC}/barrel-road`,
+-    'Defi Desert Toll',
+-    'Spillover from a rushed FOMO haul paints the sand. Freebooters demand ALPHA toll for Waall-road access. Distant licking — Gloam is near.',
++    'First Wild Yield Fields Vein',
++    'Beyond the wall, Yield Fields burps FOMO-rich topsoil and slag-kit salvage. Pip chalks the route: walk it, or haul it home once someone lights a spine. Gloam licks at the Spillover scent from three ridges out.',
+     {
+       choices: [
+-        { label: 'Pay the ALPHA toll', outcome: 'Road opens; tithe margin thins' },
+-        { label: 'Detour with ROFL scouts', outcome: 'Slower; avoid freebooters; risk Gloam' },
+-        { label: 'Fight for the road', outcome: 'Win path or lose barrels' },
++        { label: 'Channel the wild vein now', outcome: 'Enrichment lot sealed; logistics choice looms' },
++        { label: 'Walk a scout caravan first', outcome: 'Learn Walk Ledger distance to west gate' },
++        { label: 'Haul salvage only; skip wild motes', outcome: 'Antenna parts stockpile; thinner enrichment' },
+       ],
+       roles: [
+-        { player: 'Pip the Barrel-Walker', action: 'Negotiate or fight' },
+-        { player: 'ROFL Scout', action: 'Sniff alternate washes' },
++        { player: 'Pip the Barrel-Walker', action: 'Mark chalk route from wall to vein' },
++        { player: 'ROFL Scout', action: 'Sniff Spillover ridge lines' },
+       ],
+       order: 1,
+     },
+   ),
+   scene(
+-    'gate-delivery',
++    'haul-or-walk',
+     `${LIGHT_THE_HAUL_ARC}/barrel-road`,
+-    'Citaadel Gate Delivery',
+-    'Half a cart short, you reach Keeper Vael\'s receiver post on foot. Tithe is carved by hand. Vael notes: "Walkers feed us. Linkers promise us. Bring either — just bring it."',
++    'Haul or Walk',
++    'Wild surplus sits in Reservoirs with no spine home. Keeper Vael\'s wall receiver is six hard watches by foot — or zero watches if someone builds Antenna hops. "Baseload keeps us alive," Vael says. "Wild keeps us interesting."',
+     {
+       choices: [
+-        { label: 'Swear to light a Sparkworks', outcome: 'Chapter 2 unlocks' },
+-        { label: 'Double down on caravan routes', outcome: 'Walker ending branch stays open' },
++        { label: 'Swear to build Rim Sparkworks + spine', outcome: 'Chapter 2 unlocks' },
++        { label: 'Walk the enrichment lot tonight', outcome: 'Walker branch; feel the tax early' },
+       ],
+       roles: [
+-        { player: 'Keeper Vael', action: 'Accept inbound Alchemica' },
+-        { player: 'Nettle the Tithe Warden', action: 'Reconcile Walk Ledger' },
++        { player: 'Keeper Vael', action: 'Quote receiver doctrine from the wall' },
++        { player: 'Nettle the Tithe Warden', action: 'Weigh wild lot against baseload quota' },
+       ],
+       order: 2,
+     },
+   ),
+ 
+-  chapter('first-spark', LIGHT_THE_HAUL_ARC, 'Chapter 2 — First Sparkworks', 1),
++  chapter('first-spark', LIGHT_THE_HAUL_ARC, 'Chapter 2 — Rim Sparkworks', 1),
+   scene(
+     'fuel-grades',
+     `${LIGHT_THE_HAUL_ARC}/first-spark`,
+-    'Crucible Lessons',
+-    'Wattz teaches fuel grades over a hot Crucible: FUD Slag for baseload, FOMO Plasma for spikes, ALPHA Flux for honest nodes, KEK Vapor so the mesh does not laugh itself apart.',
++    'Crucible Lessons on the Rim',
++    'On the Citaadel rim — still inside the Force Field, close enough to see wild smoke — Wattz teaches fuel grades: FUD Slag for baseload, FOMO Plasma for spikes, ALPHA Flux for honest nodes, KEK Vapor so the mesh does not laugh itself apart.',
+     {
+       choices: [
+         { label: 'Prioritize FUD Slag stockpile', outcome: 'Stable brownout resistance' },
+@@ -489,12 +491,12 @@ const LIGHT_THE_HAUL_CAMPAIGN_NODES = [
+   scene(
+     'sparkworks-online',
+     `${LIGHT_THE_HAUL_ARC}/first-spark`,
+-    'Sparkworks Online',
+-    'Tier-1 Alchemica Power Plant hums. One Antenna lights. Chat works. Transmute console glows — then rejects the batch. Echo-9 shrugs: "No Callspire, no truth."',
++    'Rim Sparkworks Online',
++    'Tier-1 Alchemica Power Plant hums on the Citaadel rim. One Antenna stub lights toward the wall — not yet a spine. Chat works locally. Transmute console glows — then rejects the wild surplus batch. Echo-9 shrugs: "No daisy-chain, no truth."',
+     {
+       choices: [
+-        { label: 'Build servers and an RPC next', outcome: 'Chapter 3' },
+-        { label: 'Overclock the Antenna anyway', outcome: 'Packet rain; learn the hard way' },
++        { label: 'Build spine hops + Bounce relay next', outcome: 'Chapter 3' },
++        { label: 'Overclock the rim Antenna anyway', outcome: 'Packet rain; learn the hard way' },
+       ],
+       roles: [
+         { player: 'Wattz the Foundry Wright', action: 'Bring Sparkworks online' },
+@@ -504,12 +506,47 @@ const LIGHT_THE_HAUL_CAMPAIGN_NODES = [
+     },
+   ),
+ 
+-  chapter('callspire', LIGHT_THE_HAUL_ARC, 'Chapter 3 — Callspire Rising', 2),
++  chapter('callspire', LIGHT_THE_HAUL_ARC, 'Chapter 3 — Spine & Bounce', 2),
++  scene(
++    'antenna-spine',
++    `${LIGHT_THE_HAUL_ARC}/callspire`,
++    'Raise the Antenna Spine',
++    'Salvage antenna parts from Yield Fields slag kits. Wattz sites hop one on the rim, hop two in Poly Lakes shallows, hop three at South Beach west-gate receiver. Each hop needs FOMO Plasma boot and KEK handshake — a Tesla daisy-chain pointing home.',
++    {
++      choices: [
++        { label: 'Build all three hops before compute', outcome: 'Spine lit; transmute still needs RPC' },
++        { label: 'Rush hop two only', outcome: 'Partial spine; Bounce required' },
++        { label: 'Stockpile salvage; delay spine', outcome: 'Walk Ledger stays primary' },
++      ],
++      roles: [
++        { player: 'Wattz the Foundry Wright', action: 'Site daisy-chain hops' },
++        { player: 'Echo-9', action: 'Test handshake ranges' },
++      ],
++      order: 0,
++    },
++  ),
++  scene(
++    'bounce-freight',
++    `${LIGHT_THE_HAUL_ARC}/callspire`,
++    'First Bounce Freight',
++    'A Bounce Gate in DeFi Desert mid-relay accepts sealed wild lots while the spine finishes. KEK operators volley crates toward the wall. Pip hates it: "Packets for barrels." Nettle loves it: "Fewer boots, same tithe."',
++    {
++      choices: [
++        { label: 'Bounce physical lot to west gate', outcome: 'Salvage arrives; motes wait for transmute' },
++        { label: 'Skip Bounce; walk the lot', outcome: 'Walker pride; slower enrichment' },
++      ],
++      roles: [
++        { player: 'Pip the Barrel-Walker', action: 'Grumble at bounce windows' },
++        { player: 'Nettle the Tithe Warden', action: 'Time tithe against bounce cycles' },
++      ],
++      order: 1,
++    },
++  ),
+   scene(
+     'component-run',
+     `${LIGHT_THE_HAUL_ARC}/callspire`,
+-    'Component Run',
+-    'Empty Rackhollow frames wait like cool tombs. Chipz refuses to install Haunthosts without Guild-stamped Pulsecores; Mnem will not ship MoteBanks until FUD density and KEK refresh pass the hum test. Wattz splits the fuel bus: ALPHA to the Coreforge, FUD to the Remembrane Mill.',
++    'Component Run for Transmute',
++    'Spine is green enough for compute. Chipz stamps Pulsecores; Mnem weaves MoteBanks. Wattz splits fuel: ALPHA to Coreforge, FUD to Remembrane Mill. Rackhollow frames wait like cool tombs until both fab lines breathe.',
+     {
+       choices: [
+         { label: 'Prioritize Pulsecores', outcome: 'CPUs first; risk memory starve later' },
+@@ -521,14 +558,14 @@ const LIGHT_THE_HAUL_CAMPAIGN_NODES = [
+         { player: 'Mnem of the Remembrane', action: 'Weave MoteBanks' },
+         { player: 'Wattz the Foundry Wright', action: 'Split fuel buses' },
+       ],
+-      order: 0,
++      order: 2,
+     },
+   ),
+   scene(
+     'rackhollow',
+     `${LIGHT_THE_HAUL_ARC}/callspire`,
+     'Raise the Rackhollow',
+-    'Pulsecores seat. MoteBanks click into transmute staging trays. Haunthost servers fill a cooled lodge wing. KEK Vapor vents smell like festival fog. Brii refuses to celebrate until an indexer exists — but Echo-9 needs the racks first.',
++    'Pulsecores seat. MoteBanks click into transmute staging trays. Haunthost servers fill a cooled lodge wing on the rim. KEK Vapor vents smell like festival fog. Brii refuses to celebrate until an indexer exists — but Echo-9 needs the racks first.',
+     {
+       choices: [
+         { label: 'Stand up Callspire RPC now', outcome: 'Attempt first transmute' },
+@@ -539,14 +576,14 @@ const LIGHT_THE_HAUL_CAMPAIGN_NODES = [
+         { player: 'Loommother Brii', action: 'Demand indexer path' },
+         { player: 'Chipz of the Coreforge', action: 'Certify Pulsecore honesty stamps' },
+       ],
+-      order: 1,
++      order: 3,
+     },
+   ),
+   scene(
+     'first-transmute',
+     `${LIGHT_THE_HAUL_ARC}/callspire`,
+-    'First Transmute Pulse',
+-    'ALPHA-honest proofs clear. A smol Reservoir batch vanishes into Netherlink. Citaadel credits ping. Tithe bit flips automatically. Pip stares at empty barrels like someone stole a religion. Mnem watches MoteBank watermarks — if buffers had been thin, this would already be a dispute.',
++    'First Wild Surplus Transmute',
++    'Three-hop spine holds. ALPHA-honest proofs clear. The Yield Fields enrichment batch vanishes into Netherlink — first mesh transmute of **wild surplus**, not just Citaadel baseload. Credits ping at Vael\'s wall receiver. Pip stares at empty wild Reservoirs like someone stole a religion.',
+     {
+       choices: [
+         { label: 'Throw a Lodge party', outcome: 'Morale up; Spillover scent up' },
+@@ -559,16 +596,35 @@ const LIGHT_THE_HAUL_CAMPAIGN_NODES = [
+         { player: 'Pip the Barrel-Walker', action: 'Question the empty barrels' },
+         { player: 'Mnem of the Remembrane', action: 'Check buffer watermarks' },
+       ],
+-      order: 2,
++      order: 4,
+     },
+   ),
+ 
+-  chapter('raid-scent', LIGHT_THE_HAUL_ARC, 'Chapter 4 — Raid Scent', 3),
++  chapter('raid-scent', LIGHT_THE_HAUL_ARC, 'Chapter 4 — Mid-Hop Raid', 3),
++  scene(
++    'link-breakers-strike',
++    `${LIGHT_THE_HAUL_ARC}/raid-scent`,
++    'Desert Link-Breakers at Mid Hop',
++    'Desert Link-breakers desync the DeFi Desert Bounce window — not Gloam on your rim plant. Hop two flickers. Wild surplus motes sit mid-relay while Gloam circles the Spillover plume anyway. Rex Spill wants more miners; Wattz wants redundant hops.',
++    {
++      choices: [
++        { label: 'Rebuild bounce timing with KEK rites', outcome: 'Restore mid hop; costly' },
++        { label: 'Route around via Walk Ledger', outcome: 'Lose a cycle; save the lot' },
++        { label: 'Fortify hop two with Waalls', outcome: 'Defense first; Link-breakers return' },
++      ],
++      roles: [
++        { player: 'Desert Link-breaker Captain', action: 'Desync the bounce window' },
++        { player: 'Gloam', action: 'Circle the Spillover plume' },
++        { player: 'Wattz the Foundry Wright', action: 'Argue redundant spine paths' },
++      ],
++      order: 0,
++    },
++  ),
+   scene(
+     'gloam-arrives',
+     `${LIGHT_THE_HAUL_ARC}/raid-scent`,
+     'Gloam at the Plume',
+-    'Gloam leads a lick-pack toward Sparkworks Spillover. Rex Spill wants more miners "to finish bigger batches." Wattz wants Waalls. Someone will be wrong in public.',
++    'With the mid hop broken, Gloam leads a lick-pack toward the bright rim Sparkworks Spillover. Rex Spill still wants more miners "to finish bigger batches." Someone will be wrong in public.',
+     {
+       choices: [
+         { label: 'Build Waall killbox', outcome: 'Defense first' },
+@@ -580,7 +636,7 @@ const LIGHT_THE_HAUL_CAMPAIGN_NODES = [
+         { player: 'Rex Spill', action: 'Argue for Proof Halls' },
+         { player: 'Wattz the Foundry Wright', action: 'Hold the Crucible line' },
+       ],
+-      order: 0,
++      order: 1,
+     },
+   ),
+   scene(
+@@ -594,7 +650,7 @@ const LIGHT_THE_HAUL_CAMPAIGN_NODES = [
+         { label: 'Send a caravan to reconcile by foot', outcome: 'Walker pride; slow truth' },
+       ],
+       roles: [{ player: 'Loommother Brii', action: 'Explain orphan events' }],
+-      order: 1,
++      order: 2,
+     },
+   ),
+ 
+@@ -679,15 +735,15 @@ const LIGHT_THE_HAUL_CAMPAIGN_NODES = [
+     'mesh-dies',
+     `${LIGHT_THE_HAUL_ARC}/blackout`,
+     'The Mesh Dies',
+-    'Great Battle eve. Power diverts to Towers. Isolationists shutter receivers. Gloam chews a relay. Netherlink goes dark mid-batch. Packet rain. Walk Ledger opens itself.',
++    'Great Battle eve. Power diverts to Citaadel Towers. Isolationists shutter wall receivers. Link-breakers chew hop two. Gloam hits a relay. Netherlink goes dark mid-batch — wild surplus and baseload alike. Packet rain. Walk Ledger opens across the Grid.',
+     {
+       choices: [
+-        { label: 'March the caravan tonight', outcome: 'Classic haul under fire' },
+-        { label: 'Repair one Callspire first', outcome: 'Race the clock; split the crew' },
++        { label: 'March the Walk Ledger through Grid to west gate', outcome: 'Classic haul under fire' },
++        { label: 'Repair hop two + Callspire first', outcome: 'Race the clock; split the crew' },
+       ],
+       roles: [
+-        { player: 'Pip the Barrel-Walker', action: 'Open Walk Ledger' },
+-        { player: 'Echo-9', action: 'Attempt emergency RPC repair' },
++        { player: 'Pip the Barrel-Walker', action: 'Open Walk Ledger through Grid' },
++        { player: 'Echo-9', action: 'Attempt emergency spine repair' },
+         { player: 'Keeper Vael', action: 'Report receiver shutter' },
+       ],
+       order: 0,
+@@ -696,8 +752,8 @@ const LIGHT_THE_HAUL_CAMPAIGN_NODES = [
+   scene(
+     'march-or-mend',
+     `${LIGHT_THE_HAUL_ARC}/blackout`,
+-    'March or Mend',
+-    'Two crews: barrels toward Citaadel, tools toward the broken Callspire. Success is partial by nature — some motes walk, some rematerialize if Echo-9 lands a handshake before dawn.',
++    'March Through the Grid',
++    'Pip leads barrels and salvage crates along the chalk route: Yield Fields wash → Defi Desert detour → South Beach west gate. Echo-9\'s repair crew races hop two. Success is partial — some motes walk, some rematerialize if the spine relights before dawn.',
+     {
+       choices: [
+         { label: 'Prioritize barrels', outcome: 'Walker victory flavor' },
+diff --git a/scripts/seed-canon-world.mjs b/scripts/seed-canon-world.mjs
+index 8b39ba9..c056dcf 100644
+--- a/scripts/seed-canon-world.mjs
++++ b/scripts/seed-canon-world.mjs
+@@ -33,6 +33,7 @@ const { NINE_AADEPTS_PAGES, NINE_AADEPTS_LANDMARK_BLURBS } = require('./nine-aad
+ const { AAVEGOTCHI_LORE_PAGES, AAVEGOTCHI_LORE_LANDMARK_BLURBS } = require('./aavegotchi-lore-canon-data.cjs');
+ const { ALCHEMICA_PAGES, ALCHEMICA_LANDMARK_BLURBS } = require('./alchemica-canon-data.cjs');
+ const { GRID_POWER_PAGES, GRID_POWER_LANDMARK_BLURBS } = require('./grid-power-canon-data.cjs');
++const { WILD_GRID_PAGES, WILD_GRID_LANDMARK_BLURBS } = require('./wild-grid-canon-data.cjs');
+ const { CHARACTERS_HUB, CHARACTER_SPECS, wireCharacterLinks } = require('./characters-canon-data.cjs');
+ const { buildCharacterPageDoc, buildCharacterStubDoc } = require('./canonPageBuilder.cjs');
+ 
+@@ -42,6 +43,7 @@ const ALL_CANON_PAGES = [
+   ...NINE_AADEPTS_PAGES,
+   ...ALCHEMICA_PAGES,
+   ...GRID_POWER_PAGES,
++  ...WILD_GRID_PAGES,
+ ];
+ const ALL_LANDMARK_BLURBS = {
+   ...LANDMARK_BLURBS,
+@@ -49,6 +51,7 @@ const ALL_LANDMARK_BLURBS = {
+   ...NINE_AADEPTS_LANDMARK_BLURBS,
+   ...ALCHEMICA_LANDMARK_BLURBS,
+   ...GRID_POWER_LANDMARK_BLURBS,
++  ...WILD_GRID_LANDMARK_BLURBS,
+ };
+ 
+ const CANON_SLUG = (process.env.CANON_SLUG || 'gotchiverse-canon').trim();
+@@ -135,7 +138,7 @@ async function main() {
+     title: CANON_TITLE,
+     slug: CANON_SLUG,
+     description:
+-      'Canonical Gotchiverse lore — Litepaper, Aavegotchi Lore origins, The Nine Aadepts screenplay, Gotchus Alchemica Foundry, and Grid Power / Netherlink transmute logistics — maintained by the DAO.',
++      'Canonical Gotchiverse lore — Litepaper, Aavegotchi Lore origins, The Nine Aadepts screenplay, Gotchus Alchemica Foundry, Grid Power / Netherlink transmute logistics, and Wild Grid hybrid haul — maintained by the DAO.',
+     templateDefs: GOTCHI_TEMPLATES,
+     linkedChronicleIds: [],
+     tags: [{ label: 'canon', color: 'purple' }],
+@@ -164,7 +167,7 @@ async function main() {
+     order += 1;
+   }
+   console.log(
+-    `Seeded ${CANON_PAGES.length} litepaper + ${AAVEGOTCHI_LORE_PAGES.length} Aavegotchi Lore + ${NINE_AADEPTS_PAGES.length} Nine Aadepts + ${ALCHEMICA_PAGES.length} Alchemica + ${GRID_POWER_PAGES.length} Grid Power pages`,
++    `Seeded ${CANON_PAGES.length} litepaper + ${AAVEGOTCHI_LORE_PAGES.length} Aavegotchi Lore + ${NINE_AADEPTS_PAGES.length} Nine Aadepts + ${ALCHEMICA_PAGES.length} Alchemica + ${GRID_POWER_PAGES.length} Grid Power + ${WILD_GRID_PAGES.length} Wild Grid pages`,
+   );
+ 
+   const hubParentId = null;
+@@ -259,7 +262,7 @@ async function main() {
+   const commit = await createWorldCommit({
+     worldId,
+     message:
+-      'Genesis canon — Litepaper + Aavegotchi Lore + Nine Aadepts + Alchemica Foundry + Grid Power + character roster',
++      'Genesis canon — Litepaper + Aavegotchi Lore + Nine Aadepts + Alchemica Foundry + Grid Power + Wild Grid + character roster',
+     authorWallet: CANON_OWNER,
+     kind: 'fork_genesis',
+   });
+diff --git a/scripts/wild-grid-canon-data.cjs b/scripts/wild-grid-canon-data.cjs
+new file mode 100644
+index 0000000..bf9fe0e
+--- /dev/null
++++ b/scripts/wild-grid-canon-data.cjs
+@@ -0,0 +1,180 @@
++/**
++ * Wild Grid Logistics — Hybrid Foundry canon expansion.
++ *
++ * Premise: Citaadel parcels = safe dense baseload Foundry.
++ * Wild Grid (outside walls) = richer veins + salvage mats (antenna parts,
++ * dish shards, slag kits) — NOT a second currency pantheon.
++ * Logistics triangle: Walk Ledger, Bounce Freight, Antenna Spine.
++ *
++ * Nested under gameplay/farming-alchemica/grid-power/wild-grid.
++ * Marked canon-expansion / game-design — not litepaper text.
++ */
++
++const WILD_GRID_ROOT = 'gameplay/farming-alchemica/grid-power/wild-grid';
++const GRID_POWER_PARENT = 'gameplay/farming-alchemica/grid-power';
++
++/** Lore pages for gotchiverse-canon (lore_pages collection). */
++const WILD_GRID_PAGES = [
++  {
++    pageKey: WILD_GRID_ROOT,
++    title: 'Wild Grid — Hybrid Foundry',
++    templateId: 'default',
++    parentKey: GRID_POWER_PARENT,
++    tags: [
++      { label: 'alchemica', color: 'gold' },
++      { label: 'wild-grid', color: 'cyan' },
++      { label: 'canon-expansion', color: 'cyan' },
++    ],
++    content: `The Foundry is two geographies cooperating — not two economies.
++
++**Citaadel parcels** are the safe dense Alchemica Foundry: primary **baseload** inside the Force Field. Reliable FUD and FOMO throughput, limited expansion, Portal-adjacent tithe rhythm.
++
++**Wild Grid** (outside the walls) is the enrichment frontier: richer and rarer Alchemica veins **plus** salvage mats — antenna parts, dish shards, slag kits. Still the four elements. Salvage feeds Installations; it is not a new currency pantheon.
++
++Wild yield must reach the Portal. Three paths form the **logistics triangle**:
++• **Walk Ledger** — caravan when the mesh is dark
++• **Bounce Freight** — mid-grid Bounce Gate hops for physical lots
++• **Antenna Spine** — daisy-chain powered Antennas to Citaadel **wall receivers**
++
++Antennas are hard to obtain. A lone wild Antenna does nothing until it daisy-chains home. Biome factions beyond the walls destroy relays, bounce windows, and salvage convoys.
++
++See child pages for spine rules, bounce doctrine, wall receivers, biome yields, and faction jobs.`,
++  },
++  {
++    pageKey: `${WILD_GRID_ROOT}/antenna-spine`,
++    title: 'Antenna Spine — Daisy-Chain to Wall Receivers',
++    templateId: 'installation',
++    parentKey: WILD_GRID_ROOT,
++    runes: { type: 'Logistics', utility: 'Tesla daisy-chain → Citaadel wall receivers' },
++    tags: [
++      { label: 'wild-grid', color: 'cyan' },
++      { label: 'grid-power', color: 'cyan' },
++    ],
++    content: `The **Antenna Spine** is a powered daisy-chain of Antennas from wild relays to Citaadel **wall receivers** — Guild slang for "Tesla towers pointing home."
++
++**Build rules:**
++• Antennas are scarce; salvage mats (antenna parts, dish shards) reduce craft cost
++• Each hop has **range** and **power** requirements — underpowered hops desync
++• A wild Antenna without upstream power and downstream handshake is scenic scrap
++• Transmute clearance requires spine + compute stack green end-to-end
++
++**Failure:** break any hop → packets rain → **Walk Ledger** opens for the stranded lot.
++
++**Tuning fantasy:** 3-hop mesh is the vertical-slice sweet spot (wild parcel → mid relay → wall receiver). Great Battle eve may divert power from spine hops to Citaadel Towers — deliberate blackout pressure.
++
++Linkers worship the spine. Walkers keep the Ledger current anyway.`,
++  },
++  {
++    pageKey: `${WILD_GRID_ROOT}/bounce-freight`,
++    title: 'Bounce Freight — Mid-Grid Hops',
++    templateId: 'default',
++    parentKey: WILD_GRID_ROOT,
++    tags: [
++      { label: 'wild-grid', color: 'cyan' },
++      { label: 'game-design', color: 'cyan' },
++    ],
++    content: `**Bounce Gates** are mid-grid freight relays — not full Netherlink nodes. They accept a sealed Alchemica or salvage lot, hold one cycle, and **bounce** it toward the next hop or wall receiver.
++
++Doctrine:
++• **Bounce** moves **physical** lots (barrels, slag kits, dish crates)
++• **Antenna Spine** enables **transmute** batches once compute is online
++• KEK Vapor stabilizes bounce handshakes — desync sounds like meme-static volleyball
++
++Each hop pays toll (ALPHA or salvage barter). **Desert Link-breakers** win by attacking the bounce **window**, not always the cargo — cargo falls to Walk Ledger when timing breaks.
++
++PoC route: Yield Fields lot → DeFi Desert mid-relay → South Beach west-gate receiver.`,
++  },
++  {
++    pageKey: `${WILD_GRID_ROOT}/wall-receivers`,
++    title: 'Citaadel Wall Receivers',
++    templateId: 'default',
++    parentKey: WILD_GRID_ROOT,
++    tags: [
++      { label: 'wild-grid', color: 'cyan' },
++      { label: 'grid-power', color: 'cyan' },
++    ],
++    content: `**Wall receivers** terminate the Antenna Spine on the Citaadel perimeter — Keeper posts where inbound transmute and tithe carving happen.
++
++Politics:
++• **Integrationists** want more receivers open — Wild Grid enrichment feeds the Portal
++• **Isolationists** throttle gates — fear Grid independence and Corestack glow
++• **Tithe Wardens** care only that tithe clears by cycle end
++
++Handshake requirements mirror grid-power transmute chain: power, RPC quorum, indexer freshness, miner finality, tithe bit set.
++
++South Beach / **west-gate receiver** is the demo terminus in Guild training parables: wild surplus lands, Nettle weighs Portal share, Vael logs the pulse.
++
++Receiver shutter during blackout forces Walk Ledger even if wild parcels still produce.`,
++  },
++  {
++    pageKey: `${WILD_GRID_ROOT}/biomes`,
++    title: 'Wild Biomes — Veins & Salvage',
++    templateId: 'default',
++    parentKey: WILD_GRID_ROOT,
++    tags: [
++      { label: 'wild-grid', color: 'cyan' },
++      { label: 'alchemica', color: 'gold' },
++    ],
++    content: `Wild biomes enrich the four elements and drop **salvage mats** — installation inputs, not new currencies.
++
++| Biome | Vein bias | Salvage |
++|-------|-----------|---------|
++| **Yield Fields** | FOMO topsoil; ALPHA trace | Slag kits |
++| **DeFi Desert** | FOMO spikes; dry ALPHA | Dish shards |
++| **Daark Forest** | FUD roots; KEK spores | Antenna parts |
++| **Maagma Springs** | FUD/FOMO vents | Slag kits |
++| **Laughing Peaks** | KEK vapor; thin FOMO | Dish shards |
++| **Liquidator Ruins** | ALPHA from dead tech | Antenna parts + dish shards |
++| **Genesis Blocks** | Balanced four-element bedrock | Slag kits |
++| **Poly Lakes** | KEK shallows; FUD silt | Antenna parts |
++
++Citaadel parcels remain **baseload** — do not expect ruin-tier ALPHA or dish salvage inside the Force Field.`,
++  },
++  {
++    pageKey: `${WILD_GRID_ROOT}/factions`,
++    title: 'Wild Grid Factions — Jobs Beyond the Walls',
++    templateId: 'default',
++    parentKey: WILD_GRID_ROOT,
++    tags: [
++      { label: 'wild-grid', color: 'cyan' },
++      { label: 'faction', color: 'purple' },
++    ],
++    content: `Biome factions destroy progress beyond the walls — PvE pressure on logistics, not a second economy.
++
++| Faction | Biome | Job |
++|---------|-------|-----|
++| **Desert Link-breakers** | DeFi Desert | Cut mid-hop relays; desync Bounce windows |
++| **Daark Host** | Daark Forest | Ambush Antenna daisy-chains; salt forest relays |
++| **Ruin Wardens** | Liquidator Ruins | Raid salvage hauls; defend dead tech |
++| **Lickquidators** | All wild biomes | Hunt Spillover plumes and bright spine hops |
++| **Peak Raiders** | Laughing Peaks | Toll high-elevation hops; bait KEK festivals |
++
++Guild response: redundant hops, Black Hole decoys on salvage roads, KEK-rich Lodge escorts, and always — always — a current Walk Ledger.`,
++  },
++];
++
++/** Landmark flavor tied to Wild Grid / hybrid logistics framing. */
++const WILD_GRID_LANDMARK_BLURBS = {
++  'yield-fields':
++    'Hybrid tutorial wild vein — FOMO-rich topsoil and slag-kit salvage; first Bounce hop in Guild training parables.',
++  'defi-desert':
++    'Desert Link-breaker country — dish-shard salvage and mid-relay raids; preferred Walk Ledger wash when the spine breaks.',
++  'daark-forest':
++    'Daark Host territory — antenna parts in the canopy; spine hops here feel like negotiating with the Tree of FUD.',
++  'maagma-springs':
++    'Thermal FUD/FOMO vents and cooled slag kits — heat plumes draw Lickquidators to bright relay chains.',
++  'laughing-peaks':
++    'Peak Raider high hops — KEK vapor vents and wind-scoured dish shards; elevation taxes Bounce timing.',
++  'liquidator-ruins':
++    'Ruin Warden salvage frontier — dense antenna parts and dish shards; highest risk enrichment run.',
++  'genesis-blocks':
++    'Primordial four-element bedrock and forge-stone slag kits — slow channel, stable ratios for baseload blending.',
++  'poly-lakes':
++    'Drowned mesh buoys and KEK shallows — natural Bounce Gate anchor biome on the haul home.',
++};
++
++module.exports = {
++  WILD_GRID_ROOT,
++  WILD_GRID_PAGES,
++  WILD_GRID_LANDMARK_BLURBS,
++};
+-- 
+2.43.0
+

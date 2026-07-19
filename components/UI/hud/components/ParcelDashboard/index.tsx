@@ -43,6 +43,7 @@ import GameController from 'components/controllers/GameController';
 import { AlchemicaBalances, AlchemicaStats, InstallationCard, Modal } from 'components/UI/component';
 import { useGame } from 'contexts/GameContext';
 import GlobalState from 'contexts/GlobalState';
+import { FoundryStore } from 'helpers/foundry';
 let channelInterval;
 let claimInterval;
 
@@ -277,6 +278,11 @@ export const ParcelDashboard = (): JSX.Element => {
           type: 'UPDATE_CHANNEL_ID',
           lastChanneledId: Number(selectedPlayer.id),
         });
+        // Hybrid Foundry PoC: channel spill raises pollution score
+        if ((gameConfig as { enableParcelFoundryPoC?: boolean })?.enableParcelFoundryPoC || process.env.NEXT_PUBLIC_ENABLE_FOUNDRY_POC === 'true') {
+          FoundryStore.setFoundryEnabled(true);
+          FoundryStore.addPollution(1 + Math.min(5, Math.floor((results.fud + results.fomo) / 10)));
+        }
       } else {
         oops();
         updateTransactionNotificationStatus(notificationDispatch, id, 'error', getErrMessage(tx));
@@ -430,6 +436,17 @@ export const ParcelDashboard = (): JSX.Element => {
               <AlchemicaStats total={totalClaimed} rates={rates} capacities={capacities} />
             </div>
           </div>
+          {((gameConfig as { enableParcelFoundryPoC?: boolean })?.enableParcelFoundryPoC ||
+            process.env.NEXT_PUBLIC_ENABLE_FOUNDRY_POC === 'true') && (
+            <div className="foundry-strip" style={{ marginTop: 12, padding: 8, border: '1px solid #50dce6', fontSize: 12 }}>
+              <div style={{ color: '#50dce6', fontWeight: 700 }}>FOUNDRY PoC</div>
+              <div>
+                Pollution {FoundryStore.getState().pollution} · Tithe {FoundryStore.getState().titheAccrued} · Netherlink{' '}
+                {FoundryStore.getState().netherlink.toUpperCase()}
+              </div>
+              <div style={{ opacity: 0.85 }}>{FoundryStore.getState().walkLedgerHint}</div>
+            </div>
+          )}
           <div className="button-group">
             <div className="column">
               <Button size={2.8} disabled={channelLoading || !!secondsUntilChannel} secondary onClick={handleChannel} fullWidth>
