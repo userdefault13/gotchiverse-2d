@@ -29,6 +29,8 @@
   ],
   "exclude": [
     "node_modules",
-    "shared_code"
+    "shared_code",
+    "docs/foundry/realm-server-patch",
+    "docs/foundry/lore"
   ]
 }

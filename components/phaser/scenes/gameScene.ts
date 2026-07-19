@@ -74,6 +74,13 @@ export const getGameScene = (type: SceneType, loadedCallback: () => void) => {
       Players.init();
       Enemies.init();
       Quests.init();
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const FoundryNodes = require('components/phaser/FoundryNodes').default;
+        FoundryNodes.init();
+      } catch (e) {
+        console.warn('@gameScene FoundryNodes init skipped', e);
+      }
     },
 
     preload: async function () {

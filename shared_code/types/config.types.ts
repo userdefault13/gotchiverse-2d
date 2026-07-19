@@ -246,6 +246,8 @@ export interface GameConfig extends CombatConfig, MinigameConfig, SprintConfig, 
   eventParcels: boolean;
   enableCollisionsParcel: boolean;
   enableCollisionsInstallation: boolean;
+  /** Hybrid Grid Foundry PoC — wild veins, antennas, Walk/Bounce/mesh haul */
+  enableParcelFoundryPoC: boolean;
   providersRiskVeryHigh: ProviderRisk[];
   providersRiskHigh: ProviderRiskHigh[];
 }
