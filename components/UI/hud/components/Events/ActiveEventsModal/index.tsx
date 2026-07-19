@@ -15,23 +15,33 @@ export const ActiveEventsModal = (): JSX.Element => {
       type: 'UPDATE_ACTIVE_EVENTS_MODAL',
       activeEventsModal: {
         open: false,
+        title: undefined,
       },
     });
   };
   const teleport = (id: string): void => {
     click();
-    const parcelId = getParceIdByTokenId(id);
+    // EventList passes bounce-gate parcel tokenId; accept C-* ids too.
+    const parcelId = id?.charAt(0) === 'C' ? id : getParceIdByTokenId(id);
+    if (!parcelId) {
+      console.warn('ActiveEventsModal: could not resolve parcel for', id);
+      return;
+    }
     GameController.sendData('movement', 'teleport', { parcelId });
     setTimeout(() => {
       void Installations.resetStates();
       uiDispatch({ type: 'UPDATE_NFT_DISPLAY', nftDisplayState: { open: false } });
+      uiDispatch({
+        type: 'UPDATE_EVENT_HOLOGRAM',
+        eventHologramState: { open: false, installationId: undefined },
+      });
     }, 50);
 
     handleClose();
   };
   return (
     <>
-      <Modal title="Active Events" open={activeEventsModal.open} onClose={handleClose}>
+      <Modal title={activeEventsModal.title || 'Active Events'} open={activeEventsModal.open} onClose={handleClose}>
         <div className="events-wrapper">
           <EventList onSelect={(parcelId) => teleport(parcelId)} />
         </div>

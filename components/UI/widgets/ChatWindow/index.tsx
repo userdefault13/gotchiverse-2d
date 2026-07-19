@@ -9,9 +9,10 @@ import { useChat } from 'contexts/ChatContext';
 import { handleChatEvent, postChatMessage, subscribeToChatChannel, updateGotchiImgs } from 'contexts/ChatContext/actions';
 import { useRealm } from 'contexts/RealmContext';
 import { ChatEvent, ChatRoomEvent } from 'types';
-import { getIsValidated, oauthLink } from 'helpers/auth.helper';
+import { getAarcadeDiscordConnectUrl, getIsValidated } from 'helpers/auth.helper';
 import _ from 'lodash';
 import { useGame } from 'contexts/GameContext';
+import { useWeb3 } from 'contexts/Web3Context';
 
 interface Props {
   channel: 'LOCAL' | 'GLOBAL';
@@ -23,6 +24,8 @@ export const ChatWindow = ({ channel, open }: Props): JSX.Element => {
   const [{ localChatEvents, globalChatEvents, gotchiImgs }, chatDispatch] = useChat();
   const [{ selectedPlayer, currentDistrict, isAavegotchiLent }] = useRealm();
   const [{ gameConfig }] = useGame();
+  const [{ currentAccount }] = useWeb3();
+  const aarcadeConnectUrl = getAarcadeDiscordConnectUrl(currentAccount);
 
   const [messageValue, setMessageValue] = useState('');
   const [localChatHistory, setLocalChatHistory] = useState<Array<ServerMessage | ChatMessage>>([]);
@@ -54,8 +57,8 @@ export const ChatWindow = ({ channel, open }: Props): JSX.Element => {
           message: (
             <p style={{ color: 'var(--col-grey)', margin: 0 }}>
               You must be the owner of this Aavegotchi or{' '}
-              <a href={oauthLink} style={{ color: 'var(--col-info-400)' }}>
-                Verify in Discord
+              <a href={aarcadeConnectUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--col-info-400)' }}>
+                Connect Discord on Aarcade
               </a>{' '}
               before you can post in chat.
             </p>

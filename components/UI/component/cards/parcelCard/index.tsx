@@ -1,11 +1,12 @@
 /* eslint-disable multiline-ternary */
 import styles from './styles';
 import Image from 'next/image';
-import { BorrowedIcon, Inactive } from 'assets';
+import { BorrowedIcon } from 'assets';
 import { ChannelIcon, CloseIcon, LevelIcon, ParcelImage } from 'components/UI/elements';
 import { GotchiverseParcel } from 'types';
 import { formatDigit } from 'helpers/functions';
 import Truncate from 'components/UI/widgets/Truncate';
+import { getParcelTokenIdById } from 'shared_code/utils/shared.utils.parcel';
 
 interface Props {
   item?: GotchiverseParcel;
@@ -28,13 +29,31 @@ const formatTimeLeft = (seconds: number) => {
   return `${formatDigit(hours)}h ${formatDigit(minutes)}m`;
 };
 
+/** S3 parcel art is keyed by numeric tokenId, not C-* parcelId. */
+const resolveParcelTokenId = (item?: GotchiverseParcel): string | undefined => {
+  if (!item) return undefined;
+  if (item.tokenId != null && String(item.tokenId) !== '') return String(item.tokenId);
+  if (item.id != null && String(item.id).charAt(0) !== 'C') return String(item.id);
+  if (item.parcelId) {
+    const fromMeta = getParcelTokenIdById(item.parcelId);
+    if (fromMeta) return String(fromMeta);
+  }
+  return undefined;
+};
+
 export const ParcelCard = ({ item, altarLevel, secondsUntilChannel, isBorrowed, mode, active }: Props): JSX.Element => {
+  const parcelTokenId = resolveParcelTokenId(item);
+
   return (
     <>
       <div className={`parcel-card ${mode} ${active ? 'active' : ''} ${item && isBorrowed ? 'borrowed' : ''} ${!item ? 'disabled' : ''}`}>
         <div className="flex w-full gap-2">
           <div className={`img-container ${!item ? 'disabled' : ''} ${item && isBorrowed ? 'borrowed' : ''}`}>
-            {item ? <ParcelImage parcelId={item.id} size={9} /> : <CloseIcon size={35} big fill="var(--col-info-400)" opacity={0.5} />}
+            {item && parcelTokenId ? (
+              <ParcelImage parcelId={parcelTokenId} size={9} />
+            ) : (
+              <CloseIcon size={35} big fill="var(--col-info-400)" opacity={0.5} />
+            )}
           </div>
           {item ? (
             <div className="detail-wrapper">
@@ -48,7 +67,7 @@ export const ParcelCard = ({ item, altarLevel, secondsUntilChannel, isBorrowed, 
                   )}
                 </div>
                 <div className="district">
-                  District {item?.district ?? '-'} <span className="token-id">ID: {item?.id ?? '-'}</span>
+                  District {item?.district ?? '-'} <span className="token-id">ID: {parcelTokenId ?? '-'}</span>
                 </div>
               </div>
 

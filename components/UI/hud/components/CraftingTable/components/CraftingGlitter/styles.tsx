@@ -4,8 +4,8 @@ import { ParticleSprite } from 'assets/gifs';
 export default css`
   .glitter-container {
     position: relative;
-    width: 35rem;
-    height: 10rem;
+    width: 22rem;
+    height: 7rem;
   }
 
   .glitter-container > span {

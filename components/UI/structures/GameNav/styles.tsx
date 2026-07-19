@@ -3,12 +3,16 @@ import css from 'styled-jsx/css';
 export default css`
   .game-nav-component {
     height: 5rem;
-    position: absolute;
+    position: fixed;
+    top: 0;
+    left: 0;
     width: 100%;
     border-bottom: 2px solid var(--col-purple-300);
     display: flex;
     justify-content: space-between;
-    z-index: 100;
+    /* Above Phaser canvas (fixed, full viewport) */
+    z-index: 10000;
+    pointer-events: auto;
   }
 
   .content {
@@ -60,6 +64,23 @@ export default css`
     margin: 0 0.5rem;
     margin-top: 0rem;
     height: 100%;
+  }
+
+  .logout-btn {
+    appearance: none;
+    background: transparent;
+    border: 0;
+    padding: 0 0.6rem;
+    min-width: 4.4rem;
+    min-height: 4.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: url('/cursors/pointer.png'), pointer;
+    position: relative;
+    z-index: 10001;
+    pointer-events: auto;
+    isolation: isolate;
   }
 
   .settings-menu-container {
@@ -115,7 +136,7 @@ export default css`
     position: absolute;
     top: 6.9rem;
     width: 200px;
-    height: 202px;
+    height: 200px;
     left: 10px;
   }
 
@@ -163,6 +184,12 @@ export default css`
     color: white;
     font-weight: bold;
     line-height: 0.9;
+    margin-top: 0.4rem;
+  }
+
+  .location-row {
+    width: 100%;
+    gap: 0.4rem;
   }
 
   .super-chat-toggle {

@@ -19,7 +19,7 @@ export const AlchemicaStats = ({ total, rates, capacities }: Props): JSX.Element
         <div className="alchemica-container">
           {alchemicas.map((alchemica, index) => (
             <div className="icon-container" key={index}>
-              <Image alt="" src={getAlchemicaIcon(alchemica, gameConfig.gotchiverseTheme)} />
+              <Image alt="" src={getAlchemicaIcon(alchemica, gameConfig.gotchiverseTheme)} layout="fill" objectFit="contain" />
             </div>
           ))}
         </div>

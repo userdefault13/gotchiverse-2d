@@ -23,6 +23,10 @@ export function getErrMessage(tx): string {
       errMsg = 'Max parcel upgrades already in progress. Speed them up with GLTR or leverage Maaker installation.';
     } else if (errMsg.includes('invalid arrayify value')) {
       errMsg = 'Wrong Signature';
+    } else if (errMsg.includes("reading 'toHexString'") || errMsg.includes('toHexString')) {
+      errMsg = 'Equip signature missing. On Base, retry Confirm; otherwise the REALM signature API may be down.';
+    } else if (errMsg.includes('Equip signature unavailable')) {
+      errMsg = 'Equip signature unavailable. REALM signature API is not configured for this network.';
     }
   }
 
@@ -109,6 +113,8 @@ export function chainIdToName(chainId: number): NetworkNames {
       return 'matic';
     case 5:
       return 'goerli';
+    case 8453:
+      return 'base';
 
     default:
       break;
@@ -554,9 +560,14 @@ export function collateralByAddress(network: string, address: string): Collatera
   //   else if (network === 'matic') return add.maticAddress.toLowerCase() === address.toLowerCase();
   //   else return add.kovanAddress.toLowerCase() === address.toLowerCase();
   // });
-  const collateral = collaterals.find((add) => add.maticAddress.toLowerCase() === address.toLowerCase());
+  if (!address) {
+    return collaterals[0];
+  }
+  const collateral = collaterals.find((add) => add.maticAddress?.toLowerCase() === address.toLowerCase());
 
   if (collateral != null) return collateral;
+  // Base collaterals may not be in the legacy matic table yet — keep enter flow alive.
+  return collaterals[0];
 }
 
 export async function addPolygon(): Promise<void> {
@@ -574,6 +585,26 @@ export async function addPolygon(): Promise<void> {
           symbol: 'MATIC',
         },
         blockExplorerUrls: ['https://polygonscan.com/'],
+      },
+    ],
+  });
+}
+
+export async function addBase(): Promise<void> {
+  // @ts-expect-error
+  await window.ethereum?.request({
+    method: 'wallet_addEthereumChain',
+    params: [
+      {
+        chainId: '0x2105',
+        rpcUrls: [process.env.NEXT_PUBLIC_BASE_RPC || 'https://mainnet.base.org'],
+        chainName: 'Base',
+        nativeCurrency: {
+          name: 'Ether',
+          decimals: 18,
+          symbol: 'ETH',
+        },
+        blockExplorerUrls: ['https://basescan.org/'],
       },
     ],
   });

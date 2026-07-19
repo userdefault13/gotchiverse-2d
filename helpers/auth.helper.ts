@@ -1,6 +1,27 @@
 import { toast } from 'react-toastify';
 import Router from 'next/router';
+
+/** @deprecated Prefer Aarcade Discord connect — kept for legacy callback routes. */
 export const oauthLink = process.env.OAUTH_LINK;
+
+const AARCADE_HOME = (process.env.NEXT_PUBLIC_AARCADE_HOME || 'https://aarcadeghst.com').replace(/\/$/, '');
+
+/** Open Aarcade profile Discord OAuth (wallet must be linked there). */
+export const getAarcadeDiscordConnectUrl = (wallet?: string): string => {
+  const address = String(wallet || '').trim();
+  if (!address) return `${AARCADE_HOME}`;
+  // Aarcade only accepts relative returnTo paths on aarcadeghst.com.
+  const returnTo = `/player/${address}?discord=linked`;
+  return `${AARCADE_HOME}/api/profile-discord-oauth/start?wallet=${encodeURIComponent(address)}&returnTo=${encodeURIComponent(
+    returnTo,
+  )}`;
+};
+
+export const getAarcadeProfileUrl = (wallet?: string): string => {
+  const address = String(wallet || '').trim();
+  if (!address) return AARCADE_HOME;
+  return `${AARCADE_HOME}/player/${address}`;
+};
 
 export const postAuthUnlink = async (code: string | string[]): Promise<boolean> => {
   try {
@@ -70,12 +91,47 @@ export const postAuthValidation = async (address: string, code: string | string[
   }
 };
 
-export const getIsValidated = async (address: string): Promise<boolean> => {
+export type AarcadeVerifyStatus = {
+  verified: boolean;
+  discordLinked: boolean;
+  inAavegotchiGuild: boolean;
+  checkedAt?: string | null;
+  stale?: boolean;
+};
+
+/**
+ * Check Aarcade verification (discordLinked && inAavegotchiGuild)
+ * via Gotchiverse server proxy — secret never reaches the browser.
+ */
+export const getAarcadeVerifyStatus = async (
+  address: string,
+  opts?: { fresh?: boolean },
+): Promise<AarcadeVerifyStatus | null> => {
   try {
-    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/discord/isvalidated?address=${address}`);
-    const data = response.status === 200 && (await response.json());
-    return Boolean(data);
+    if (!address) return null;
+    const qs = new URLSearchParams({ wallet: address });
+    if (opts?.fresh) qs.set('fresh', '1');
+    const response = await fetch(`/api/aarcade-verify?${qs.toString()}`, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+      cache: 'no-store',
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    return {
+      verified: Boolean(data?.verified),
+      discordLinked: Boolean(data?.discordLinked),
+      inAavegotchiGuild: Boolean(data?.inAavegotchiGuild),
+      checkedAt: data?.checkedAt ?? null,
+      stale: Boolean(data?.stale),
+    };
   } catch (err) {
-    return false;
+    console.warn('getAarcadeVerifyStatus failed', err);
+    return null;
   }
+};
+
+export const getIsValidated = async (address: string, opts?: { fresh?: boolean }): Promise<boolean> => {
+  const status = await getAarcadeVerifyStatus(address, opts);
+  return Boolean(status?.verified);
 };

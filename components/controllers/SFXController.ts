@@ -43,6 +43,7 @@ interface SFXControllerInterface {
   createAudio: (sound: SoundConfig) => void;
   musicPlay: (track: MusicTheme) => void;
   musicStop: (track?: MusicTheme, fadeDuration?: number, nextTheme?: MusicTheme) => void;
+  ensureMusicUnlocked: () => void;
   fadeIn: (sound, fadeDuration?: number) => void;
   fadeOut: (sound, fadeDuration?: number, type?: string) => void;
   soundLoopPlay: (track) => void;
@@ -62,21 +63,44 @@ interface SFXControllerInterface {
 }
 
 const musicPlay = (musicTheme: MusicTheme): void => {
+  if (!GlobalState.SETTINGS.state.allowMusic) {
+    currentMusicTheme = musicTheme || currentMusicTheme;
+    return;
+  }
   if (!scene.sounds?.[currentMusicTheme]?.isPlaying) currentMusicTheme = musicTheme || currentMusicTheme;
   if (musicTheme === currentMusicTheme && scene.sounds?.[currentMusicTheme]?.isPlaying) return;
-  if (GlobalState.SETTINGS.state.allowMusic) {
-    musicStop(currentMusicTheme, 1000, musicTheme);
-  }
+  musicStop(currentMusicTheme, 1000, musicTheme);
   currentMusicTheme = musicTheme || currentMusicTheme;
 };
 
 const musicStop = (musicTheme?: MusicTheme, fadeDuration = 1000, nextTheme?: MusicTheme): void => {
   if (!musicTheme) {
     fadeOut(currentMusicTheme, 0);
+    return;
   }
   if (scene.sounds[musicTheme]?.isPlaying) {
     fadeOut(musicTheme || currentMusicTheme, fadeDuration, nextTheme);
   } else if (nextTheme) fadeIn(nextTheme, fadeDuration);
+};
+
+/** Retry BGM after the browser unlocks AudioContext (autoplay policies). */
+const ensureMusicUnlocked = (): void => {
+  if (!scene?.sound || !GlobalState.SETTINGS.state.allowMusic) return;
+  const soundManager = scene.sound as Phaser.Sound.BaseSoundManager & {
+    locked?: boolean;
+    once?: (event: string, callback: () => void) => void;
+  };
+  const tryPlay = () => {
+    if (!GlobalState.SETTINGS.state.allowMusic) return;
+    const theme = currentMusicTheme || getDefaultMusicTheme();
+    if (!scene.sounds?.[theme]?.isPlaying) musicPlay(theme);
+  };
+  if (soundManager.locked && typeof soundManager.once === 'function') {
+    soundManager.once('unlocked', tryPlay);
+  } else {
+    // Already unlocked or unknown — nudge once after a tick in case load raced connect.
+    window.setTimeout(tryPlay, 500);
+  }
 };
 
 const soundLoopPlay = (sound: string): void => {
@@ -423,6 +447,7 @@ const SFXController: SFXControllerInterface = {
   fadeOut,
   musicPlay,
   musicStop,
+  ensureMusicUnlocked,
   soundLoopPlay,
   soundLoopStop,
   toggleSettings,

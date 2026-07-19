@@ -19,11 +19,7 @@ export const Footer = (): JSX.Element => {
         },
         {
           name: 'baazar',
-          label: 'Gotchi Baazaar',
-        },
-        {
-          name: 'brand',
-          label: 'Brand Kit',
+          label: 'Aarcade Baazaar',
         },
         {
           name: 'white_paper',

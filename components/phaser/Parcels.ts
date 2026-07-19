@@ -38,7 +38,12 @@ const createParcel = (id: string): void => {
   // Check if the parcel is already loaded
   if (scene.spawnedParcelsByIdMap.has(id)) return;
   // Check if the parcels is owned in the future we will will owner prop sent from the server.
-  const flag = _.find(GlobalState.REALM.state.ownedParcels, ['parcelId', id]) ? 'owned' : 'unowned';
+  const flag = _.find(
+    GlobalState.REALM.state.ownedParcels,
+    (p: { parcelId?: string; id?: string }) => p?.parcelId === id || p?.id === id,
+  )
+    ? 'owned'
+    : 'unowned';
   const type = getParcelIdData(id).typeId;
   const isPaartner = _.find(paartnerData, ['parcelId', id]);
   // Each png has a 32px offset for the glow we need to subract that offset from final position

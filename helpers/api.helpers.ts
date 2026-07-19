@@ -69,7 +69,7 @@ export async function getLeaderboardAll(filter?: string, page?: number, limit = 
 
 export async function fetchParcelMetadataByTokenIds(tokenIds: string[]): Promise<ParcelData[]> {
   try {
-    return await fetch(`https://api.gotchiverse.io/realm/parcel/info?tokenId=${tokenIds.join(',')}`)
+    return await fetch(`${process.env.NEXT_PUBLIC_API_URL}/realm/parcel/info?tokenId=${tokenIds.join(',')}`)
       .then(async (response) => await response.json())
       .then(({ data }) => data);
   } catch (e) {
@@ -78,7 +78,9 @@ export async function fetchParcelMetadataByTokenIds(tokenIds: string[]): Promise
 }
 
 export async function fetchParcelImageData(parcelId: string, size: string | number) {
-  return await fetch(`https://api.gotchiverse.io/realm/map/load?map=citaadel&format=rgba-buffer-integers&parcel=${parcelId},${size}`)
+  return await fetch(
+    `${process.env.NEXT_PUBLIC_API_URL}/realm/map/load?map=citaadel&format=rgba-buffer-integers&parcel=${parcelId},${size}`,
+  )
     .then(async (response) => await response.json())
     .then((data) => data);
 }
@@ -102,32 +104,89 @@ export async function fetchItemStoreAvilable(): Promise<{ [id: string]: number }
 
 export async function fetchChannelSigniture(params) {
   try {
-    const r = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/realm/alchemica/signature/channel/get`, {
+    const { getRealmUrlSync, resolveRealmBaseUrl, realmFetchHeaders } = await import('helpers/realm.url');
+    let base = getRealmUrlSync();
+    if (!base) {
+      try {
+        base = await resolveRealmBaseUrl();
+      } catch {
+        base = String(process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
+      }
+    }
+    if (!base) {
+      console.warn('@fetchChannelSigniture: no REALM URL configured');
+      return undefined;
+    }
+
+    const response = await fetch(`${base}/realm/alchemica/signature/channel/get`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...realmFetchHeaders(base),
       },
       body: JSON.stringify(params),
-    })
-      .then(async (response) => await response.json())
-      .then((data) => data);
-    return r;
+    });
+    if (!response.ok) {
+      console.warn('@fetchChannelSigniture: HTTP', response.status);
+      return undefined;
+    }
+    const data = await response.json();
+    if (typeof data?.signature === 'string' && data.signature.startsWith('0x')) {
+      return data;
+    }
+    if (typeof data === 'string' && data.startsWith('0x')) {
+      return { signature: data };
+    }
+    return data;
   } catch (error) {
     console.log('@fetchChannelSigniture: err', error);
   }
 }
 export async function fetchEquipSigniture(params) {
   try {
-    const r = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/realm/installation/signature/equip/get`, {
+    const { getRealmUrlSync, resolveRealmBaseUrl, realmFetchHeaders } = await import('helpers/realm.url');
+    let base = getRealmUrlSync();
+    if (!base) {
+      try {
+        base = await resolveRealmBaseUrl();
+      } catch {
+        base = String(process.env.NEXT_PUBLIC_API_URL || '').replace(/\/$/, '');
+      }
+    }
+    if (!base) {
+      console.warn('@fetchEquipSigniture: no REALM URL configured');
+      return undefined;
+    }
+
+    const response = await fetch(`${base}/realm/installation/signature/equip/get`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...realmFetchHeaders(base),
       },
       body: JSON.stringify(params),
-    })
-      .then(async (response) => await response.json())
-      .then((data) => Object.values(data));
-    return r;
+    });
+    if (!response.ok) {
+      console.warn('@fetchEquipSigniture: HTTP', response.status);
+      return undefined;
+    }
+    const data = await response.json();
+    // Prefer an explicit signature field; fall back to legacy Object.values payload.
+    if (typeof data?.signature === 'string' && data.signature.startsWith('0x')) {
+      return data.signature;
+    }
+    if (typeof data === 'string' && data.startsWith('0x')) {
+      return data;
+    }
+    const values = Object.values(data || {});
+    if (values.length === 1 && typeof values[0] === 'string' && values[0].startsWith('0x')) {
+      return values[0];
+    }
+    // Legacy polygon signer returned a byte-map / fragmented payload.
+    if (values.length > 1) {
+      return values as any;
+    }
+    return undefined;
   } catch (error) {
     console.log('@fetchEquipSigniture: err', error);
   }

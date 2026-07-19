@@ -27,6 +27,7 @@ interface MapInterface {
   updateMapEvent: () => void;
   toggleMinimap: (isHide: boolean) => void;
   zoomMiniMap: (direction: number) => void;
+  syncMinimapViewport: () => void;
   addMiniMapElement: (x: number, y: number, image: string, name?: string, mult?: number) => Phaser.GameObjects.Sprite;
   removeMinimapElement: (name: string) => void;
   supportedAOIConfigs;
@@ -149,6 +150,32 @@ const getMinimapSprite = () => {
   else return GlobalState.GAME.state.gameConfig.gotchiverseTheme === 'halloween' ? 'minimap_v2_halloween' : 'minimap_v2_playable';
 };
 
+/**
+ * Align the Phaser minimap camera with the CSS `.minimap-border` frame.
+ * Canvas sits under GameNav (`top: 5rem`); older citaadel Y values (60/70) assumed a full-viewport canvas.
+ */
+const syncMinimapViewport = (): void => {
+  if (!scene?.minimapCam || typeof document === 'undefined') return;
+
+  const border = document.querySelector('.minimap-border') as HTMLElement | null;
+  const parent = document.getElementById('pahserGameLoader');
+  if (border && parent) {
+    const br = border.getBoundingClientRect();
+    const pr = parent.getBoundingClientRect();
+    const pad = 4; // matches CSS border width
+    const x = Math.round(br.left - pr.left + pad);
+    const y = Math.round(br.top - pr.top + pad);
+    const w = Math.max(1, Math.round(br.width - pad * 2));
+    const h = Math.max(1, Math.round(br.height - pad * 2));
+    scene.minimapCam.setViewport(x, y, w, h);
+    return;
+  }
+
+  // Fallback when HUD chrome isn't mounted yet (canvas is offset by GameNav).
+  const top = 20;
+  scene.minimapCam.setPosition(10, top);
+};
+
 const createMinimap = (size: number): void => {
   if (!scene) return;
   const player = scene[Players.selectedPlayer.id];
@@ -160,11 +187,15 @@ const createMinimap = (size: number): void => {
   scene.minimapSprite.displayHeight = MAP_CONFIG.mapHeight;
 
   const zoomInit = GameController.MAP === 'aarena' ? size : size * 2;
-  const top = GameController.MAP === 'aarena' ? 20 : Number(window.innerWidth) > 1400 ? 70 : 60;
+  // Canvas is always under GameNav (`top: 5rem`); start near the CSS frame, then sync precisely.
   scene.minimapCam = scene.cameras
-    .add(10, top, size, size)
+    .add(10, 20, size, size)
     .setZoom(zoomInit / MAP_CONFIG.mapWidth)
     .setName('mini');
+  syncMinimapViewport();
+  // HUD chrome may mount a tick later — re-align once the purple frame exists.
+  window.setTimeout(() => syncMinimapViewport(), 0);
+  window.setTimeout(() => syncMinimapViewport(), 250);
 
   scene.minimapZoomLevel = 0;
   scene.minimapDefaultZoom = (size * 2) / MAP_CONFIG.mapWidth;
@@ -483,6 +514,7 @@ const MapController: MapInterface = {
   updateMapEvent,
   toggleMinimap,
   zoomMiniMap,
+  syncMinimapViewport,
   supportedAOIConfigs,
   objectsJSON,
   depositesJSON,

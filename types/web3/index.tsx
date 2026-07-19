@@ -1,7 +1,7 @@
 import { BigNumber } from 'ethers';
 import { DiamondName } from 'web3/contract';
 
-export type NetworkNames = 'rinkeby' | 'kovan' | 'main' | 'mumbai' | 'polyon' | 'matic' | 'goerli' | 'localhost';
+export type NetworkNames = 'rinkeby' | 'kovan' | 'main' | 'mumbai' | 'polyon' | 'matic' | 'goerli' | 'localhost' | 'base';
 export type MoralisNetwork = 'POLYGON' | 'ETHEREUM';
 
 export interface NFTDisplayData {

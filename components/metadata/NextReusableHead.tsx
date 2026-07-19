@@ -42,8 +42,10 @@ const NextReusableHead = (props: NextReusableHeadProps): JSX.Element => {
         <meta name="twitter:site" content={siteName} />
 
         {creator && <meta name="twitter:creator" content="" />}
-        <link rel="icon" type="image/png" href={faviconPath} />
-        <link rel="apple-touch-icon" href={faviconPath} />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+        <link rel="icon" type="image/png" sizes="64x64" href={faviconPath} />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         {image && <meta property="og:image" content={image} />}
         {image && <meta name="twitter:image" content={image} />}
 

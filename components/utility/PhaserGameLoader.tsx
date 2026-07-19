@@ -28,8 +28,9 @@ const PhaserGameLoader = (props: PhaserGameLoaderProps) => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const Phaser = require('phaser');
     setPhaser(Phaser);
-    setHeight(`${GameController.MAP === 'aarena' ? 'calc(100vh - 5rem)' : '100vh'}`);
-    setTop(`${GameController.MAP === 'aarena' ? '5rem' : '0rem'}`);
+    // Keep the Phaser canvas below the fixed GameNav so HUD controls stay clickable.
+    setHeight('calc(100vh - 5rem)');
+    setTop('5rem');
   }, []);
 
   useEffect(() => {
@@ -74,7 +75,7 @@ const PhaserGameLoader = (props: PhaserGameLoaderProps) => {
   // Wait until everything has loaded to load the initial scene
   if (gameConfig) {
     return (
-      <div id="pahserGameLoader" className="fixed" style={{ height, top, width: '100vw' }}>
+      <div id="pahserGameLoader" className="fixed" style={{ height, top, width: '100vw', zIndex: 0 }}>
         <IonPhaserComponent
           // @ts-ignore */
           game={gameConfig.game}

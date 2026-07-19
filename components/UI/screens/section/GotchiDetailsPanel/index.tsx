@@ -119,26 +119,26 @@ export const GotchiDetailsPanel = ({ gotchi }: Props): JSX.Element => {
                 <TabView title="In-Game">
                   <div className="in-game-container">
                     <div className="col">
-                      <GotchiStat icon={InGameMaxHPIcon} label="Max HP" value={Number(gotchi.maxHealth)} />
-                      <GotchiStat icon={InGameMaxAPIcon} label="Max AP" value={Number(gotchi.maxAP)} />
-                      <GotchiStat icon={InGameHPRegenIcon} label="HP Regen" value={Number(gotchi.healthRegenAmount)} />
-                      <GotchiStat icon={InGameAPRegenIcon} label="AP Regen" value={Number(gotchi.apRegenAmount)} />
-                      <GotchiStat icon={InGameCapacityIcon} label="Capacity" value={Number(gotchi.alchemicaCarryingCapacity)} />
+                      <GotchiStat icon={InGameMaxHPIcon} label="Max HP" value={Number(gotchi.maxHealth) || 0} />
+                      <GotchiStat icon={InGameMaxAPIcon} label="Max AP" value={Number(gotchi.maxAP) || 0} />
+                      <GotchiStat icon={InGameHPRegenIcon} label="HP Regen" value={Number(gotchi.healthRegenAmount) || 0} />
+                      <GotchiStat icon={InGameAPRegenIcon} label="AP Regen" value={Number(gotchi.apRegenAmount) || 0} />
+                      <GotchiStat icon={InGameCapacityIcon} label="Capacity" value={Number(gotchi.alchemicaCarryingCapacity) || 0} />
                     </div>
                     <div className="col">
-                      <GotchiStat icon={InGameAttackRateIcon} label="Attack Rate" value={Number(gotchi.attackSpeed)} />
-                      <GotchiStat icon={InGameEvadeRateIcon} label="Evade Rate" value={Number(gotchi.evasion)} />
+                      <GotchiStat icon={InGameAttackRateIcon} label="Attack Rate" value={Number(gotchi.attackSpeed) || 0} />
+                      <GotchiStat icon={InGameEvadeRateIcon} label="Evade Rate" value={Number(gotchi.evasion) || 0} />
                       <GotchiStat
                         icon={InGameMeleeDmgIcon}
                         label="Melee DMG"
-                        value={Number(gotchi.meleePower) + Number(gotchi.wearableTraitBonuses?.meleePower?.toFixed() || 0)}
+                        value={(Number(gotchi.meleePower) || 0) + Number(gotchi.wearableTraitBonuses?.meleePower?.toFixed?.() || gotchi.wearableTraitBonuses?.meleePower || 0)}
                       />
                       <GotchiStat
                         icon={InGameRangedDmgIcon}
                         label="Ranged DMG"
-                        value={Number(gotchi.rangedPower) + Number(gotchi.wearableTraitBonuses?.rangedPower?.toFixed() || 0)}
+                        value={(Number(gotchi.rangedPower) || 0) + Number(gotchi.wearableTraitBonuses?.rangedPower?.toFixed?.() || gotchi.wearableTraitBonuses?.rangedPower || 0)}
                       />
-                      <GotchiStat icon={InGameArmorPointIcon} label="Armor Point" value={Number(gotchi.defense)} />
+                      <GotchiStat icon={InGameArmorPointIcon} label="Armor Point" value={Number(gotchi.defense) || 0} />
                     </div>
                   </div>
                   <div className="alchemica-content">

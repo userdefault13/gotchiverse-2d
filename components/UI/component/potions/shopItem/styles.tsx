@@ -5,6 +5,7 @@ export default css`
     width: 16.5rem;
     height: 19rem;
     border-radius: 4px;
+    overflow: hidden;
     box-shadow: inset 0px 0px 31px 5px rgba(0, 37, 167, 0.7);
     background: linear-gradient(0deg, var(--col-blue-250), var(--col-blue-250)), linear-gradient(0deg, var(--col-blue-600), var(--col-blue-600)),
       var(--col-blue-650);
@@ -63,12 +64,12 @@ export default css`
   }
   .item-image-container {
     position: relative;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
+    width: 70%;
+    height: 8.5rem;
     max-height: 80%;
+    margin-left: auto;
+    margin-right: 0.4rem;
+    overflow: hidden;
   }
   .item-description-wrapper {
     position: absolute;
@@ -111,10 +112,11 @@ export default css`
     font-size: 1.4rem;
   }
   .item-description-wrapper .description-icon {
+    position: relative;
     display: inline-block;
-    flex: 1 0 auto;
-    width: 1em;
-    height: 1em;
+    flex: 0 0 auto;
+    width: 1.4rem;
+    height: 1.4rem;
   }
   .cost-wrapper {
     position: absolute;
@@ -224,9 +226,10 @@ export default css`
     display: flex;
   }
   .tooltip-container .trait-icon {
-    flex: 0 1 auto;
-    width: 0.7em;
-    height: 0.7em;
+    position: relative;
+    flex: 0 0 auto;
+    width: 0.9em;
+    height: 0.9em;
   }
   .tooltip-container .trait-value {
     padding-left: 0.25em;

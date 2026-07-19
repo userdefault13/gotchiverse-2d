@@ -1,0 +1,51 @@
+# Vercel Environment Variables for gotchiverse-2d
+# Project: userdefault13s-projects/gotchiverse-2d
+#
+# Apply Production + Preview for shared Base/Colyseus settings.
+# APP_ENV differs per environment.
+
+# ── Shared (Production + Preview) ─────────────────────────────
+REALM_NETWORK=base
+NETWORK=base
+ALCHEMICA_NETWORK=base
+
+NEXT_PUBLIC_NETCODE=colyseus
+# Point these at the DigitalOcean REALM host (Caddy TLS) once live.
+NEXT_PUBLIC_API_URL=https://realm.aarcadeghst.com
+NEXT_PUBLIC_COLYSEUS_URL=https://realm.aarcadeghst.com
+# Optional: comma-separated smoke fallbacks (FE also reads /api/realm-config → Edge Config).
+# NEXT_PUBLIC_REALM_URLS=https://xxx.lhr.life,https://yyy.loca.lt
+# Server-only upstream used by /api/realm-config
+# REALM_UPSTREAM_URL=https://realm.aarcadeghst.com
+# Durable live tunnel list (no redeploy when watchdog rotates URLs):
+# EDGE_CONFIG=https://edge-config.vercel.com/ecfg_...?...
+
+NEXT_PUBLIC_CORE_SUBGRAPH_URL=https://api.goldsky.com/api/public/project_cmh3flagm0001r4p25foufjtt/subgraphs/aavegotchi-core-base/prod/gn
+NEXT_PUBLIC_GOTCHIVERSE_SUBGRAPH_URL=https://api.goldsky.com/api/public/project_cmh3flagm0001r4p25foufjtt/subgraphs/gotchiverse-base/prod/gn
+NEXT_PUBLIC_SVG_SUBGRAPH_URL=https://api.goldsky.com/api/public/project_cmh3flagm0001r4p25foufjtt/subgraphs/aavegotchi-svg-base/prod/gn
+NEXT_PUBLIC_BASE_RPC=https://mainnet.base.org
+
+# ── Production only ───────────────────────────────────────────
+# APP_ENV=production
+
+# ── Preview only ──────────────────────────────────────────────
+# APP_ENV=preview
+
+# ── Development (vercel env pull / local CLI) ─────────────────
+# APP_ENV=local
+# NEXT_PUBLIC_API_URL=http://localhost:2567
+# NEXT_PUBLIC_COLYSEUS_URL=http://localhost:2567
+
+# ── Aarcade Discord verification (server-only; never NEXT_PUBLIC) ─
+# Same secret as AarcadeGh-t GOTCHIVERSE_VERIFY_SECRET.
+# Used by pages/api/aarcade-verify.ts → GET AARCADE_VERIFY_URL?wallet=0x...
+AARCADE_VERIFY_URL=https://aarcadeghst.com/api/gotchiverse-verify
+AARCADE_VERIFY_SECRET=
+# Optional public home for Settings / chat Discord CTA
+NEXT_PUBLIC_AARCADE_HOME=https://aarcadeghst.com
+
+# Optional
+NEXT_PUBLIC_RECAPTCHA_SITE_KEY=
+NEXT_PUBLIC_SENTRY_DSN=
+INFURA_ID=
+MORALIS_API_KEY=

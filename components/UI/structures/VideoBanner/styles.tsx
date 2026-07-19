@@ -67,11 +67,11 @@ export default css`
     text-shadow: 0px 0px 2rem rgba(0, 0, 0, 0.6), 0px 0px 2.4rem #110026;
     text-align: center;
     margin-bottom: 8rem;
-    line-height: 1;
+    line-height: .5;
   }
 
   .short .main-title-wrapper {
-    margin-bottom: 0;
+    margin-bottom: 5rem;
   }
 
   .main-title {
@@ -81,7 +81,8 @@ export default css`
 
   .main-subtitle {
     color: var(--col-white);
-    font-size: 8.4rem;
+    font-size: 12rem;
+    font-weight: 600;
   }
 
   .button-list {

@@ -139,6 +139,13 @@ export const LandingScreen = (): JSX.Element => {
 
   const updateGameConfig = async () => {
     try {
+      // Probe live smoke tunnels before BFF calls (URLs rotate under the watchdog).
+      try {
+        const { resolveRealmBaseUrl } = await import('helpers/realm.url');
+        await resolveRealmBaseUrl();
+      } catch {
+        /* soft-fail below */
+      }
       const { parsedBody } = await http<{
         data: GameConfig;
       }>('/realm/config/list');
@@ -149,14 +156,27 @@ export const LandingScreen = (): JSX.Element => {
       console.log('GAME_CONFIG', gameConfig);
       gameDispatch({
         type: 'UPDATE_GAME_CONFIG',
-        gameConfig,
+        // Keep portal open for Colyseus MVP even if server omits isLive.
+        // Explicitly pass combatIsLive so JoinAarena unlocks when BFF flips it.
+        gameConfig: {
+          isLive: true,
+          ...gameConfig,
+          ...(typeof (gameConfig as { combatIsLive?: boolean }).combatIsLive === 'boolean'
+            ? { combatIsLive: (gameConfig as { combatIsLive: boolean }).combatIsLive }
+            : {}),
+        },
       });
     } catch (err) {
       console.error('@updateGameConfig:API error: ', err);
-      GameController.handleToastNotification({ message: 'Having some issues, please refresh', type: 'error' });
+      // Soft-fail: identity/subgraph can work while REALM BFF is down.
+      // Enter Now will surface a clear auth error if the host is still unreachable.
+      GameController.handleToastNotification({
+        message: 'REALM server unreachable — you can browse gotchis/parcels, but Enter needs the Colyseus host',
+        type: 'warn',
+      });
       gameDispatch({
         type: 'UPDATE_GAME_CONFIG',
-        gameConfig: { isLive: false },
+        gameConfig: { isLive: true },
       });
     }
   };

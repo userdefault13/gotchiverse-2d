@@ -21,6 +21,7 @@ import { useEffect, useState } from 'react';
 import styles from './styles';
 import { smartTrim } from 'helpers/ethers.helper';
 import { MAP_ID_CITAADEL } from 'shared_code/constants/const.game';
+import { PARCELS_BY_TOKEN_ID } from 'shared_code/models/model.realm';
 
 export const GameNav = (): JSX.Element => {
   const [{ selectedPlayer, isAavegotchiLent, escrow, currentDistrict, currentParcel }] = useRealm();
@@ -62,6 +63,28 @@ export const GameNav = (): JSX.Element => {
   const toggleMode = () => {
     setTokenManageMode(tokenManageMode === 'TRANSFER' ? 'ACTIVITY' : 'TRANSFER');
   };
+  const handleLogOutClick = (e?: React.SyntheticEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    try {
+      click();
+    } catch {
+      // ignore SFX errors
+    }
+    if (exitArenaModal.open || quitGameModalOpen) return;
+    if (GameController.MAP === 'aarena' && selectedPlayer && !selectedPlayer.isSpectator) {
+      uiDispatch({
+        type: 'UPDATE_EXIT_ARENA_MODAL',
+        exitArenaModal: {
+          open: true,
+          isDead: false,
+        },
+      });
+      return;
+    }
+    setQuitGameModalOpen(true);
+  };
+
   return (
     <>
       <QuitGameModal open={quitGameModalOpen} onClose={() => setQuitGameModalOpen(false)} />
@@ -131,23 +154,17 @@ export const GameNav = (): JSX.Element => {
           <div className="settings-menu-container flex-c-c">
             <SettingsMenu />
           </div>
-          <div
-            className="icon-toggle flex-c-c"
-            onClick={() => {
-              if (exitArenaModal.open) return;
-              GameController.MAP === 'aarena' && !selectedPlayer.isSpectator
-                ? uiDispatch({
-                    type: 'UPDATE_EXIT_ARENA_MODAL',
-                    exitArenaModal: {
-                      open: true,
-                      isDead: false,
-                    },
-                  })
-                : setQuitGameModalOpen(!quitGameModalOpen);
-            }}
+          <button
+            type="button"
+            className="icon-toggle flex-c-c clickable logout-btn"
+            title="Log out"
+            aria-label="Log out"
+            onClick={handleLogOutClick}
+            onMouseDown={(e) => e.stopPropagation()}
+            onPointerDown={(e) => e.stopPropagation()}
           >
-            <Image alt="" src={ExitIcon} width={30} height={30} />
-          </div>
+            <Image alt="" src={ExitIcon} width={30} height={30} style={{ pointerEvents: 'none' }} draggable={false} />
+          </button>
         </div>
       </div>
       <div className={`minimap-container ${toggleMinimap ? 'show' : 'hidden'}`} onClick={blockPropagation} onMouseDown={blockPropagation}>
@@ -163,17 +180,23 @@ export const GameNav = (): JSX.Element => {
         </div>
         {GameController.MAP === MAP_ID_CITAADEL && (
           <div className="location-info">
-            {!currentParcel && (
-              <div className="flex justify-between align-center">
-                <span className="purple"> District {currentDistrict}</span>
-                <div className="position flex ">
-                  <Image alt="" src={PinIcon} />
-                  <span className="global-pos">
-                    {playerPosition.x}, {playerPosition.y}
-                  </span>
-                </div>
+            <div className="flex justify-between align-center location-row">
+              <span className="purple">
+                District{' '}
+                {currentDistrict ??
+                  (currentParcel?.tokenId != null
+                    ? PARCELS_BY_TOKEN_ID[String(currentParcel.tokenId)]?.district ??
+                      PARCELS_BY_TOKEN_ID[Number(currentParcel.tokenId)]?.district
+                    : undefined) ??
+                  '—'}
+              </span>
+              <div className="position flex">
+                <Image alt="" src={PinIcon} />
+                <span className="global-pos">
+                  {playerPosition.x}, {playerPosition.y}
+                </span>
               </div>
-            )}
+            </div>
 
             {currentParcel && (
               <div className="parcel-info">

@@ -23,10 +23,17 @@ export const GotchiSVG = ({ tokenId, options, side = 0, height = 12, isSpectator
 
   const fetchGotchiSvg = async (id: string) => {
     setLoading(true);
-    const sideviewArray = await fetchAavegotchiSideSVGs(id);
-    setSideviews(sideviewArray);
-    !isTrueSpectator(isSpectator) && setSvg(options ? customiseSvg(sideviewArray[side], options) : sideviewArray[side]);
-    setLoading(false);
+    try {
+      const sideviewArray = await fetchAavegotchiSideSVGs(id);
+      setSideviews(sideviewArray);
+      if (!isTrueSpectator(isSpectator) && sideviewArray?.[side]) {
+        setSvg(options ? customiseSvg(sideviewArray[side], options) : sideviewArray[side]);
+      }
+    } catch (error) {
+      console.warn('@GotchiSVG fetch failed', id, error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const setSide = (selectSide: number) => {

@@ -9,12 +9,12 @@ import useAavegotchiSound from 'hooks/useAavegotchiSound';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import styles from './styles';
-import router from 'next/router';
 import { getQueueSize } from 'helpers/api.helpers';
 import { Modal } from 'components/UI/component';
 import { useRealm } from 'contexts/RealmContext';
 import { isTrueSpectator } from 'helpers/gotchi.helper';
 import { Leaderboard } from 'components/UI/hud/components/Leaderboard';
+import { performLogOut } from 'helpers/logout.helper';
 import { formatTimeLeft } from 'helpers/parcels.helper';
 import { getOnChainAlchemicaIcon } from 'helpers/functions';
 import _ from 'lodash';
@@ -119,8 +119,8 @@ export const ExitArenaModal = (): JSX.Element => {
 
   const onQuit = () => {
     back();
-    void router.back();
     handleClose();
+    performLogOut();
   };
 
   // todo: Check RESPAWN_DELAY here, have the button count down and become enabled when able to respawn

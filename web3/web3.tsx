@@ -90,7 +90,9 @@ export function wrongExpectedNetworkError(currentNetwork, expectedTestnet) {
 
 export function wrongExpectedNetworkMatic(currentNetwork) {
   if (!currentNetwork) return 'Please connect your wallet.';
-  if (process.env.ENVIRONMENT === 'prod' && currentNetwork !== 'matic') return 'Please connect to Polygon Network!';
+  const expected = process.env.REALM_NETWORK || process.env.NETWORK || 'base';
+  if (expected === 'base' && currentNetwork !== 'base') return 'Please connect to Base Network!';
+  if (process.env.ENVIRONMENT === 'prod' && currentNetwork !== 'matic' && expected !== 'base') return 'Please connect to Polygon Network!';
   else if (process.env.ENVIRONMENT === 'dev' && currentNetwork !== 'mumbai') return 'Please connect to Mumbai Testnet!';
   else if (process.env.ENVIRONMENT === 'staging' && currentNetwork !== 'mumbai'.toUpperCase()) return 'Please connect to Mumbai Testnet!';
   return false;

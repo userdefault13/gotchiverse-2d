@@ -68,13 +68,16 @@ export async function fetchAndSetGlobalAavegotchis(
   for (const gotchi of res) {
     let secondsUntilChannel;
 
-    const gotchiverseData = gotchiverseRes.gotchis.find((item) => item.id === gotchi.id);
+    const gotchiverseData = gotchiverseRes?.gotchis?.find((item) => item.id === gotchi.id);
     if (gotchiverseData) secondsUntilChannel = secondsUntilGotchiCanChannel(gotchiverseData.lastChanneledAlchemica);
     if (filter?.channelReady && secondsUntilChannel) continue;
 
+    const serverTraits = gotchiTraits?.data?.gotchis?.[gotchi.id];
+    const clientTraits = serverTraits ? null : computeClientCombatTraits(gotchi);
+
     const gotchiverseAavegotchi: GotchiverseAavegotchi = {
       ...gotchi,
-      ...gotchiTraits?.data?.gotchis[gotchi.id],
+      ...(serverTraits || clientTraits || {}),
       secondsUntilChannel,
       isLent: gotchi.originalOwner.id !== gotchi.owner.id,
       lastChanneledAlchemica: gotchiverseData?.lastChanneledAlchemica,
@@ -200,10 +203,14 @@ export const transformContractRes = async (res: AavegotchiObject): Promise<Aaveg
 // fetch aavegotchiSides from SvgViewFacet aavegotchiDiamond contract
 async function fetchContractAavegotchiSides(tokenId: string) {
   try {
-    // sides only supported for matic
-    const vars = varsForNetwork('matic');
-    const svgContract = new ethers.Contract(vars.aavegotchiDiamond, SvgViewFacet.abi, GlobalState.WEB3.state.globalProvider); // should be vars.aavegotchiDiamond
-    const svgs = await svgContract.getAavegotchiSideSvgs(tokenId); // Shoud be tokenId
+    const network = (GlobalState.WEB3.state.currentNetwork || process.env.REALM_NETWORK || process.env.NETWORK || 'base') as NetworkNames;
+    const vars = varsForNetwork(network);
+    const provider =
+      network === 'matic' && GlobalState.WEB3.state.maticProvider
+        ? GlobalState.WEB3.state.maticProvider
+        : GlobalState.WEB3.state.globalProvider;
+    const svgContract = new ethers.Contract(vars.aavegotchiDiamond, SvgViewFacet.abi, provider);
+    const svgs = await svgContract.getAavegotchiSideSvgs(tokenId);
 
     return svgs;
   } catch (error) {
@@ -345,7 +352,10 @@ export const fetchAavegotchiSideSVGs = async (id: string): Promise<string[]> => 
         subgraphQuery,
         aavegotchiSvgSubgraph,
       );
-      const sideviews = res.aavegotchis[0];
+      const sideviews = res?.aavegotchis?.[0];
+      if (!sideviews?.svg) {
+        throw new Error(`No SVG sides for gotchi ${id} on ${aavegotchiSvgSubgraph}`);
+      }
       svgs = [sideviews.svg, sideviews.left, sideviews.right, sideviews.back];
     } catch (error) {
       console.warn(`@fetchAavegotchiSideSVGs:Failed to fetch gotchi ${id} sides from subgraph.`, error);
@@ -405,8 +415,10 @@ export function getGotchiData(
     leftHand = getHandWearables(equippedWearables[4]);
   }
 
+  const authToken = typeof localStorage !== 'undefined' ? localStorage.getItem('authToken') || '' : '';
+
   return {
-    authToken: '',
+    authToken,
     isSpectator: gotchi.isSpectator,
     id: 'tokenId' in gotchi ? gotchi.tokenId.toString() : gotchi.id,
     name,
@@ -448,6 +460,46 @@ export async function getGotchiCombatTraits(account: string, map: 'citaadel' | '
   } catch (err) {
     return null;
   }
+}
+
+/**
+ * Lightweight client fallback when REALM `/user/combat-traits` is unavailable.
+ * Avoids importing server-only shared.utils.api (dotenv/fs) into the Next bundle.
+ * Roughly mirrors shared combat formulas for select-screen display only.
+ */
+export function computeClientCombatTraits(gotchi: Aavegotchi | GotchiverseAavegotchi) {
+  const traits = gotchi.withSetsNumericTraits || [50, 50, 50, 50, 0, 0];
+  const nrg = Number(traits[0]) || 50;
+  const agg = Number(traits[1]) || 50;
+  const spk = Number(traits[2]) || 50;
+  const brn = Number(traits[3]) || 50;
+  const brs = Number(gotchi.withSetsRarityScore) || 0;
+
+  const maxHealth = Math.min(2500, Math.max(200, 500 + (50 - nrg) * 10 + Math.floor(brs / 20)));
+  const maxAP = Math.min(500, Math.max(50, 100 + (nrg - 50) * 2));
+  const defense = Math.max(0, Math.round(50 + (spk - 50) * 1.5));
+  const meleePower = Math.max(1, Math.round(20 + (agg - 50) * 0.8));
+  const rangedPower = Math.max(1, Math.round(20 + (brn - 50) * 0.8));
+  const evasion = Math.max(0, Number(((spk < 50 ? (50 - spk) * 0.002 : 0) + 0.05).toFixed(3)));
+  const attackSpeed = Math.max(0.5, Number((1 + Math.max(0, agg - 50) * 0.01).toFixed(2)));
+  const healthRegenAmount = Math.max(0, Number((1 + Math.max(0, 50 - spk) * 0.02).toFixed(2)));
+  const apRegenAmount = Math.max(0, Number((1 + Math.max(0, nrg - 50) * 0.02).toFixed(2)));
+  const alchemicaCarryingCapacity = Math.max(1, Math.round(100 + brs / 10));
+
+  return {
+    maxHealth,
+    maxAP,
+    healthRegenAmount,
+    apRegenAmount,
+    alchemicaCarryingCapacity,
+    evasion,
+    meleePower,
+    rangedPower,
+    defense,
+    attackSpeed,
+    luck: Math.max(0, spk),
+    wearableTraitBonuses: {},
+  };
 }
 
 export function setAavegtochiToLocalStorage(gotchiData: SelectedPlayer, backgroundColor, isAavegotchiLent, ownedParcels) {

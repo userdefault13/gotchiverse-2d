@@ -66,6 +66,11 @@ export interface State {
   };
   activeEventsModal: {
     open: boolean;
+    title?: string;
+  };
+
+  travelParcelsModal: {
+    open: boolean;
   };
 
   eventHologramState: {
@@ -150,6 +155,9 @@ export const initialState: State = {
     installationId: undefined,
   },
   activeEventsModal: {
+    open: false,
+  },
+  travelParcelsModal: {
     open: false,
   },
   eventHologramState: {

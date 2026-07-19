@@ -98,7 +98,7 @@ export const ShopItemElement = ({ item, quantity, count, onChange }: ShopItemInt
             </div>
             <div className="item-info">
               <div className="item-image-container clickable" onClick={onInc}>
-                <Image alt="" src={item.image} objectFit="contain" />
+                <Image alt="" src={item.image} layout="fill" objectFit="contain" />
               </div>
 
               <div className="item-description-wrapper clickable" onClick={onInc}>
@@ -106,7 +106,7 @@ export const ShopItemElement = ({ item, quantity, count, onChange }: ShopItemInt
                 {_.keys(item.propDescription).filter(key => key !== 'lifespan').map((key) => (
                   <div className="description-item" key={key}>
                     <span className="description-icon">
-                      <Image alt="" src={ITEM_ICONS[key]} objectFit="contain" />
+                      <Image alt="" src={ITEM_ICONS[key]} layout="fill" objectFit="contain" />
                     </span>
                     <span className="description-text">
                       {item.category !== 'enemy'
@@ -139,7 +139,7 @@ export const ShopItemElement = ({ item, quantity, count, onChange }: ShopItemInt
                     {_.keys(item.propDescription).filter(key => key !== 'lifespan').map((key) => (
                       <div className="trait-details" key={key}>
                         <span className="trait-icon">
-                          <Image alt="" src={ITEM_ICONS[key]} objectFit="contain" />
+                          <Image alt="" src={ITEM_ICONS[key]} layout="fill" objectFit="contain" />
                         </span>
                         <span className="trait-value">
                           <span className="label">

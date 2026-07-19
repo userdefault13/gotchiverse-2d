@@ -110,23 +110,57 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
     setParcel(parcelData);
   };
 
-  const getAndSignNonce = async function (signer, address) {
-    const nonceResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/nonce/get?address=${address}`);
+  const getAndSignNonce = async function (signer, address, gotchiId?: string) {
+    let apiUrl: string;
+    try {
+      const { resolveRealmBaseUrl } = await import('helpers/realm.url');
+      apiUrl = await resolveRealmBaseUrl(true);
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      toast.error(`REALM unreachable. ${detail}`, { theme: 'dark' });
+      throw err;
+    }
+    let nonceResponse: Response;
+    try {
+      const { realmFetchHeaders } = await import('helpers/realm.url');
+      nonceResponse = await fetch(`${apiUrl}/user/nonce/get?address=${address}`, {
+        headers: realmFetchHeaders(apiUrl),
+      });
+    } catch (err) {
+      toast.error(`REALM unreachable at ${apiUrl}. Tunnel/watchdog may be down — retry Enter shortly.`, {
+        theme: 'dark',
+      });
+      throw err;
+    }
     if (nonceResponse.status !== 200) {
-      toast.error('Error initiating wallet address validation', { theme: 'dark' });
+      toast.error(`REALM auth failed (${nonceResponse.status}). Is ${apiUrl}/health up?`, { theme: 'dark' });
       throw new Error(`An error occurred when fetching the nonce: ${nonceResponse.statusText}`);
     }
     const nonceData = await nonceResponse.json();
-    const signed = await signer.signMessage(nonceData.nonce);
+    const nonce = nonceData.nonce || nonceData.data?.nonce;
+    if (!nonce) {
+      toast.error('REALM returned no nonce', { theme: 'dark' });
+      throw new Error('Missing nonce from REALM');
+    }
+    const signed = await signer.signMessage(nonce);
 
-    const tokenResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/authtoken/get?address=${address}&signature=${signed}`);
+    const gotchiQuery = gotchiId ? `&gotchiId=${gotchiId}` : '';
+    const tokenResponse = await fetch(
+      `${apiUrl}/user/authtoken/get?address=${address}&signature=${signed}${gotchiQuery}`,
+      { headers: (await import('helpers/realm.url')).realmFetchHeaders(apiUrl) },
+    );
     if (tokenResponse.status !== 200) {
       toast.error('The signature of the message is invalid', { theme: 'dark' });
       throw new Error(`An error occurred when validating the signed nonce: ${tokenResponse.statusText}`);
     }
     const tokenData = await tokenResponse.json();
     console.log('tokenData', tokenData);
-    localStorage.setItem('authToken', tokenData.token);
+    const token = tokenData.token || tokenData.authToken || tokenData.data?.token || tokenData.data?.authToken;
+    if (!token) {
+      toast.error('REALM returned no auth token', { theme: 'dark' });
+      throw new Error('Missing auth token from REALM');
+    }
+    localStorage.setItem('authToken', token);
   };
 
   const handleGotchiSelect = (gotchi: GotchiverseAavegotchi) => {
@@ -167,7 +201,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
       try {
         if (gameConfig.requireMetaMaskSign) {
           sending();
-          await getAndSignNonce(ethersSigner, currentAccount);
+          await getAndSignNonce(ethersSigner, currentAccount, selectedGotchi?.id);
         }
         await setGlobalSelectedPlayer(selectedGotchi);
         void enterRealm();
@@ -181,13 +215,13 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
   const setGlobalSelectedPlayer = async (gotchi) => {
     const playerObject = getGotchiData(gotchi, currentNetwork, currentAccount, gameConfig.demoGotchiMode);
     const urls = await fetchAavegotchiURL(playerObject);
-    const backgroundColor = collateralByAddress(currentNetwork, gotchi.collateral).secondaryColor;
+    const backgroundColor = collateralByAddress(currentNetwork, gotchi.collateral)?.secondaryColor || '#516C51';
     const isAavegotchiLent = gotchi.isLent;
     let lenderParcels: ContractParcel[] = [];
     let ownedParcels = await fetchContractOwnedParcels(currentAccount, globalProvider, currentNetwork);
     _.map(ownedParcels, (parcel) => _.assign(parcel, { owner: currentAccount }));
 
-    if (isAavegotchiLent && currentNetwork === 'matic') {
+    if (isAavegotchiLent && (currentNetwork === 'matic' || currentNetwork === 'base')) {
       lenderParcels = await fetchContractOwnedParcels(gotchi.originalOwner.id, globalProvider, currentNetwork);
       playerObject.originalOwner = gotchi.originalOwner.id;
       // Get permissions for parcels of lended gotchi
@@ -197,7 +231,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
       if (selectedSpawn?.charAt(0) === 'C') {
         // convert selected parcel ID into it's tokenId equivalent
         const parcelData: JsonParcel = _.find(PARCELS_BY_TOKEN_ID, (val: JsonParcel) => val.parcelId === selectedSpawn);
-        if (parcelData && !parcelIds.includes(parcelData.parcelId)) {
+        if (parcelData && !parcelIds.includes(parcelData.tokenId)) {
           // and if it wasn't already in the list to look up access rights, add it
           parcelIds.push(parcelData.tokenId);
           // add it to lenderParcels as required below as well, convert to ContractParcel type

@@ -387,6 +387,7 @@ export interface ParcelOwnerData {
   tokenId: number;
   owner: string;
   parcelHash: string;
+  district?: number;
 }
 
 export interface Id {

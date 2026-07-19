@@ -65,6 +65,16 @@ const typeFilters = [
     value: 'maaker',
   },
 ];
+
+/** Networks that load recipes from the Gotchiverse subgraph (filters/search/sort). */
+const SUBGRAPH_RECIPE_NETWORKS: NetworkNames[] = ['matic', 'base'];
+
+const isNotDeprecatedYet = (deprecatedAt?: string | number): boolean => {
+  if (deprecatedAt == null || deprecatedAt === '' || Number(deprecatedAt) === 0) return true;
+  const now = Date.now() / 1000;
+  return Number(deprecatedAt) >= now;
+};
+
 export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
   const [{ gameConfig }] = useGame();
   const [{ currentNetwork, globalProvider }] = useWeb3();
@@ -97,57 +107,59 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
       direction,
     });
   };
-  const fetchAndSetRecipesMatic = async (nameFilter: string, typeFilter, sortBy: SortOption) => {
+  const fetchAndSetRecipesSubgraph = async (nameFilter: string, typeFilter, sortBy: SortOption) => {
     setPending(true);
+    try {
+      const installations = await useSubgraph<{ installationTypes: InstallationType[] }>(
+        getInstallationTypes(nameFilter, typeFilter),
+        gotchiverseSubgraph,
+      );
 
-    const now = new Date().valueOf() / 1000;
+      const installationTypes: InstallationType[] = (installations?.installationTypes || []).filter((installation: InstallationType) =>
+        isNotDeprecatedYet(installation.deprecatedAt),
+      );
 
-    const installations = await useSubgraph<{ installationTypes: InstallationType[] }>(
-      getInstallationTypes(nameFilter, typeFilter),
-      gotchiverseSubgraph,
-    );
+      const tiles = typeFilter.tile
+        ? await useSubgraph<{ tileTypes: TileType[] }>(getTileTypes(nameFilter), gotchiverseSubgraph)
+        : { tileTypes: [] };
+      const tileTypes: TileType[] = (tiles?.tileTypes || []).filter((tile: TileType) => isNotDeprecatedYet((tile as any).deprecatedAt));
 
-    // Filter based deprecatedAt
-    const installationTypes: InstallationType[] = installations.installationTypes.filter((installation: InstallationType) => {
-      return !Number(installation.deprecatedAt) || Number(installation.deprecatedAt >= now);
-    });
-    console.log('installations', installationTypes);
-    const tiles = typeFilter.tile ? await useSubgraph<{ tileTypes: TileType[] }>(getTileTypes(nameFilter), gotchiverseSubgraph) : { tileTypes: [] };
-    const tileTypes: TileType[] = tiles.tileTypes.filter((tile: TileType) => {
-      return !Number(tile.deprecatedAt) || Number(tile.deprecatedAt >= now);
-    });
-    console.log('tiles', tileTypes);
-    const recipes = _.concat<InstallationType | TileType>(installationTypes, tileTypes).map((item: InstallationType | TileType): Recipe => {
-      const isInstallation = 'installationType' in item;
-      const data: Recipe = {
-        id: item.id,
-        name: item.name,
-        ingredients: {
-          fud: Number(ethers.utils.formatEther(item.alchemicaCost[0])),
-          fomo: Number(ethers.utils.formatEther(item.alchemicaCost[1])),
-          alpha: Number(ethers.utils.formatEther(item.alchemicaCost[2])),
-          kek: Number(ethers.utils.formatEther(item.alchemicaCost[3])),
-        },
-        craftingTime: Number(item.craftTime),
-        itemType: isInstallation ? item.installationType : item.tileType,
-        type: isInstallation ? 'INSTALLATION' : 'TILE',
-        installationType: isInstallation ? Number(item.installationType) : undefined,
-        deprecated: false,
-        endDate: undefined,
-      };
-      return data;
-    });
+      const recipes = _.concat<InstallationType | TileType>(installationTypes, tileTypes).map((item: InstallationType | TileType): Recipe => {
+        const isInstallation = 'installationType' in item;
+        const costs = item.alchemicaCost || ['0', '0', '0', '0'];
+        const data: Recipe = {
+          id: item.id,
+          name: item.name,
+          ingredients: {
+            fud: Number(ethers.utils.formatEther(costs[0] || '0')),
+            fomo: Number(ethers.utils.formatEther(costs[1] || '0')),
+            alpha: Number(ethers.utils.formatEther(costs[2] || '0')),
+            kek: Number(ethers.utils.formatEther(costs[3] || '0')),
+          },
+          craftingTime: Number(item.craftTime),
+          itemType: isInstallation ? item.installationType : item.tileType,
+          type: isInstallation ? 'INSTALLATION' : 'TILE',
+          installationType: isInstallation ? Number(item.installationType) : undefined,
+          deprecated: false,
+          endDate: undefined,
+        };
+        return data;
+      });
 
-    let sorted;
+      let sorted: Recipe[];
+      if (sortBy.value === 'id') sorted = _.sortBy(recipes, (recipe: Recipe) => Number(recipe.id));
+      else if (sortBy.value === 'name') sorted = _.sortBy(recipes, (recipe: Recipe) => recipe.name);
+      else if (sortBy.value === 'cost') sorted = _.sortBy(recipes, (recipe: Recipe) => recipe.ingredients.fud);
+      else sorted = recipes;
+      if (sortBy.direction === 'desc') sorted = _.reverse(sorted);
 
-    if (sortBy.value === 'id') sorted = _.sortBy(recipes, (recipe: Recipe) => Number(recipe.id));
-    else if (sortBy.value === 'name') sorted = _.sortBy(recipes, (recipe: Recipe) => recipe.name);
-    else if (sortBy.value === 'cost') sorted = _.sortBy(recipes, (recipe: Recipe) => recipe.ingredients.fud);
-    if (sortBy.direction === 'desc') sorted = _.reverse(sorted);
-
-    setRecipes(sorted);
-
-    setPending(false);
+      setRecipes(sorted);
+    } catch (err) {
+      console.warn('RecipeBook: failed to load recipes from subgraph', err);
+      setRecipes([]);
+    } finally {
+      setPending(false);
+    }
   };
 
   const fetchContractRecipe = async (network: NetworkNames, provider: providers.Provider, type: 'INSTALLATION' | 'TILE'): Promise<Recipe[]> => {
@@ -202,8 +214,8 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
   }, [currentNetwork, globalProvider]);
 
   useEffect(() => {
-    if (open && currentNetwork === 'matic' && sort !== undefined) {
-      void fetchAndSetRecipesMatic(nameFilter, typeFilter, sort);
+    if (open && SUBGRAPH_RECIPE_NETWORKS.includes(currentNetwork) && sort !== undefined) {
+      void fetchAndSetRecipesSubgraph(nameFilter, typeFilter, sort);
     }
   }, [currentNetwork, nameFilter, typeFilter, sort, open]);
 
@@ -237,9 +249,11 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
         </div>
         <div className={`scrollable ${gameConfig.gotchiverseTheme}`}>
           <div className="content">
-            {recipes?.map((recipe, i) => (
-              <RecipeCard onClick={handleSelect} recipe={recipe} key={i} />
-            ))}
+            {!pending && recipes?.length === 0 ? (
+              <div className="empty-recipes">No recipes found</div>
+            ) : (
+              recipes?.map((recipe, i) => <RecipeCard onClick={handleSelect} recipe={recipe} key={`${recipe.type}-${recipe.id}-${i}`} />)
+            )}
           </div>
         </div>
       </RecipeBookModal>

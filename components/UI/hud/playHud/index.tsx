@@ -27,6 +27,7 @@ import {
   NFTGallery,
   EventModal,
   ActiveEventsModal,
+  TravelParcelsModal,
   EventHologram,
   PlayerDashboard,
   ExitArenaModal,
@@ -179,6 +180,7 @@ export const PlayHud = () => {
       <NftDisplayModal />
       <EventHologram />
       <ActiveEventsModal />
+      <TravelParcelsModal />
       <EventModal />
       <SuperChatList />
 
