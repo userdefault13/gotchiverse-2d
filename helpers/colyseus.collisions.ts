@@ -128,6 +128,18 @@ export function resolveColyseusMove(
     return { x: toX, y: toY, blocked: false };
   }
 
+  // Bad spawn / desync can leave the gotchi overlapping solids. Allow WASD to walk out.
+  if (isBlocked(fromX, fromY, blockers)) {
+    if (!isBlocked(toX, toY, blockers)) {
+      return { x: toX, y: toY, blocked: false };
+    }
+    const canX = !isBlocked(toX, fromY, blockers);
+    const canY = !isBlocked(fromX, toY, blockers);
+    if (canX) return { x: toX, y: fromY, blocked: false };
+    if (canY) return { x: fromX, y: toY, blocked: false };
+    return { x: toX, y: toY, blocked: false };
+  }
+
   if (!isBlocked(toX, toY, blockers)) {
     return { x: toX, y: toY, blocked: false };
   }

@@ -14,17 +14,16 @@ This repo uses `yarn.lock`; do not use `npm install`.
 ## Quick Start
 
 ```bash
-# Terminal A — REALM server (separate repo)
+# Clone both repos as siblings, then from either:
 git clone https://github.com/userdefault13/gotchiverse-realm-server.git
-cd gotchiverse-realm-server
-cp .env.example .env && npm install && npm run dev
-
-# Terminal B — frontend
 git clone https://github.com/userdefault13/gotchiverse-2d.git
-cd gotchiverse-2d
-yarn install --frozen-lockfile
-cp .env.example .env
-yarn dev
+
+cd gotchiverse-realm-server && cp .env.example .env && npm install
+cd ../gotchiverse-2d && yarn install --frozen-lockfile && cp .env.example .env
+
+# One command — FE (:3001) + BE (:2567)
+yarn dev:all
+# or from the realm server: npm run dev:all
 ```
 
 Open [http://localhost:3001](http://localhost:3001). Use a **Base** wallet when `REALM_NETWORK=base`.
@@ -35,11 +34,13 @@ The default `.env.example` values point at local Colyseus (`:2567`) and Base Gol
 
 ```bash
 yarn dev        # Start the local Next.js dev server on port 3001
+yarn dev:all    # Start FE + sibling REALM server together
 yarn lint       # Type-check the project
 yarn build      # Build the production app
 yarn verify     # Run lint and production build
 yarn start      # Start a built production app
 ```
+
 
 Backend API / Colyseus live in [`gotchiverse-realm-server`](https://github.com/userdefault13/gotchiverse-realm-server). Point `NEXT_PUBLIC_API_URL` / `NEXT_PUBLIC_COLYSEUS_URL` at that host. Full Vercel + DO steps: [docs/DEPLOY.md](docs/DEPLOY.md).
 

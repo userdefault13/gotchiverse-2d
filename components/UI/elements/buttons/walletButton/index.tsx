@@ -16,7 +16,7 @@ export const WalletConnectButton = ({ onClick, clickable = true }: Props): JSX.E
     <>
       <div className={`wallet-connect flex ${clickable ? 'clickable' : ''}`} onClick={handleClick}>
         <div className="icon-container">
-          <Image alt="" src={WalletIcon} layout="responsive" objectFit="cover" />
+          <Image alt="" src={WalletIcon} width={176} height={176} style={{ width: '100%', height: 'auto', objectFit: 'cover' }} />
         </div>
         <div className="button-container">
           <BasePanel

@@ -6,5 +6,5 @@ module.exports = {
   corePlugins: {
     preflight: false, // @TODO: set to true someday...
   },
-  plugins: [require('tailwindcss-debug-screens'), require('@tailwindcss/line-clamp')],
+  plugins: [require('tailwindcss-debug-screens')],
 };

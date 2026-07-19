@@ -67,6 +67,8 @@ const fetchAndMapOnlinePlayers = async (bounceGateEvents: RealmEvent[]) => {
 };
 
 export const fetchEventsList = async (network: string, owner?: string) => {
+  // Base Gotchiverse subgraph does not index `bounceGateEvents`; skip to avoid 400 spam.
+  if (process.env.NEXT_PUBLIC_DISABLE_BOUNCE_GATES === 'true') return [];
   try {
     const timeSecondsNow = Number(Number(Date.now() / 1000).toFixed()).toString();
     const query = `{bounceGateEvents( where:{ cancelled:false, endTime_gt:"${timeSecondsNow}" ${owner ? ', creator: "' + owner + '"' : ''}}){

@@ -1,4 +1,3 @@
-import FoundryNodes from 'components/phaser/FoundryNodes';
 import { useGame } from 'contexts/GameContext';
 import { FoundryNet, FoundryStore } from 'helpers/foundry';
 import { FoundryState } from 'helpers/foundry/types';
@@ -65,7 +64,8 @@ export const FoundryPanel = (): JSX.Element | null => {
         <div className="actions">
           <button
             type="button"
-            onClick={() => {
+            onClick={async () => {
+              const { default: FoundryNodes } = await import('components/phaser/FoundryNodes');
               FoundryNodes.setPlaceMode(!placeMode);
               setPlaceMode(!placeMode);
             }}
@@ -101,7 +101,8 @@ export const FoundryPanel = (): JSX.Element | null => {
           </button>
           <button
             type="button"
-            onClick={() => {
+            onClick={async () => {
+              const { default: FoundryNodes } = await import('components/phaser/FoundryNodes');
               flash(FoundryNodes.tryInteractNearby());
             }}
           >

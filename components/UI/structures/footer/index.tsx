@@ -68,33 +68,33 @@ export const Footer = (): JSX.Element => {
   return (
     <>
       <footer className="footer-container">
-        <div className="logo-row hidden md:flex">
-          <div className="logo-container">
-            <Image alt="Pixelcraft Studios" src={CompanyLogo} layout="fill" />
+        <div className="stewards-block">
+          <div className="stewards-row">
+            <div className="steward-column">
+              <div className="logo-container">
+                <Image alt="Pixelcraft Studios" src={CompanyLogo} fill style={{ objectFit: 'contain' }} />
+              </div>
+              <div className="heading">Original Stewards</div>
+              <div className="legal">Pixelcraft Studios — inception steward.</div>
+            </div>
+            <div className="steward-column">
+              <div className="logo-container">
+                <Image alt="Aarcade GHST" src={AarcadeLogo} fill style={{ objectFit: 'contain' }} />
+              </div>
+              <div className="heading">Future Maintainers</div>
+              <div className="legal">AarcadeGhst — <br></br> continuing maintenance.</div>
+            </div>
           </div>
-          <div className="logo-container">
-            <Image alt="Aarcade GHST" src={AarcadeLogo} layout="fill" />
+          <div className="section legal-links">
+            <a className="link" href={gotchiverseLinks.aarcade.home} target="_blank" rel="noreferrer">
+              Privacy Policy
+            </a>
+            <a className="link" href={gotchiverseLinks.aarcade.home} target="_blank" rel="noreferrer">
+              Terms of Service
+            </a>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-x-20 gap-y-10 lg:grid-cols-4">
-          <div className="company-info">
-            <div className="copyright">
-              <div className="heading">Stewards</div>
-              <div className="legal">
-                Pixelcraft Studios — inception steward.
-                <br />
-                Aarcade GHST — continuing maintenance.
-              </div>
-            </div>
-            <div className="section">
-              <a className="link" href={gotchiverseLinks.aarcade.home} target="_blank" rel="noreferrer">
-                Privacy Policy
-              </a>
-              <a className="link" href={gotchiverseLinks.aarcade.home} target="_blank" rel="noreferrer">
-                Terms of Service
-              </a>
-            </div>
-          </div>
+        <div className="grid grid-cols-2 gap-x-20 gap-y-10 lg:grid-cols-3">
           {sections.map(({ key, label, links }, index) => (
             <div className="section" key={index}>
               <div className="heading">{label}</div>

@@ -58,6 +58,7 @@ import {
   colyseusHandleKeyMove,
   colyseusIsConnected,
   colyseusLocalSpawn,
+  colyseusSendCombat,
   colyseusSendMove,
   colyseusSendPing,
   colyseusTeleportToParcel,
@@ -1508,6 +1509,12 @@ function sendData(channel: string, action: string | null, data): void {
   if (isColyseusNetcode()) {
     if (channel === 'ping') {
       colyseusSendPing();
+      return;
+    }
+    if (channel === 'combat') {
+      if (action === 'melee' || action === 'fire') {
+        colyseusSendCombat(action, data);
+      }
       return;
     }
     if (channel === 'movement') {
