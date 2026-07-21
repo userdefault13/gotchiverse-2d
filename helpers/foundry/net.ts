@@ -1,78 +1,98 @@
+import { Room } from 'colyseus.js';
 import { fetchFoundryConfig } from './config';
 import * as FoundryStore from './store';
 
-type RoomLike = {
-  send: (type: string, data?: Record<string, unknown>) => void;
-};
+let colyseusRoom: Room | null = null;
 
-/**
- * Bridges Foundry PoC to Colyseus when a room is available; otherwise localStorage store.
- */
+function usingColyseus(): boolean {
+  return Boolean(colyseusRoom);
+}
+
+function send(type: string, payload: Record<string, unknown> = {}): void {
+  colyseusRoom?.send(type, payload);
+}
+
 export const FoundryNet = {
-  room: null as RoomLike | null,
-  usingColyseus: false,
-
-  async init(apiBase?: string) {
-    const remote = await fetchFoundryConfig(apiBase || process.env.NEXT_PUBLIC_API_URL);
-    if (remote?.enableParcelFoundryPoC) {
-      FoundryStore.applyRemoteConfig(remote);
-    } else if (process.env.NEXT_PUBLIC_ENABLE_FOUNDRY_POC === 'true') {
-      FoundryStore.setFoundryEnabled(true);
-    }
+  async init(apiBase?: string): Promise<void> {
+    const remote = await fetchFoundryConfig(apiBase);
+    if (remote) FoundryStore.applyRemoteConfig(remote);
   },
 
-  attachRoom(room: RoomLike | null) {
-    this.room = room;
-    this.usingColyseus = Boolean(room) && process.env.NEXT_PUBLIC_NETCODE === 'colyseus';
+  attachRoom(room: Room | null): void {
+    colyseusRoom = room;
   },
 
-  gather(nodeId: string) {
-    if (this.usingColyseus && this.room) {
-      this.room.send('foundry.gather', { nodeId });
-      return { ok: true, message: 'Gather requested' };
+  gather(nodeId: string): { ok: boolean; message: string } {
+    if (usingColyseus()) {
+      send('foundry.gather', { nodeId });
+      return { ok: true, message: 'Gather sent' };
     }
     return FoundryStore.gatherFromNode(nodeId);
   },
 
-  deposit() {
-    if (this.usingColyseus && this.room) {
-      this.room.send('foundry.deposit', {});
-      return { ok: true, message: 'Deposit requested' };
+  deposit(): { ok: boolean; message: string } {
+    if (usingColyseus()) {
+      send('foundry.deposit');
+      return { ok: true, message: 'Deposit sent' };
     }
     return FoundryStore.depositAtReceiver();
   },
 
-  bounceFreight() {
-    if (this.usingColyseus && this.room) {
-      this.room.send('foundry.bounceFreight', {});
-      return { ok: true, message: 'Bounce Freight requested' };
-    }
-    return FoundryStore.bounceFreight();
-  },
-
-  placeAntenna(x: number, y: number) {
-    if (this.usingColyseus && this.room) {
-      this.room.send('foundry.placeAntenna', { x, y });
-      return { ok: true, message: 'Antenna place requested' };
+  placeAntenna(x: number, y: number): { ok: boolean; message: string } {
+    if (usingColyseus()) {
+      send('foundry.placeAntenna', { x, y });
+      return { ok: true, message: 'Place antenna sent' };
     }
     return FoundryStore.placeAntenna(x, y);
   },
 
-  meshTransfer(from?: { x: number; y: number }) {
-    if (this.usingColyseus && this.room) {
-      this.room.send('foundry.meshTransfer', from || {});
-      return { ok: true, message: 'Mesh transfer requested' };
+  bounceFreight(): { ok: boolean; message: string } {
+    if (usingColyseus()) {
+      send('foundry.bounceFreight');
+      return { ok: true, message: 'Bounce sent' };
     }
-    return FoundryStore.meshTransfer(from);
+    return FoundryStore.bounceFreight();
   },
 
-  factionPulse() {
-    if (this.usingColyseus && this.room) {
-      const ants = FoundryStore.getState().antennas;
-      const target = ants.find((a) => a.powered && a.hp > 0);
-      if (target) this.room.send('foundry.damageAntenna', { antennaId: target.id, amount: 25 });
-      return { ok: true, message: 'Faction damage requested' };
+  meshTransfer(): { ok: boolean; message: string } {
+    if (usingColyseus()) {
+      send('foundry.meshTransfer');
+      return { ok: true, message: 'Mesh transfer sent' };
+    }
+    return FoundryStore.meshTransfer();
+  },
+
+  factionPulse(): { ok: boolean; message: string } {
+    if (usingColyseus()) {
+      send('foundry.damageAntenna', { amount: 25 });
+      return { ok: true, message: 'Raid sent' };
     }
     return FoundryStore.factionPulse();
   },
+
+  craftRecipe(recipeId: string): { ok: boolean; message: string } {
+    if (usingColyseus()) {
+      send('foundry.craftRecipe', { recipeId });
+      return { ok: true, message: 'Craft sent' };
+    }
+    return FoundryStore.craftRecipe(recipeId);
+  },
+
+  purchaseSalvage(kitId: string): { ok: boolean; message: string } {
+    if (usingColyseus()) {
+      send('foundry.purchaseAntenna', { kitId });
+      return { ok: true, message: 'Purchase sent' };
+    }
+    return { ok: false, message: 'Antenna kit requires Colyseus' };
+  },
+
+  hitEnemy(enemyId: string): { ok: boolean; message: string } {
+    if (usingColyseus()) {
+      send('foundry.hitEnemy', { enemyId });
+      return { ok: true, message: 'Attack sent' };
+    }
+    return FoundryStore.hitEnemy(enemyId);
+  },
 };
+
+export default FoundryNet;

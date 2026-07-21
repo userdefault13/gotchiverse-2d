@@ -11,6 +11,16 @@ import { getRealmUrlSync, resolveRealmBaseUrl } from 'helpers/realm.url';
 import { toggleFollowGotchi } from 'helpers/phaser.helper';
 import { getColyseusMap, setColyseusMap, isColyseusAarenaMap } from 'helpers/colyseus.map';
 import { attachColyseusCombat, detachColyseusCombat, colyseusSendCombat as sendCombat } from 'helpers/colyseus.combat';
+import { attachFoundryColyseusRoom, detachFoundryColyseusRoom, FoundryNet } from 'helpers/foundry';
+
+function isFoundryPoCEnabled(): boolean {
+  try {
+    const cfg = GlobalState.GAME?.state?.gameConfig as { enableParcelFoundryPoC?: boolean } | undefined;
+    return Boolean(cfg?.enableParcelFoundryPoC) || process.env.NEXT_PUBLIC_ENABLE_FOUNDRY_POC === 'true';
+  } catch {
+    return process.env.NEXT_PUBLIC_ENABLE_FOUNDRY_POC === 'true';
+  }
+}
 
 function isCitaadelMap(): boolean {
   return getColyseusMap() !== 'aarena';
@@ -214,6 +224,7 @@ function bindRoomHandlers(activeRoom: Room) {
     clearInterval(poll);
     stopKeyMoveLoop();
     stopRushLoop();
+    detachFoundryColyseusRoom();
     detachColyseusCombat();
     setConnected(false);
     room = null;
@@ -375,6 +386,11 @@ export async function colyseusConnect(
       lastLocalPos = { x: me.x, y: me.y };
       void Players.addPlayers([toPlayerPayload(me) as any]);
     }
+    if (roomName === 'citaadel' && isFoundryPoCEnabled()) {
+      void FoundryNet.init(endpoint()).then(() => {
+        if (room) attachFoundryColyseusRoom(room);
+      });
+    }
     return true;
   } catch (e) {
     console.warn('Colyseus join failed', e);
@@ -492,6 +508,7 @@ export function colyseusSendPing(): void {
 export function colyseusDisconnect(): void {
   stopKeyMoveLoop();
   stopRushLoop();
+  detachFoundryColyseusRoom();
   detachColyseusCombat();
   if (reconnectTimer) {
     clearTimeout(reconnectTimer);

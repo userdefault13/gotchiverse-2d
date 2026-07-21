@@ -17,6 +17,7 @@ const ROOT = path.resolve(__dirname, '../..');
 const BUDGET_FILE = path.join(ROOT, 'docs/foundry-pixellab-budget.md');
 const OUT_SHEETS = path.join(ROOT, 'public/animations/spritesheets/foundry');
 const OUT_INSTALL = path.join(ROOT, 'public/animations/installations/foundry');
+const OUT_RECIPES = path.join(ROOT, 'public/images/foundry/recipes');
 const HARD_CAP = 500;
 
 function loadEnvFile(filePath) {
@@ -107,6 +108,20 @@ const BUCKETS = {
     { file: 'icon_walk_ledger.png', dir: OUT_SHEETS, description: `${STYLE}, small green walk ledger scroll icon` },
     { file: 'icon_tithe.png', dir: OUT_SHEETS, description: `${STYLE}, small gold portal tithe coin icon` },
   ],
+  recipes: [
+    {
+      file: 'recipe_antenna_relay.png',
+      dir: OUT_RECIPES,
+      size: 128,
+      description: `${STYLE}, antenna relay tower with cyan mesh dish on sand base, recipe book hero`,
+    },
+    {
+      file: 'recipe_dish_assembly.png',
+      dir: OUT_RECIPES,
+      size: 128,
+      description: `${STYLE}, satellite mesh dish being forged from orange slag sparks, recipe book hero`,
+    },
+  ],
 };
 
 function readBudgetCount() {
@@ -131,7 +146,7 @@ ${lines.join('\n')}
 ## Notes
 
 - Token/URL loaded from \`.env\` or \`.env.example\` (\`PIXELLAB_API_TOKEN\`, \`PIXELLAB_API_URL\`).
-- Run: \`node scripts/foundry/pixellab-generate.mjs --bucket nodes|antennas|machines|faction|ui|all\`
+- Run: \`node scripts/foundry/pixellab-generate.mjs --bucket nodes|antennas|machines|faction|ui|recipes|all\`
 `;
   fs.mkdirSync(path.dirname(BUDGET_FILE), { recursive: true });
   fs.writeFileSync(BUDGET_FILE, body);

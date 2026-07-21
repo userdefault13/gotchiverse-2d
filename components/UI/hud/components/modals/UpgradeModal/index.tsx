@@ -23,6 +23,15 @@ import useAavegotchiSound from 'hooks/useAavegotchiSound';
 import { getSelectedGotchiId } from 'helpers/installations.helper';
 import { UsersAlchemicaBalance } from '../../CraftingTable/components';
 import { InstallationCard, UpgrdModal } from 'components/UI/component';
+import { getLocalWaallUpgradeInfo } from 'helpers/waalls.helper';
+import {
+  getLocalLodgeUpgradeInfo,
+  isLocalOffchainInstallationId,
+  isLocalOffchainItemId,
+  isLodgeInstallationId,
+  isLodgeItemId,
+} from 'helpers/lodge.helper';
+import Installations from 'components/phaser/Installations';
 
 interface CurrentUpgrade {
   name: string;
@@ -77,6 +86,24 @@ export const UpgradeModal = (): JSX.Element => {
   };
 
   const fetchContractRecipe = async (network: NetworkNames, provider: providers.Provider, id: number): Promise<NextUpgrade> => {
+    // Local Waalls / Lodges are not on InstallationDiamond — load from catalog.
+    if (isLocalOffchainItemId(id)) {
+      const info = isLodgeItemId(id) ? getLocalLodgeUpgradeInfo(id) : getLocalWaallUpgradeInfo(id);
+      if (!info) return;
+      setSelectedInstallation(info.current);
+      if (!info.next) {
+        setNextUpgrade(undefined);
+        return;
+      }
+      const next: NextUpgrade = {
+        ...info.next,
+        upgradeCost: info.next.upgradeCost,
+        blocksToUpgrade: info.next.blocksToUpgrade,
+      };
+      setNextUpgrade(next);
+      return next;
+    }
+
     const contract = await getContract(network, provider, 'installationDiamond', false);
     if (contract) {
       const currentRes = await contract.getInstallationTypes([id]);
@@ -141,6 +168,43 @@ export const UpgradeModal = (): JSX.Element => {
     });
     let tx;
     try {
+      // Local Waall / Lodge upgrade — instant, no diamond.
+      if (isLocalOffchainInstallationId(upgradeModal.installationId)) {
+        const label = isLodgeInstallationId(upgradeModal.installationId) ? 'Lodge' : 'Waall';
+        if (!nextUpgrade) {
+          updateTransactionNotificationStatus(notificationDispatch, id, 'error', `No next ${label} level`);
+          setLoading(false);
+          return;
+        }
+        const cost = nextUpgrade.upgradeCost || [0, 0, 0, 0];
+        const canPay = !cost.some((value, i) => !validAlchemica(Number(value), i, alchemicaBalance));
+        if (!canPay) {
+          updateTransactionNotificationStatus(notificationDispatch, id, 'error', 'Not enough alchemica');
+          setLoading(false);
+          return;
+        }
+        const nextBalance = {
+          fud: alchemicaBalance.fud - Number(cost[0] || 0),
+          fomo: alchemicaBalance.fomo - Number(cost[1] || 0),
+          alpha: alchemicaBalance.alpha - Number(cost[2] || 0),
+          kek: alchemicaBalance.kek - Number(cost[3] || 0),
+        };
+        const result = isLodgeInstallationId(upgradeModal.installationId)
+          ? await Installations.upgradeLocalLodge(upgradeModal.installationId)
+          : await Installations.upgradeLocalWaall(upgradeModal.installationId);
+        if (!result.ok) {
+          updateTransactionNotificationStatus(notificationDispatch, id, 'error', result.message);
+          setLoading(false);
+          return;
+        }
+        userDispatch({ type: 'UPDATE_ALCHEMICA_BALANCE', alchemicaBalance: nextBalance });
+        send();
+        updateTransactionNotificationStatus(notificationDispatch, id, 'success');
+        handleClose();
+        setLoading(false);
+        return;
+      }
+
       const gltr = isNaN(Number(gltrValue)) ? 0 : Math.abs(Number(gltrValue));
       if (!speedup) tx = await upgradeInstallation(currentAccount, ethersSigner, currentNetwork, activeParcel, gltr);
       else {
@@ -270,8 +334,11 @@ export const UpgradeModal = (): JSX.Element => {
 
   const validGltr = (input: string, balance: number) => {
     const gltr = isNaN(Number(input)) ? 0 : Math.abs(Number(input));
+    if (balance == null || Number.isNaN(Number(balance))) return gltr === 0;
     return gltr <= balance;
   };
+
+  const isLocalOffchainUpgrade = Boolean(upgradeModal?.installationId && isLocalOffchainInstallationId(upgradeModal.installationId));
 
   const sufficientBalance = (
     recipe: NextUpgrade,
@@ -284,7 +351,9 @@ export const UpgradeModal = (): JSX.Element => {
   ) => {
     if (!recipe || !alchemica) return false;
 
-    const isValidAlchemica = !recipe.upgradeCost.some((value, i) => !validAlchemica(value, i, alchemica));
+    const isValidAlchemica = !recipe.upgradeCost.some((value, i) => !validAlchemica(Number(value), i, alchemica));
+    // Local Waalls / Lodges ignore GLTR (instant upgrade).
+    if (isLocalOffchainUpgrade) return isValidAlchemica;
     const isValidGltr = validGltr(gltrValue, gltrBalance);
     return isValidAlchemica && isValidGltr;
   };
@@ -309,8 +378,16 @@ export const UpgradeModal = (): JSX.Element => {
     const web3options = { provider: globalProvider, network: currentNetwork, account: currentAccount };
     const installationData = getInstallationIdDataById(upgradeModal.installationId);
     const next = await fetchContractRecipe(currentNetwork, globalProvider, installationData.itemId);
-    await fetchOngoingUpgrades(web3options, userDispatch);
     await fetchAndSetAlchemicaBalance(web3options, userDispatch);
+
+    if (isLocalOffchainItemId(installationData.itemId)) {
+      // Local Waalls / Lodges skip diamond allowance / upgrade queue.
+      setTokensApproved({ fud: true, fomo: true, alpha: true, kek: true, gltr: true });
+      setLoading(false);
+      return;
+    }
+
+    await fetchOngoingUpgrades(web3options, userDispatch);
     await fetchAndSetAllowance(web3options, next);
     await fetchAndSetGltrBalance(web3options, userDispatch);
   };
@@ -435,25 +512,33 @@ export const UpgradeModal = (): JSX.Element => {
                 <div className="alchemica-container fade-gradient">
                   <span className="lable info title"> UPGRADE COST: </span>
                   {nextUpgrade?.upgradeCost.map((value, i) => (
-                    <div key={i} className={`alchemica ${validAlchemica(value, i, alchemicaBalance) ? '' : 'invalid'}`}>
+                    <div key={i} className={`alchemica ${validAlchemica(Number(value), i, alchemicaBalance) ? '' : 'invalid'}`}>
                       <Image alt="" src={getOnChainAlchemicaIcon(i)} width={32} height={32} />
                       <p>{nFormatter(value, 2)}</p>
                     </div>
                   ))}
                 </div>
 
-                <BlockTimer
-                  blocks={
-                    inProgress
-                      ? getBlocksRemaining(inProgress?.readyBlock, currentBlock, gltrValue)
-                      : getBlocksToUpgrade(nextUpgrade?.blocksToUpgrade, gltrValue)
-                  }
-                  maxValue={inProgress ? getBlocksRemaining(inProgress?.readyBlock, currentBlock) : getBlocksToUpgrade(nextUpgrade?.blocksToUpgrade)}
-                  value={gltrValue}
-                  onMax={handleOnMaxGltr}
-                  onChange={handleOnChange}
-                  error={gltrBalance === undefined ? false : !validGltr(gltrValue, gltrBalance)}
-                />
+                {!isLocalOffchainUpgrade && (
+                  <BlockTimer
+                    blocks={
+                      inProgress
+                        ? getBlocksRemaining(inProgress?.readyBlock, currentBlock, gltrValue)
+                        : getBlocksToUpgrade(nextUpgrade?.blocksToUpgrade, gltrValue)
+                    }
+                    maxValue={inProgress ? getBlocksRemaining(inProgress?.readyBlock, currentBlock) : getBlocksToUpgrade(nextUpgrade?.blocksToUpgrade)}
+                    value={gltrValue}
+                    onMax={handleOnMaxGltr}
+                    onChange={handleOnChange}
+                    error={gltrBalance === undefined ? false : !validGltr(gltrValue, gltrBalance)}
+                  />
+                )}
+                {isLocalOffchainUpgrade && (
+                  <div className="alchemica-container fade-gradient">
+                    <span className="lable info title">BUILD TIME:</span>
+                    <p style={{ color: 'var(--col-info-200)', fontSize: '1.6rem', margin: 0 }}>Instant (local)</p>
+                  </div>
+                )}
               </>
             )}
 

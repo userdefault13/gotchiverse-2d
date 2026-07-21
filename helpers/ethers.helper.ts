@@ -27,6 +27,22 @@ export function getErrMessage(tx): string {
       errMsg = 'Equip signature missing. On Base, retry Confirm; otherwise the REALM signature API may be down.';
     } else if (errMsg.includes('Equip signature unavailable')) {
       errMsg = 'Equip signature unavailable. REALM signature API is not configured for this network.';
+    } else if (
+      errMsg.includes("Gotchi can't channel yet") ||
+      errMsg.includes('already channeled') ||
+      errMsg.includes('Gotchi channeling')
+    ) {
+      errMsg = 'This Gotchi already channeled today. Wait until UTC midnight or switch Gotchi.';
+    } else if (errMsg.includes('Parcel channeling') || errMsg.includes('channeling too soon')) {
+      errMsg = 'Parcel channel cooldown active. Wait for the Aaltar timer.';
+    } else if (errMsg.includes('Access rights') || errMsg.includes('access right')) {
+      errMsg = 'No channel access on this parcel.';
+    } else if (errMsg.includes('kinship') || errMsg.includes('Kinship')) {
+      errMsg = 'Gotchi kinship too low to channel.';
+    } else if (errMsg.includes('Incorrect last duration')) {
+      errMsg = 'Channel cooldown mismatch. Refresh the Aaltar dashboard and try again.';
+    } else if (errMsg.includes('call revert exception') || errMsg.includes('CALL_EXCEPTION')) {
+      errMsg = 'Transaction would revert. Check Base network, Gotchi ownership, and parcel access.';
     }
   }
 

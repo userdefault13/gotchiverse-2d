@@ -11,6 +11,7 @@ type ContainerMap = Map<string, Phaser.GameObjects.Container>;
 const nodes: ContainerMap = new Map();
 const antennas: ContainerMap = new Map();
 const receivers: ContainerMap = new Map();
+const enemies: ContainerMap = new Map();
 const linkGraphics: Phaser.GameObjects.Graphics[] = [];
 
 let unsub: (() => void) | null = null;
@@ -144,6 +145,30 @@ function syncFromState(state: FoundryState) {
     }
   });
 
+  const liveEnemyIds = new Set(state.enemies.map((e) => e.id));
+  enemies.forEach((c, id) => {
+    if (!liveEnemyIds.has(id)) {
+      c.destroy();
+      enemies.delete(id);
+    }
+  });
+
+  state.enemies.forEach((e) => {
+    let c = enemies.get(e.id);
+    if (!c) {
+      c = scene.add.container(e.x, e.y).setDepth(122);
+      const spr = scene.add.sprite(0, 0, 'foundry_linkbreaker', 0).setInteractive({ useHandCursor: true });
+      spr.on('pointerdown', () => {
+        const res = FoundryNet.hitEnemy(e.id);
+        console.log('@FoundryNodes.hitEnemy', res);
+      });
+      c.add(spr);
+      enemies.set(e.id, c);
+    } else {
+      c.setPosition(e.x, e.y);
+    }
+  });
+
   drawLinks(state);
 }
 
@@ -184,6 +209,11 @@ function tryInteractNearby(): string {
   const py = container.y;
   const r = FOUNDRY_DEFAULTS.interactRadiusPx;
 
+  for (const e of state.enemies) {
+    if (e.hp > 0 && Phaser.Math.Distance.Between(px, py, e.x, e.y) <= FOUNDRY_DEFAULTS.attackRangePx) {
+      return FoundryNet.hitEnemy(e.id).message;
+    }
+  }
   for (const n of state.wildNodes) {
     if (Phaser.Math.Distance.Between(px, py, n.x, n.y) <= r) {
       return FoundryNet.gather(n.id).message;
@@ -202,9 +232,11 @@ function destroyAll() {
   nodes.forEach((c) => c.destroy());
   antennas.forEach((c) => c.destroy());
   receivers.forEach((c) => c.destroy());
+  enemies.forEach((c) => c.destroy());
   nodes.clear();
   antennas.clear();
   receivers.clear();
+  enemies.clear();
 }
 
 const FoundryNodes = {

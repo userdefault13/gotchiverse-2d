@@ -61,6 +61,19 @@ export default css`
     font-size: 4.2rem;
   }
 
+  .page-subtitle {
+    text-align: center;
+    margin: 0.4rem 0 0;
+    color: var(--col-pink-200);
+    font-size: 1.8rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .halloween .page-subtitle {
+    color: var(--col-halloween-200);
+  }
+
   .divider {
     height: calc(100% + 4.2rem);
     width: 0.4rem;
@@ -106,6 +119,17 @@ export default css`
     height: calc(100% - 3.4rem);
     border-bottom: 0.4rem solid var(--col-pink-border);
     border-top: 0.4rem solid var(--col-pink-border);
+    padding: 0;
+    cursor: url('/cursors/pointer.png'), pointer;
+  }
+
+  .page-flap:disabled {
+    opacity: 0.35;
+    cursor: default;
+  }
+
+  .page-flap:not(:disabled):hover {
+    filter: brightness(1.15);
   }
   .halloween .next-page-left,
   .halloween .next-page-right {
@@ -167,6 +191,50 @@ export default css`
     width: 4.2rem;
     top: 8.4rem;
     border-top: 0.4rem solid var(--col-pink-border);
+  }
+
+  .page-tab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .page-dots {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1.6rem;
+    padding: 1rem 0;
+  }
+
+  .page-dot {
+    width: 1.4rem;
+    height: 1.4rem;
+    border-radius: 50%;
+    border: 0.2rem solid var(--col-pink-400);
+    background: rgba(255, 255, 255, 0.15);
+    padding: 0;
+    cursor: url('/cursors/pointer.png'), pointer;
+    transition: transform 120ms ease, box-shadow 120ms ease, background 120ms ease;
+  }
+
+  .page-dot.active {
+    background: var(--col-pink-400);
+    box-shadow: 0 0 0.6rem var(--col-pink-400);
+    transform: scale(1.15);
+  }
+
+  .halloween .page-dot {
+    border-color: var(--col-halloween-400);
+  }
+
+  .halloween .page-dot.active {
+    background: var(--col-halloween-400);
+    box-shadow: 0 0 0.6rem var(--col-halloween-400);
+  }
+
+  .page-dot:hover {
+    transform: scale(1.1);
   }
   .halloween .back-left-page,
   .halloween .back-right-page {

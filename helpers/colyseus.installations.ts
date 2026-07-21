@@ -11,6 +11,8 @@ import {
   getUserUpgradeQueue,
 } from 'shared_code/utils/shared.utils.installations';
 import { PARCELS, PARCELS_BY_ID, PARCELS_BY_TOKEN_ID } from 'shared_code/models/model.realm';
+import { readOffchainPlacements } from 'helpers/offchain.placements.helper';
+import { hydrateOffchainStore } from 'helpers/offchain.store';
 
 const TILE = 64;
 /** How far ahead (in map tiles) to hydrate installation collisions before the player arrives. */
@@ -126,6 +128,7 @@ function parcelsNearTile(tileX: number, tileY: number, radius: number): Array<{ 
 
 async function processParcel(parcelId: string): Promise<void> {
   try {
+    await hydrateOffchainStore(GlobalState.WEB3?.state?.currentAccount);
     const ids = await fetchParcelInstallationIds(parcelId);
     if (ids == null) {
       failedParcelIds.add(parcelId);
@@ -135,9 +138,12 @@ async function processParcel(parcelId: string): Promise<void> {
 
     loadedParcelIds.add(parcelId);
     failedParcelIds.delete(parcelId);
-    if (!ids.length) return;
 
-    const toCreate = ids
+    // PoC Waalls / Lodges — merge local placements so they reappear in play mode after refresh.
+    const withLocal = _.uniq([...(ids || []), ...readOffchainPlacements(parcelId)]);
+    if (!withLocal.length) return;
+
+    const toCreate = withLocal
       .filter((id) => !scene?.installationGroup?.has(id) && !scene?.installationsWaiting?.has(id))
       .map((id) => ({ id }));
     if (toCreate.length) {

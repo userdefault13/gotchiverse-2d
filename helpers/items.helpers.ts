@@ -17,6 +17,14 @@ export type AllowedItemTypeId = typeof SHOP_ITEM_IDS[number];
 // reconstruct shopItemsById
 export const shopItemsById = _.keyBy(SHOP_ITEMS, 'itemTypeId');
 
+export function isFoundryShopItem(item: ShopItem | undefined): boolean {
+  return Boolean(item && (item.type === 'foundry' || item.category === 'foundry'));
+}
+
+export function getFoundryKitId(item: ShopItem): string {
+  return item.foundryKitId || 'antenna-kit';
+}
+
 export const ITEM_ICONS: { [id in ItemsIcon]: string } = {
   ap: LightningIcon,
   hp: HeartIcon,
@@ -67,6 +75,12 @@ export const initItemsHelper = (): void => {
       quickslotImage: PLM2,
       icon: PLM2,
       cooldown: GlobalState.GAME.state.gameConfig.cooldownsByItemType.enemy,
+    },
+    5: {
+      image: ElementBgAp,
+      icon: LightningIcon,
+      cooldown: 0,
+      alchemicaType: 'FUD',
     },
   };
 
