@@ -49,10 +49,14 @@ let lastKeyMoveSent = 0;
 let lastLocalPos: { x: number; y: number } | null = null;
 let rushTimer: ReturnType<typeof setInterval> | null = null;
 let rushUntil = 0;
+let rushSettleTimer: ReturnType<typeof setTimeout> | null = null;
 
 const WALK_SPEED = 220;
 const SPRINT_SPEED = 360;
 const KEY_TICK_MS = 50;
+/** Matches BE registerCombat max rush — used to avoid post-dash hard snaps. */
+const MAX_RUSH_DISTANCE_PX = 24 * 64;
+const RUSH_SETTLE_MS = 450;
 
 export function isColyseusNetcode(): boolean {
   return process.env.NEXT_PUBLIC_NETCODE === 'colyseus';
@@ -134,9 +138,15 @@ function syncPlayerPosition(player: RemotePlayer) {
     const sprite = getLocalSprite();
     if (sprite && typeof sprite.x === 'number') {
       const dist = Math.hypot(sprite.x - player.x, sprite.y - player.y);
-      // Only hard-correct meaningful desync; tiny diffs are prediction noise.
-      if (dist > 64) {
-        Players.handlePositions([{ id: player.gotchiId, x: player.x, y: player.y, noTween: dist > 200 } as any]);
+      // Post-dash: client finished far ahead of a speed-clamped server move — don't yank
+      // the gotchi to a stale/random-looking server spot; push a settle instead.
+      if (dist > 64 && dist <= MAX_RUSH_DISTANCE_PX + 128) {
+        sendRushSettle(sprite.x, sprite.y);
+        return;
+      }
+      if (dist > MAX_RUSH_DISTANCE_PX + 128) {
+        Players.handlePositions([{ id: player.gotchiId, x: player.x, y: player.y, noTween: true } as any]);
+        lastLocalPos = { x: player.x, y: player.y };
       }
     }
     return;
@@ -144,16 +154,35 @@ function syncPlayerPosition(player: RemotePlayer) {
   Players.handlePositions([{ id: player.gotchiId, x: player.x, y: player.y } as any]);
 }
 
+function sendRushSettle(x: number, y: number): void {
+  if (!room) return;
+  room.send('move', { x: Math.round(x), y: Math.round(y), rushSettle: true });
+}
+
 function isLocalRushing(): boolean {
   return Boolean(rushTimer) || Date.now() < rushUntil;
 }
 
-function stopRushLoop() {
+function clearRushTimerOnly() {
   if (rushTimer) {
     clearInterval(rushTimer);
     rushTimer = null;
   }
-  rushUntil = 0;
+  if (rushSettleTimer) {
+    clearTimeout(rushSettleTimer);
+    rushSettleTimer = null;
+  }
+}
+
+function stopRushLoop() {
+  clearRushTimerOnly();
+  // Keep hard-sync suppressed briefly so the server can finish its rush / accept settle.
+  rushUntil = Date.now() + RUSH_SETTLE_MS;
+  rushSettleTimer = setTimeout(() => {
+    rushSettleTimer = null;
+    const live = getLocalSprite();
+    if (live) sendRushSettle(live.x, live.y);
+  }, RUSH_SETTLE_MS);
 }
 
 /** Client-side rush dash to match server Player movement (aarena combat). */
@@ -174,7 +203,7 @@ export function colyseusPredictRush(opts: {
   if (remaining <= 0) return;
 
   stopKeyMoveLoop();
-  stopRushLoop();
+  clearRushTimerOnly();
   rushUntil = Date.now() + Math.max(200, Math.round((remaining / speed) * 1000));
 
   const tickMs = 50;
@@ -528,7 +557,8 @@ export function colyseusSendPing(): void {
 
 export function colyseusDisconnect(): void {
   stopKeyMoveLoop();
-  stopRushLoop();
+  clearRushTimerOnly();
+  rushUntil = 0;
   detachFoundryColyseusRoom();
   detachColyseusCombat();
   if (reconnectTimer) {

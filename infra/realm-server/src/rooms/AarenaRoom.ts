@@ -5,7 +5,7 @@ import { verifyAuthToken } from '../auth/jwt';
 import { assertGotchiOwnedBy } from '../auth/ownership';
 import { MOVE } from '../config/env';
 import { CombatHandle, registerCombatMessages } from '../combat/registerCombat';
-import { randomAarenaSpawn, resolveAarenaMove } from '../maps/aarenaCollisions';
+import { isAarenaBlocked, randomAarenaSpawn, resolveAarenaMove } from '../maps/aarenaCollisions';
 
 type JoinOptions = {
   token?: string;
@@ -18,6 +18,16 @@ type AuthData = {
   gotchiId: string;
 };
 
+type MoveMessage = {
+  x?: number;
+  y?: number;
+  /** Client finished a predicted rush — accept without walk-speed clamp. */
+  rushSettle?: boolean;
+};
+
+/** Matches registerCombat MAX_RUSH_DISTANCE_PX */
+const MAX_RUSH_SETTLE_PX = 24 * 64 + 128;
+
 export class AarenaRoom extends Room<AarenaState> {
   maxClients = 200;
   private lastMoveAt = new Map<string, number>();
@@ -29,7 +39,7 @@ export class AarenaRoom extends Room<AarenaState> {
     this.setMetadata({ mapId: 'aarena' });
     this.combat = registerCombatMessages(this);
 
-    this.onMessage('move', (client, message: { x?: number; y?: number }) => {
+    this.onMessage('move', (client, message: MoveMessage) => {
       const player = this.state.players.get(client.sessionId);
       if (!player) return;
       if (this.combat?.isRushing(client.sessionId)) return;
@@ -37,6 +47,23 @@ export class AarenaRoom extends Room<AarenaState> {
       if (!Number.isFinite(message.x) || !Number.isFinite(message.y)) return;
 
       const now = Date.now();
+
+      // Post-dash reconcile: client prediction ended elsewhere; accept if in rush range.
+      if (message.rushSettle) {
+        const dist = Math.hypot(message.x - player.x, message.y - player.y);
+        if (dist > MAX_RUSH_SETTLE_PX) return;
+        if (!isAarenaBlocked(message.x, message.y)) {
+          player.x = Math.round(message.x);
+          player.y = Math.round(message.y);
+        } else {
+          const snapped = resolveAarenaMove(player.x, player.y, message.x, message.y);
+          player.x = snapped.x;
+          player.y = snapped.y;
+        }
+        this.lastMoveAt.set(client.sessionId, now);
+        return;
+      }
+
       // Allow one-shot snap shortly after join (FE/server spawn align / wall nudge).
       const joined = this.joinedAt.get(client.sessionId) || now;
       if (now - joined < 4000) {
