@@ -3,13 +3,24 @@ import GlobalState from 'contexts/GlobalState';
 import Players from 'components/phaser/Players';
 import { scene as phaserScene } from 'components/controllers/SceneController';
 import { SelectedPlayer } from 'types';
-import { resolveColyseusMove } from 'helpers/colyseus.collisions';
+import { resolveColyseusMove, isColyseusPositionBlocked } from 'helpers/colyseus.collisions';
 import { colyseusSeedParcels, colyseusUpdateCurrentParcel } from 'helpers/colyseus.parcels';
 import { colyseusPreloadNearbyInstallations } from 'helpers/colyseus.installations';
 import { getParcelSpawnPixels } from 'helpers/parcels.helper';
 import { getRealmUrlSync, resolveRealmBaseUrl } from 'helpers/realm.url';
 import { toggleFollowGotchi } from 'helpers/phaser.helper';
-import { getColyseusMap, setColyseusMap } from 'helpers/colyseus.map';
+import { getColyseusMap, setColyseusMap, isColyseusAarenaMap } from 'helpers/colyseus.map';
+import { attachColyseusCombat, detachColyseusCombat, colyseusSendCombat as sendCombat } from 'helpers/colyseus.combat';
+import { attachFoundryColyseusRoom, detachFoundryColyseusRoom, FoundryNet } from 'helpers/foundry';
+
+function isFoundryPoCEnabled(): boolean {
+  try {
+    const cfg = GlobalState.GAME?.state?.gameConfig as { enableParcelFoundryPoC?: boolean } | undefined;
+    return Boolean(cfg?.enableParcelFoundryPoC) || process.env.NEXT_PUBLIC_ENABLE_FOUNDRY_POC === 'true';
+  } catch {
+    return process.env.NEXT_PUBLIC_ENABLE_FOUNDRY_POC === 'true';
+  }
+}
 
 function isCitaadelMap(): boolean {
   return getColyseusMap() !== 'aarena';
@@ -35,6 +46,8 @@ let keySprint = false;
 let lastKeyMoveSent = 0;
 /** Fallback when the Phaser sprite isn't addressable yet. */
 let lastLocalPos: { x: number; y: number } | null = null;
+let rushTimer: ReturnType<typeof setInterval> | null = null;
+let rushUntil = 0;
 
 const WALK_SPEED = 220;
 const SPRINT_SPEED = 360;
@@ -115,8 +128,8 @@ function applyLocalPosition(
 function syncPlayerPosition(player: RemotePlayer) {
   if (!player?.gotchiId) return;
   if (String(player.gotchiId) === String(localGotchiId)) {
-    // While driving with keys, keep client prediction authoritative.
-    if (keyDirection) return;
+    // While driving with keys or predicting a rush, keep client motion authoritative.
+    if (keyDirection || isLocalRushing()) return;
     const sprite = getLocalSprite();
     if (sprite && typeof sprite.x === 'number') {
       const dist = Math.hypot(sprite.x - player.x, sprite.y - player.y);
@@ -130,8 +143,66 @@ function syncPlayerPosition(player: RemotePlayer) {
   Players.handlePositions([{ id: player.gotchiId, x: player.x, y: player.y } as any]);
 }
 
+function isLocalRushing(): boolean {
+  return Boolean(rushTimer) || Date.now() < rushUntil;
+}
+
+function stopRushLoop() {
+  if (rushTimer) {
+    clearInterval(rushTimer);
+    rushTimer = null;
+  }
+  rushUntil = 0;
+}
+
+/** Client-side rush dash to match server Player movement (aarena combat). */
+export function colyseusPredictRush(opts: {
+  gotchiId?: string;
+  direction: { x: number; y: number };
+  distance?: number;
+  speed?: number;
+}): void {
+  if (!localGotchiId) return;
+  if (opts.gotchiId && String(opts.gotchiId) !== String(localGotchiId)) return;
+
+  const dirLen = Math.hypot(opts.direction.x, opts.direction.y);
+  if (!dirLen) return;
+  const dir = { x: opts.direction.x / dirLen, y: opts.direction.y / dirLen };
+  const speed = Math.max(120, Number(opts.speed) || 720);
+  let remaining = Math.max(0, Number(opts.distance) || 0);
+  if (remaining <= 0) return;
+
+  stopKeyMoveLoop();
+  stopRushLoop();
+  rushUntil = Date.now() + Math.max(200, Math.round((remaining / speed) * 1000));
+
+  const tickMs = 50;
+  rushTimer = setInterval(() => {
+    if (remaining <= 0 || Date.now() > rushUntil) {
+      stopRushLoop();
+      return;
+    }
+    const sprite = getLocalSprite();
+    if (!sprite) return;
+    const step = Math.min(remaining, (speed * tickMs) / 1000);
+    remaining -= step;
+    const proposedX = sprite.x + dir.x * step;
+    const proposedY = sprite.y + dir.y * step;
+    const resolved = resolveColyseusMove(sprite.x, sprite.y, proposedX, proposedY);
+    applyLocalPosition(resolved.x, resolved.y, dir, true);
+    if (resolved.blocked || (resolved.x === sprite.x && resolved.y === sprite.y && step > 0)) {
+      // Hit a solid — end local dash; server will settle.
+      stopRushLoop();
+    }
+  }, tickMs);
+}
+
 function bindRoomHandlers(activeRoom: Room) {
   const players = activeRoom.state.players;
+  // Combat is aarena-only (citaadel stays walkable / foundry).
+  if (isColyseusAarenaMap()) {
+    attachColyseusCombat(activeRoom, { predictRush: colyseusPredictRush });
+  }
 
   players.onAdd((player: RemotePlayer, sessionId: string) => {
     const payload = toPlayerPayload({ ...player, sessionId });
@@ -152,6 +223,9 @@ function bindRoomHandlers(activeRoom: Room) {
   activeRoom.onLeave(() => {
     clearInterval(poll);
     stopKeyMoveLoop();
+    stopRushLoop();
+    detachFoundryColyseusRoom();
+    detachColyseusCombat();
     setConnected(false);
     room = null;
   });
@@ -299,6 +373,9 @@ export async function colyseusConnect(
     }
     room = await client.joinOrCreate(roomName, joinOpts);
     bindRoomHandlers(room);
+    if (roomName === 'aarena') {
+      seedColyseusWeapons(selectedPlayer);
+    }
     setConnected(true);
 
     let me: RemotePlayer | undefined;
@@ -308,6 +385,11 @@ export async function colyseusConnect(
     if (me) {
       lastLocalPos = { x: me.x, y: me.y };
       void Players.addPlayers([toPlayerPayload(me) as any]);
+    }
+    if (roomName === 'citaadel' && isFoundryPoCEnabled()) {
+      void FoundryNet.init(endpoint()).then(() => {
+        if (room) attachFoundryColyseusRoom(room);
+      });
     }
     return true;
   } catch (e) {
@@ -319,8 +401,8 @@ export async function colyseusConnect(
 
 export function colyseusSendMove(x: number, y: number): void {
   if (!room) return;
-  // Reject click targets that land inside a solid installation.
-  if (resolveColyseusMove(x, y, x, y).blocked) return;
+  // Reject click targets that land inside a solid installation / wall.
+  if (isColyseusPositionBlocked(x, y)) return;
 
   applyLocalPosition(x, y);
   if (isCitaadelMap()) {
@@ -339,7 +421,7 @@ export function colyseusNudgeIfTrapped(): void {
   if (!room) return;
   const sprite = getLocalSprite();
   if (!sprite) return;
-  if (!resolveColyseusMove(sprite.x, sprite.y, sprite.x, sprite.y).blocked) return;
+  if (!isColyseusPositionBlocked(sprite.x, sprite.y)) return;
 
   const spot = freeTeleportSpot(sprite.x, sprite.y);
   if (spot.x === sprite.x && spot.y === sprite.y) return;
@@ -350,25 +432,19 @@ export function colyseusNudgeIfTrapped(): void {
 
 function freeTeleportSpot(centerX: number, centerY: number): { x: number; y: number } {
   const UNIT = 64;
-  const offsets: Array<[number, number]> = [
-    [0, 0],
-    [1, 0],
-    [-1, 0],
-    [0, 1],
-    [0, -1],
-    [2, 0],
-    [-2, 0],
-    [0, 2],
-    [0, -2],
-    [1, 1],
-    [-1, -1],
-    [2, 2],
-    [-2, 2],
-  ];
+  const offsets: Array<[number, number]> = [[0, 0]];
+  for (let ring = 1; ring <= 8; ring += 1) {
+    for (let ox = -ring; ox <= ring; ox += 1) {
+      offsets.push([ox, -ring], [ox, ring]);
+    }
+    for (let oy = -ring + 1; oy <= ring - 1; oy += 1) {
+      offsets.push([-ring, oy], [ring, oy]);
+    }
+  }
   for (const [ox, oy] of offsets) {
     const x = centerX + ox * UNIT;
     const y = centerY + oy * UNIT;
-    if (!resolveColyseusMove(x, y, x, y).blocked) return { x, y };
+    if (!isColyseusPositionBlocked(x, y)) return { x, y };
   }
   return { x: centerX, y: centerY };
 }
@@ -431,6 +507,9 @@ export function colyseusSendPing(): void {
 
 export function colyseusDisconnect(): void {
   stopKeyMoveLoop();
+  stopRushLoop();
+  detachFoundryColyseusRoom();
+  detachColyseusCombat();
   if (reconnectTimer) {
     clearTimeout(reconnectTimer);
     reconnectTimer = null;
@@ -445,6 +524,29 @@ export function colyseusDisconnect(): void {
 
 export function colyseusIsConnected(): boolean {
   return Boolean(room);
+}
+
+/** Aarena-only; no-ops on citaadel. */
+export function colyseusSendCombat(action: 'melee' | 'fire', data: unknown): boolean {
+  if (!isColyseusAarenaMap()) return false;
+  return sendCombat(action, data);
+}
+
+/** Prefer wearable types from select screen; default L=melee R=ranged for arcade MVP. */
+function seedColyseusWeapons(selectedPlayer: SelectedPlayer): void {
+  const weaponType = (hand?: { type?: string }) => {
+    if (hand?.type === 'Melee Weapon' || hand?.type === 'Ranged Weapon') return hand.type;
+    return null;
+  };
+  try {
+    GlobalState.REALM.dispatch({
+      type: 'UPDATE_WEAPON_TYPES',
+      leftWeapon: weaponType(selectedPlayer.leftHand) || 'Melee Weapon',
+      rightWeapon: weaponType(selectedPlayer.rightHand) || 'Ranged Weapon',
+    });
+  } catch (e) {
+    console.warn('Failed to seed Colyseus weapon types', e);
+  }
 }
 
 /** Spawn coords from the room state when available (else FE fallback). */

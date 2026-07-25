@@ -58,6 +58,8 @@ import {
   colyseusHandleKeyMove,
   colyseusIsConnected,
   colyseusLocalSpawn,
+  colyseusNudgeIfTrapped,
+  colyseusSendCombat,
   colyseusSendMove,
   colyseusSendPing,
   colyseusTeleportToParcel,
@@ -331,10 +333,16 @@ async function socketConnect(
 
     // Simple ENTER NOW lobby (no real queue) — use 'approved' so ENTER NOW is shown.
     if (map === 'aarena') {
+      // Ensure PVP shoot mode + weapons are live for arcade combat (mapConfig is set at scene create).
+      const shoot = scene?.mapConfig?.SHOOT_MODE as 'PVE' | 'PVP' | undefined;
+      InputController.updateShootMode(shoot);
+      toggleShooting(Boolean(shoot));
       GlobalState.REALM.dispatch({
         type: 'UPDATE_AARENA_QUEUE',
         aarenaQueue: { state: true, status: 'approved' },
       });
+      // Server spawn should be clear; still nudge if FE/server desync lands in a block.
+      setTimeout(() => colyseusNudgeIfTrapped(), 100);
     }
 
     // Legacy zone sockets start music in onopen; Colyseus has no onopen — start BGM here.
@@ -1508,6 +1516,20 @@ function sendData(channel: string, action: string | null, data): void {
   if (isColyseusNetcode()) {
     if (channel === 'ping') {
       colyseusSendPing();
+      return;
+    }
+    if (channel === 'combat') {
+      if (action === 'melee' || action === 'fire') {
+        const ok = colyseusSendCombat(action, data);
+        if (!ok) {
+          console.warn('@sendData combat dropped — not on aarena Colyseus room');
+          handleToastNotification({
+            message: 'Combat not connected. Re-enter the Aarena (REALM server must be running).',
+            autoClose: true,
+            type: 'error',
+          });
+        }
+      }
       return;
     }
     if (channel === 'movement') {
