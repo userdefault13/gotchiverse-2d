@@ -87,6 +87,21 @@ import { throttleZoomResize } from './scenes/gameScene';
 import { isColyseusNetcode } from 'helpers/colyseus.client';
 import { postFocusStatus } from 'contexts/UIContexts/actions';
 import AssetsController from 'components/controllers/assetsController';
+import { getLocalWaallUpgradeInfo, isWaallInstallationId, isWaallItemId, syncWaallInventoryFromScene } from 'helpers/waalls.helper';
+import {
+  getLocalLodgeUpgradeInfo,
+  isLodgeInstallationId,
+  isLodgeItemId,
+  isLocalOffchainInstallationId,
+  isLocalOffchainItemId,
+  syncLodgeInventoryFromScene,
+} from 'helpers/lodge.helper';
+import {
+  readOffchainPlacements,
+  removeOffchainPlacement,
+  upsertOffchainPlacement,
+} from 'helpers/offchain.placements.helper';
+import { flushOffchainStore, hydrateOffchainStore } from 'helpers/offchain.store';
 
 const uiContainers: { marker? } = {};
 // let markerBtnContainer = null;
@@ -108,6 +123,8 @@ interface InstallationInterface {
   placeInstallation: () => void;
   handleSpillOverAnim: (id: string, type?: Tokens) => void;
   handleBatchEquip: () => void;
+  upgradeLocalWaall: (installationId: string) => Promise<{ ok: boolean; message: string; nextId?: string }>;
+  upgradeLocalLodge: (installationId: string) => Promise<{ ok: boolean; message: string; nextId?: string }>;
   updatePlaceQueue: (id: string, action: 'EQUIP' | 'UNEQUIP' | 'CANCEL') => void;
   resetStates: () => void;
 }
@@ -170,6 +187,13 @@ const spawnSprite = async (installationData: InstallationMetadata, options?: Cre
     // Dynamic load may not have queued this sheet yet — ensure texture exists before spawn.
     if (key) await AssetsController.checkLocalTexture(key);
     const offset = { x: jsonData?.offset?.x || 0, y: jsonData?.offset?.y || 0 };
+    // Waall art is 128×196 on a 64×64 footprint — center X, seat base on the tile (Y nudged +0.5 from full bottom-align).
+    if (Number(installationType) === 3 || key === 'waall') {
+      offset.x = -32;
+      offset.y = -100;
+    }
+    // Always top-left origin on the footprint — do not use tileset originX/Y here
+    // (those values break marker sizing / grid snap when non-zero, e.g. aaltar 0.3/0.6).
     installationImage = scene.add
       .sprite((-width * GOTCHI_SIZE.UNIT) / 2 + offset.x, (-height * GOTCHI_SIZE.UNIT) / 2 + offset.y, key, frame)
       .setOrigin(0);
@@ -193,6 +217,19 @@ const spawnSprite = async (installationData: InstallationMetadata, options?: Cre
     .setDepth(type === 'INSTALLATION' ? (installationData.typeData.installationType === 5 ? 102 : 202 + installationData.position.y) : 8)
     .setInteractive({ cursor: 'url(/cursors/pointer.png), auto' })
     .setDataEnabled();
+
+  // Waalls: keep a 1×1 footprint hitbox centered on the cell (same as other installs).
+  // Lodges: footprint matches type width/height (5×6) centered on the cell.
+  if ((Number(installationType) === 3 || Number(installationType) === 4) && type === 'INSTALLATION') {
+    const hitW = width * GOTCHI_SIZE.UNIT;
+    const hitH = height * GOTCHI_SIZE.UNIT;
+    installationContainer.setSize(hitW, hitH);
+    installationContainer.setInteractive(
+      new Phaser.Geom.Rectangle(-hitW / 2, -hitH / 2, hitW, hitH),
+      Phaser.Geom.Rectangle.Contains,
+    );
+    installationContainer.input.cursor = 'url(/cursors/pointer.png), auto';
+  }
 
   if (options?.isPendingRemove) installationContainer.data.set('pendingRemove', true);
 
@@ -237,7 +274,10 @@ const spawnSprite = async (installationData: InstallationMetadata, options?: Cre
           // upgrade installation, close UI etc
         }
         createInstallationBuildModeUI(installationContainer);
-      } else if (isAaltar(id) || installationType === 8) createInstallationBuildModeUI(installationContainer); // create container if is aaltar
+      } else if (isAaltar(id) || installationType === 8 || Number(installationType) === 3 || Number(installationType) === 4) {
+        // Aaltar / Bounce Gate / local Waalls / Lodges still get build-mode controls when parcel ownership lookup misses.
+        createInstallationBuildModeUI(installationContainer);
+      }
     }
   }
 
@@ -760,8 +800,11 @@ const updateBuildMarkerPosition = (pointer: Phaser.Input.Pointer) => {
   if (scene.marker && scene.activeParcel && scene.buildInstallation) {
     dragMap(false);
     const position = getRoundPoiterPosition({ x: pointer.worldX, y: pointer.worldY });
-    scene.marker.setPosition(position.x + scene.marker.width / 2, position.y + scene.marker.height / 2);
-    const offsetY = scene.marker.height / 2 + 25;
+    // Use type footprint size — not marker.width (child sprites can inflate container bounds).
+    const footprintW = Number(scene.buildInstallation.typeData.width) * GOTCHI_SIZE.UNIT;
+    const footprintH = Number(scene.buildInstallation.typeData.height) * GOTCHI_SIZE.UNIT;
+    scene.marker.setPosition(position.x + footprintW / 2, position.y + footprintH / 2);
+    const offsetY = footprintH / 2 + 25;
     if (uiContainers.marker) uiContainers.marker.setPosition(scene.marker.x, scene.marker.y + offsetY);
 
     const relativePosition = getRelativePositionToParcel(scene.activeParcel, position);
@@ -859,6 +902,8 @@ const updatePlaceQueue = (id: string, action: 'EQUIP' | 'UNEQUIP' | 'CANCEL') =>
       createByIds([{ id }], { isWaiting: true, isMove: true, isBatch: true, tintType: 'EQUIP' });
       updateGridById(id);
       setLocalInventory(isntallationData.itemId, isntallationData.type, -1);
+      if (isWaallInstallationId(id)) syncWaallInventoryFromScene(isntallationData.itemId);
+      if (isLodgeInstallationId(id)) syncLodgeInventoryFromScene(isntallationData.itemId);
       // disable activeBrush if no quantity
       scene.batchQueue = _.concat(scene.batchQueue, [{ id, action }]);
       break;
@@ -872,6 +917,8 @@ const updatePlaceQueue = (id: string, action: 'EQUIP' | 'UNEQUIP' | 'CANCEL') =>
       if (_.find(scene.batchQueue, (item) => item.id === id)?.action === 'EQUIP') {
         updateGridById(id);
         setLocalInventory(isntallationData.itemId, isntallationData.type, 1);
+        if (isWaallInstallationId(id)) syncWaallInventoryFromScene(isntallationData.itemId);
+        if (isLodgeInstallationId(id)) syncLodgeInventoryFromScene(isntallationData.itemId);
       }
       if (_.find(scene.batchQueue, (item) => item.id === id)?.action === 'UNEQUIP') {
         createByIds([{ id }]);
@@ -949,6 +996,7 @@ const toggleBuildMode = async (state: boolean): Promise<boolean | string> => {
     scene.batchQueue = [];
     scene.buildModeInstallations = [];
     normalizePlayModeInstallations();
+    void flushOffchainStore();
     GlobalState.UI.dispatch({
       type: 'UPDATE_HUD',
       hud: 'PLAY',
@@ -1011,6 +1059,22 @@ const toggleBuildMode = async (state: boolean): Promise<boolean | string> => {
       void setActiveInstallation();
       const canBuild = borrowerCanBuild(scene.activeParcel);
 
+      // Attach build-mode controls to local Waalls / Lodges that were confirmed before UI wiring existed.
+      getLocalInstallationsByParcelId(scene.activeParcel.id).forEach((localId) => {
+        if (!isLocalOffchainInstallationId(localId)) return;
+        const container = scene.installationGroup.get(localId);
+        if (!container) return;
+        if (!uiContainers[localId]) {
+          createInstallationBuildModeUI(container);
+        }
+        const typeData = getTypeById(localId);
+        const hitW = Number(typeData?.width || 1) * GOTCHI_SIZE.UNIT;
+        const hitH = Number(typeData?.height || 1) * GOTCHI_SIZE.UNIT;
+        container.setSize(hitW, hitH);
+        container.setInteractive(new Phaser.Geom.Rectangle(-hitW / 2, -hitH / 2, hitW, hitH), Phaser.Geom.Rectangle.Contains);
+        if (container.input) container.input.cursor = 'url(/cursors/pointer.png), auto';
+      });
+
       return canBuild;
     }
   }
@@ -1030,6 +1094,10 @@ const toggleFocus = (id: string, state: boolean) => {
 
 const setActiveParcel = async (fetchGrid: boolean, parcelId?: string): Promise<boolean | string> => {
   let localParcels = GlobalState.REALM?.state.ownedParcels;
+  // Ensure offchain placements are in memory before merging onto the parcel grid.
+  if (fetchGrid) {
+    await hydrateOffchainStore(GlobalState.WEB3?.state?.currentAccount);
+  }
   if (!parcelId) {
     // console.log('@setActiveParcel', localParcels);
     const player = scene[Players.selectedPlayer.id];
@@ -1075,7 +1143,10 @@ const setActiveParcel = async (fetchGrid: boolean, parcelId?: string): Promise<b
       // console.log('queueIds', queueIds);
       const installationIds = await getInstallationIdsbyGrid(scene.activeParcel.id, grid, 0, queueIds);
       // console.log('installationIds', installationIds);
-      scene.activeParcel.installations = installationIds;
+      // Merge PoC Waall / Lodge placements (localStorage) onto the chain grid list.
+      const localOffchainIds = readOffchainPlacements(scene.activeParcel.id);
+      scene.activeParcel.installations = _.uniq([...(installationIds || []), ...localOffchainIds]);
+      localOffchainIds.forEach((id) => updateGridById(id));
     } else return false;
 
     const tileGrid = await fetchContractGrid(
@@ -1174,6 +1245,10 @@ const setActiveInstallation = async (id?: string): Promise<boolean> => {
       const parcelAccessRights = await checkParcelAccessRights(id);
       console.log('@setActiveInstallation:parcelAccessRights', parcelAccessRights);
       tokenId = parcelAccessRights ? parcelAccessRights.tokenId : false;
+    } else if (!ownerdParcel && isLocalOffchainInstallationId(id) && Installations.buildModeState) {
+      // Local Waalls / Lodges: allow selection when focused build parcel matches.
+      const data = getInstallationIdDataById(id) as unknown as InstallationIdData;
+      tokenId = scene.activeParcel?.id === data?.parcelId ? scene.activeParcel.tokenId : false;
     } else tokenId = ownerdParcel ? ownerdParcel.tokenId : false;
 
     if (tokenId) {
@@ -1272,6 +1347,68 @@ const handleEquipUnequipMove = async (selectedInstallation: EquipUnequipMoveData
   console.log('selectedInstallation', selectedInstallation);
 
   if (scene.activeParcel) {
+    // Local Waalls / Lodges — no InstallationDiamond tx.
+    if (type === 'INSTALLATION' && isLocalOffchainItemId(itemId)) {
+      const installationId = createInstallationIdByData({
+        parcelId: scene.activeParcel.id,
+        itemId,
+        x: relativePosition.x,
+        y: relativePosition.y,
+        type: '0',
+        state: 0,
+      });
+      removeInstallationBuildModeUI(scene.activeInstallation);
+      const label = isLodgeItemId(itemId) ? 'Lodge' : 'Waall';
+
+      if (callMethod === 'move' && isMoving) {
+        destroyMarker();
+        // handleMove already freed the old cell — only occupy the new one.
+        destroyByIds([{ id: isMoving }], true);
+        updateGridById(installationId);
+        await createByIds([{ id: installationId }]);
+        removeOffchainPlacement(isMoving);
+        upsertOffchainPlacement(installationId);
+        void flushOffchainStore();
+        SFXController.playFX('send');
+        if (GlobalState.NOTIFICATION.dispatch) {
+          const notificationId = showTransactionNotification(GlobalState.NOTIFICATION.dispatch, {
+            message: `Move ${label} (local)`,
+            options: { sound: true },
+          });
+          updateTransactionNotificationStatus(GlobalState.NOTIFICATION.dispatch, notificationId, 'success');
+        }
+        scene.buildInstallation = undefined;
+        destroyMarker(true);
+        return;
+      }
+
+      if (callMethod === 'unequip') {
+        updateGridById(installationId);
+        unequipAnimationById(installationId);
+        removeOffchainPlacement(installationId);
+        setLocalInventory(itemId, 'INSTALLATION', 1);
+        if (isWaallItemId(itemId)) syncWaallInventoryFromScene(itemId);
+        if (isLodgeItemId(itemId)) syncLodgeInventoryFromScene(itemId);
+        void flushOffchainStore();
+        SFXController.playFX('send');
+        if (GlobalState.NOTIFICATION.dispatch) {
+          const notificationId = showTransactionNotification(GlobalState.NOTIFICATION.dispatch, {
+            message: `Unequip ${label} (local)`,
+            options: { sound: true },
+          });
+          updateTransactionNotificationStatus(GlobalState.NOTIFICATION.dispatch, notificationId, 'success');
+        }
+        scene.buildInstallation = undefined;
+        destroyMarker(true);
+        return;
+      }
+
+      // equip is handled via batch queue + finalizeLocalOffchainBatchItems
+      scene.buildInstallation = undefined;
+      destroyMarker(true);
+      return;
+    }
+
     const method: 'equipInstallation' | 'equipTile' | 'unequipInstallation' | 'unequipTile' | 'moveInstallation' | 'moveTile' =
       type === 'INSTALLATION' ? `${callMethod}Installation` : `${callMethod}Tile`;
 
@@ -1355,6 +1492,96 @@ const handleEquipUnequipMove = async (selectedInstallation: EquipUnequipMoveData
   destroyMarker(true);
 };
 
+const upgradeLocalWaall = async (installationId: string): Promise<{ ok: boolean; message: string; nextId?: string }> => {
+  if (!isWaallInstallationId(installationId)) return { ok: false, message: 'Not a Waall' };
+  const data = getInstallationIdDataById(installationId) as unknown as InstallationIdData;
+  const info = getLocalWaallUpgradeInfo(data.itemId);
+  if (!info?.next) return { ok: false, message: 'Waall is already max level' };
+
+  const nextId = createInstallationIdByData({
+    parcelId: data.parcelId,
+    itemId: info.next.id,
+    x: data.position.x,
+    y: data.position.y,
+    type: '0',
+    state: 0,
+  });
+
+  removeInstallationBuildModeUI(scene.installationGroup.get(installationId));
+  updateGridById(installationId);
+  destroyByIds([{ id: installationId }], true);
+  updateGridById(nextId);
+  await createByIds([{ id: nextId }]);
+  removeOffchainPlacement(installationId);
+  upsertOffchainPlacement(nextId);
+  void flushOffchainStore();
+  SFXController.playFX('send');
+  return { ok: true, message: `Upgraded to ${info.next.name}`, nextId };
+};
+
+const upgradeLocalLodge = async (installationId: string): Promise<{ ok: boolean; message: string; nextId?: string }> => {
+  if (!isLodgeInstallationId(installationId)) return { ok: false, message: 'Not a Lodge' };
+  const data = getInstallationIdDataById(installationId) as unknown as InstallationIdData;
+  const info = getLocalLodgeUpgradeInfo(data.itemId);
+  if (!info?.next) return { ok: false, message: 'Lodge is already max level' };
+
+  const nextId = createInstallationIdByData({
+    parcelId: data.parcelId,
+    itemId: info.next.id,
+    x: data.position.x,
+    y: data.position.y,
+    type: '0',
+    state: 0,
+  });
+
+  removeInstallationBuildModeUI(scene.installationGroup.get(installationId));
+  updateGridById(installationId);
+  destroyByIds([{ id: installationId }], true);
+  updateGridById(nextId);
+  await createByIds([{ id: nextId }]);
+  removeOffchainPlacement(installationId);
+  upsertOffchainPlacement(nextId);
+  void flushOffchainStore();
+  SFXController.playFX('send');
+  return { ok: true, message: `Upgraded to ${info.next.name}`, nextId };
+};
+
+const finalizeLocalOffchainBatchItems = (items: { id: string; action: string }[]) => {
+  _.each(items, ({ id, action }) => {
+    uiContainers[`${id}-cancel`]?.destroy();
+    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+    delete uiContainers[`${id}-cancel`];
+
+    if (action === 'UNEQUIP') {
+      removeOffchainPlacement(id);
+      unequipAnimationById(id, true);
+      return;
+    }
+
+    // Waiting placeholders skip build-mode UI — tear down and respawn as a normal install
+    // so upgrade / move / remove buttons and click handlers attach.
+    const waiting = scene.installationsWaiting?.get(id);
+    if (waiting) {
+      waiting.destroy(true);
+      scene.installationsWaiting.delete(id);
+    }
+    if (scene.installationGroup?.has(id)) {
+      const existing = scene.installationGroup.get(id);
+      const btn = uiContainers[id];
+      if (btn) {
+        btn.destroy?.(true);
+        // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+        delete uiContainers[id];
+      }
+      existing?.destroy?.(true);
+      scene.installationGroup.delete(id);
+    }
+
+    upsertOffchainPlacement(id);
+    void createByIds([{ id }]);
+  });
+};
+
 const handleBatchEquip = async () => {
   // const { send } = useAavegotchiSound();
   if (scene.activeParcel) {
@@ -1374,6 +1601,24 @@ const handleBatchEquip = async () => {
     };
 
     try {
+      const localItems = (scene.batchQueue || []).filter((item) => isLocalOffchainInstallationId(item.id));
+      const onChainItems = (scene.batchQueue || []).filter((item) => !isLocalOffchainInstallationId(item.id));
+
+      // Local-only Waalls / Lodges (not on InstallationDiamond) — commit without a diamond tx.
+      if (localItems.length) {
+        finalizeLocalOffchainBatchItems(localItems);
+        scene.batchQueue = onChainItems;
+        await flushOffchainStore();
+        if (!onChainItems.length) {
+          SFXController.playFX('send');
+          if (notificationId) {
+            updateTransactionNotificationStatus(GlobalState.NOTIFICATION.dispatch, notificationId, 'success');
+          }
+          destroyMarker(true);
+          return;
+        }
+      }
+
       if (!GlobalState.WEB3.state.ethersSigner || !GlobalState.WEB3.state.currentNetwork) {
         throw new Error('Wallet not connected. Connect on Base and try Confirm again.');
       }
@@ -1768,6 +2013,8 @@ const Installations: InstallationInterface = {
   handleBatchEquip,
   updatePlaceQueue,
   resetStates,
+  upgradeLocalWaall,
+  upgradeLocalLodge,
 };
 
 export default Installations;

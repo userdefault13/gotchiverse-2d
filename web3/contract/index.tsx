@@ -71,17 +71,32 @@ export const getContract = (
 ) => {
   const vars = varsForNetwork(network);
   const abi = abis[contractName] || abis.erc20;
-  const contracts = useSigner ? unsignedcontracts : signedContracts;
-  if (!contracts[contractName]) {
+
+  // Signer-backed contracts must not be cached across wallet reconnects — a stale signer
+  // makes writes (channel / equip / claim) fail mysteriously until a full reload.
+  if (useSigner) {
     try {
-      contracts[contractName] = new ethers.Contract(vars[contractName], abi, provider);
+      if (!vars[contractName]) return undefined;
+      return new ethers.Contract(vars[contractName], abi, provider);
     } catch (err) {
       console.log("Can't fetch contract with err:", err);
-      // Contract not available
+      return undefined;
     }
   }
 
-  return contracts[contractName] || undefined;
+  // Cache per network+name so Base/Polygon diamond addresses never collide.
+  const cacheKey = `${network}:${contractName}`;
+  const contracts = signedContracts;
+  if (!contracts[cacheKey]) {
+    try {
+      if (!vars[contractName]) return undefined;
+      contracts[cacheKey] = new ethers.Contract(vars[contractName], abi, provider);
+    } catch (err) {
+      console.log("Can't fetch contract with err:", err);
+    }
+  }
+
+  return contracts[cacheKey] || undefined;
 };
 
 export const getAlchemicaBalances = async <R extends unknown>(address: string, provider: ethers.providers.Provider, network: NetworkNames) => {

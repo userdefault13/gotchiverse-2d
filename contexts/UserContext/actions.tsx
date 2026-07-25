@@ -9,12 +9,16 @@ import { Installation, NetworkNames, InstallationsBalancesWithTypes, OngoingUpgr
 import { getUserAlchemicaBalances } from 'helpers/gotchi.helper';
 import { getTypeByItemId } from 'helpers/installations.helper';
 import Players from 'components/phaser/Players';
+import { mergeLocalWaallsIntoInventory } from 'helpers/waalls.helper';
+import { mergeLocalLodgesIntoInventory } from 'helpers/lodge.helper';
+import { hydrateOffchainStore } from 'helpers/offchain.store';
 
 export const updateGhstBalance = async (
   ethersOptions: { provider: ethers.providers.Provider; network: string; account: string },
   dispatch: React.Dispatch<Action>,
 ) => {
   const { ghstAddress } = varsForNetwork(ethersOptions.network);
+  if (!ghstAddress || /^0x0{40}$/i.test(ghstAddress)) return;
   const ghst = new ethers.Contract(ghstAddress, GhstContractABI.abi, ethersOptions.provider);
   try {
     const balance = await ghst.balanceOf(ethersOptions.account);
@@ -74,11 +78,14 @@ export const updateInventory = async (
   },
   dispatch: React.Dispatch<Action>,
 ): Promise<Installation[]> => {
+  // Hydrate Waall/Lodge memory (+ Mongo) before merging into inventory UI.
+  await hydrateOffchainStore(web3Options.account);
+
   const installationBalances = await fetchContractInventory('INSTALLATION', web3Options);
 
   const tileBalances = await fetchContractInventory('TILE', web3Options);
 
-  const inventory = [...installationBalances, ...tileBalances];
+  const inventory = mergeLocalLodgesIntoInventory(mergeLocalWaallsIntoInventory([...installationBalances, ...tileBalances]));
   dispatch({
     type: 'UPDATE_INVENTORY',
     inventory,
@@ -215,16 +222,26 @@ export const fetchAndSetMaticBalance = async (
   web3Options: { provider: ethers.providers.Provider; network: NetworkNames; account: string },
   dispatch: React.Dispatch<Action>,
 ): Promise<void> => {
-  const maticContract = getContract(web3Options.network, web3Options.provider, 'maticAddress');
   try {
-    const balance = await maticContract.balanceOf(web3Options.account);
-    const formattedBalance = Number(utils.formatEther(balance));
+    // Base (and any chain without a MATIC ERC-20): use native gas token balance.
+    const { maticAddress } = varsForNetwork(web3Options.network);
+    let formattedBalance: number;
+    if (!maticAddress || /^0x0{40}$/i.test(maticAddress) || web3Options.network === 'base') {
+      const balance = await web3Options.provider.getBalance(web3Options.account);
+      formattedBalance = Number(utils.formatEther(balance));
+    } else {
+      const maticContract = getContract(web3Options.network, web3Options.provider, 'maticAddress');
+      if (!maticContract) return;
+      const balance = await maticContract.balanceOf(web3Options.account);
+      formattedBalance = Number(utils.formatEther(balance));
+    }
 
     dispatch({
       type: 'UPDATE_MATIC_BALANCE',
       maticBalance: formattedBalance,
     });
   } catch (error) {
-    console.error(error);
+    // Avoid console.error — Next.js dev overlay treats it as a blocking page error.
+    console.warn('@fetchAndSetMaticBalance', error);
   }
 };

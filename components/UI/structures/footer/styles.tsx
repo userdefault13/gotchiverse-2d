@@ -13,8 +13,22 @@ export default css`
     box-shadow: 0px 0px 3px rgba(0, 0, 0, 0.6);
     color: var(--col-blue-300);
   }
-  .copyright {
-    margin-bottom: 3rem;
+  .stewards-block {
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
+    flex-shrink: 0;
+  }
+  .stewards-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 3rem;
+  }
+  .steward-column {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    max-width: 22rem;
   }
   .heading {
     font-size: 4rem;
@@ -35,32 +49,27 @@ export default css`
     font-size: 2.4rem;
     line-height: 0.9;
   }
-  .logo-row {
-    display: flex;
-    align-items: center;
-    gap: 1.6rem;
-    flex-shrink: 0;
-  }
   .logo-container {
     min-width: 10rem;
     max-width: 10rem;
     height: 10rem;
     position: relative;
+    margin-bottom: 1.6rem;
   }
-  .sections {
-    display: flex;
-    gap: 10rem;
-    justify-content: space-evenly;
-    align-items: flex-start;
-  }
-  .company-info {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
+  .legal-links {
+    margin-top: 0;
   }
   .section {
     display: flex;
     flex-direction: column;
+  }
+  @media (max-width: 900px) {
+    .footer-container {
+      flex-direction: column;
+    }
+    .stewards-row {
+      flex-wrap: wrap;
+    }
   }
   @media (max-width: 625px) {
     .heading {

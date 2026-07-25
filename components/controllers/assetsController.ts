@@ -186,6 +186,8 @@ const installationList: TextureConfig[] = [
   { id: '159', preload: true },
   { id: '160', preload: true },
   { id: '161', preload: true },
+  { id: 'waall', preload: true },
+  { id: 'lodge', preload: true },
   { id: 'maaker_door', preload: true },
   { id: 'maaker_bot', preload: true },
   { id: 'equip', preload: true, animationConfig: { isLoop: true } },

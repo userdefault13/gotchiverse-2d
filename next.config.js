@@ -61,6 +61,9 @@ const moduleExports = {
 
     // Dev only
     USE_LOCALHOST: process.env.USE_LOCALHOST,
+
+    // Hybrid Grid Foundry PoC (also set on Vercel / .env.production)
+    NEXT_PUBLIC_ENABLE_FOUNDRY_POC: process.env.NEXT_PUBLIC_ENABLE_FOUNDRY_POC,
   },
 };
 

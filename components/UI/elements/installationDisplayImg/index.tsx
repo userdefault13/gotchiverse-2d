@@ -68,7 +68,18 @@ export const InstallationDisplayImg = ({ type, itemId, installationScale = 0.5, 
   };
 
   const getScalePerTileHeight = (): number => {
-    const scale = 1 / ((spriteMetadata?.jsonData?.tileheight + spriteMetadata?.jsonData?.offset?.y || 0) / 64);
+    const tileheight = Number(spriteMetadata?.jsonData?.tileheight || 64);
+    const tilewidth = Number(spriteMetadata?.jsonData?.tilewidth || 64);
+    // Missing offset used to NaN the sum → Infinity scale (Lodge cropped/zoomed).
+    const offsetY = Number(spriteMetadata?.jsonData?.offset?.y ?? 0);
+    const effectiveHeight = Math.max(1, tileheight + offsetY);
+    let scale = 64 / effectiveHeight;
+
+    // Large multi-tile art (Gotchi Lodge 320×384) — fit the card instead of shrinking to 1 tile.
+    if (spriteMetadata?.key === 'lodge' || Number(itemType?.installationType) === 4) {
+      scale = 150 / Math.max(tilewidth, effectiveHeight);
+    }
+
     return scale;
   };
 
@@ -83,7 +94,7 @@ export const InstallationDisplayImg = ({ type, itemId, installationScale = 0.5, 
         {type === 'INSTALLATION' && spriteMetadata && !isSimpleDecoration(itemId) && (
           <span
             style={{
-              transform: `translate(-50%, -50%) scale(${getScalePerTileHeight() || 0.8})   `,
+              transform: `translate(-50%, -50%) scale(${getScalePerTileHeight() || 0.8})`,
             }}
             className={!spriteMetadata?.isDecoration ? 'sprite-img installation' : 'sprite-img'}
           >

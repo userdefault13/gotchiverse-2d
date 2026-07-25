@@ -10,11 +10,15 @@ import useAavegotchiSound from 'hooks/useAavegotchiSound';
 import { Loader, FilterSelect, SearchInput, SortSelect } from 'components/UI/elements';
 import { Recipe, SortOption, TileType, NetworkNames, InstallationType } from 'types';
 import { RecipeBookToggle } from './RecipeBookToggle';
-import { RecipeBookModal } from './RecipeBookModal';
+import { RecipeBookModal, RecipeBookPage } from './RecipeBookModal';
 import styles from './styles';
-import { RecipeCard } from 'components/UI/component';
+import { FoundryRecipeCard, RecipeCard } from 'components/UI/component';
 import { gotchiverseSubgraph } from 'shared_code/web3/shared.const.web3';
 import { useGame } from 'contexts/GameContext';
+import { FOUNDRY_RECIPES, FoundryRecipe } from 'helpers/foundry/recipes';
+import { FoundryNet } from 'helpers/foundry';
+import { getLocalWaallRecipes, isWaallItemId } from 'helpers/waalls.helper';
+import { getLocalLodgeRecipes, isLodgeItemId } from 'helpers/lodge.helper';
 
 interface Props {
   selectRecipe: (recipe: Recipe) => void;
@@ -64,6 +68,14 @@ const typeFilters = [
     name: 'Maakers',
     value: 'maaker',
   },
+  {
+    name: 'Waalls',
+    value: 'waall',
+  },
+  {
+    name: 'Lodges',
+    value: 'lodge',
+  },
 ];
 
 /** Networks that load recipes from the Gotchiverse subgraph (filters/search/sort). */
@@ -97,8 +109,23 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
     harvester: true,
     decoration: true,
     maaker: true,
+    waall: true,
+    lodge: true,
   });
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [bookPage, setBookPage] = useState(0);
+  const [craftToast, setCraftToast] = useState('');
+
+  const foundryEnabled =
+    Boolean((gameConfig as { enableParcelFoundryPoC?: boolean })?.enableParcelFoundryPoC) ||
+    process.env.NEXT_PUBLIC_ENABLE_FOUNDRY_POC === 'true';
+
+  const bookPages: RecipeBookPage[] = foundryEnabled
+    ? [
+        { id: 'onchain', label: 'RECIPES BOOK', shortLabel: 'On-chain installations' },
+        { id: 'foundry', label: 'LOGISTICS RECIPES', shortLabel: 'Off-chain foundry salvage' },
+      ]
+    : [{ id: 'onchain', label: 'RECIPES BOOK', shortLabel: 'On-chain installations' }];
 
   const onSetSortBy = (name: string, value: string, direction: 'asc' | 'desc') => {
     setSort({
@@ -146,11 +173,23 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
         return data;
       });
 
+      // Waalls / Lodges were never deployed on-chain — merge local L1 recipes when filter allows.
+      const localWaalls =
+        typeFilter.waall !== false
+          ? getLocalWaallRecipes().filter((r) => !nameFilter || r.name.toLowerCase().includes(String(nameFilter).toLowerCase()))
+          : [];
+      const localLodges =
+        typeFilter.lodge !== false
+          ? getLocalLodgeRecipes().filter((r) => !nameFilter || r.name.toLowerCase().includes(String(nameFilter).toLowerCase()))
+          : [];
+      const withoutLocal = recipes.filter((r) => !isWaallItemId(r.id) && !isLodgeItemId(r.id));
+      const merged = _.concat(withoutLocal, localWaalls, localLodges);
+
       let sorted: Recipe[];
-      if (sortBy.value === 'id') sorted = _.sortBy(recipes, (recipe: Recipe) => Number(recipe.id));
-      else if (sortBy.value === 'name') sorted = _.sortBy(recipes, (recipe: Recipe) => recipe.name);
-      else if (sortBy.value === 'cost') sorted = _.sortBy(recipes, (recipe: Recipe) => recipe.ingredients.fud);
-      else sorted = recipes;
+      if (sortBy.value === 'id') sorted = _.sortBy(merged, (recipe: Recipe) => Number(recipe.id));
+      else if (sortBy.value === 'name') sorted = _.sortBy(merged, (recipe: Recipe) => recipe.name);
+      else if (sortBy.value === 'cost') sorted = _.sortBy(merged, (recipe: Recipe) => recipe.ingredients.fud);
+      else sorted = merged;
       if (sortBy.direction === 'desc') sorted = _.reverse(sorted);
 
       setRecipes(sorted);
@@ -203,7 +242,8 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
     const fetchedInstallations = await fetchContractRecipe(currentNetwork, globalProvider, 'INSTALLATION');
     const fetchedTiles = await fetchContractRecipe(currentNetwork, globalProvider, 'TILE');
     const fetchedItems = _.concat(fetchedInstallations, fetchedTiles);
-    setRecipes(fetchedItems);
+    const withoutLocal = fetchedItems.filter((r) => !isWaallItemId(r.id) && !isLodgeItemId(r.id));
+    setRecipes(_.concat(withoutLocal, getLocalWaallRecipes(), getLocalLodgeRecipes()));
     setPending(false);
   };
 
@@ -219,11 +259,34 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
     }
   }, [currentNetwork, nameFilter, typeFilter, sort, open]);
 
+  useEffect(() => {
+    if (!open) {
+      setBookPage(0);
+      setCraftToast('');
+    }
+  }, [open]);
+
+  const handleCraftFoundryRecipe = (recipe: FoundryRecipe) => {
+    click();
+    const result = FoundryNet.craftRecipe(recipe.id);
+    setCraftToast(result.message);
+    window.setTimeout(() => setCraftToast(''), 2500);
+  };
+
+  const showOnChainPage = bookPage === 0;
+  const showFoundryPage = foundryEnabled && bookPage === 1;
+
   return (
     <>
       <RecipeBookToggle onClick={() => setOpen(true)} disabled={disabled} />
-      <RecipeBookModal open={open} onClose={() => setOpen(false)}>
-        {pending && (
+      <RecipeBookModal
+        open={open}
+        onClose={() => setOpen(false)}
+        pages={bookPages}
+        activePage={bookPage}
+        onPageChange={setBookPage}
+      >
+        {showOnChainPage && pending && (
           <>
             <div className="loading-box"></div>
             <div className="loading-content">
@@ -232,28 +295,42 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
             </div>
           </>
         )}
-        <div className="filter-container">
-          <div className="search-input">
-            <SearchInput value={nameFilter || ''} onChange={setNameFilter} color={getThemeColor()} placeholder="Search by name, type, etc..." />
+        {showOnChainPage && (
+          <div className="filter-container">
+            <div className="search-input">
+              <SearchInput value={nameFilter || ''} onChange={setNameFilter} color={getThemeColor()} placeholder="Search by name, type, etc..." />
+            </div>
+            <div className="filter-options">
+              <FilterSelect
+                filters={typeFilters}
+                width="17rem"
+                onChange={(state) => {
+                  setTypeFilter(state);
+                }}
+              />
+              <SortSelect options={sortOptions} selected={sort} placeholder="Sort by" width="14rem" onSelect={onSetSortBy} useTheme={true} />
+            </div>
           </div>
-          <div className="filter-options">
-            <FilterSelect
-              filters={typeFilters}
-              width="17rem"
-              onChange={(state) => {
-                setTypeFilter(state);
-              }}
-            />
-            <SortSelect options={sortOptions} selected={sort} placeholder="Sort by" width="14rem" onSelect={onSetSortBy} useTheme={true} />
+        )}
+        {showFoundryPage ? (
+          <div className="foundry-intro">
+            Off-chain logistics: mine ores/gases → smelt (costs alchemica power) → parts → assemble Antenna Relay → place on map.
           </div>
-        </div>
+        ) : null}
+        {craftToast ? <div className="craft-toast">{craftToast}</div> : null}
         <div className={`scrollable ${gameConfig.gotchiverseTheme}`}>
           <div className="content">
-            {!pending && recipes?.length === 0 ? (
+            {showOnChainPage && !pending && recipes?.length === 0 ? (
               <div className="empty-recipes">No recipes found</div>
-            ) : (
-              recipes?.map((recipe, i) => <RecipeCard onClick={handleSelect} recipe={recipe} key={`${recipe.type}-${recipe.id}-${i}`} />)
-            )}
+            ) : null}
+            {showOnChainPage
+              ? recipes?.map((recipe, i) => <RecipeCard onClick={handleSelect} recipe={recipe} key={`${recipe.type}-${recipe.id}-${i}`} />)
+              : null}
+            {showFoundryPage
+              ? FOUNDRY_RECIPES.map((recipe) => (
+                  <FoundryRecipeCard recipe={recipe} key={recipe.id} onCraft={handleCraftFoundryRecipe} />
+                ))
+              : null}
           </div>
         </div>
       </RecipeBookModal>

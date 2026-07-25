@@ -42,9 +42,9 @@ interface ShopItemSupplyConfig {
   autoRestockCron: string;
   autoRestockAmount: number;
 }
-type CooldownCategory = 'hp' | 'ap';
-type ShopItemType = 'potion' | 'enemy';
-type ShopItemCategory = 'boosts' | 'enemy';
+type CooldownCategory = 'hp' | 'ap' | 'enemy';
+type ShopItemType = 'potion' | 'enemy' | 'foundry' | 'PLM2' | 'GMLS';
+type ShopItemCategory = 'boosts' | 'enemy' | 'foundry';
 
 export interface ShopItemFE {
   // FE SPECIFIC SHOP ITEM PROPS
@@ -83,6 +83,7 @@ export interface ShopItem extends ShopItemFE {
 
   dimensions: Dimensions;
   supplyConfig: ShopItemSupplyConfig;
+  foundryKitId?: string;
 }
 
 export interface ShopCart {

@@ -297,6 +297,11 @@ const displayPlayer = (player: Player): void => {
 
 function handleGracePeriod(id: string) {
   if (!scene[id] || !scene[`${id}_top`]) return;
+  // Colyseus combat MVP has no damage yet — skip spawn lock so attacks work immediately.
+  if (process.env.NEXT_PUBLIC_NETCODE === 'colyseus') {
+    scene[id].isGracePeriod = false;
+    return;
+  }
   scene[id].isGracePeriod = !!GlobalState.GAME.state.gameConfig.fireDisabledDuration;
 
   if (scene[id].isGracePeriod) {

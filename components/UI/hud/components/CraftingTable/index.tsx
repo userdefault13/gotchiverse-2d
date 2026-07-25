@@ -26,6 +26,9 @@ import { FullscreenModal } from 'components/UI/component';
 import { Button } from 'components/UI/elements';
 import { useGame } from 'contexts/GameContext';
 import type { AlchemicaBalance, NetworkNames, Recipe } from 'types';
+import { craftWaallLocally, isWaallItemId } from 'helpers/waalls.helper';
+import { craftLodgeLocally, isLodgeItemId } from 'helpers/lodge.helper';
+import GlobalState from 'contexts/GlobalState';
 
 interface Props {
   open: boolean;
@@ -121,6 +124,44 @@ export const CraftingTable = ({ open, onClose }: Props): JSX.Element => {
   ) => {
     setPending(true);
 
+    // Waalls / Lodges are not on InstallationDiamond — craft into local inventory (demo / PoC).
+    if (recipe.type === 'INSTALLATION' && (isWaallItemId(recipe.id) || isLodgeItemId(recipe.id))) {
+      let notificationId;
+      try {
+        const isLodge = isLodgeItemId(recipe.id);
+        notificationId = showTransactionNotification(notificationDispatch, {
+          message: isLodge ? 'Crafting Lodge (local)' : 'Crafting Waall (local)',
+        });
+        const result = isLodge ? craftLodgeLocally(recipe, quanity, alchemicaBalance) : craftWaallLocally(recipe, quanity, alchemicaBalance);
+        if (!result.ok) {
+          updateTransactionNotificationStatus(notificationDispatch, notificationId, 'error', result.message);
+          craftError();
+          setPending(false);
+          return;
+        }
+        if (result.nextBalance) {
+          userDispatch({ type: 'UPDATE_ALCHEMICA_BALANCE', alchemicaBalance: result.nextBalance });
+        }
+        if (GlobalState.USER?.state?.inventory) {
+          userDispatch({ type: 'UPDATE_INVENTORY', inventory: [...GlobalState.USER.state.inventory] });
+        }
+        craft();
+        updateTransactionNotificationStatus(notificationDispatch, notificationId, 'success');
+        setCrafting(true);
+        setPending(false);
+        setTimeout(() => {
+          craftSuccess();
+          handleCompletedCraft(notificationDispatch, _.fill(Array(quanity), recipe.id), recipe.name);
+          setCrafting(false);
+        }, 1200);
+      } catch (e) {
+        notificationId && updateTransactionNotificationStatus(notificationDispatch, notificationId, 'error', getErrMessage(e));
+        craftError();
+        setPending(false);
+      }
+      return;
+    }
+
     const contractType = getContractFromRecipeType(recipe.type);
     const contract = await getContract(config.network, config.signer, contractType, true);
 
@@ -194,7 +235,7 @@ export const CraftingTable = ({ open, onClose }: Props): JSX.Element => {
   }, [open, currentAccount, currentNetwork, globalProvider, ethersSigner]);
 
   useEffect(() => {
-    if (currentAccount && currentNetwork && globalProvider && selectedRecipe) {
+    if (currentAccount && currentNetwork && globalProvider && selectedRecipe && !isWaallItemId(selectedRecipe.id) && !isLodgeItemId(selectedRecipe.id)) {
       void fetchAndSetAllowance(currentAccount, currentNetwork, globalProvider, selectedRecipe);
     }
   }, [selectedRecipe, currentAccount, currentNetwork, globalProvider]);
@@ -214,7 +255,12 @@ export const CraftingTable = ({ open, onClose }: Props): JSX.Element => {
     postFocusStatus(!open, uiDispatch); // If open, the focus on game is false, and vice versa
   }, [open]);
 
-  if (selectedRecipe !== undefined && isApproved(alchemicaApproved[getContractFromRecipeType(selectedRecipe.type)]) === 'false') {
+  if (
+    selectedRecipe !== undefined &&
+    !isWaallItemId(selectedRecipe.id) &&
+    !isLodgeItemId(selectedRecipe.id) &&
+    isApproved(alchemicaApproved[getContractFromRecipeType(selectedRecipe.type)]) === 'false'
+  ) {
     return (
       <ApprovalNeeded
         approved={alchemicaApproved[getContractFromRecipeType(selectedRecipe.type)]}

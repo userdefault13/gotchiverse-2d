@@ -5,6 +5,7 @@ export * from './inventoryCard';
 export * from './nftTrayCard';
 export * from './nftCollectionCard';
 export * from './recipeCard';
+export * from './foundryRecipeCard';
 export * from './upgradeCard';
 export * from './eventListCard';
 export * from './parcelCard';

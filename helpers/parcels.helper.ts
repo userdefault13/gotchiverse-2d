@@ -168,8 +168,17 @@ interface FudResults {
 
 export function calculateChannellingResults({ altarId, playerId }: { altarId?: string; playerId?: string }): FudResults {
   const typeById = getInstallationTypeById(altarId);
-  const userAavegotchisById = _.keyBy(GlobalState.USER.state.userAavegotchis, 'id');
-  const { kinship } = userAavegotchisById[playerId];
+  if (!typeById) {
+    throw new Error('Aaltar type not found for channeling preview');
+  }
+
+  const gotchis = GlobalState.USER?.state?.userAavegotchis || [];
+  const byId = _.keyBy(gotchis, (g) => String(g.id));
+  const gotchi = byId[String(playerId)] || gotchis.find((g) => Number(g.id) === Number(playerId));
+  const kinship = Number(gotchi?.kinship ?? 0);
+  if (!Number.isFinite(kinship) || kinship < 0) {
+    throw new Error('Gotchi kinship unavailable — reselect your Aavegotchi and try again');
+  }
 
   // The formula is sqrt(kinship/50)*20 for the FUD amount
   // (ex: kin=50 => 20 FUD ; kin=450 => 60 FUD).
@@ -179,7 +188,7 @@ export function calculateChannellingResults({ altarId, playerId }: { altarId?: s
   const fomo = fud * 0.5;
   const alpha = fud * 0.25;
   const kek = fud * 0.1;
-  const spillover = typeById.spillRate * 0.0001;
+  const spillover = Number(typeById.spillRate || 0) * 0.0001;
 
   const fudSpill = fud * spillover;
   const fomoSpill = fomo * spillover;
@@ -602,23 +611,43 @@ export const speedupUpgrade = async (signer: Signer, network: NetworkNames, { up
 };
 
 export const channelAlchemica = async (signer: Signer, network: NetworkNames, { realmId, gotchiId }: ChannelData) => {
+  if (!signer) {
+    throw new Error('Wallet not connected. Connect on Base and try Channel again.');
+  }
+  if (realmId == null || gotchiId == null || Number.isNaN(Number(gotchiId))) {
+    throw new Error('Missing parcel or gotchi id for channeling.');
+  }
+
   const realmDiamond = getContract(network, signer, 'realmDiamond', true);
+  if (!realmDiamond) {
+    throw new Error('Realm diamond unavailable for this network.');
+  }
+
   try {
-    const lastChanneled = await realmDiamond.getLastChanneled(network === 'mumbai' ? 0 : gotchiId);
-    console.log('@channelAlchemica:lastChanneled', lastChanneled);
+    const channelGotchiId = network === 'mumbai' ? 0 : Number(gotchiId);
+    const lastChanneled = await realmDiamond.getLastChanneled(channelGotchiId);
+    console.log('@channelAlchemica:lastChanneled', lastChanneled?.toString?.() ?? lastChanneled);
 
     const signature = await resolveChannelSignature(network, {
       parcelId: realmId,
-      gotchiId,
+      gotchiId: channelGotchiId,
       lastChanneled: lastChanneled?.toString?.() ?? String(lastChanneled),
     });
 
-    const tx = await realmDiamond.channelAlchemica(
-      realmId,
-      network === 'mumbai' ? 0 : gotchiId,
-      lastChanneled,
-      signature,
-    );
+    // Surface contract reverts before MetaMask (clearer toast than generic CALL_EXCEPTION).
+    try {
+      await realmDiamond.callStatic.channelAlchemica(realmId, channelGotchiId, lastChanneled, signature);
+    } catch (simErr: any) {
+      const reason =
+        simErr?.error?.message ||
+        simErr?.reason ||
+        simErr?.data?.message ||
+        simErr?.message ||
+        'Channel simulation failed';
+      throw new Error(reason);
+    }
+
+    const tx = await realmDiamond.channelAlchemica(realmId, channelGotchiId, lastChanneled, signature);
     if (tx) {
       SFXController.playFX('channeling_start');
       console.log('channelAlchemicaTx', tx);
@@ -626,8 +655,8 @@ export const channelAlchemica = async (signer: Signer, network: NetworkNames, { 
     const res = await tx.wait();
     return res;
   } catch (error) {
-    // console.log('@channelAlchemica:REVERTED', error);
-    return error;
+    console.warn('@channelAlchemica:REVERTED', error);
+    throw error;
   }
 };
 
@@ -727,6 +756,22 @@ export const getContractParcelLastChannel = async (provider: Provider, network: 
     return parcelLastChanneled;
   } catch (error) {
     console.log('@getParcelLastChanneled: error', error);
+  }
+};
+
+/** Gotchi daily channel lock (resets at UTC midnight). */
+export const getContractGotchiLastChannel = async (
+  provider: Provider,
+  network: NetworkNames,
+  gotchiId: number | string,
+): Promise<string> => {
+  const realmDiamond = await getContract(network, provider);
+  try {
+    const gotchiLastChanneled = await realmDiamond.getLastChanneled(gotchiId);
+    return gotchiLastChanneled?.toString?.() ?? String(gotchiLastChanneled ?? '0');
+  } catch (error) {
+    console.log('@getLastChanneled: error', error);
+    return '0';
   }
 };
 

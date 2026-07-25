@@ -106,6 +106,9 @@ export const getGlobalInstallationPosition = (id: string, getCentre?: boolean): 
 };
 
 export const getInstallationKeyByTypeData = (typeData: InstallationTypeLocal): string => {
+  // Waalls / Lodges share one spritesheet each; frames map by level.
+  if (Number(typeData.installationType) === 3) return 'waall';
+  if (Number(typeData.installationType) === 4) return 'lodge';
   return ALCHEMICA_BASED_INSTALLATION_TYPES.includes(typeData.installationType)
     ? `${typeData.installationType}_${typeData.alchemicaType}`
     : typeData.itemId.toString();

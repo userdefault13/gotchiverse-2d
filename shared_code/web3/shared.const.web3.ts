@@ -84,8 +84,10 @@ const kovanVars = {
 const baseVars = {
   jsonRPC: process.env.NEXT_PUBLIC_BASE_RPC || 'https://mainnet.base.org',
 
-  ghstAddress: '0xcd2f22236dd9dfe005a84ce06011817129309328',
-  maticAddress: '0x0000000000000000000000000000000000000000',
+  // Bridged GHST on Base (typo'd address has no code → balanceOf CALL_EXCEPTION)
+  ghstAddress: '0xcd2f22236dd9dfe2356d7c543161d4d260fd9bcb',
+  // Base uses native ETH for gas; no MATIC ERC-20. Leave unset so balance fetch uses getBalance.
+  maticAddress: undefined,
 
   realmDiamond: '0x4B0040c3646D3c44B8a28Ad7055cfCF536c05372',
   installationDiamond: '0xebba5b725A2889f7f089a6cAE0246A32cad4E26b',

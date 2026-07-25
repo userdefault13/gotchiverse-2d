@@ -207,6 +207,8 @@ export const getInstallationTypes = (name: string, types: any): string => {
   types.harvester && installationTypes.push(1);
   types.reservoir && installationTypes.push(2);
   types.maaker && installationTypes.push(6);
+  types.waall && installationTypes.push(3);
+  types.lodge && installationTypes.push(4);
   installationTypes.push(5);
   installationTypes.push(8);
 

@@ -34,6 +34,8 @@ export const InventoryFilter = ({ setFetching }: Props): JSX.Element => {
       { value: 'harvesters', name: 'Harvesters' },
       { value: 'maakers', name: 'Maakers' },
       { value: 'decorations', name: 'Decorations' },
+      { value: 'waalls', name: 'Waalls' },
+      { value: 'lodges', name: 'Lodges' },
     ],
     TILE: [
       { value: 'all', name: 'All' },
@@ -47,6 +49,8 @@ export const InventoryFilter = ({ setFetching }: Props): JSX.Element => {
     aaltars: 0,
     harvesters: 1,
     reservoirs: 2,
+    waalls: 3,
+    lodges: 4,
     maakers: 6,
     decorations: 7,
   };

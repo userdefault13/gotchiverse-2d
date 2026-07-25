@@ -44,6 +44,10 @@ AARCADE_VERIFY_SECRET=
 # Optional public home for Settings / chat Discord CTA
 NEXT_PUBLIC_AARCADE_HOME=https://aarcadeghst.com
 
+# Aarcade cartridge soft launch (pages/api/aarcade-cartridge.ts)
+AARCADE_CARTRIDGE_SIM_URL=https://aarcadeghst.com/api/cartridge-sim
+NEXT_PUBLIC_AARCADE_CARTRIDGE_GAME_ID=gotchiverse
+
 # Optional
 NEXT_PUBLIC_RECAPTCHA_SITE_KEY=
 NEXT_PUBLIC_SENTRY_DSN=

@@ -31,6 +31,7 @@ import {
   EventHologram,
   PlayerDashboard,
   ExitArenaModal,
+  FoundryPanel,
 } from '../components';
 import { GameNav } from 'components/UI/structures';
 import { SuperChatList } from 'components/UI/component/superChat/SuperChatList';
@@ -170,6 +171,7 @@ export const PlayHud = () => {
     <>
       <WithdrawStation />
       <ParcelDashboard />
+      <FoundryPanel />
       <AccessRightsModal />
       <HarvesterModal />
       <ReservoirModal />

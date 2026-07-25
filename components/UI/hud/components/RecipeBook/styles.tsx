@@ -79,4 +79,25 @@ export default css`
     color: var(--col-pink-200);
     opacity: 0.85;
   }
+
+  .foundry-intro {
+    margin: 0 0.6rem 1.2rem;
+    color: rgba(158, 240, 246, 0.9);
+    font-size: 2rem;
+    line-height: 1.35;
+  }
+
+  .craft-toast {
+    position: absolute;
+    top: 6rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 12;
+    background: rgba(0, 0, 0, 0.82);
+    border: 0.2rem solid rgba(80, 220, 230, 0.55);
+    color: #f0c050;
+    padding: 0.8rem 1.4rem;
+    font-size: 2rem;
+    border-radius: 0.4rem;
+  }
 `;

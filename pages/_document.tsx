@@ -4,7 +4,12 @@ export default class MyDocument extends Document {
   render() {
     return (
       <Html lang="en">
-        <Head />
+        <Head>
+          <link href="https://unpkg.com/nes.css@2.3.0/css/nes.min.css" rel="stylesheet" />
+          <link rel="preload" href="/fonts/Pixelar Regular.woff2" as="font" crossOrigin="" />
+          <link rel="preload" href="/fonts/Alien-Encounters-Regular.ttf" as="font" crossOrigin="" />
+          <link rel="preload" href="/fonts/Alien-Encounters-Solid-Regular.ttf" as="font" crossOrigin="" />
+        </Head>
         <body className={process.env.NODE_ENV.startsWith('dev') ? 'debug-screens' : ''}>
           <Main />
           <div id="portal" />

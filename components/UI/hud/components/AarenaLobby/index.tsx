@@ -7,7 +7,7 @@ import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import styles from './styles';
 import { useUI } from 'contexts/UIContexts';
-import { isColyseusNetcode } from 'helpers/colyseus.client';
+import { colyseusNudgeIfTrapped, isColyseusNetcode } from 'helpers/colyseus.client';
 
 export const AarenaLobby = (): JSX.Element => {
   const winningConditions = ['Defeat at least 1 gotchi', 'Survive for at least 3 minutes'];
@@ -22,6 +22,10 @@ export const AarenaLobby = (): JSX.Element => {
     } else {
       InputController.updateDisableKeyboard(false);
       InputController.toggleMouseMovement(true);
+      if (isColyseusNetcode()) {
+        // Server/FE spawn can land inside aarena collision tiles — free the gotchi for WASD.
+        setTimeout(() => colyseusNudgeIfTrapped(), 50);
+      }
     }
   }, [aarenaQueue]);
 
@@ -40,6 +44,20 @@ export const AarenaLobby = (): JSX.Element => {
       aarenaQueue: { state: false },
     });
   };
+
+  // Colyseus: lobby overlay blocks Phaser input and disables WASD/Q/R until ENTER NOW.
+  // Auto-enter so combat isn't stuck behind an easy-to-miss CTA.
+  useEffect(() => {
+    if (!isColyseusNetcode()) return;
+    if (!aarenaQueue?.state || aarenaQueue.status === 'queued') return;
+    const t = window.setTimeout(() => {
+      realmDispatch({
+        type: 'UPDATE_AARENA_QUEUE',
+        aarenaQueue: { state: false },
+      });
+    }, 900);
+    return () => window.clearTimeout(t);
+  }, [aarenaQueue, realmDispatch]);
 
   return (
     <>
