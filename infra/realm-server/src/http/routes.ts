@@ -13,6 +13,7 @@ export function createHttpRouter(): Router {
       service: 'gotchiverse-realm-server',
       map: 'citaadel',
       publicUrl: env.publicUrl,
+      build: 'rush-origin-20260725',
       time: new Date().toISOString(),
     });
   });

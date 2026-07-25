@@ -50,6 +50,10 @@ let lastLocalPos: { x: number; y: number } | null = null;
 let rushTimer: ReturnType<typeof setInterval> | null = null;
 let rushUntil = 0;
 let rushSettleTimer: ReturnType<typeof setTimeout> | null = null;
+/** Keep local sprite authoritative after dash/reconnect so stale server spawn can't yank us. */
+let localAuthorityUntil = 0;
+/** Position to restore if the room drops mid-combat. */
+let reconnectPreservePos: { x: number; y: number } | null = null;
 
 const WALK_SPEED = 220;
 const SPRINT_SPEED = 360;
@@ -57,6 +61,7 @@ const KEY_TICK_MS = 50;
 /** Matches BE registerCombat max rush — used to avoid post-dash hard snaps. */
 const MAX_RUSH_DISTANCE_PX = 24 * 64;
 const RUSH_SETTLE_MS = 450;
+const LOCAL_AUTHORITY_MS = 2500;
 
 export function isColyseusNetcode(): boolean {
   return process.env.NEXT_PUBLIC_NETCODE === 'colyseus';
@@ -133,15 +138,22 @@ function applyLocalPosition(
 function syncPlayerPosition(player: RemotePlayer) {
   if (!player?.gotchiId) return;
   if (String(player.gotchiId) === String(localGotchiId)) {
-    // While driving with keys or predicting a rush, keep client motion authoritative.
-    if (keyDirection || isLocalRushing()) return;
+    // While driving with keys, predicting a rush, or holding post-dash authority,
+    // keep client motion authoritative — never hard-snap to a stale server spot.
+    if (keyDirection || isLocalRushing() || Date.now() < localAuthorityUntil) {
+      const sprite = getLocalSprite();
+      if (sprite && typeof sprite.x === 'number') {
+        const dist = Math.hypot(sprite.x - player.x, sprite.y - player.y);
+        if (dist > 32) sendRushSettle(sprite.x, sprite.y);
+      }
+      return;
+    }
     const sprite = getLocalSprite();
     if (sprite && typeof sprite.x === 'number') {
       const dist = Math.hypot(sprite.x - player.x, sprite.y - player.y);
-      // Never hard-snap the local gotchi to a stale server spot after a dash — that
-      // looked like a random teleport back to the plaza spawn. Prefer client and settle.
       if (dist > 32) {
         sendRushSettle(sprite.x, sprite.y);
+        localAuthorityUntil = Date.now() + LOCAL_AUTHORITY_MS;
       }
     }
     return;
@@ -173,6 +185,7 @@ function stopRushLoop() {
   clearRushTimerOnly();
   // Keep hard-sync suppressed briefly so the server can finish its rush / accept settle.
   rushUntil = Date.now() + RUSH_SETTLE_MS;
+  localAuthorityUntil = Date.now() + LOCAL_AUTHORITY_MS;
   const live = getLocalSprite();
   // Settle immediately at dash end (don't wait) — delayed-only settle left a window
   // where poll sync could still fight the predicted position.
@@ -235,6 +248,14 @@ function bindRoomHandlers(activeRoom: Room) {
 
   players.onAdd((player: RemotePlayer, sessionId: string) => {
     const payload = toPlayerPayload({ ...player, sessionId });
+    // Rejoin / schema add must not yank the local gotchi to plaza spawn mid-dash.
+    if (String(player.gotchiId) === String(localGotchiId)) {
+      const live = getLocalSprite() || lastLocalPos || reconnectPreservePos;
+      if (live && (isLocalRushing() || Date.now() < localAuthorityUntil || reconnectPreservePos)) {
+        payload.x = Math.round(live.x);
+        payload.y = Math.round(live.y);
+      }
+    }
     void Players.addPlayers([payload as any]);
     if (typeof player.onChange === 'function') {
       player.onChange(() => syncPlayerPosition(player));
@@ -253,6 +274,8 @@ function bindRoomHandlers(activeRoom: Room) {
     console.warn('@colyseus onLeave', code, { intentionalLeave });
     clearInterval(poll);
     stopKeyMoveLoop();
+    // Capture live pos before clearing timers so auto-rejoin can restore it.
+    reconnectPreservePos = getLocalSprite() || lastLocalPos;
     clearRushTimerOnly();
     rushUntil = 0;
     detachFoundryColyseusRoom();
@@ -260,6 +283,7 @@ function bindRoomHandlers(activeRoom: Room) {
     room = null;
     if (intentionalLeave) {
       intentionalLeave = false;
+      reconnectPreservePos = null;
       setConnected(false);
       return;
     }
@@ -273,6 +297,7 @@ function bindRoomHandlers(activeRoom: Room) {
         setConnected(false);
         return;
       }
+      localAuthorityUntil = Date.now() + LOCAL_AUTHORITY_MS;
       void colyseusConnect(player, { map: getColyseusMap() }).then((ok) => {
         if (!ok) setConnected(false);
       });
@@ -433,8 +458,24 @@ export async function colyseusConnect(
       if (String(p.gotchiId) === String(selectedPlayer.id)) me = p;
     });
     if (me) {
-      lastLocalPos = { x: me.x, y: me.y };
-      void Players.addPlayers([toPlayerPayload(me) as any]);
+      const restore = reconnectPreservePos;
+      reconnectPreservePos = null;
+      if (restore && roomName === 'aarena') {
+        lastLocalPos = { x: restore.x, y: restore.y };
+        localAuthorityUntil = Date.now() + LOCAL_AUTHORITY_MS;
+        void Players.addPlayers([
+          {
+            ...toPlayerPayload(me),
+            x: restore.x,
+            y: restore.y,
+          } as any,
+        ]);
+        room.send('move', { x: Math.round(restore.x), y: Math.round(restore.y), rushSettle: true });
+        applyLocalPosition(restore.x, restore.y, undefined, true);
+      } else {
+        lastLocalPos = { x: me.x, y: me.y };
+        void Players.addPlayers([toPlayerPayload(me) as any]);
+      }
     }
     if (roomName === 'citaadel' && isFoundryPoCEnabled()) {
       void FoundryNet.init(endpoint()).then(() => {
