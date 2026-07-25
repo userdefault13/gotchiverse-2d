@@ -32,81 +32,74 @@ interface MissilesInterface {
 }
 
 const create = (missiles: Missile[]): void => {
-  // console.log('@Missiles.create:', missiles);
+  if (!scene?.missiles) return;
   _.each(missiles, (missile: Missile) => {
-    const { id, direction, x, y, size, isCharged } = missile;
-    const [creatorId] = id.split('#');
+    try {
+      const { id, direction, x, y, size, isCharged } = missile;
+      const [creatorId] = String(id || '').split('#');
 
-    const creatorType = isNaN(Number(creatorId)) ? 'enemy' : 'player';
+      const creatorType = isNaN(Number(creatorId)) ? 'enemy' : 'player';
 
-    const creator = creatorType === 'player' ? scene[creatorId] : getGroupMemberById(creatorId, 'enemiesGroup')?.[0]; // gmls enemy is a list
-    // console.log('creatorId', creatorId, creatorType, creator);
+      const creator = creatorType === 'player' ? scene[creatorId] : getGroupMemberById(creatorId, 'enemiesGroup')?.[0];
+      if (!creator || !direction) return;
 
-    const offset = creatorType === 'player' ? getOffsetByDirection(direction, 30) : { x: 0, y: 0 };
-    const attackType = isCharged ? 'snip' : 'shot';
+      const offset = creatorType === 'player' ? getOffsetByDirection(direction, 30) : { x: 0, y: 0 };
+      const attackType = isCharged ? 'snip' : 'shot';
 
-    if (!creator) return;
-    if (creatorType === 'player') Players.checkInvisible(creatorId, 'shoot');
+      Players.checkInvisible(creatorId, 'shoot');
 
-    let animationKey = `${attackType}_bas`;
+      let animationKey = `${attackType}_bas`;
 
-    // handle Enemy shooting
-    let enemyType;
-    if (creatorType === 'enemy') {
-      enemyType = creator.getData('data').type;
-      animationKey = `${enemyType}_shot`;
-    }
+      let enemyType;
+      if (creatorType === 'enemy') {
+        enemyType = creator.getData('data')?.type;
+        animationKey = `${enemyType}_shot`;
+      }
 
-    const dir = getDirectionByVector360(direction);
+      const dir = getDirectionByVector360(direction);
 
-    if (GlobalState.SETTINGS.state.allowPlayerAnimation && creatorType === 'player') {
-      // const orientation = getOriginByDirection(direction);
-      const muzzleKey = `${attackType}_muz`;
-      const muzzleSprite = scene.add.sprite(offset.x, offset.y, muzzleKey, 0).setOrigin(0.5, 0.5);
-      muzzleSprite.setAngle(-90 + getAngleByDirV2(direction));
-      creator.add(muzzleSprite);
-      AnimationsController.play(muzzleSprite, muzzleKey);
-    } else {
-      if (enemyType === 'GMLS') {
+      if (GlobalState.SETTINGS.state.allowPlayerAnimation && creatorType === 'player') {
+        const muzzleKey = `${attackType}_muz`;
+        const muzzleSprite = scene.add.sprite(offset.x, offset.y, muzzleKey, 0).setOrigin(0.5, 0.5);
+        muzzleSprite.setAngle(-90 + getAngleByDirV2(direction));
+        creator.add(muzzleSprite);
+        AnimationsController.play(muzzleSprite, muzzleKey);
+      } else if (enemyType === 'GMLS') {
         const animKey = `GMLS_shot_muz_${dir}`;
         const muzzleSprite = scene.add.sprite(offset.x, offset.y, 'GMLS_shot_muz', 0).setOrigin(0.5, 0.5);
         creator.add(muzzleSprite);
         SFXController.playSpatialFX([{ id: `${id}_muz`, container: creator, key: 'GMLS_shot_muz' }]);
         AnimationsController.play(muzzleSprite, animKey);
       }
-    }
 
-    const sprite = scene.add
-      .sprite(x || creator.x + offset.x, y || creator.y + offset.y, animationKey, 0)
-      .setOrigin(0.5)
-      .setDepth(201)
-      .setDataEnabled()
-      .setAngle(-90 + getAngleByDirV2(direction))
-      .setData('attackType', attackType)
-      .setData('created', Date.now())
-      .setData('direction', direction);
+      const sprite = scene.add
+        .sprite(x || creator.x + offset.x, y || creator.y + offset.y, animationKey, 0)
+        .setOrigin(0.5)
+        .setDepth(201)
+        .setDataEnabled()
+        .setAngle(-90 + getAngleByDirV2(direction))
+        .setData('attackType', attackType)
+        .setData('created', Date.now())
+        .setData('direction', direction);
 
-    if (GlobalState.SETTINGS.state.allowPlayerAnimation) {
-      AnimationsController.play(sprite, animationKey);
-    }
-    scene.missiles.set(id, sprite);
+      if (size) sprite.setDisplaySize(Number(size) * 2, Number(size) * 2);
 
-    if (Players.isSelectedPlayer(creatorId)) {
-      // play sound fx for shot and snip attack
-      if (attackType === 'snip') {
-        SFXController.playFX('charge_shot');
+      if (GlobalState.SETTINGS.state.allowPlayerAnimation) {
+        AnimationsController.play(sprite, animationKey);
       }
-      SFXController.playFX(`shot_bas_${randomIntInRange(1, 3)}`);
-    } else {
-      // enemy
-      // GMLS_shot
-      if (enemyType) SFXController.playSpatialFX([{ id: `${id}_shot`, container: creator, key: `${enemyType}_shot` }]);
+      scene.missiles.set(id, sprite);
+
+      if (Players.isSelectedPlayer(creatorId)) {
+        if (attackType === 'snip') {
+          SFXController.playFX('charge_shot');
+        }
+        SFXController.playFX(`shot_bas_${randomIntInRange(1, 3)}`);
+      } else if (enemyType) {
+        SFXController.playSpatialFX([{ id: `${id}_shot`, container: creator, key: `${enemyType}_shot` }]);
+      }
+    } catch (e) {
+      console.warn('@Missiles.create', e);
     }
-    // if (GlobalState.GAME.state.gameConfig.enableDebugGraphics) {
-    //   if (!scene.debugObjects) scene.debugObjects = {};
-    //   // console.log('Creating ', id);
-    //   scene.debugObjects[id] = scene.add.image(x, y, 'debugSquare').setDepth(500).setDisplaySize(size, size).setOrigin(0.5);
-    // }
   });
 };
 
@@ -178,66 +171,72 @@ const onAttack = (data: RangedAttackData): void => {
 };
 
 const destroy = (missiles: Missile[]): void => {
-  // console.log('@Missiles.destroy: ', missiles);
   _.each(missiles, (missile: Missile) => {
-    // console.log('@Missile.destroy: ', missile);
-    const { id } = missile;
-    const [creatorId, missileId] = id.split('#'); // hit object id = objectId
-    const objectType = creatorId.split('-')[0]; // GMLS or other enemy type
-    const sprite = scene.missiles.get(id);
-    if (!sprite) return;
-
-    // console.log('@Missles.destroy', sprite.data.has('playerHitId'), sprite.data.has('hitObjectType'));
-
-    const hitObjectType: 'wall' | 'player' = sprite.getData('hitType');
-    // console.log('@Missile.destroy:hitObjectType', hitObjectType, damageType);
-    // console.log('@Melee.destroy:hitObjectType', hitObjectType);
-    const type = AnimationsController.getAttackDestoryTypeByHitObjectType(hitObjectType) || 'air';
-    let posToDestroy = { x: sprite.x, y: sprite.y };
-    if (sprite.data.has('playerHitId')) {
-      const playerHitId = sprite.getData('playerHitId');
-      posToDestroy = { x: scene[playerHitId].x, y: scene[playerHitId].y };
-    }
-    const destroyAnimKey = `shot_${type}`;
-    const destroyAnim = scene.add.sprite(posToDestroy.x, posToDestroy.y, destroyAnimKey, 0).setDepth(500);
-
-    const direction: Vector2 = sprite.getData('direction');
-    if (direction) destroyAnim.setAngle(-90 + getAngleByDirV2(direction));
-
-    AnimationsController.play(destroyAnim, destroyAnimKey);
-
-    sprite.setVisible(false); // make it invisible
-
-    if (Players.isSelectedPlayer(creatorId)) {
-      const player = scene[Players.selectedPlayer.id];
-      if (!player) return;
-      const damageType = getDynamics(player.getData('damageDiff'));
-      if (type === 'dud') SFXController.playFX(`shot_dud_${randomIntInRange(1, 3)}`); // shot_dud_x (wall)
-      if (type === 'imp' && damageType) SFXController.playFX(`shot_imp_${damageType}`); // player
-
-      // gotchi projectile hit GMLS
-      if (sprite.getData('hitObjectType') === 'enemy') {
-        const hitObjectId = sprite.getData('hitObjectId');
-        Enemies.applyEnemyHitVfx(hitObjectId, true);
-        SFXController.playSpatialFX([{ id: `${creatorId}_hit`, container: sprite, key: 'GMLS_hit' }]);
+    try {
+      const { id } = missile;
+      const [creatorId] = String(id || '').split('#');
+      const objectType = creatorId.split('-')[0];
+      const sprite = scene?.missiles?.get(id);
+      if (!sprite || !sprite.active || !sprite.scene) {
+        scene?.missiles?.delete(id);
+        return;
       }
+
+      const hitObjectType: 'wall' | 'player' = sprite.getData('hitType');
+      const type = AnimationsController.getAttackDestoryTypeByHitObjectType(hitObjectType) || 'air';
+      let posToDestroy = { x: sprite.x, y: sprite.y };
+      if (sprite.data?.has?.('playerHitId')) {
+        const playerHitId = sprite.getData('playerHitId');
+        const hitPlayer = scene[playerHitId];
+        if (hitPlayer) posToDestroy = { x: hitPlayer.x, y: hitPlayer.y };
+      }
+      const destroyAnimKey = `shot_${type}`;
+      const destroyAnim = scene.add.sprite(posToDestroy.x, posToDestroy.y, destroyAnimKey, 0).setDepth(500);
+
+      const direction: Vector2 = sprite.getData('direction');
+      if (direction) destroyAnim.setAngle(-90 + getAngleByDirV2(direction));
+
+      AnimationsController.play(destroyAnim, destroyAnimKey);
+
+      try {
+        sprite.setVisible(false);
+      } catch {
+        /* ignore */
+      }
+
+      if (Players.isSelectedPlayer(creatorId)) {
+        const player = scene[Players.selectedPlayer.id];
+        if (player) {
+          const damageType = getDynamics(player.getData('damageDiff'));
+          if (type === 'dud') SFXController.playFX(`shot_dud_${randomIntInRange(1, 3)}`);
+          if (type === 'imp' && damageType) SFXController.playFX(`shot_imp_${damageType}`);
+
+          if (sprite.getData('hitObjectType') === 'enemy') {
+            const hitObjectId = sprite.getData('hitObjectId');
+            Enemies.applyEnemyHitVfx(hitObjectId, true);
+            SFXController.playSpatialFX([{ id: `${creatorId}_hit`, container: sprite, key: 'GMLS_hit' }]);
+          }
+        }
+      }
+      if (objectType === 'GMLS') {
+        const gmlsContainers = getGroupMemberById(creatorId, 'enemiesGroup');
+        if (gmlsContainers) {
+          const impactVfx = scene.add.sprite(sprite.x, sprite.y, 'GMLS_imp', 0).setDepth(500);
+          if (direction) impactVfx.setAngle(-90 + getAngleByDirV2(direction));
+          AnimationsController.play(impactVfx, 'GMLS_imp');
+          SFXController.playSpatialFX([{ id: `${creatorId}_imp`, container: sprite, key: 'GMLS_imp' }]);
+        }
+      }
+
+      try {
+        sprite.destroy(true);
+      } catch {
+        /* already destroyed */
+      }
+      scene.missiles.delete(id);
+    } catch (e) {
+      console.warn('@Missiles.destroy', e);
     }
-    if (objectType === 'GMLS') {
-      // GMLS projectile hit gotchi
-      const gmlsContainers = getGroupMemberById(creatorId, 'enemiesGroup');
-      if (!gmlsContainers) return;
-
-      const impactVfx = scene.add.sprite(sprite.x, sprite.y, 'GMLS_imp', 0).setDepth(500);
-      if (direction) impactVfx.setAngle(-90 + getAngleByDirV2(direction));
-      AnimationsController.play(impactVfx, 'GMLS_imp');
-      SFXController.playSpatialFX([{ id: `${creatorId}_imp`, container: sprite, key: 'GMLS_imp' }]);
-    }
-
-    // clear garbage
-    sprite.destroy(true);
-    scene.missiles.delete(id);
-
-    // if (Players.isSelectedPlayer(playerId)) SFXController.playSpatialFX([{ id, x: sprite.x, y: sprite.y, key: `impact_${type}` }]);
   });
 };
 

@@ -759,7 +759,9 @@ function updatePlayerPosition(playerPosition: PositionEvent): void {
 
 // Invisible Check, since no dead or invisible gotchi should be able to sprint or shoot we can check isDead or visibility here to see if it was invisible
 const checkInvisible = (id: string, source: 'sprint' | 'shoot'): void => {
-  if ((scene[id].isDead || !scene[id].visible) && scene[id].health) {
+  const sprite = scene?.[id];
+  if (!sprite) return;
+  if ((sprite.isDead || !sprite.visible) && sprite.health) {
     console.warn(`Invisible gotchi found on source ${source}: ${id}, reset visibility.`);
     setDeadState(id, false);
   }

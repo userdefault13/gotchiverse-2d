@@ -40,6 +40,7 @@ let client: Client | null = null;
 let room: Room | null = null;
 let localGotchiId: string | null = null;
 let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let intentionalLeave = false;
 let keyMoveTimer: ReturnType<typeof setInterval> | null = null;
 let keyDirection: { x: number; y: number } | null = null;
 let keySprint = false;
@@ -220,14 +221,33 @@ function bindRoomHandlers(activeRoom: Room) {
     }
     room.state.players.forEach((p: RemotePlayer) => syncPlayerPosition(p));
   }, 100);
-  activeRoom.onLeave(() => {
+  activeRoom.onLeave((code) => {
+    console.warn('@colyseus onLeave', code, { intentionalLeave });
     clearInterval(poll);
     stopKeyMoveLoop();
     stopRushLoop();
     detachFoundryColyseusRoom();
     detachColyseusCombat();
-    setConnected(false);
     room = null;
+    if (intentionalLeave) {
+      intentionalLeave = false;
+      setConnected(false);
+      return;
+    }
+    // Keep `connected` true briefly and try to rejoin — flipping it false overlays
+    // the aarena LoadingScene and looks like a full game reset after an attack.
+    if (reconnectTimer) clearTimeout(reconnectTimer);
+    reconnectTimer = setTimeout(() => {
+      reconnectTimer = null;
+      const player = GlobalState.REALM?.state?.selectedPlayer as SelectedPlayer | undefined;
+      if (!player?.id || !player?.authToken) {
+        setConnected(false);
+        return;
+      }
+      void colyseusConnect(player, { map: getColyseusMap() }).then((ok) => {
+        if (!ok) setConnected(false);
+      });
+    }, 400);
   });
 
   players.onRemove((player: RemotePlayer) => {
@@ -345,6 +365,7 @@ export async function colyseusConnect(
 
   if (room) {
     try {
+      intentionalLeave = true;
       await room.leave(true);
     } catch {
       /* ignore */
@@ -515,6 +536,7 @@ export function colyseusDisconnect(): void {
     reconnectTimer = null;
   }
   if (room) {
+    intentionalLeave = true;
     room.leave(true).catch(() => undefined);
     room = null;
   }

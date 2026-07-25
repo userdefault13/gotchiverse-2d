@@ -117,92 +117,100 @@ export function registerCombatMessages(room: Room<CombatRoomState>): CombatHandl
   };
 
   room.onMessage('combat.melee', (client: Client, message: CombatIntent) => {
-    const player = room.state.players.get(client.sessionId);
-    if (!player) return;
-    if (!canAttack(client.sessionId)) return;
+    try {
+      const player = room.state.players.get(client.sessionId);
+      if (!player) return;
+      if (!canAttack(client.sessionId)) return;
 
-    const dir = normalizeDir(Number(message?.direction?.x), Number(message?.direction?.y));
-    if (!dir) return;
+      const dir = normalizeDir(Number(message?.direction?.x), Number(message?.direction?.y));
+      if (!dir) return;
 
-    const chargeDuration = Number(message?.chargeDuration) || 0;
-    const isRush = chargeDuration > 0;
-    const id = nextId(player.gotchiId, 'melee');
-    const distance = isRush ? rushDistancePx(chargeDuration) : 0;
-    const rushTtl = isRush ? Math.max(200, Math.round((distance / RUSH_SPEED) * 1000)) : SLAP_TTL_MS;
+      const chargeDuration = Number(message?.chargeDuration) || 0;
+      const isRush = chargeDuration > 0;
+      const id = nextId(player.gotchiId, 'melee');
+      const distance = isRush ? rushDistancePx(chargeDuration) : 0;
+      const rushTtl = isRush ? Math.max(200, Math.round((distance / RUSH_SPEED) * 1000)) : SLAP_TTL_MS;
 
-    room.broadcast('combat.enter', {
-      melee: [
-        {
-          id,
-          x: Math.round(player.x),
-          y: Math.round(player.y),
-          size: SLAP_SIZE,
-          isRush,
-          direction: dir,
-          created: true,
-          distance: Math.round(distance),
-          speed: RUSH_SPEED,
-        },
-      ],
-    });
+      room.broadcast('combat.enter', {
+        melee: [
+          {
+            id,
+            x: Math.round(player.x),
+            y: Math.round(player.y),
+            size: SLAP_SIZE,
+            isRush,
+            direction: dir,
+            created: true,
+            distance: Math.round(distance),
+            speed: RUSH_SPEED,
+          },
+        ],
+      });
 
-    melees.set(id, {
-      id,
-      ownerSessionId: client.sessionId,
-      expiresAt: Date.now() + rushTtl,
-    });
-
-    if (isRush && distance > 0) {
-      rushes.set(client.sessionId, {
-        sessionId: client.sessionId,
-        dirX: dir.x,
-        dirY: dir.y,
-        speed: RUSH_SPEED,
-        remaining: distance,
+      melees.set(id, {
+        id,
+        ownerSessionId: client.sessionId,
         expiresAt: Date.now() + rushTtl,
       });
+
+      if (isRush && distance > 0) {
+        rushes.set(client.sessionId, {
+          sessionId: client.sessionId,
+          dirX: dir.x,
+          dirY: dir.y,
+          speed: RUSH_SPEED,
+          remaining: distance,
+          expiresAt: Date.now() + rushTtl,
+        });
+      }
+    } catch (e) {
+      console.warn('[combat.melee]', e);
     }
   });
 
   room.onMessage('combat.fire', (client: Client, message: CombatIntent) => {
-    const player = room.state.players.get(client.sessionId);
-    if (!player) return;
-    if (!canAttack(client.sessionId)) return;
+    try {
+      const player = room.state.players.get(client.sessionId);
+      if (!player) return;
+      if (!canAttack(client.sessionId)) return;
 
-    const dir = normalizeDir(Number(message?.direction?.x), Number(message?.direction?.y));
-    if (!dir) return;
+      const dir = normalizeDir(Number(message?.direction?.x), Number(message?.direction?.y));
+      if (!dir) return;
 
-    const chargeDuration = Number(message?.chargeDuration) || 0;
-    const isCharged = chargeDuration > 0;
-    const id = nextId(player.gotchiId, 'missile');
-    const muzzle = 30;
-    const x = player.x + dir.x * muzzle;
-    const y = player.y + dir.y * muzzle;
-    const speed = isCharged ? MISSILE_CHARGED_SPEED : MISSILE_SPEED;
+      const chargeDuration = Number(message?.chargeDuration) || 0;
+      const isCharged = chargeDuration > 0;
+      const id = nextId(player.gotchiId, 'missile');
+      const muzzle = 30;
+      const x = player.x + dir.x * muzzle;
+      const y = player.y + dir.y * muzzle;
+      const speed = isCharged ? MISSILE_CHARGED_SPEED : MISSILE_SPEED;
 
-    room.broadcast('combat.enter', {
-      missile: [
-        {
-          id,
-          x: Math.round(x),
-          y: Math.round(y),
-          size: MISSILE_SIZE,
-          isCharged,
-          direction: dir,
-        },
-      ],
-    });
+      room.broadcast('combat.enter', {
+        missile: [
+          {
+            id,
+            x: Math.round(x),
+            y: Math.round(y),
+            size: MISSILE_SIZE,
+            isCharged,
+            direction: dir,
+          },
+        ],
+      });
 
-    missiles.set(id, {
-      id,
-      ownerSessionId: client.sessionId,
-      x,
-      y,
-      dirX: dir.x,
-      dirY: dir.y,
-      speed,
-      expiresAt: Date.now() + MISSILE_TTL_MS,
-    });
+      missiles.set(id, {
+        id,
+        ownerSessionId: client.sessionId,
+        x,
+        y,
+        dirX: dir.x,
+        dirY: dir.y,
+        speed,
+        expiresAt: Date.now() + MISSILE_TTL_MS,
+      });
+    } catch (e) {
+      console.warn('[combat.fire]', e);
+    }
   });
 
   const interval = setInterval(() => {
