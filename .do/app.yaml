@@ -48,6 +48,6 @@ services:
         value: https://api.goldsky.com/api/public/project_cmh3flagm0001r4p25foufjtt/subgraphs/gotchiverse-base/prod/gn
       - key: SKIP_OWNERSHIP_CHECK
         value: "true"
-      # Flip to "true" only after AarenaRoom join is verified in prod.
+      # Flip true once AarenaRoom combat handlers are deployed (registerCombat).
       - key: COMBAT_IS_LIVE
-        value: "false"
+        value: "true"

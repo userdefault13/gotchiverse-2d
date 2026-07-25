@@ -82,7 +82,10 @@ export function detachColyseusCombat(): void {
 }
 
 export function colyseusSendCombat(action: 'melee' | 'fire', data: unknown): boolean {
-  if (!room) return false;
+  if (!room) {
+    console.warn('@colyseusSendCombat: no combat room attached');
+    return false;
+  }
   if (action === 'melee') {
     room.send('combat.melee', data);
     return true;

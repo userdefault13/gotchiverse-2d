@@ -3,7 +3,7 @@ import GlobalState from 'contexts/GlobalState';
 import Players from 'components/phaser/Players';
 import { scene as phaserScene } from 'components/controllers/SceneController';
 import { SelectedPlayer } from 'types';
-import { resolveColyseusMove } from 'helpers/colyseus.collisions';
+import { resolveColyseusMove, isColyseusPositionBlocked } from 'helpers/colyseus.collisions';
 import { colyseusSeedParcels, colyseusUpdateCurrentParcel } from 'helpers/colyseus.parcels';
 import { colyseusPreloadNearbyInstallations } from 'helpers/colyseus.installations';
 import { getParcelSpawnPixels } from 'helpers/parcels.helper';
@@ -401,8 +401,8 @@ export async function colyseusConnect(
 
 export function colyseusSendMove(x: number, y: number): void {
   if (!room) return;
-  // Reject click targets that land inside a solid installation.
-  if (resolveColyseusMove(x, y, x, y).blocked) return;
+  // Reject click targets that land inside a solid installation / wall.
+  if (isColyseusPositionBlocked(x, y)) return;
 
   applyLocalPosition(x, y);
   if (isCitaadelMap()) {
@@ -421,7 +421,7 @@ export function colyseusNudgeIfTrapped(): void {
   if (!room) return;
   const sprite = getLocalSprite();
   if (!sprite) return;
-  if (!resolveColyseusMove(sprite.x, sprite.y, sprite.x, sprite.y).blocked) return;
+  if (!isColyseusPositionBlocked(sprite.x, sprite.y)) return;
 
   const spot = freeTeleportSpot(sprite.x, sprite.y);
   if (spot.x === sprite.x && spot.y === sprite.y) return;
@@ -444,7 +444,7 @@ function freeTeleportSpot(centerX: number, centerY: number): { x: number; y: num
   for (const [ox, oy] of offsets) {
     const x = centerX + ox * UNIT;
     const y = centerY + oy * UNIT;
-    if (!resolveColyseusMove(x, y, x, y).blocked) return { x, y };
+    if (!isColyseusPositionBlocked(x, y)) return { x, y };
   }
   return { x: centerX, y: centerY };
 }

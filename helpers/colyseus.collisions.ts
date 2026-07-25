@@ -107,6 +107,11 @@ function collectBlockers(): Rect[] {
   return installationBlockers();
 }
 
+/** True if a gotchi footprint at (x,y) overlaps solids (walls / fixtures / installations). */
+export function isColyseusPositionBlocked(x: number, y: number): boolean {
+  return isBlocked(x, y, collectBlockers());
+}
+
 function isBlocked(x: number, y: number, blockers: Rect[]): boolean {
   const player = playerRect(x, y);
   return blockers.some((blocker) => overlaps(player, blocker));
@@ -137,7 +142,8 @@ export function resolveColyseusMove(
     const canY = !isBlocked(fromX, toY, blockers);
     if (canX) return { x: toX, y: fromY, blocked: false };
     if (canY) return { x: fromX, y: toY, blocked: false };
-    return { x: toX, y: toY, blocked: false };
+    // Still trapped — report blocked so nudge / spawn checks work when from===to.
+    return { x: fromX, y: fromY, blocked: true };
   }
 
   if (!isBlocked(toX, toY, blockers)) {
