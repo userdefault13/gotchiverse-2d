@@ -45,6 +45,20 @@ export const AarenaLobby = (): JSX.Element => {
     });
   };
 
+  // Colyseus: lobby overlay blocks Phaser input and disables WASD/Q/R until ENTER NOW.
+  // Auto-enter so combat isn't stuck behind an easy-to-miss CTA.
+  useEffect(() => {
+    if (!isColyseusNetcode()) return;
+    if (!aarenaQueue?.state || aarenaQueue.status === 'queued') return;
+    const t = window.setTimeout(() => {
+      realmDispatch({
+        type: 'UPDATE_AARENA_QUEUE',
+        aarenaQueue: { state: false },
+      });
+    }, 900);
+    return () => window.clearTimeout(t);
+  }, [aarenaQueue, realmDispatch]);
+
   return (
     <>
       {aarenaQueue?.state && (

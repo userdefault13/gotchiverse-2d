@@ -21,13 +21,15 @@ interface MeleeInterface {
 }
 
 const sendMeleeAttack = (data: RushAttackData): void => {
-  if (scene[Players.selectedPlayer.id].isGracePeriod) {
+  const player = scene[Players.selectedPlayer?.id];
+  if (player?.isGracePeriod) {
     SFXController.playFX('cannot_attack');
     return;
   }
 
-  if (Date.now() - scene.lastMeleeAttack < 50) return;
+  if (Date.now() - (scene.lastMeleeAttack || 0) < 50) return;
   GameController.sendData('combat', 'melee', data);
+  scene.lastMeleeAttack = Date.now();
   scene.lastRangedAttack = Date.now();
 };
 

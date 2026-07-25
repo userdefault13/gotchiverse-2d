@@ -579,7 +579,7 @@ function toggleMouseMovement(active: boolean): void {
         if (combatControls === 'arcade' && !GlobalState.GAME.state.gameConfig.enableRangedCharge && attackType === AttackType.Ranged) {
           handleClickAttack(pointer, AttackType.Ranged, hand);
           if (scene.continuousFireInterval) clearInterval(scene.continuousFireInterval);
-          scene.continuousFireInterval = setInterval(() => handleClickAttack(pointer, AttackType.Ranged, hand), 100);
+          scene.continuousFireInterval = window.setInterval(() => handleClickAttack(pointer, AttackType.Ranged, hand), 100);
         }
       } else if (!gameObjects.length && !Installations.buildModeState && combatControls === 'moba') {
         if (scene.rightClicked) {

@@ -90,7 +90,6 @@ import Potions from 'components/phaser/Potions';
 import { getParcelTokenIdById } from 'shared_code/utils/shared.utils.parcel';
 import { getParcelDataById } from 'helpers/parcels.helper';
 import { PARCELS_BY_ID } from 'shared_code/models/model.realm';
-
 const version = packageJSON.version;
 // used for onSocket close to determine if user was actualy connected or if the server was down
 let wasConnected = false;
