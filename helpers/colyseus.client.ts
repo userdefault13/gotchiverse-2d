@@ -254,7 +254,8 @@ function bindRoomHandlers(activeRoom: Room) {
     console.warn('@colyseus onLeave', code, { intentionalLeave });
     clearInterval(poll);
     stopKeyMoveLoop();
-    stopRushLoop();
+    clearRushTimerOnly();
+    rushUntil = 0;
     detachFoundryColyseusRoom();
     detachColyseusCombat();
     room = null;
