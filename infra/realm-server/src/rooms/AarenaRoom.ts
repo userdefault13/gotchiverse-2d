@@ -25,13 +25,15 @@ type MoveMessage = {
   rushSettle?: boolean;
 };
 
-/** Matches registerCombat MAX_RUSH_DISTANCE_PX */
-const MAX_RUSH_SETTLE_PX = 24 * 64 + 128;
+/** Allow walk+dash desync — old cap yanked players back to plaza spawn. */
+const MAX_RUSH_SETTLE_PX = 24 * 64 * 2 + 256;
 
 export class AarenaRoom extends Room<AarenaState> {
   maxClients = 200;
   private lastMoveAt = new Map<string, number>();
   private joinedAt = new Map<string, number>();
+  /** Remember last pos per gotchi so brief reconnects don't random-respawn in the plaza. */
+  private lastGotchiPos = new Map<string, { x: number; y: number; at: number }>();
   private combat: CombatHandle | null = null;
 
   onCreate() {
@@ -48,7 +50,7 @@ export class AarenaRoom extends Room<AarenaState> {
 
       const now = Date.now();
 
-      // Post-dash reconcile: client prediction ended elsewhere; accept if in rush range.
+      // Post-dash reconcile: trust client end position when walkable / in range.
       if (message.rushSettle) {
         const dist = Math.hypot(message.x - player.x, message.y - player.y);
         if (dist > MAX_RUSH_SETTLE_PX) return;
@@ -61,6 +63,7 @@ export class AarenaRoom extends Room<AarenaState> {
           player.y = snapped.y;
         }
         this.lastMoveAt.set(client.sessionId, now);
+        this.rememberGotchiPos(player.gotchiId, player.x, player.y);
         return;
       }
 
@@ -71,6 +74,7 @@ export class AarenaRoom extends Room<AarenaState> {
         player.x = snapped.x;
         player.y = snapped.y;
         this.lastMoveAt.set(client.sessionId, now);
+        this.rememberGotchiPos(player.gotchiId, player.x, player.y);
         return;
       }
 
@@ -90,11 +94,17 @@ export class AarenaRoom extends Room<AarenaState> {
       const next = resolveAarenaMove(player.x, player.y, player.x + dx, player.y + dy);
       player.x = next.x;
       player.y = next.y;
+      this.rememberGotchiPos(player.gotchiId, player.x, player.y);
     });
 
     this.onMessage('ping', (client) => {
       client.send('pong', { t: Date.now() });
     });
+  }
+
+  private rememberGotchiPos(gotchiId: string, x: number, y: number) {
+    if (!gotchiId) return;
+    this.lastGotchiPos.set(String(gotchiId), { x, y, at: Date.now() });
   }
 
   async onAuth(_client: Client, options: JoinOptions): Promise<AuthData> {
@@ -111,20 +121,29 @@ export class AarenaRoom extends Room<AarenaState> {
   }
 
   onJoin(client: Client, options: JoinOptions, auth?: AuthData) {
-    const spawn = randomAarenaSpawn();
+    const gotchiId = auth?.gotchiId || String(options.gotchiId || '');
+    const prev = this.lastGotchiPos.get(String(gotchiId));
+    const reuse =
+      prev && Date.now() - prev.at < 120_000 && !isAarenaBlocked(prev.x, prev.y)
+        ? { x: prev.x, y: prev.y }
+        : null;
+    const spawn = reuse || randomAarenaSpawn();
     const player = new Player();
     player.sessionId = client.sessionId;
     player.address = auth?.address || '';
-    player.gotchiId = auth?.gotchiId || String(options.gotchiId || '');
+    player.gotchiId = gotchiId;
     player.name = options.name || `Gotchi #${player.gotchiId}`;
     player.x = spawn.x;
     player.y = spawn.y;
     this.state.players.set(client.sessionId, player);
     this.lastMoveAt.set(client.sessionId, Date.now());
     this.joinedAt.set(client.sessionId, Date.now());
+    this.rememberGotchiPos(gotchiId, player.x, player.y);
   }
 
   onLeave(client: Client) {
+    const player = this.state.players.get(client.sessionId);
+    if (player) this.rememberGotchiPos(player.gotchiId, player.x, player.y);
     this.combat?.onPlayerLeave(client.sessionId);
     this.state.players.delete(client.sessionId);
     this.lastMoveAt.delete(client.sessionId);
