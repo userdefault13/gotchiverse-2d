@@ -239,9 +239,19 @@ async function socketConnect(
           }
         : { x: 4096, y: 4096 };
 
-    // Prefer selected parcel (citaadel); then server spawn; then map default.
+    // Prefer live sprite (mid-session reconnect), then selected parcel (citaadel),
+    // then server spawn, then map default — never yank aarena to plaza center if we already moved.
+    const liveSprite =
+      selectedPlayer?.id != null && scene?.[selectedPlayer.id]
+        ? scene[selectedPlayer.id]
+        : null;
+    const livePos =
+      liveSprite && typeof liveSprite.x === 'number' && typeof liveSprite.y === 'number'
+        ? { x: liveSprite.x, y: liveSprite.y }
+        : null;
     const parcelSpawn = map === 'citaadel' ? colyseusSpawnFromSelectedParcel(selectedSpawnLoc) : null;
     const spawn =
+      livePos ||
       parcelSpawn ||
       colyseusLocalSpawn() ||
       (map === 'aarena' ? aarenaFallback : { x: 42 * 64 + 10 * 64, y: 52 * 64 + 10 * 64 });

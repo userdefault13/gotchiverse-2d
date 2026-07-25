@@ -44,14 +44,14 @@ export class AarenaRoom extends Room<AarenaState> {
     this.onMessage('move', (client, message: MoveMessage) => {
       const player = this.state.players.get(client.sessionId);
       if (!player) return;
-      if (this.combat?.isRushing(client.sessionId)) return;
       if (typeof message?.x !== 'number' || typeof message?.y !== 'number') return;
       if (!Number.isFinite(message.x) || !Number.isFinite(message.y)) return;
 
       const now = Date.now();
 
-      // Post-dash reconcile: trust client end position when walkable / in range.
+      // Post-dash reconcile: cancel in-flight rush and trust client end position.
       if (message.rushSettle) {
+        this.combat?.cancelRush(client.sessionId);
         const dist = Math.hypot(message.x - player.x, message.y - player.y);
         if (dist > MAX_RUSH_SETTLE_PX) return;
         if (!isAarenaBlocked(message.x, message.y)) {
@@ -66,6 +66,8 @@ export class AarenaRoom extends Room<AarenaState> {
         this.rememberGotchiPos(player.gotchiId, player.x, player.y);
         return;
       }
+
+      if (this.combat?.isRushing(client.sessionId)) return;
 
       // Allow one-shot snap shortly after join (FE/server spawn align / wall nudge).
       const joined = this.joinedAt.get(client.sessionId) || now;

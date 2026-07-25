@@ -1,11 +1,14 @@
 import { Room, Client } from 'colyseus';
 import { Player } from '../schema/Player';
-import { resolveAarenaMove } from '../maps/aarenaCollisions';
+import { isAarenaBlocked, resolveAarenaMove } from '../maps/aarenaCollisions';
 
 type CombatIntent = {
   hand?: string;
   direction?: { x?: number; y?: number };
   chargeDuration?: number;
+  /** Client sprite origin — snap server here before rush so dash ends match prediction. */
+  x?: number;
+  y?: number;
 };
 
 type ActiveMissile = {
@@ -44,8 +47,13 @@ export type CombatHandle = {
   onPlayerLeave: (sessionId: string) => void;
   /** True while this session is mid-rush (rooms should ignore walk moves). */
   isRushing: (sessionId: string) => boolean;
+  /** Cancel an in-progress rush so settle / leave can apply immediately. */
+  cancelRush: (sessionId: string) => void;
   dispose: () => void;
 };
+
+/** Same ballpark as AarenaRoom rushSettle — walk+dash desync from plaza spawn. */
+const MAX_ORIGIN_SNAP_PX = 24 * 64 * 2 + 256;
 
 const WALK_SPEED = 220;
 const MISSILE_SPEED = WALK_SPEED * 3.5;
@@ -124,6 +132,17 @@ export function registerCombatMessages(room: Room<CombatRoomState>): CombatHandl
 
       const dir = normalizeDir(Number(message?.direction?.x), Number(message?.direction?.y));
       if (!dir) return;
+
+      // Align server with client sprite before rush — walk clamp often leaves server at plaza.
+      const originX = Number(message?.x);
+      const originY = Number(message?.y);
+      if (Number.isFinite(originX) && Number.isFinite(originY)) {
+        const dist = Math.hypot(originX - player.x, originY - player.y);
+        if (dist <= MAX_ORIGIN_SNAP_PX && !isAarenaBlocked(originX, originY)) {
+          player.x = Math.round(originX);
+          player.y = Math.round(originY);
+        }
+      }
 
       const chargeDuration = Number(message?.chargeDuration) || 0;
       const isRush = chargeDuration > 0;
@@ -281,6 +300,9 @@ export function registerCombatMessages(room: Room<CombatRoomState>): CombatHandl
     },
     isRushing(sessionId: string) {
       return rushes.has(sessionId);
+    },
+    cancelRush(sessionId: string) {
+      rushes.delete(sessionId);
     },
     dispose() {
       clearInterval(interval);

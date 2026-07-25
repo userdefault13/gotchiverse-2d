@@ -32,6 +32,8 @@ type CombatLeaveMsg = {
 type CombatIntent = {
   direction?: { x?: number; y?: number };
   chargeDuration?: number;
+  x?: number;
+  y?: number;
 };
 
 type RushPredict = (opts: {
@@ -104,6 +106,16 @@ function predictLocalMelee(data: unknown): void {
   }
 }
 
+function withLocalOrigin(data: unknown): unknown {
+  const player = localPlayerSprite();
+  if (!player || !data || typeof data !== 'object') return data;
+  return {
+    ...(data as Record<string, unknown>),
+    x: Math.round(player.x),
+    y: Math.round(player.y),
+  };
+}
+
 export function attachColyseusCombat(
   activeRoom: RoomLike | null,
   opts?: { predictRush?: RushPredict },
@@ -170,9 +182,10 @@ export function colyseusSendCombat(action: 'melee' | 'fire', data: unknown): boo
     return false;
   }
   if (action === 'melee') {
-    room.send('combat.melee', data);
+    const payload = withLocalOrigin(data);
+    room.send('combat.melee', payload);
     try {
-      predictLocalMelee(data);
+      predictLocalMelee(payload);
     } catch (e) {
       console.warn('@predictLocalMelee', e);
     }
@@ -180,7 +193,7 @@ export function colyseusSendCombat(action: 'melee' | 'fire', data: unknown): boo
   }
   if (action === 'fire') {
     // Server-authoritative VFX — Missiles.updatePosition drives flight.
-    room.send('combat.fire', data);
+    room.send('combat.fire', withLocalOrigin(data));
     return true;
   }
   return false;
