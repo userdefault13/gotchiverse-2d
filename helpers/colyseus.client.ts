@@ -138,15 +138,10 @@ function syncPlayerPosition(player: RemotePlayer) {
     const sprite = getLocalSprite();
     if (sprite && typeof sprite.x === 'number') {
       const dist = Math.hypot(sprite.x - player.x, sprite.y - player.y);
-      // Post-dash: client finished far ahead of a speed-clamped server move — don't yank
-      // the gotchi to a stale/random-looking server spot; push a settle instead.
-      if (dist > 64 && dist <= MAX_RUSH_DISTANCE_PX + 128) {
+      // Never hard-snap the local gotchi to a stale server spot after a dash — that
+      // looked like a random teleport back to the plaza spawn. Prefer client and settle.
+      if (dist > 32) {
         sendRushSettle(sprite.x, sprite.y);
-        return;
-      }
-      if (dist > MAX_RUSH_DISTANCE_PX + 128) {
-        Players.handlePositions([{ id: player.gotchiId, x: player.x, y: player.y, noTween: true } as any]);
-        lastLocalPos = { x: player.x, y: player.y };
       }
     }
     return;
@@ -178,10 +173,14 @@ function stopRushLoop() {
   clearRushTimerOnly();
   // Keep hard-sync suppressed briefly so the server can finish its rush / accept settle.
   rushUntil = Date.now() + RUSH_SETTLE_MS;
+  const live = getLocalSprite();
+  // Settle immediately at dash end (don't wait) — delayed-only settle left a window
+  // where poll sync could still fight the predicted position.
+  if (live) sendRushSettle(live.x, live.y);
   rushSettleTimer = setTimeout(() => {
     rushSettleTimer = null;
-    const live = getLocalSprite();
-    if (live) sendRushSettle(live.x, live.y);
+    const again = getLocalSprite();
+    if (again) sendRushSettle(again.x, again.y);
   }, RUSH_SETTLE_MS);
 }
 
