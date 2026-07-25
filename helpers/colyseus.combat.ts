@@ -74,8 +74,10 @@ function predictLocalMelee(data: unknown): void {
   const dir = intent?.direction;
   if (!player || !playerId || dir?.x == null || dir?.y == null) return;
   if (Number(dir.x) === 0 && Number(dir.y) === 0) return;
+  if (!scene?.meleeGroup) return;
 
-  const chargeDuration = Number(intent.chargeDuration) || 0;
+  const rawCharge = Number(intent.chargeDuration);
+  const chargeDuration = Number.isFinite(rawCharge) && rawCharge > 0 ? rawCharge : 0;
   const isRush = chargeDuration > 0;
   const distance = isRush ? Math.max(0.08, Math.min(chargeDuration, 2) / 2) * (24 * 64) : 0;
   const id = `${playerId}_local_${Date.now()}`;
@@ -111,37 +113,49 @@ export function attachColyseusCombat(
   if (!activeRoom) return;
 
   activeRoom.onMessage('combat.enter', (raw) => {
-    const msg = raw as CombatEnterMsg;
-    // Missiles: always use server enter + positions (client has no flight loop).
-    // Melee: skip our own server echo — already shown via predictLocalMelee.
-    const missiles = msg?.missile || [];
-    const melees = (msg?.melee || []).filter((m) => !isLocalGotchiMeleeId(m?.id));
-    if (missiles.length) Missiles.create(missiles);
-    if (melees.length) {
-      Melee.create(melees);
-      for (const melee of melees) {
-        if (!melee?.isRush || !melee.direction || !predictRush) continue;
-        const gotchiId = String(melee.id || '').split('_')[0];
-        predictRush({
-          gotchiId,
-          direction: melee.direction,
-          distance: melee.distance,
-          speed: melee.speed,
-        });
+    try {
+      const msg = raw as CombatEnterMsg;
+      // Missiles: always use server enter + positions (client has no flight loop).
+      // Melee: skip our own server echo — already shown via predictLocalMelee.
+      const missiles = msg?.missile || [];
+      const melees = (msg?.melee || []).filter((m) => !isLocalGotchiMeleeId(m?.id));
+      if (missiles.length) Missiles.create(missiles);
+      if (melees.length) {
+        Melee.create(melees);
+        for (const melee of melees) {
+          if (!melee?.isRush || !melee.direction || !predictRush) continue;
+          const gotchiId = String(melee.id || '').split('_')[0];
+          predictRush({
+            gotchiId,
+            direction: melee.direction,
+            distance: melee.distance,
+            speed: melee.speed,
+          });
+        }
       }
+    } catch (e) {
+      console.warn('@combat.enter handler', e);
     }
   });
 
   activeRoom.onMessage('combat.positions', (raw) => {
-    const msg = raw as CombatPositionsMsg;
-    // Never filter positions — missiles only move via this stream.
-    if (msg?.missile?.length) Missiles.updatePosition(msg.missile as Missile[]);
+    try {
+      const msg = raw as CombatPositionsMsg;
+      // Never filter positions — missiles only move via this stream.
+      if (msg?.missile?.length) Missiles.updatePosition(msg.missile as Missile[]);
+    } catch (e) {
+      console.warn('@combat.positions handler', e);
+    }
   });
 
   activeRoom.onMessage('combat.leave', (raw) => {
-    const msg = raw as CombatLeaveMsg;
-    if (msg?.missile?.length) Missiles.destroy(msg.missile as Missile[]);
-    if (msg?.melee?.length) Melee.destroy(msg.melee as MeleeShape[]);
+    try {
+      const msg = raw as CombatLeaveMsg;
+      if (msg?.missile?.length) Missiles.destroy(msg.missile as Missile[]);
+      if (msg?.melee?.length) Melee.destroy(msg.melee as MeleeShape[]);
+    } catch (e) {
+      console.warn('@combat.leave handler', e);
+    }
   });
 }
 
