@@ -38,9 +38,11 @@ const create = (missiles: Missile[]): void => {
       const { id, direction, x, y, size, isCharged } = missile;
       const [creatorId] = String(id || '').split('#');
 
-      const creatorType = isNaN(Number(creatorId)) ? 'enemy' : 'player';
-
-      const creator = creatorType === 'player' ? scene[creatorId] : getGroupMemberById(creatorId, 'enemiesGroup')?.[0];
+      // Cartridge / Nakey / address ids are non-numeric — resolve via scene sprite first.
+      const playerSprite = scene[creatorId];
+      const enemySprite = playerSprite ? null : getGroupMemberById(creatorId, 'enemiesGroup')?.[0];
+      const creator = playerSprite || enemySprite;
+      const creatorType = playerSprite ? 'player' : 'enemy';
       if (!creator || !direction) return;
 
       const offset = creatorType === 'player' ? getOffsetByDirection(direction, 30) : { x: 0, y: 0 };
