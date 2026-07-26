@@ -474,18 +474,18 @@ export function getGotchiData(
   const rawTraits =
     (gotchi as GotchiverseAavegotchi).withSetsNumericTraits ||
     (gotchi as GotchiverseAavegotchi).numericTraits;
-  const withSetsNumericTraits =
+  const withSetsNumericTraits: SelectedPlayer['withSetsNumericTraits'] =
     Array.isArray(rawTraits) && rawTraits.length >= 4
-      ? ([
+      ? [
           Number(rawTraits[0]) || 50,
           Number(rawTraits[1]) || 50,
           Number(rawTraits[2]) || 50,
           Number(rawTraits[3]) || 50,
           Number(rawTraits[4]) || 50,
           Number(rawTraits[5]) || 50,
-        ] as Tuple<number, 6>)
+        ]
       : isCartridgeHero || Boolean(gotchi.isSpectator)
-        ? ([50, 50, 50, 50, 50, 50] as Tuple<number, 6>)
+        ? [50, 50, 50, 50, 50, 50]
         : undefined;
 
   return {
