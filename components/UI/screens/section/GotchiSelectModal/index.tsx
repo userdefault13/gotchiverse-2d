@@ -1017,16 +1017,12 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
               )}
 
               {mintStep === 'wearables' && currentNetwork && globalProvider && (
-                <div className="selected-gotchi-container mint-cart">
-                  <WearableCart
-                    cartRows={wearableCartRows}
-                    availableRows={availableWearableRows}
-                    onSetQuantity={setWearableCartQuantity}
-                    onRemoveLine={removeWearableCartLine}
-                    onClear={() => setWearableCartRows([])}
-                    onCheckout={() => handleMintWearableRows(wearableCartRows)}
+                <div className="selected-gotchi-container mint-catalog">
+                  <WearableMintGallery
+                    cartKeys={wearableCartKeys}
+                    onAddToCart={addWearableToCart}
+                    onAddAllToCart={addAllWearablesToCart}
                     minting={minting}
-                    mintError={mintError}
                   />
                 </div>
               )}
@@ -1188,7 +1184,11 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
                 </div>
               )}
 
-              <div className={`gotchi-details${mintMode ? ' mint-mode' : ''}`}>
+              <div
+                className={`gotchi-details${mintMode ? ' mint-mode' : ''}${
+                  mintStep === 'wearables' ? ' mint-cart' : ''
+                }`}
+              >
                 {mintStep === 'cartridge' && currentNetwork && globalProvider ? (
                   <CartridgeMintPanel
                     network={currentNetwork}
@@ -1229,11 +1229,15 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
                     importError={mintError}
                   />
                 ) : mintStep === 'wearables' && currentNetwork && globalProvider ? (
-                  <WearableMintGallery
-                    cartKeys={wearableCartKeys}
-                    onAddToCart={addWearableToCart}
-                    onAddAllToCart={addAllWearablesToCart}
+                  <WearableCart
+                    cartRows={wearableCartRows}
+                    availableRows={availableWearableRows}
+                    onSetQuantity={setWearableCartQuantity}
+                    onRemoveLine={removeWearableCartLine}
+                    onClear={() => setWearableCartRows([])}
+                    onCheckout={() => handleMintWearableRows(wearableCartRows)}
                     minting={minting}
+                    mintError={mintError}
                   />
                 ) : (
                   selectedGotchi &&

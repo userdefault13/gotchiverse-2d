@@ -245,13 +245,13 @@ export default css`
       justify-content: center;
     }
 
-    /* Wearable cart — interactive middle column (wider than silhouette preview). */
-    .selected-gotchi-container.mint-cart {
+    /* Wearable mint catalog — middle column (browse / add to cart). */
+    .selected-gotchi-container.mint-catalog {
       pointer-events: auto;
-      flex: 1 1 28rem;
-      width: min(36rem, 100%);
-      max-width: 36rem;
-      min-width: 22rem;
+      flex: 1 1 46rem;
+      width: min(48rem, 100%);
+      max-width: 48rem;
+      min-width: 34rem;
       min-height: 0;
       height: auto;
       max-height: calc(100% - 2rem);
@@ -259,6 +259,16 @@ export default css`
       justify-content: flex-start;
       align-items: stretch;
       align-self: stretch;
+      overflow: hidden;
+    }
+
+    /* Wearable cart — right rail checkout. */
+    .gotchi-details.mint-mode.mint-cart {
+      flex: 1 1 28rem;
+      width: min(36rem, 100%);
+      max-width: 36rem;
+      min-width: 22rem;
+      padding: 1.2rem 1rem 1.5rem;
       background: rgba(28, 4, 42, 0.72);
       border: 0.2rem solid rgba(255, 122, 233, 0.45);
       border-radius: 0.5rem;

@@ -121,7 +121,7 @@ export const WearableCart = ({
 
         <div className="cart-lines scrollable">
           {lines.length === 0 ? (
-            <p className="empty">Add wearables from the right to build your mint cart.</p>
+            <p className="empty">Add wearables from the catalog to build your mint cart.</p>
           ) : (
             lines.map((line) => {
               const ownership = line.rows.some((r) => r.bindKind === 'rental') ? 'borrowed' : 'owned';

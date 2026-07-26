@@ -147,9 +147,12 @@ export default css`
 
   .wearable-items.grid {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 1rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.8rem;
     align-content: start;
+    /* Room so in-card tips aren't clipped by scroll edges. */
+    padding: 0.2rem 0.2rem 1.2rem;
+    overflow-x: hidden;
   }
 
   .empty {
@@ -197,8 +200,8 @@ export default css`
     appearance: none;
     -webkit-appearance: none;
     display: flex;
-    flex-direction: row;
-    align-items: center;
+    flex-direction: column;
+    align-items: stretch;
     gap: 0;
     padding: 0;
     margin: 0;
@@ -212,14 +215,20 @@ export default css`
     position: relative;
     min-height: 0;
     font: inherit;
-    transition: box-shadow 0.1s ease-in-out;
+    transition: box-shadow 0.1s ease-in-out, border-color 0.1s ease-in-out;
     overflow: hidden;
+  }
+
+  .wearable-card.icon-only {
+    aspect-ratio: 1;
+    width: 100%;
   }
 
   .wearable-card:hover,
   .wearable-card.checked {
     box-shadow: 0 0 8px var(--col-yellow-100, #ffe600), 0 0 8px var(--col-yellow-100, #ffe600),
       inset 0 0 14px 2px rgba(255, 122, 233, 0.35);
+    z-index: 3;
   }
 
   .wearable-card.checked {
@@ -238,11 +247,11 @@ export default css`
 
   .check-dot {
     position: absolute;
-    top: 0.55rem;
-    left: 0.55rem;
-    z-index: 2;
-    width: 1.35rem;
-    height: 1.35rem;
+    top: 0.4rem;
+    left: 0.4rem;
+    z-index: 4;
+    width: 1.2rem;
+    height: 1.2rem;
     border-radius: 0.3rem;
     border: 0.18rem solid rgba(255, 214, 247, 0.75);
     background: rgba(0, 0, 0, 0.45);
@@ -255,26 +264,55 @@ export default css`
   }
 
   .card-art {
-    flex: 0 0 auto;
+    flex: 1 1 auto;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 7.2rem;
-    min-height: 7.2rem;
-    padding: 0.85rem 0.6rem;
+    width: 100%;
+    min-height: 0;
+    padding: 0.9rem;
     background: linear-gradient(160deg, rgba(255, 122, 233, 0.18), rgba(20, 8, 40, 0.9));
   }
 
-  .card-label {
-    flex: 1 1 auto;
-    min-width: 0;
+  /* Hover tip stays inside the tile — never spills into the right-rail cart. */
+  .card-tip {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    gap: 0.2rem;
-    padding: 0.75rem 0.8rem 0.75rem 0.7rem;
-    background: #6b1a62;
-    border-left: 0.15rem solid rgba(255, 122, 233, 0.55);
+    justify-content: flex-end;
+    gap: 0.15rem;
+    padding: 0.55rem 0.5rem 0.55rem;
+    background: linear-gradient(180deg, rgba(12, 2, 22, 0.15) 0%, rgba(12, 2, 22, 0.92) 55%);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.12s ease-in-out;
+  }
+
+  .wearable-card:hover .card-tip,
+  .wearable-card:focus-visible .card-tip {
+    opacity: 1;
+  }
+
+  .card-tip .wearable-name {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 1.15rem;
+    line-height: 1.15;
+  }
+
+  .card-tip .wearable-sub {
+    font-size: 1rem;
+    line-height: 1.25;
+    white-space: normal;
+  }
+
+  .card-tip .wearable-price {
+    font-size: 1.2rem;
   }
 
   .wearable-meta {

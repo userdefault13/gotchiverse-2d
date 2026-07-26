@@ -86,25 +86,28 @@ export const WearableMintGallery = ({
     const disabled = minting || row.alreadyMinted || inCart;
 
     if (viewMode === 'grid') {
+      const tip = `${row.name} · #${row.sourceTokenId} · ${slotLabel(row.slotIndex)} · ${row.rarity} · ${ownership} · ${priceLabel}`;
       return (
         <button
           key={row.key}
           type="button"
-          className={`wearable-card ${inCart ? 'checked' : ''} ${row.alreadyMinted ? 'minted' : ''}`}
+          className={`wearable-card icon-only ${inCart ? 'checked' : ''} ${row.alreadyMinted ? 'minted' : ''}`}
           disabled={disabled}
           onClick={() => addOne(row)}
+          aria-label={tip}
         >
           <span className={`check-dot ${inCart ? 'on' : ''}`} aria-hidden />
           <div className="card-art">
-            <WearableThumbnail itemTypeId={row.itemTypeId} name={row.name} size={52} />
+            <WearableThumbnail itemTypeId={row.itemTypeId} name={row.name} size={64} />
           </div>
-          <div className="card-label">
+          {/* In-card tip so it never clips into the right-rail cart. */}
+          <span className="card-tip" role="tooltip">
             <span className="wearable-name">{row.name}</span>
             <span className="wearable-sub">
               #{row.sourceTokenId} · {slotLabel(row.slotIndex)} · {row.rarity} · {ownership}
             </span>
             <span className={`wearable-price ${priceClass}`}>{priceLabel}</span>
-          </div>
+          </span>
         </button>
       );
     }
@@ -136,7 +139,7 @@ export const WearableMintGallery = ({
         <p className="gallery-caption">
           Tap to add to cart. Owned = <span className="price-tag free">FREE</span>
           {' · '}
-          borrowed = rarity fees <span className="price-note">(sim)</span>. Checkout in the cart.
+          borrowed = rarity fees <span className="price-note">(sim)</span>. Checkout on the right.
         </p>
 
         <div className="mint-cta mint-cta-top">
