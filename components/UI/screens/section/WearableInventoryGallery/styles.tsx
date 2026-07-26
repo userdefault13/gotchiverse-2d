@@ -11,8 +11,9 @@ export default css`
   }
 
   .gallery-title {
-    font-family: 'Kimberley Bl';
-    font-size: 3.2rem;
+    font-family: Pixelar, sans-serif;
+    font-size: 4.2rem;
+    line-height: 1;
     text-transform: uppercase;
     background: -webkit-linear-gradient(#ffa24d, #ffe600);
     filter: drop-shadow(0px 0px 4px rgba(0, 0, 0, 0.6));

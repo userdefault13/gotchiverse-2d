@@ -6,8 +6,9 @@ export default css`
     flex: 0 0 auto;
   }
   .select-panel-title {
-    font-family: 'Kimberley Bl';
-    font-size: 4.6rem;
+    font-family: Pixelar, sans-serif;
+    font-size: 5.2rem;
+    line-height: 1;
     text-transform: uppercase;
     background: -webkit-linear-gradient(#ffa24d, #ffe600);
     filter: drop-shadow(0px 0px 4px rgba(0, 0, 0, 0.6));
@@ -43,7 +44,7 @@ export default css`
   }
   @media (max-width: 1023px) {
     .select-panel-title {
-      font-size: 2.8rem;
+      font-size: 3.2rem;
     }
     .filter-section {
       margin-top: 0.5rem;
@@ -51,7 +52,7 @@ export default css`
   }
   @media (max-width: 1199px) {
     .select-panel-title {
-      font-size: 3.6rem;
+      font-size: 4.2rem;
     }
     .filter-section {
       margin-top: 1rem;

@@ -12,6 +12,7 @@ import {
   CollateralGotchiGallery,
   WearableImportPanel,
   WearableMintGallery,
+  WearableCart,
 } from 'components/UI/screens/section';
 import { ContractParcel, GotchiverseAavegotchi, GotchiverseParcel, JsonParcel, Parcel, RealmEvent } from 'types';
 import { fetchAavegotchiURL, setAavegtochiToLocalStorage, getGotchiData, isTrueSpectator, brsToRarity } from 'helpers/gotchi.helper';
@@ -42,6 +43,7 @@ import {
 } from 'helpers/cartridgeHero.helper';
 import {
   listEquippedWearableSlots,
+  listMintableWearablesFromBoundGotchis,
   normalizeCWearables,
   wearablesFromCartridgeSnapshot,
   type MintableWearableRow,
@@ -81,7 +83,8 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
   const [{ currentAccount, currentNetwork, globalProvider, ethersSigner }] = useWeb3();
   const [{ eventsList }, realmDispatch] = useRealm();
   const [{ gameConfig }] = useGame();
-  const [{ hasCartridge, cartridgeId, cartridgeHeroes, userAavegotchis }, userDispatch] = useUser();
+  const [{ hasCartridge, cartridgeId, cartridgeHeroes, userAavegotchis, wearableInventory }, userDispatch] =
+    useUser();
 
   const { portalOpen, sending } = useAavegotchiSound();
 
@@ -108,6 +111,8 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
   const [cartridgeSideUrls, setCartridgeSideUrls] = useState<[string, string, string, string] | null>(null);
   const [minting, setMinting] = useState(false);
   const [mintError, setMintError] = useState<string | null>(null);
+  /** cWearables manage cart — distinct source instances (by row.key). */
+  const [wearableCartRows, setWearableCartRows] = useState<MintableWearableRow[]>([]);
   const mintMode = mintStep !== null;
   const cartridgeArt = currentNetwork === 'robinhood' ? GotchiverseRhCartridge : GotchiverseBaseCartridge;
   const selectedIsCartridgeHero = Boolean(selectedGotchi?.isCartridgeHero);
@@ -117,6 +122,27 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
     if (selectedIsCartridgeHero) return collateralFromSimId(selectedGotchi?.cartridgeCollateral);
     return null;
   }, [mintStep, selectedCollateral, selectedIsCartridgeHero, selectedGotchi?.cartridgeCollateral]);
+
+  const boundWalletIds = useMemo(() => mintedSourceTokenIds(cartridgeHeroes), [cartridgeHeroes]);
+  const mintableWearableRows = useMemo(
+    () => listMintableWearablesFromBoundGotchis(userAavegotchis, boundWalletIds, wearableInventory),
+    [userAavegotchis, boundWalletIds, wearableInventory],
+  );
+  const availableWearableRows = useMemo(
+    () => mintableWearableRows.filter((r) => !r.alreadyMinted),
+    [mintableWearableRows],
+  );
+  const wearableCartKeys = useMemo(() => new Set(wearableCartRows.map((r) => r.key)), [wearableCartRows]);
+
+  // Drop cart lines that are no longer mintable (already minted / unbound).
+  useEffect(() => {
+    if (mintStep !== 'wearables') return;
+    const availableKeys = new Set(availableWearableRows.map((r) => r.key));
+    setWearableCartRows((prev) => {
+      const next = prev.filter((r) => availableKeys.has(r.key));
+      return next.length === prev.length ? prev : next;
+    });
+  }, [mintStep, availableWearableRows]);
 
   useEffect(() => {
     let cancelled = false;
@@ -216,7 +242,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
   const isDesktop = useMediaQuery('(min-width: 1200px), (min-height: 750px)');
   const selectedGotchiHeight = useMemo(() => {
     // Mint/manage modes: compact center preview so left + right rails keep room.
-    if (mintMode) return isDesktop ? 22 : 18;
+    if (mintMode) return isDesktop ? 14 : 12;
     if (!selectedGotchi) return 0;
     if (isTrueSpectator(selectedGotchi.isSpectator)) return 30;
     return isDesktop ? 42 : 36;
@@ -306,7 +332,45 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
     setImportSourceGotchi(null);
     setPendingHeroAfterImport(null);
     setMintError(null);
+    setWearableCartRows([]);
   };
+
+  const addWearableToCart = useCallback((row: MintableWearableRow) => {
+    if (row.alreadyMinted) return;
+    setWearableCartRows((prev) => (prev.some((r) => r.key === row.key) ? prev : [...prev, row]));
+  }, []);
+
+  const addAllWearablesToCart = useCallback((rows: MintableWearableRow[]) => {
+    setWearableCartRows((prev) => {
+      const keys = new Set(prev.map((r) => r.key));
+      const next = [...prev];
+      for (const row of rows) {
+        if (row.alreadyMinted || keys.has(row.key)) continue;
+        keys.add(row.key);
+        next.push(row);
+      }
+      return next;
+    });
+  }, []);
+
+  const setWearableCartQuantity = useCallback(
+    (itemTypeId: number, qty: number) => {
+      const pool = availableWearableRows
+        .filter((r) => r.itemTypeId === itemTypeId)
+        .sort((a, b) => a.key.localeCompare(b.key));
+      const target = Math.max(0, Math.min(qty, pool.length));
+      setWearableCartRows((prev) => {
+        const others = prev.filter((r) => r.itemTypeId !== itemTypeId);
+        if (target === 0) return others;
+        return [...others, ...pool.slice(0, target)];
+      });
+    },
+    [availableWearableRows],
+  );
+
+  const removeWearableCartLine = useCallback((itemTypeId: number) => {
+    setWearableCartRows((prev) => prev.filter((r) => r.itemTypeId !== itemTypeId));
+  }, []);
 
   const finishWithHero = (hero: CartridgeHero | null) => {
     resetMintFlow();
@@ -717,6 +781,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
           }`,
           { theme: 'dark' },
         );
+        setWearableCartRows([]);
       }
       // Refresh inventory so left stacks / right mint list stay in sync.
       if (cartridgeId) {
@@ -893,7 +958,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
                 <p>Stay tuned to be alerted when Gotchiverse mobile is available</p>
               </BasePanel>
             </div>
-            <div className="desktop-view" ref={containerRef}>
+            <div className={`desktop-view${mintMode ? ' mint-layout' : ''}`} ref={containerRef}>
               <GotchiSelectPanel
                 placeholderCount={placeholderCount}
                 handleSelect={(gotchi) => {
@@ -951,48 +1016,53 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
                 </div>
               )}
 
-              {(mintStep === 'wearables-import' || mintStep === 'wearables') &&
-                currentNetwork &&
-                globalProvider && (
-                  <div className="selected-gotchi-container mint-preview">
-                    <div className="gotchi">
-                      {importSourceGotchi || selectedWalletGotchi ? (
-                        <GotchiSVG
-                          tokenId={(importSourceGotchi || selectedWalletGotchi)?.id}
-                          side={0}
-                          options={{ removeBg: true, animate: true }}
-                          height={selectedGotchiHeight}
-                        />
-                      ) : (
-                        <div
-                          className="collateral-preview-svg"
-                          style={{
-                            width: `${selectedGotchiHeight}rem`,
-                            height: `${selectedGotchiHeight}rem`,
-                            position: 'relative',
-                          }}
-                        >
-                          <Image alt="" src={GotchiLoading} layout="fill" objectFit="contain" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="glow"></div>
-                    <div className="gotchi-name-container">
-                      <div className="gotchi-name">
-                        <h4>
-                          {mintStep === 'wearables'
-                            ? 'cWearables'
-                            : importSourceGotchi?.name || `#${importSourceGotchi?.id || ''}`}
-                        </h4>
+              {mintStep === 'wearables' && currentNetwork && globalProvider && (
+                <div className="selected-gotchi-container mint-cart">
+                  <WearableCart
+                    cartRows={wearableCartRows}
+                    availableRows={availableWearableRows}
+                    onSetQuantity={setWearableCartQuantity}
+                    onRemoveLine={removeWearableCartLine}
+                    onClear={() => setWearableCartRows([])}
+                    onCheckout={() => handleMintWearableRows(wearableCartRows)}
+                    minting={minting}
+                    mintError={mintError}
+                  />
+                </div>
+              )}
+
+              {mintStep === 'wearables-import' && currentNetwork && globalProvider && (
+                <div className="selected-gotchi-container mint-preview">
+                  <div className="gotchi">
+                    {importSourceGotchi || selectedWalletGotchi ? (
+                      <GotchiSVG
+                        tokenId={(importSourceGotchi || selectedWalletGotchi)?.id}
+                        side={0}
+                        options={{ removeBg: true, animate: true }}
+                        height={selectedGotchiHeight}
+                      />
+                    ) : (
+                      <div
+                        className="collateral-preview-svg"
+                        style={{
+                          width: `${selectedGotchiHeight}rem`,
+                          height: `${selectedGotchiHeight}rem`,
+                          position: 'relative',
+                        }}
+                      >
+                        <Image alt="" src={GotchiLoading} layout="fill" objectFit="contain" />
                       </div>
-                      <p className="gotchi-caption">
-                        {mintStep === 'wearables'
-                          ? 'Mint from bound gotchis · equip on Aarcade'
-                          : 'Choose equipped wearables to mint as cWearables'}
-                      </p>
-                    </div>
+                    )}
                   </div>
-                )}
+                  <div className="glow"></div>
+                  <div className="gotchi-name-container">
+                    <div className="gotchi-name">
+                      <h4>{importSourceGotchi?.name || `#${importSourceGotchi?.id || ''}`}</h4>
+                    </div>
+                    <p className="gotchi-caption">Choose equipped wearables to mint as cWearables</p>
+                  </div>
+                </div>
+              )}
 
               {mintStep === 'caavegotchi' && currentNetwork && globalProvider && (
                 <div className="selected-gotchi-container mint-preview">
@@ -1160,10 +1230,10 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
                   />
                 ) : mintStep === 'wearables' && currentNetwork && globalProvider ? (
                   <WearableMintGallery
-                    onMintSelected={handleMintWearableRows}
-                    onMintAll={handleMintWearableRows}
+                    cartKeys={wearableCartKeys}
+                    onAddToCart={addWearableToCart}
+                    onAddAllToCart={addAllWearablesToCart}
                     minting={minting}
-                    mintError={mintError}
                   />
                 ) : (
                   selectedGotchi &&

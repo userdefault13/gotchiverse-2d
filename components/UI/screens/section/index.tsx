@@ -6,6 +6,7 @@ export * from './CollateralGotchiGallery';
 export * from './WearableImportPanel';
 export * from './WearableInventoryGallery';
 export * from './WearableMintGallery';
+export * from './WearableCart';
 
 export * from './SettingsModal';
 export * from './UnconnectedScreen';

@@ -165,6 +165,16 @@ export default css`
       justify-content: space-between;
     }
 
+    /* Pack rails + tiny center preview; don't let space-between inflate the middle. */
+    .desktop-view.mint-layout {
+      justify-content: flex-start;
+      gap: 1.6rem;
+    }
+
+    .desktop-view.mint-layout .gotchi-details.mint-mode {
+      margin-left: auto;
+    }
+
     .mobile-view {
       display: none;
     }
@@ -228,30 +238,52 @@ export default css`
 
     .selected-gotchi-container.mint-preview {
       pointer-events: none;
-      flex: 0 0 auto;
-      width: min(26rem, 28vw);
-      max-width: 26rem;
-      padding-bottom: 3rem;
+      flex: 0 0 16rem;
+      width: 16rem;
+      max-width: 16rem;
+      padding-bottom: 1.5rem;
       justify-content: center;
     }
 
+    /* Wearable cart — interactive middle column (wider than silhouette preview). */
+    .selected-gotchi-container.mint-cart {
+      pointer-events: auto;
+      flex: 1 1 28rem;
+      width: min(36rem, 100%);
+      max-width: 36rem;
+      min-width: 22rem;
+      min-height: 0;
+      height: auto;
+      max-height: calc(100% - 2rem);
+      padding: 1.2rem 1rem 1.5rem;
+      justify-content: flex-start;
+      align-items: stretch;
+      align-self: stretch;
+      background: rgba(28, 4, 42, 0.72);
+      border: 0.2rem solid rgba(255, 122, 233, 0.45);
+      border-radius: 0.5rem;
+      box-shadow: inset 0 0 24px 4px rgba(255, 122, 233, 0.12);
+      overflow: hidden;
+    }
+
     .selected-gotchi-container.mint-preview .glow {
-      width: 28rem;
-      height: 10rem;
-      bottom: 18%;
+      width: 18rem;
+      height: 7rem;
+      bottom: 22%;
     }
 
     .selected-gotchi-container.mint-preview .gotchi-name-container {
-      margin-top: 1.5rem;
+      margin-top: 0.8rem;
     }
 
     .selected-gotchi-container.mint-preview .gotchi-name h4 {
-      font-size: 2.4em;
+      font-size: 1.8em;
     }
 
     .selected-gotchi-container.mint-preview .gotchi-caption {
-      font-size: 1.4em;
-      line-height: 1.4em;
+      font-size: 1.15em;
+      line-height: 1.3em;
+      max-width: 16rem;
     }
 
     .cartridge-preview-img,

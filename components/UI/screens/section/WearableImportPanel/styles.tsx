@@ -11,8 +11,9 @@ export default css`
   }
 
   .panel-title {
-    font-family: 'Kimberley Bl';
-    font-size: 3.2rem;
+    font-family: Pixelar, sans-serif;
+    font-size: 4.2rem;
+    line-height: 1;
     text-transform: uppercase;
     background: -webkit-linear-gradient(#ffa24d, #ffe600);
     filter: drop-shadow(0px 0px 4px rgba(0, 0, 0, 0.6));
@@ -81,8 +82,8 @@ export default css`
   }
 
   .wearable-row {
-    display: grid;
-    grid-template-columns: auto auto 1fr auto;
+    display: flex;
+    flex-direction: row;
     gap: 1rem;
     align-items: center;
     padding: 0.9rem 1rem;
@@ -110,6 +111,7 @@ export default css`
     flex-direction: column;
     gap: 0.2rem;
     min-width: 0;
+    flex: 1 1 auto;
   }
 
   .wearable-name {

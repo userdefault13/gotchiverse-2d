@@ -20,27 +20,25 @@ export const WearableThumbnail = ({
   const src = wearableThumbnailUrl(itemTypeId);
 
   return (
-    <>
-      <div
-        className={`wearable-thumb ${failed ? 'fallback' : ''} ${className}`}
-        style={{ width: size, height: size }}
-      >
-        {failed || !itemTypeId ? (
-          <span className="glyph" aria-hidden>
-            ◆
-          </span>
-        ) : (
-          <Image
-            alt={name || `Wearable #${itemTypeId}`}
-            src={src}
-            width={size}
-            height={size}
-            unoptimized
-            onError={() => setFailed(true)}
-          />
-        )}
-      </div>
+    <div
+      className={`wearable-thumb ${failed ? 'fallback' : ''} ${className}`}
+      style={{ width: size, height: size }}
+    >
+      {failed || !itemTypeId ? (
+        <span className="glyph" aria-hidden>
+          ◆
+        </span>
+      ) : (
+        <Image
+          alt={name || `Wearable #${itemTypeId}`}
+          src={src}
+          width={size}
+          height={size}
+          unoptimized
+          onError={() => setFailed(true)}
+        />
+      )}
       <style jsx>{styles}</style>
-    </>
+    </div>
   );
 };

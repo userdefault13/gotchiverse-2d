@@ -15,17 +15,17 @@ type ViewMode = 'list' | 'grid';
 const VIEW_STORAGE_KEY = 'cwearablesMintView';
 
 interface Props {
-  onMintSelected: (rows: MintableWearableRow[]) => void | Promise<void>;
-  onMintAll: (rows: MintableWearableRow[]) => void | Promise<void>;
+  cartKeys: Set<string>;
+  onAddToCart: (row: MintableWearableRow) => void;
+  onAddAllToCart: (rows: MintableWearableRow[]) => void;
   minting?: boolean;
-  mintError?: string | null;
 }
 
 export const WearableMintGallery = ({
-  onMintSelected,
-  onMintAll,
+  cartKeys,
+  onAddToCart,
+  onAddAllToCart,
   minting = false,
-  mintError = null,
 }: Props): JSX.Element => {
   const { click } = useAavegotchiSound();
   const [{ userAavegotchis, cartridgeHeroes, wearableInventory }] = useUser();
@@ -36,9 +36,9 @@ export const WearableMintGallery = ({
     [userAavegotchis, boundIds, wearableInventory],
   );
   const unminted = useMemo(() => rows.filter((r) => !r.alreadyMinted), [rows]);
+  const notInCart = useMemo(() => unminted.filter((r) => !cartKeys.has(r.key)), [unminted, cartKeys]);
 
-  const [selected, setSelected] = useState<Record<string, boolean>>({});
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
 
   useEffect(() => {
     try {
@@ -48,19 +48,6 @@ export const WearableMintGallery = ({
       /* ignore */
     }
   }, []);
-
-  useEffect(() => {
-    const next: Record<string, boolean> = {};
-    for (const row of unminted) {
-      next[row.key] = true;
-    }
-    setSelected(next);
-  }, [unminted]);
-
-  const selectedRows = unminted.filter((r) => selected[r.key]);
-  const totalUsd = selectedRows.reduce((sum, r) => sum + (r.importFeeUsd || 0), 0);
-  const rentalSelected = selectedRows.filter((r) => r.bindKind === 'rental').length;
-  const allSelected = unminted.length > 0 && selectedRows.length === unminted.length;
 
   const setView = (mode: ViewMode) => {
     if (mode === viewMode) return;
@@ -73,83 +60,63 @@ export const WearableMintGallery = ({
     }
   };
 
-  const toggle = (row: MintableWearableRow) => {
-    if (minting || row.alreadyMinted) return;
+  const addOne = (row: MintableWearableRow) => {
+    if (minting || row.alreadyMinted || cartKeys.has(row.key)) return;
     click();
-    setSelected((prev) => ({ ...prev, [row.key]: !prev[row.key] }));
+    onAddToCart(row);
   };
 
-  const toggleAll = () => {
-    if (minting || unminted.length === 0) return;
+  const addAll = () => {
+    if (minting || notInCart.length === 0) return;
     click();
-    const next: Record<string, boolean> = {};
-    for (const row of unminted) {
-      next[row.key] = !allSelected;
-    }
-    setSelected(next);
+    onAddAllToCart(notInCart);
   };
-
-  const handleMintSelected = () => {
-    if (minting || selectedRows.length === 0) return;
-    click();
-    void onMintSelected(selectedRows);
-  };
-
-  const handleMintAll = () => {
-    if (minting || unminted.length === 0) return;
-    click();
-    void onMintAll(unminted);
-  };
-
-  const mintAllUsd = unminted.reduce((sum, r) => sum + (r.importFeeUsd || 0), 0);
 
   const renderRow = (row: MintableWearableRow) => {
-    const checked = row.alreadyMinted ? true : Boolean(selected[row.key]);
+    const inCart = cartKeys.has(row.key);
     const ownership = row.bindKind === 'rental' ? 'borrowed' : 'owned';
     const priceLabel = row.alreadyMinted
       ? 'Minted'
-      : row.importFeeUsd <= 0
-        ? 'FREE'
-        : `$${row.importFeeUsd}`;
-    const priceClass = row.alreadyMinted || row.importFeeUsd <= 0 ? 'free' : '';
+      : inCart
+        ? 'In cart'
+        : row.importFeeUsd <= 0
+          ? 'FREE'
+          : `$${row.importFeeUsd}`;
+    const priceClass = row.alreadyMinted || row.importFeeUsd <= 0 || inCart ? 'free' : '';
+    const disabled = minting || row.alreadyMinted || inCart;
 
     if (viewMode === 'grid') {
       return (
         <button
           key={row.key}
           type="button"
-          className={`wearable-card ${checked ? 'checked' : ''} ${row.alreadyMinted ? 'minted' : ''}`}
-          disabled={minting || row.alreadyMinted}
-          onClick={() => toggle(row)}
+          className={`wearable-card ${inCart ? 'checked' : ''} ${row.alreadyMinted ? 'minted' : ''}`}
+          disabled={disabled}
+          onClick={() => addOne(row)}
         >
-          <span className={`check-dot ${checked ? 'on' : ''}`} aria-hidden />
+          <span className={`check-dot ${inCart ? 'on' : ''}`} aria-hidden />
           <div className="card-art">
-            <WearableThumbnail itemTypeId={row.itemTypeId} name={row.name} size={72} />
+            <WearableThumbnail itemTypeId={row.itemTypeId} name={row.name} size={52} />
           </div>
           <div className="card-label">
             <span className="wearable-name">{row.name}</span>
             <span className="wearable-sub">
-              #{row.sourceTokenId} · {slotLabel(row.slotIndex)} · {row.rarity}
+              #{row.sourceTokenId} · {slotLabel(row.slotIndex)} · {row.rarity} · {ownership}
             </span>
-            <span className="wearable-sub">
-              {ownership} · <span className={`wearable-price ${priceClass}`}>{priceLabel}</span>
-            </span>
+            <span className={`wearable-price ${priceClass}`}>{priceLabel}</span>
           </div>
         </button>
       );
     }
 
     return (
-      <label
+      <button
         key={row.key}
-        className={`wearable-row ${checked ? 'checked' : ''} ${row.alreadyMinted ? 'minted' : ''}`}
+        type="button"
+        className={`wearable-row ${inCart ? 'checked' : ''} ${row.alreadyMinted ? 'minted' : ''}`}
+        disabled={disabled}
+        onClick={() => addOne(row)}
       >
-        <input
-          type="checkbox"
-          checked={checked}
-          disabled={minting || row.alreadyMinted}
-          onChange={() => toggle(row)}
-        />
         <WearableThumbnail itemTypeId={row.itemTypeId} name={row.name} size={44} />
         <div className="wearable-meta">
           <span className="wearable-name">{row.name}</span>
@@ -158,7 +125,7 @@ export const WearableMintGallery = ({
           </span>
         </div>
         <span className={`wearable-price ${priceClass}`}>{priceLabel}</span>
-      </label>
+      </button>
     );
   };
 
@@ -167,72 +134,43 @@ export const WearableMintGallery = ({
       <div className="wearable-mint-gallery">
         <h2 className="gallery-title">Mint cWearables</h2>
         <p className="gallery-caption">
-          From bound wallet gotchis. Owned = <span className="price-tag free">FREE</span>
+          Tap to add to cart. Owned = <span className="price-tag free">FREE</span>
           {' · '}
-          borrowed = reduced rarity fees <span className="price-note">(sim)</span>. Same wearable from
-          different gotchis stacks (x2). Equip on Aarcade.
+          borrowed = rarity fees <span className="price-note">(sim)</span>. Checkout in the cart.
         </p>
 
         <div className="mint-cta mint-cta-top">
-          <Button size={2.4} fullWidth onClick={handleMintAll} disabled={unminted.length === 0 || minting}>
-            {minting
-              ? 'Minting…'
-              : unminted.length === 0
+          <Button size={2.4} fullWidth onClick={addAll} disabled={notInCart.length === 0 || minting}>
+            {notInCart.length === 0
+              ? unminted.length === 0
                 ? 'All Available Minted'
-                : mintAllUsd > 0
-                  ? `Mint All (${unminted.length}) · $${mintAllUsd} (sim)`
-                  : `Mint All (${unminted.length}) · FREE`}
+                : 'All In Cart'
+              : `Add All to Cart (${notInCart.length})`}
           </Button>
-          <Button
-            size={2.4}
-            fullWidth
-            onClick={handleMintSelected}
-            disabled={selectedRows.length === 0 || minting}
-          >
-            {minting
-              ? 'Minting…'
-              : selectedRows.length === 0
-                ? 'Select wearables to mint'
-                : totalUsd > 0
-                  ? `Mint Selected (${selectedRows.length}) · $${totalUsd} (sim)`
-                  : `Mint Selected (${selectedRows.length}) · FREE`}
-          </Button>
-          {rentalSelected > 0 && totalUsd > 0 ? (
-            <p className="cost-line">
-              Borrowed/rental in selection: {rentalSelected} · total{' '}
-              <span className="price-tag">${totalUsd}</span> <span className="price-note">(sim)</span>
-            </p>
-          ) : null}
           <p className="mint-hint">Bind wallet gotchis under Manage first — only their equipped gear can mint.</p>
-          {mintError ? <p className="mint-error">{mintError}</p> : null}
         </div>
 
         <div className="toolbar">
-          <button type="button" className="linkish" onClick={toggleAll} disabled={unminted.length === 0 || minting}>
-            {allSelected ? 'Deselect all' : 'Select all'}
-          </button>
-          <div className="toolbar-right">
-            <span className="count">
-              {selectedRows.length}/{unminted.length} unminted · {rows.length} total
-            </span>
-            <div className="view-toggle" role="group" aria-label="View mode">
-              <button
-                type="button"
-                className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
-                onClick={() => setView('list')}
-                aria-pressed={viewMode === 'list'}
-              >
-                List
-              </button>
-              <button
-                type="button"
-                className={`view-btn ${viewMode === 'grid' ? 'active' : ''}`}
-                onClick={() => setView('grid')}
-                aria-pressed={viewMode === 'grid'}
-              >
-                Grid
-              </button>
-            </div>
+          <span className="count">
+            {cartKeys.size} in cart · {unminted.length} unminted · {rows.length} total
+          </span>
+          <div className="view-toggle" role="group" aria-label="View mode">
+            <button
+              type="button"
+              className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
+              onClick={() => setView('list')}
+              aria-pressed={viewMode === 'list'}
+            >
+              List
+            </button>
+            <button
+              type="button"
+              className={`view-btn ${viewMode === 'grid' ? 'active' : ''}`}
+              onClick={() => setView('grid')}
+              aria-pressed={viewMode === 'grid'}
+            >
+              Grid
+            </button>
           </div>
         </div>
 

@@ -11,8 +11,9 @@ export default css`
   }
 
   .gallery-title {
-    font-family: 'Kimberley Bl';
-    font-size: 3.2rem;
+    font-family: Pixelar, sans-serif;
+    font-size: 4.2rem;
+    line-height: 1;
     text-transform: uppercase;
     background: -webkit-linear-gradient(#ffa24d, #ffe600);
     filter: drop-shadow(0px 0px 4px rgba(0, 0, 0, 0.6));
@@ -160,8 +161,8 @@ export default css`
   }
 
   .wearable-row {
-    display: grid;
-    grid-template-columns: auto auto 1fr auto;
+    display: flex;
+    flex-direction: row;
     gap: 1rem;
     align-items: center;
     padding: 0.9rem 1rem;
@@ -171,6 +172,8 @@ export default css`
     box-shadow: inset 0 0 14px 2px rgba(255, 122, 233, 0.18);
     cursor: pointer;
     color: #fff;
+    width: 100%;
+    text-align: left;
   }
 
   .wearable-row.checked {
@@ -194,8 +197,8 @@ export default css`
     appearance: none;
     -webkit-appearance: none;
     display: flex;
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    align-items: center;
     gap: 0;
     padding: 0;
     margin: 0;
@@ -205,11 +208,12 @@ export default css`
     box-shadow: inset 0 0 14px 2px rgba(255, 122, 233, 0.28);
     color: #fff;
     cursor: pointer;
-    text-align: center;
+    text-align: left;
     position: relative;
-    min-height: 17rem;
+    min-height: 0;
     font: inherit;
     transition: box-shadow 0.1s ease-in-out;
+    overflow: hidden;
   }
 
   .wearable-card:hover,
@@ -251,22 +255,26 @@ export default css`
   }
 
   .card-art {
-    flex: 1 1 auto;
+    flex: 0 0 auto;
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 10rem;
-    padding: 1.2rem 0.8rem 0.8rem;
+    width: 7.2rem;
+    min-height: 7.2rem;
+    padding: 0.85rem 0.6rem;
     background: linear-gradient(160deg, rgba(255, 122, 233, 0.18), rgba(20, 8, 40, 0.9));
   }
 
   .card-label {
+    flex: 1 1 auto;
+    min-width: 0;
     display: flex;
     flex-direction: column;
+    justify-content: center;
     gap: 0.2rem;
-    padding: 0.7rem 0.65rem 0.8rem;
+    padding: 0.75rem 0.8rem 0.75rem 0.7rem;
     background: #6b1a62;
-    border-top: 0.15rem solid rgba(255, 122, 233, 0.55);
+    border-left: 0.15rem solid rgba(255, 122, 233, 0.55);
   }
 
   .wearable-meta {
@@ -274,6 +282,7 @@ export default css`
     flex-direction: column;
     gap: 0.2rem;
     min-width: 0;
+    flex: 1 1 auto;
     text-align: left;
   }
 
