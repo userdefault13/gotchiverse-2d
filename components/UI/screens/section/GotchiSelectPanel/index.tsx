@@ -1,21 +1,20 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import styles from './styles';
 import { useWeb3 } from 'contexts/Web3Context';
 import { Aavegotchi, SortOption } from 'types';
 import useAavegotchiSound from 'hooks/useAavegotchiSound';
 import LazyLoad from 'react-lazyload';
-import { SearchInput, Button } from 'components/UI/elements';
+import { SearchInput } from 'components/UI/elements';
 import { SortSelect } from 'components/UI/elements/inputs/sortSelect';
 import Image from 'next/image';
 import { getThemeColor } from 'helpers/functions';
-import { GotchiTongueIcon, Baazaar } from 'assets';
-import { GotchiPlaceholderCard, GotchiSelectCard, BuyCTACard, MintCartridgeCard } from 'components/UI/component';
+import { GotchiTongueIcon } from 'assets';
+import { GotchiPlaceholderCard, GotchiSelectCard, MintCartridgeCard } from 'components/UI/component';
 import { fetchAndSetGlobalAavegotchis, getSpectator } from 'helpers/gotchi.helper';
 import { mapCartridgeHeroToGotchi } from 'helpers/cartridgeHero.helper';
 import { useUser } from 'contexts/UserContext';
 import { useGame } from 'contexts/GameContext';
 import { ChannelReadyToggle } from 'components/UI/elements/buttons/channelReadyToggle';
-import { gotchiverseLinks } from 'data/links';
 import type { GotchiverseAavegotchi } from 'types';
 
 const sortOptions: SortOption[] = [
@@ -31,9 +30,11 @@ interface Props {
   selectedId?: string;
   storedId?: string;
   mintMode?: boolean;
-  /** `cartridge` | `caavegotchi` mint step — Base hides L1 wallet gotchis until cAavegotchi bind. */
+  /** `cartridge` | `caavegotchi` mint step — Base/RH soft-launch mint flow. */
   mintStep?: 'cartridge' | 'caavegotchi' | null;
   onMintCartridgeClick?: () => void;
+  /** Manage mode: bound cAavegotchis open a stub manage modal instead of selecting for play. */
+  onManageCaavegotchiClick?: (gotchi: GotchiverseAavegotchi) => void;
 }
 
 export const GotchiSelectPanel = ({
@@ -41,8 +42,9 @@ export const GotchiSelectPanel = ({
   handleSelect,
   selectedId,
   mintMode,
-  mintStep,
+  mintStep: _mintStep,
   onMintCartridgeClick,
+  onManageCaavegotchiClick,
 }: Props): JSX.Element => {
   const [{ currentAccount, currentNetwork }] = useWeb3();
   const { click } = useAavegotchiSound();
@@ -55,19 +57,16 @@ export const GotchiSelectPanel = ({
   const [channelReady, setChannelReady] = useState<boolean>();
   const [optionLoaded, setOptionLoaded] = useState<boolean>(false);
 
+  // Soft-launch Base/RH: left rail is Manage + bound cAavegotchis only.
+  const cartridgeSelectMode = currentNetwork === 'base' || currentNetwork === 'robinhood';
+
   const cartridgeGotchis = useMemo(() => {
     if (!currentAccount || !cartridgeHeroes?.length) return [] as GotchiverseAavegotchi[];
     return cartridgeHeroes.map((hero) => mapCartridgeHeroToGotchi(hero, currentAccount));
   }, [cartridgeHeroes, currentAccount]);
 
-  // Soft-launch Base: Nakey + Mint Cartridge first; reveal L1 wallet gotchis only
-  // while binding a cAavegotchi. RH stays cartridge-only. Bound cAavegotchis always show.
-  const showWalletGotchis =
-    currentNetwork === 'robinhood'
-      ? false
-      : currentNetwork === 'base'
-        ? mintStep === 'caavegotchi'
-        : true;
+  // Legacy (matic / non–soft-launch): show L1 wallet gotchis in the left rail.
+  const showWalletGotchis = !cartridgeSelectMode;
 
   const loadOptions = () => {
     let sortOption = localStorage.getItem('gotchiSortOption') || 'brs';
@@ -126,81 +125,87 @@ export const GotchiSelectPanel = ({
     localStorage.setItem('gotchiFilterOption', JSON.stringify({ channelReady: channelReady }));
   }, [sort, channelReady]);
 
+  const visibleWalletGotchis = showWalletGotchis ? userAavegotchis || [] : [];
+
+  // Soft-launch: Manage card + bound heroes. Legacy: + Nakey + wallet gotchis.
+  const placeholderAavegotchis = useMemo(() => {
+    const filled =
+      (visibleWalletGotchis?.length || 0) +
+      (cartridgeGotchis?.length || 0) +
+      (cartridgeSelectMode ? 1 : 2);
+    return Array.from({ length: Math.max((placeholderCount || 0) - filled, 0) }, (_, i) => i);
+  }, [visibleWalletGotchis, cartridgeGotchis, placeholderCount, cartridgeSelectMode]);
+
+  const handleCartridgeGotchiClick = (gotchi: GotchiverseAavegotchi) => {
+    if (mintMode && onManageCaavegotchiClick) {
+      onManageCaavegotchiClick(gotchi);
+      return;
+    }
+    handleSelect(gotchi);
+  };
+
   const joinAsObservoor = useCallback(() => {
     click();
     handleSelect(getSpectator(currentAccount));
-  }, [currentAccount]);
-
-  const visibleWalletGotchis = showWalletGotchis ? userAavegotchis || [] : [];
-
-  // Reserve slots for Nakey + Mint/Manage Cartridge + cartridge heroes + owned gotchis.
-  const placeholderAavegotchis = useMemo(() => {
-    const filled = (visibleWalletGotchis?.length || 0) + (cartridgeGotchis?.length || 0) + 2;
-    return Array.from({ length: Math.max((placeholderCount || 0) - filled, 0) }, (_, i) => i);
-  }, [visibleWalletGotchis, cartridgeGotchis, placeholderCount]);
-
-  const handleOpenBaazaar = () => window.open(gotchiverseLinks.aavegotchi.marketplace, '_blank');
-
-  const buyMoreDescription = useMemo(() => {
-    if (userAavegotchis?.length === 0) {
-      return "You don't have Aavegotchis yet. You can buy them in the Baazaar.";
-    }
-    if (userAavegotchis?.length < 10) {
-      return 'You can extend your Aavegotchi collection. Buy more in the Baazaar!';
-    }
-    return '';
-  }, [userAavegotchis]);
+  }, [currentAccount, click, handleSelect]);
 
   return (
     <>
       <div className="details-container">
         <h1 className="select-panel-title">Select your Gotchi</h1>
-        <div className="filter-section">
-          <div className="filter-option">
-            <SearchInput
-              width="100%"
-              height="100%"
-              color={`${getThemeColor('info')}`}
-              value={searchInput || ''}
-              onChange={setSearchInput}
-              placeholder="Token ID, Name"
-              fontFamily="Kimberley Rg"
-              fontSize="1.2rem"
-              shadow={false}
-            />
-          </div>
-          <div className="filter-option">
-            <SortSelect
-              options={sortOptions}
-              placeholder="Sort by"
-              selected={sort}
-              onSelect={(name: string, value: string, direction: 'asc' | 'desc') => {
-                setSort({ name, value, direction });
-              }}
-              color="info"
-              width="13.5rem"
-              useTheme={true}
-              fontFamily="Kimberley Rg"
-              fontSize="1.2rem"
-              shadow={false}
-            />
-          </div>
-          <div className="filter-option channel-toggle">
-            {channelReady !== undefined && (
-              <ChannelReadyToggle
-                label="Ready to Channel"
-                borderColor="#00B9E1"
-                backgroundColor="rgba(81, 27, 221, 0.5)"
-                active={channelReady}
-                onClick={() => setChannelReady(!channelReady)}
+        {!cartridgeSelectMode && (
+          <div className="filter-section">
+            <div className="filter-option">
+              <SearchInput
+                width="100%"
+                height="100%"
+                color={`${getThemeColor('info')}`}
+                value={searchInput || ''}
+                onChange={setSearchInput}
+                placeholder="Token ID, Name"
+                fontFamily="Kimberley Rg"
+                fontSize="1.2rem"
+                shadow={false}
               />
-            )}
+            </div>
+            <div className="filter-option">
+              <SortSelect
+                options={sortOptions}
+                placeholder="Sort by"
+                selected={sort}
+                onSelect={(name: string, value: string, direction: 'asc' | 'desc') => {
+                  setSort({ name, value, direction });
+                }}
+                color="info"
+                width="13.5rem"
+                useTheme={true}
+                fontFamily="Kimberley Rg"
+                fontSize="1.2rem"
+                shadow={false}
+              />
+            </div>
+            <div className="filter-option channel-toggle">
+              {channelReady !== undefined && (
+                <ChannelReadyToggle
+                  label="Ready to Channel"
+                  borderColor="#00B9E1"
+                  backgroundColor="rgba(81, 27, 221, 0.5)"
+                  active={channelReady}
+                  onClick={() => setChannelReady(!channelReady)}
+                />
+              )}
+            </div>
           </div>
-          {/* <SortDropdown sortOptions={sortOptions} onSort={setSort} value={sort} /> */}
-        </div>
-        {/* {userAavegotchis?.length > 0 && <div className="results-container">{(fetching || searching) && <Loader size={0.2} />}</div>} */}
+        )}
+        {cartridgeSelectMode && (
+          <p className="soft-launch-caption">
+            {mintMode
+              ? 'Your cAavegotchis — tap one to manage (coming soon).'
+              : 'cAavegotchis & cartridge. Use Manage to mint more.'}
+          </p>
+        )}
 
-        {!fetching && userAavegotchis?.length === 0 && !search && channelReady && (
+        {!fetching && !cartridgeSelectMode && userAavegotchis?.length === 0 && !search && channelReady && (
           <div className="empty-state">
             <p className="empty-comment">{'No aavegotchi is ready to channel at the moment'}</p>
             <div className="gotchi-img">
@@ -209,31 +214,25 @@ export const GotchiSelectPanel = ({
             <p>Turn off the filter to see all of your Aavegotchis</p>
           </div>
         )}
-        {/* {!fetching && userAavegotchis?.length === 0 && !search && !channelReady && (
-          <div className="empty-state">
-            <h4>You don&apos;t have aavegotchis yet</h4>
-            <p className="pb-4 text-left md:text-center">
-              You can buy your Aavegotchis <br /> in the Baazaar and enjoy all the game features!
-            </p>
-            <div className="baazaar-link-container">
-              <div className="baazaar-img">
-                <Image alt="" src={Baazaar} objectFit="contain" />
+        <div
+          className={`gotchi-list-container ${
+            (cartridgeSelectMode ? cartridgeGotchis.length : visibleWalletGotchis?.length) > 9 ? 'shade' : ''
+          }`}
+        >
+          <div
+            className={`gotchi-list-inner scrollable ${
+              (cartridgeSelectMode ? cartridgeGotchis.length : visibleWalletGotchis?.length) > 12 ? 'info' : 'hidden'
+            }`}
+          >
+            {!cartridgeSelectMode && (
+              <div className="gotchi-card">
+                <GotchiSelectCard
+                  gotchi={getSpectator(currentAccount)}
+                  isSelected={!mintMode && selectedId?.toLowerCase() === currentAccount?.toLowerCase()}
+                  handleSelect={joinAsObservoor}
+                />
               </div>
-              <a href="https://app.aavegotchi.com/baazaar/realm" target="__blank">
-                <Button size={3}>Open Baazaar</Button>
-              </a>
-            </div>
-          </div>
-        )} */}
-        <div className={`gotchi-list-container ${visibleWalletGotchis?.length > 9 ? 'shade' : ''}`}>
-          <div className={`gotchi-list-inner scrollable ${visibleWalletGotchis?.length > 12 ? 'info' : 'hidden'}`}>
-            <div className="gotchi-card">
-              <GotchiSelectCard
-                gotchi={getSpectator(currentAccount)}
-                isSelected={!mintMode && selectedId?.toLowerCase() === currentAccount?.toLowerCase()}
-                handleSelect={joinAsObservoor}
-              />
-            </div>
+            )}
             <div className="gotchi-card">
               <MintCartridgeCard
                 network={currentNetwork}
@@ -247,9 +246,7 @@ export const GotchiSelectPanel = ({
                 <GotchiSelectCard
                   gotchi={gotchi}
                   isSelected={!mintMode && gotchi.id === selectedId}
-                  handleSelect={(g) => {
-                    handleSelect(g);
-                  }}
+                  handleSelect={handleCartridgeGotchiClick}
                 />
               </div>
             ))}
@@ -259,8 +256,8 @@ export const GotchiSelectPanel = ({
                   <GotchiSelectCard
                     gotchi={gotchi}
                     isSelected={!mintMode && gotchi.id === selectedId}
-                    handleSelect={(gotchi) => {
-                      handleSelect(gotchi);
+                    handleSelect={(g) => {
+                      handleSelect(g);
                     }}
                   />
                 </LazyLoad>
@@ -273,28 +270,6 @@ export const GotchiSelectPanel = ({
             ))}
           </div>
         </div>
-
-        {/* {userAavegotchis?.length === 0 && search && (
-            <div className="empty-state">
-              <h4 className="title">No results found with search: &quot;{search}&quot;</h4>
-            </div>
-          )} */}
-        {showWalletGotchis && userAavegotchis?.length < 12 && currentNetwork !== 'robinhood' && (
-          <div className="cta-baazaar-container">
-            <BuyCTACard
-              type="card-baazaar"
-              title="Buy More Aavegotchis!"
-              titleColor="pink"
-              description={buyMoreDescription}
-              ctaTitle="Open Baazaar"
-              outlineColor="pink"
-              showCard={true}
-              showGradient={true}
-              clipPath="inset(1% 1% 1% 1% round 0.75rem)"
-              onClick={handleOpenBaazaar}
-            />
-          </div>
-        )}
       </div>
 
       <style jsx>{styles}</style>

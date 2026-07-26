@@ -76,6 +76,8 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
   /** `cartridge` = details/price/mint CTA; `caavegotchi` = collateral gallery after mint */
   const [mintStep, setMintStep] = useState<'cartridge' | 'caavegotchi' | null>(null);
   const [selectedCollateral, setSelectedCollateral] = useState<CollateralObject | null>(null);
+  const [selectedWalletGotchi, setSelectedWalletGotchi] = useState<GotchiverseAavegotchi | null>(null);
+  const [manageHero, setManageHero] = useState<GotchiverseAavegotchi | null>(null);
   const [collateralPreviewUrl, setCollateralPreviewUrl] = useState<string | null>(null);
   /** 4-side blob URLs for cAavegotchi enter anim (index 3 = back). */
   const [cartridgeSideUrls, setCartridgeSideUrls] = useState<[string, string, string, string] | null>(null);
@@ -274,6 +276,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
   const resetMintFlow = () => {
     setMintStep(null);
     setSelectedCollateral(null);
+    setSelectedWalletGotchi(null);
     setMintError(null);
   };
 
@@ -348,6 +351,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
     setMinting(true);
     setMintError(null);
     try {
+      // $5 USDC sim not live — bind still runs without charge.
       const result = await bindAarcadeStarter(currentAccount, selectedCollateral.name, {
         network: currentNetwork,
       });
@@ -361,7 +365,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
       toast.success(
         result.alreadyBound
           ? 'cAavegotchi already bound'
-          : `Bound ${selectedCollateral.maticDisplay || selectedCollateral.name}`,
+          : `Bound ${selectedCollateral.maticDisplay || selectedCollateral.name} ($5 USDC sim — not charged)`,
         { theme: 'dark' },
       );
       resetMintFlow();
@@ -372,6 +376,38 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
       if (bound) {
         handleGotchiSelect(mapCartridgeHeroToGotchi(bound, currentAccount));
       }
+    } finally {
+      setMinting(false);
+    }
+  };
+
+  /** Owners & borrowers: ensure cartridge, then enter as the wallet gotchi (free). */
+  const handleMintWalletGotchi = async () => {
+    if (minting || !selectedWalletGotchi || !currentAccount) {
+      if (!currentAccount) {
+        setMintError('Connect a wallet to mint');
+        toast.error('Connect a wallet to mint', { theme: 'dark' });
+      }
+      return;
+    }
+    setMinting(true);
+    setMintError(null);
+    try {
+      if (!hasCartridge) {
+        const result = await ensureAarcadeCartridge(currentAccount, { network: currentNetwork });
+        if (!result.ok || !result.cartridgeId) {
+          const msg = result.error || 'Mint failed';
+          setMintError(msg);
+          toast.error(msg, { theme: 'dark' });
+          return;
+        }
+        await syncCartridgeFromResult(result);
+      }
+      const role = selectedWalletGotchi.isLent ? 'borrower' : 'owner';
+      toast.success(`Free mint ready (${role}) — #${selectedWalletGotchi.id}`, { theme: 'dark' });
+      const gotchi = selectedWalletGotchi;
+      resetMintFlow();
+      handleGotchiSelect(gotchi);
     } finally {
       setMinting(false);
     }
@@ -549,6 +585,10 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
                 mintMode={mintMode}
                 mintStep={mintStep}
                 onMintCartridgeClick={handleMintCartridgeClick}
+                onManageCaavegotchiClick={(gotchi) => {
+                  if (entering) return;
+                  setManageHero(gotchi);
+                }}
               />
 
               {/* <div className="back_menu">
@@ -586,28 +626,51 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
               {mintStep === 'caavegotchi' && currentNetwork && globalProvider && (
                 <div className="selected-gotchi-container mint-preview">
                   <div className="gotchi">
-                    <div
-                      className="collateral-preview-svg"
-                      style={{ width: `${selectedGotchiHeight}rem`, height: `${selectedGotchiHeight}rem`, position: 'relative' }}
-                    >
-                      <Image
-                        alt=""
-                        src={collateralPreviewUrl || GotchiLoading}
-                        layout="fill"
-                        objectFit="contain"
-                        unoptimized={!!collateralPreviewUrl}
+                    {selectedWalletGotchi ? (
+                      <GotchiSVG
+                        tokenId={selectedWalletGotchi.id}
+                        side={0}
+                        options={{ removeBg: true, animate: true }}
+                        height={selectedGotchiHeight}
                       />
-                    </div>
+                    ) : (
+                      <div
+                        className="collateral-preview-svg"
+                        style={{
+                          width: `${selectedGotchiHeight}rem`,
+                          height: `${selectedGotchiHeight}rem`,
+                          position: 'relative',
+                        }}
+                      >
+                        <Image
+                          alt=""
+                          src={collateralPreviewUrl || GotchiLoading}
+                          layout="fill"
+                          objectFit="contain"
+                          unoptimized={!!collateralPreviewUrl}
+                        />
+                      </div>
+                    )}
                   </div>
                   <div className="glow"></div>
                   <div className="gotchi-name-container">
                     <div className="gotchi-name">
-                      <h4>{selectedCollateral ? selectedCollateral.maticDisplay || selectedCollateral.name : 'cAavegotchi'}</h4>
+                      <h4>
+                        {selectedWalletGotchi
+                          ? selectedWalletGotchi.name || `#${selectedWalletGotchi.id}`
+                          : selectedCollateral
+                            ? selectedCollateral.maticDisplay || selectedCollateral.name
+                            : 'cAavegotchi'}
+                      </h4>
                     </div>
                     <p className="gotchi-caption">
-                      {selectedCollateral
-                        ? 'Base traits 50 · ES 50 · EC 50'
-                        : 'Choose a collateral from the gallery →'}
+                      {selectedWalletGotchi
+                        ? selectedWalletGotchi.isLent
+                          ? 'Wallet gotchi · Free mint (borrower)'
+                          : 'Wallet gotchi · Free mint (owner)'
+                        : selectedCollateral
+                          ? 'Base traits 50 · ES 50 · EC 50 · $5 USDC (sim)'
+                          : 'Choose collateral or a wallet gotchi →'}
                     </p>
                   </div>
                 </div>
@@ -697,11 +760,19 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
                     selectedCollateral={selectedCollateral}
                     onSelect={(c) => {
                       setMintError(null);
+                      setSelectedWalletGotchi(null);
                       setSelectedCollateral(c);
                     }}
                     onMint={handleBindStarter}
                     minting={minting}
                     mintError={mintError}
+                    selectedWalletGotchiId={selectedWalletGotchi?.id || null}
+                    onSelectWalletGotchi={(gotchi) => {
+                      setMintError(null);
+                      setSelectedCollateral(null);
+                      setSelectedWalletGotchi(gotchi);
+                    }}
+                    onMintWalletGotchi={handleMintWalletGotchi}
                   />
                 ) : (
                   selectedGotchi &&
@@ -751,6 +822,45 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
           </div>
         </div>
       </ModalWrapper>
+
+      {manageHero && (
+        <div
+          className="manage-hero-overlay"
+          onClick={() => setManageHero(null)}
+          role="presentation"
+        >
+          <div
+            className="manage-hero-modal"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Manage cAavegotchi"
+          >
+            <button type="button" className="manage-hero-close" onClick={() => setManageHero(null)}>
+              ×
+            </button>
+            <h3 className="manage-hero-title">Manage cAavegotchi</h3>
+            <p className="manage-hero-name">{manageHero.name || `cAavegotchi #${manageHero.id}`}</p>
+            <p className="manage-hero-body">
+              Manage tools for this cartridge spirit are coming soon. You can still select it from the
+              list (outside Manage) to enter the Gotchiverse.
+            </p>
+            <button
+              type="button"
+              className="manage-hero-cta"
+              onClick={() => {
+                const hero = manageHero;
+                setManageHero(null);
+                resetMintFlow();
+                handleGotchiSelect(hero);
+              }}
+            >
+              Select &amp; Play
+            </button>
+          </div>
+        </div>
+      )}
+
       <style jsx>{styles}</style>
     </>
   );

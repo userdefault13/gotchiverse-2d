@@ -395,4 +395,76 @@ export default css`
     margin: 0 0.25rem;
     color: var(--col-info-800);
   }
+
+  .manage-hero-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.65);
+    padding: 2rem;
+  }
+
+  .manage-hero-modal {
+    position: relative;
+    width: min(42rem, 100%);
+    border-radius: 1.6rem;
+    border: 0.25rem solid #c82ac2;
+    background: linear-gradient(180deg, rgba(41, 0, 129, 0.95), rgba(10, 8, 40, 0.98));
+    padding: 2.4rem 2rem 2rem;
+    color: #fff;
+    box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.45);
+  }
+
+  .manage-hero-close {
+    position: absolute;
+    top: 0.6rem;
+    right: 1rem;
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: #fff;
+    font-size: 2.8rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .manage-hero-title {
+    margin: 0 0 0.6rem;
+    font-family: 'Kimberley Bl', sans-serif;
+    font-size: 2.4rem;
+    text-transform: uppercase;
+    background: -webkit-linear-gradient(#ffa24d, #ffe600);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .manage-hero-name {
+    margin: 0 0 1rem;
+    font-size: 1.8rem;
+    color: #ff7ae9;
+  }
+
+  .manage-hero-body {
+    margin: 0 0 1.6rem;
+    font-size: 1.5rem;
+    line-height: 1.35;
+    color: rgba(255, 255, 255, 0.85);
+  }
+
+  .manage-hero-cta {
+    appearance: none;
+    width: 100%;
+    border: none;
+    border-radius: 0.8rem;
+    padding: 1rem 1.2rem;
+    font-family: 'Kimberley Rg', sans-serif;
+    font-size: 1.6rem;
+    text-transform: uppercase;
+    color: #fff;
+    background: #c82ac2;
+    cursor: pointer;
+  }
 `;
