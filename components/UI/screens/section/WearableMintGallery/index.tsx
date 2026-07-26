@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import styles from './styles';
 import { Button } from 'components/UI/elements';
 import { WearableThumbnail } from 'components/UI/widgets';
@@ -13,12 +14,41 @@ import {
 
 type ViewMode = 'list' | 'grid';
 const VIEW_STORAGE_KEY = 'cwearablesMintView';
+const TIP_WIDTH = 240;
+
+type GridTip = {
+  key: string;
+  name: string;
+  sub: string;
+  price: string;
+  priceFree: boolean;
+  top: number;
+  left: number;
+};
 
 interface Props {
   cartKeys: Set<string>;
   onAddToCart: (row: MintableWearableRow) => void;
   onAddAllToCart: (rows: MintableWearableRow[]) => void;
   minting?: boolean;
+}
+
+function tipPosition(rect: DOMRect): { top: number; left: number } {
+  const gap = 8;
+  // Prefer anchoring under the tile; flip above if near the bottom.
+  let top = rect.bottom + gap;
+  if (top + 96 > window.innerHeight - 12) {
+    top = Math.max(12, rect.top - gap - 88);
+  }
+
+  // Keep tip out of the right-rail cart: if tile is on the right half, grow left.
+  const preferLeft = rect.right > window.innerWidth * 0.58;
+  let left = preferLeft ? rect.right - TIP_WIDTH : rect.left;
+  const minLeft = 12;
+  const maxLeft = window.innerWidth - TIP_WIDTH - 12;
+  left = Math.min(maxLeft, Math.max(minLeft, left));
+
+  return { top, left };
 }
 
 export const WearableMintGallery = ({
@@ -39,6 +69,12 @@ export const WearableMintGallery = ({
   const notInCart = useMemo(() => unminted.filter((r) => !cartKeys.has(r.key)), [unminted, cartKeys]);
 
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [gridTip, setGridTip] = useState<GridTip | null>(null);
+  const [portalReady, setPortalReady] = useState(false);
+
+  useEffect(() => {
+    setPortalReady(true);
+  }, []);
 
   useEffect(() => {
     try {
@@ -48,6 +84,21 @@ export const WearableMintGallery = ({
       /* ignore */
     }
   }, []);
+
+  useEffect(() => {
+    if (viewMode !== 'grid') setGridTip(null);
+  }, [viewMode]);
+
+  useEffect(() => {
+    if (!gridTip) return;
+    const hide = () => setGridTip(null);
+    window.addEventListener('scroll', hide, true);
+    window.addEventListener('resize', hide);
+    return () => {
+      window.removeEventListener('scroll', hide, true);
+      window.removeEventListener('resize', hide);
+    };
+  }, [gridTip]);
 
   const setView = (mode: ViewMode) => {
     if (mode === viewMode) return;
@@ -72,6 +123,20 @@ export const WearableMintGallery = ({
     onAddAllToCart(notInCart);
   };
 
+  const openTip = (row: MintableWearableRow, el: HTMLElement, priceLabel: string, ownership: string) => {
+    const rect = el.getBoundingClientRect();
+    const pos = tipPosition(rect);
+    setGridTip({
+      key: row.key,
+      name: row.name,
+      sub: `#${row.sourceTokenId} · ${slotLabel(row.slotIndex)} · ${row.rarity} · ${ownership}`,
+      price: priceLabel,
+      priceFree: row.alreadyMinted || row.importFeeUsd <= 0 || cartKeys.has(row.key),
+      top: pos.top,
+      left: pos.left,
+    });
+  };
+
   const renderRow = (row: MintableWearableRow) => {
     const inCart = cartKeys.has(row.key);
     const ownership = row.bindKind === 'rental' ? 'borrowed' : 'owned';
@@ -86,7 +151,7 @@ export const WearableMintGallery = ({
     const disabled = minting || row.alreadyMinted || inCart;
 
     if (viewMode === 'grid') {
-      const tip = `${row.name} · #${row.sourceTokenId} · ${slotLabel(row.slotIndex)} · ${row.rarity} · ${ownership} · ${priceLabel}`;
+      const label = `${row.name} · #${row.sourceTokenId} · ${slotLabel(row.slotIndex)} · ${row.rarity} · ${ownership} · ${priceLabel}`;
       return (
         <button
           key={row.key}
@@ -94,20 +159,16 @@ export const WearableMintGallery = ({
           className={`wearable-card icon-only ${inCart ? 'checked' : ''} ${row.alreadyMinted ? 'minted' : ''}`}
           disabled={disabled}
           onClick={() => addOne(row)}
-          aria-label={tip}
+          aria-label={label}
+          onMouseEnter={(e) => openTip(row, e.currentTarget, priceLabel, ownership)}
+          onMouseLeave={() => setGridTip((t) => (t?.key === row.key ? null : t))}
+          onFocus={(e) => openTip(row, e.currentTarget, priceLabel, ownership)}
+          onBlur={() => setGridTip((t) => (t?.key === row.key ? null : t))}
         >
           <span className={`check-dot ${inCart ? 'on' : ''}`} aria-hidden />
           <div className="card-art">
             <WearableThumbnail itemTypeId={row.itemTypeId} name={row.name} size={64} />
           </div>
-          {/* In-card tip so it never clips into the right-rail cart. */}
-          <span className="card-tip" role="tooltip">
-            <span className="wearable-name">{row.name}</span>
-            <span className="wearable-sub">
-              #{row.sourceTokenId} · {slotLabel(row.slotIndex)} · {row.rarity} · {ownership}
-            </span>
-            <span className={`wearable-price ${priceClass}`}>{priceLabel}</span>
-          </span>
         </button>
       );
     }
@@ -188,6 +249,58 @@ export const WearableMintGallery = ({
           )}
         </div>
       </div>
+
+      {portalReady &&
+        gridTip &&
+        createPortal(
+          <div
+            className="cwearable-grid-tip"
+            role="tooltip"
+            style={{ top: gridTip.top, left: gridTip.left, width: TIP_WIDTH }}
+          >
+            <span className="tip-name">{gridTip.name}</span>
+            <span className="tip-sub">{gridTip.sub}</span>
+            <span className={`tip-price ${gridTip.priceFree ? 'free' : ''}`}>{gridTip.price}</span>
+            <style jsx global>{`
+              .cwearable-grid-tip {
+                position: fixed;
+                z-index: 10050;
+                pointer-events: none;
+                display: flex;
+                flex-direction: column;
+                gap: 0.2rem;
+                padding: 0.7rem 0.8rem;
+                border-radius: 0.45rem;
+                border: 0.18rem solid rgba(255, 122, 233, 0.75);
+                background: rgba(18, 4, 32, 0.96);
+                box-shadow: 0 0 16px rgba(0, 0, 0, 0.55), 0 0 10px rgba(255, 122, 233, 0.35);
+                color: #fff;
+                font-family: Pixelar, sans-serif;
+              }
+              .cwearable-grid-tip .tip-name {
+                font-family: 'Kimberley Rg', sans-serif;
+                font-size: 1.35rem;
+                line-height: 1.2;
+              }
+              .cwearable-grid-tip .tip-sub {
+                font-size: 1.15rem;
+                line-height: 1.3;
+                color: rgba(255, 214, 247, 0.85);
+                text-transform: capitalize;
+              }
+              .cwearable-grid-tip .tip-price {
+                font-family: 'Kimberley Rg', sans-serif;
+                font-size: 1.3rem;
+                color: #ff7ae9;
+              }
+              .cwearable-grid-tip .tip-price.free {
+                color: #6dffb0;
+              }
+            `}</style>
+          </div>,
+          document.body,
+        )}
+
       <style jsx>{styles}</style>
     </>
   );

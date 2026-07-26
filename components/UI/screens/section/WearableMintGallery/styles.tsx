@@ -274,47 +274,6 @@ export default css`
     background: linear-gradient(160deg, rgba(255, 122, 233, 0.18), rgba(20, 8, 40, 0.9));
   }
 
-  /* Hover tip stays inside the tile — never spills into the right-rail cart. */
-  .card-tip {
-    position: absolute;
-    inset: 0;
-    z-index: 3;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-    gap: 0.15rem;
-    padding: 0.55rem 0.5rem 0.55rem;
-    background: linear-gradient(180deg, rgba(12, 2, 22, 0.15) 0%, rgba(12, 2, 22, 0.92) 55%);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.12s ease-in-out;
-  }
-
-  .wearable-card:hover .card-tip,
-  .wearable-card:focus-visible .card-tip {
-    opacity: 1;
-  }
-
-  .card-tip .wearable-name {
-    white-space: normal;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-    font-size: 1.15rem;
-    line-height: 1.15;
-  }
-
-  .card-tip .wearable-sub {
-    font-size: 1rem;
-    line-height: 1.25;
-    white-space: normal;
-  }
-
-  .card-tip .wearable-price {
-    font-size: 1.2rem;
-  }
-
   .wearable-meta {
     display: flex;
     flex-direction: column;
