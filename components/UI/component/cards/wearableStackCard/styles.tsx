@@ -53,22 +53,11 @@ export default css`
     padding: 0.8rem;
   }
 
-  .wearable-glyph {
+  .wearable-art {
     position: relative;
-    width: 7.2rem;
-    height: 7.2rem;
-    border-radius: 1rem;
-    border: 0.25rem solid rgba(255, 122, 233, 0.7);
-    background: linear-gradient(160deg, rgba(255, 122, 233, 0.25), rgba(20, 8, 40, 0.9));
     display: flex;
     align-items: center;
     justify-content: center;
-  }
-
-  .wearable-glyph .glyph {
-    font-size: 3.2rem;
-    line-height: 1;
-    color: #ffd6f7;
   }
 
   .stack-badge {

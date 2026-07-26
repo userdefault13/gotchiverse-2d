@@ -435,8 +435,50 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
     });
   };
 
+  /** Import each wearable as its own cWearable, then equip onto the bound hero. */
+  const importAndEquipForGotchi = async (
+    gotchi: GotchiverseAavegotchi,
+    hero: CartridgeHero | null,
+    cid: string | null | undefined,
+  ) => {
+    if (!currentAccount || !hero) return { ok: true as const, imported: 0, equipped: 0, alreadyMinted: 0 };
+    const bindKind = gotchi.isLent ? 'rental' : 'owned';
+    const gear = listEquippedWearableSlots(gotchi, bindKind);
+    if (gear.length === 0) return { ok: true as const, imported: 0, equipped: 0, alreadyMinted: 0 };
+    const result = await importCartridgeWearables(currentAccount, {
+      sourceTokenId: gotchi.id,
+      items: gear.map((s) => ({ itemTypeId: s.itemTypeId, slotIndex: s.slotIndex })),
+      bindKind,
+      cartridgeId: cid,
+      network: currentNetwork,
+      equipAfterImport: true,
+      heroId: hero.id,
+    });
+    if (!result.ok) {
+      return {
+        ok: false as const,
+        error: result.error || 'Wearable mint/equip failed',
+        imported: result.imported || 0,
+        equipped: result.equipped || 0,
+        alreadyMinted: result.alreadyMinted || 0,
+      };
+    }
+    userDispatch({
+      type: 'UPDATE_USER_CARTRIDGE',
+      cartridgeId: result.cartridgeId || cid,
+      hasCartridge: true,
+      wearableInventory: result.wearableInventory,
+    });
+    return {
+      ok: true as const,
+      imported: result.imported || 0,
+      equipped: result.equipped || 0,
+      alreadyMinted: result.alreadyMinted || 0,
+    };
+  };
+
   /** Owners & borrowers: bind L1 gotchi onto cartridge as cAavegotchi (free / simPay). */
-  const handleMintWalletGotchi = async () => {
+  const handleMintWalletGotchi = async (opts?: { withWearables?: boolean }) => {
     if (minting || !selectedWalletGotchi || !currentAccount) {
       if (!currentAccount) {
         setMintError('Connect a wallet to mint');
@@ -444,6 +486,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
       }
       return;
     }
+    const withWearables = opts?.withWearables !== false;
     setMinting(true);
     setMintError(null);
     try {
@@ -468,14 +511,24 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
         null;
       const bindKind = selectedWalletGotchi.isLent ? 'rental' : 'owned';
       const gear = listEquippedWearableSlots(selectedWalletGotchi, bindKind);
-      if (gear.length > 0) {
-        setImportSourceGotchi(selectedWalletGotchi);
-        setImportBindKind(bindKind);
-        setPendingHeroAfterImport(bound);
-        setSelectedWalletGotchi(null);
-        setMintError(null);
-        setMintStep('wearables-import');
-        return;
+      if (withWearables && gear.length > 0) {
+        toast.info(`Minting & equipping ${gear.length} wearable${gear.length === 1 ? '' : 's'}…`, {
+          theme: 'dark',
+        });
+        const wear = await importAndEquipForGotchi(selectedWalletGotchi, bound, result.cartridgeId);
+        if (!wear.ok) {
+          setMintError(wear.error || 'Wearable mint/equip failed');
+          toast.error(wear.error || 'Wearable mint/equip failed', { theme: 'dark' });
+          // Gotchi minted; leave player on the hero even if gear failed.
+          finishWithHero(bound);
+          return;
+        }
+        toast.success(
+          `Equipped ${wear.equipped} cWearable${wear.equipped === 1 ? '' : 's'}${
+            wear.imported ? ` · ${wear.imported} newly minted` : ''
+          }${wear.alreadyMinted ? ` · ${wear.alreadyMinted} already owned` : ''}`,
+          { theme: 'dark' },
+        );
       }
       finishWithHero(bound);
     } finally {
@@ -484,7 +537,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
   };
 
   /** Batch-bind every owned wallet gotchi not already on the cartridge. */
-  const handleMintAllOwnedWalletGotchis = async () => {
+  const handleMintAllOwnedWalletGotchis = async (opts?: { withWearables?: boolean }) => {
     if (minting || !currentAccount) {
       if (!currentAccount) {
         setMintError('Connect a wallet to mint');
@@ -492,6 +545,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
       }
       return;
     }
+    const withWearables = opts?.withWearables !== false;
     const minted = mintedSourceTokenIds(cartridgeHeroes);
     const queue = (userAavegotchis || []).filter((g) => !g.isLent && !minted.has(String(g.id)));
     if (queue.length === 0) {
@@ -503,6 +557,8 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
     setMintError(null);
     let okCount = 0;
     let skipCount = 0;
+    let gearMinted = 0;
+    let gearEquipped = 0;
     let lastHeroes: CartridgeHero[] = cartridgeHeroes || [];
     try {
       for (let i = 0; i < queue.length; i++) {
@@ -518,19 +574,33 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
         lastHeroes = await syncCartridgeFromResult(result);
         if (result.alreadyBound) skipCount += 1;
         else okCount += 1;
+
+        if (withWearables) {
+          const bound =
+            lastHeroes.find((h) => String(h.sourceTokenId) === String(gotchi.id)) ||
+            lastHeroes[lastHeroes.length - 1] ||
+            null;
+          const wear = await importAndEquipForGotchi(gotchi, bound, result.cartridgeId);
+          if (!wear.ok) {
+            setMintError(wear.error || `Wearables failed on #${gotchi.id}`);
+            toast.error(wear.error || `Wearables failed on #${gotchi.id}`, { theme: 'dark' });
+            break;
+          }
+          gearMinted += wear.imported;
+          gearEquipped += wear.equipped;
+        }
       }
       if (okCount + skipCount > 0) {
         toast.success(
           `Minted ${okCount} owned gotchi${okCount === 1 ? '' : 's'}${
             skipCount ? ` · ${skipCount} already on cartridge` : ''
+          }${
+            withWearables && gearEquipped
+              ? ` · ${gearEquipped} wearables equipped (${gearMinted} new)`
+              : ''
           }`,
           { theme: 'dark' },
         );
-      }
-      if (okCount + skipCount > 0) {
-        toast.info('Import equipped wearables under cWearables (Mint All / multi-select).', {
-          theme: 'dark',
-        });
       }
       if (lastHeroes.length > 0 && okCount > 0) {
         resetMintFlow();
@@ -553,6 +623,8 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
         bindKind: importBindKind,
         cartridgeId,
         network: currentNetwork,
+        equipAfterImport: Boolean(pendingHeroAfterImport?.id),
+        heroId: pendingHeroAfterImport?.id,
       });
       if (!result.ok) {
         const msg = result.error || 'Wearable import failed';
@@ -568,8 +640,8 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
       });
       toast.success(
         `Minted ${result.imported || 0} cWearable${(result.imported || 0) === 1 ? '' : 's'}${
-          result.alreadyMinted ? ` · ${result.alreadyMinted} already owned` : ''
-        }`,
+          result.equipped ? ` · equipped ${result.equipped}` : ''
+        }${result.alreadyMinted ? ` · ${result.alreadyMinted} already owned` : ''}`,
         { theme: 'dark' },
       );
       finishWithHero(pendingHeroAfterImport);
@@ -1077,8 +1149,8 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
                       setSelectedCollateral(null);
                       setSelectedWalletGotchi(gotchi);
                     }}
-                    onMintWalletGotchi={handleMintWalletGotchi}
-                    onMintAllOwnedWalletGotchis={handleMintAllOwnedWalletGotchis}
+                    onMintWalletGotchi={(opts) => handleMintWalletGotchi(opts)}
+                    onMintAllOwnedWalletGotchis={(opts) => handleMintAllOwnedWalletGotchis(opts)}
                   />
                 ) : mintStep === 'wearables-import' &&
                   importSourceGotchi &&

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import styles from './styles';
 import { Button } from 'components/UI/elements';
+import { WearableThumbnail } from 'components/UI/widgets';
 import useAavegotchiSound from 'hooks/useAavegotchiSound';
 import { useUser } from 'contexts/UserContext';
 import { mintedSourceTokenIds } from 'helpers/cartridgeHero.helper';
@@ -9,6 +10,9 @@ import {
   slotLabel,
   type MintableWearableRow,
 } from 'helpers/cartridgeWearable.helper';
+
+type ViewMode = 'list' | 'grid';
+const VIEW_STORAGE_KEY = 'cwearablesMintView';
 
 interface Props {
   onMintSelected: (rows: MintableWearableRow[]) => void | Promise<void>;
@@ -34,6 +38,16 @@ export const WearableMintGallery = ({
   const unminted = useMemo(() => rows.filter((r) => !r.alreadyMinted), [rows]);
 
   const [selected, setSelected] = useState<Record<string, boolean>>({});
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(VIEW_STORAGE_KEY);
+      if (saved === 'list' || saved === 'grid') setViewMode(saved);
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   useEffect(() => {
     const next: Record<string, boolean> = {};
@@ -47,6 +61,17 @@ export const WearableMintGallery = ({
   const totalUsd = selectedRows.reduce((sum, r) => sum + (r.importFeeUsd || 0), 0);
   const rentalSelected = selectedRows.filter((r) => r.bindKind === 'rental').length;
   const allSelected = unminted.length > 0 && selectedRows.length === unminted.length;
+
+  const setView = (mode: ViewMode) => {
+    if (mode === viewMode) return;
+    click();
+    setViewMode(mode);
+    try {
+      localStorage.setItem(VIEW_STORAGE_KEY, mode);
+    } catch {
+      /* ignore */
+    }
+  };
 
   const toggle = (row: MintableWearableRow) => {
     if (minting || row.alreadyMinted) return;
@@ -77,6 +102,62 @@ export const WearableMintGallery = ({
   };
 
   const mintAllUsd = unminted.reduce((sum, r) => sum + (r.importFeeUsd || 0), 0);
+
+  const renderRow = (row: MintableWearableRow) => {
+    const checked = row.alreadyMinted ? true : Boolean(selected[row.key]);
+    if (viewMode === 'grid') {
+      return (
+        <button
+          key={row.key}
+          type="button"
+          className={`wearable-card ${checked ? 'checked' : ''} ${row.alreadyMinted ? 'minted' : ''}`}
+          disabled={minting || row.alreadyMinted}
+          onClick={() => toggle(row)}
+        >
+          <span className={`check-dot ${checked ? 'on' : ''}`} aria-hidden />
+          <WearableThumbnail itemTypeId={row.itemTypeId} name={row.name} size={64} />
+          <span className="wearable-name">{row.name}</span>
+          <span className="wearable-sub">
+            #{row.sourceTokenId} · {slotLabel(row.slotIndex)}
+          </span>
+          <span className="wearable-sub">
+            {row.rarity}
+            {row.bindKind === 'rental' ? ' · borrowed' : ' · owned'}
+          </span>
+          <span
+            className={`wearable-price ${row.alreadyMinted || row.importFeeUsd <= 0 ? 'free' : ''}`}
+          >
+            {row.alreadyMinted ? 'Minted' : row.importFeeUsd <= 0 ? 'FREE' : `$${row.importFeeUsd}`}
+          </span>
+        </button>
+      );
+    }
+
+    return (
+      <label
+        key={row.key}
+        className={`wearable-row ${checked ? 'checked' : ''} ${row.alreadyMinted ? 'minted' : ''}`}
+      >
+        <input
+          type="checkbox"
+          checked={checked}
+          disabled={minting || row.alreadyMinted}
+          onChange={() => toggle(row)}
+        />
+        <WearableThumbnail itemTypeId={row.itemTypeId} name={row.name} size={44} />
+        <div className="wearable-meta">
+          <span className="wearable-name">{row.name}</span>
+          <span className="wearable-sub">
+            #{row.sourceTokenId} · {slotLabel(row.slotIndex)} · {row.rarity}
+            {row.bindKind === 'rental' ? ' · borrowed' : ' · owned'}
+          </span>
+        </div>
+        <span className={`wearable-price ${row.alreadyMinted || row.importFeeUsd <= 0 ? 'free' : ''}`}>
+          {row.alreadyMinted ? 'Minted' : row.importFeeUsd <= 0 ? 'FREE' : `$${row.importFeeUsd}`}
+        </span>
+      </label>
+    );
+  };
 
   return (
     <>
@@ -127,48 +208,39 @@ export const WearableMintGallery = ({
           <button type="button" className="linkish" onClick={toggleAll} disabled={unminted.length === 0 || minting}>
             {allSelected ? 'Deselect all' : 'Select all'}
           </button>
-          <span className="count">
-            {selectedRows.length}/{unminted.length} unminted · {rows.length} total
-          </span>
+          <div className="toolbar-right">
+            <span className="count">
+              {selectedRows.length}/{unminted.length} unminted · {rows.length} total
+            </span>
+            <div className="view-toggle" role="group" aria-label="View mode">
+              <button
+                type="button"
+                className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
+                onClick={() => setView('list')}
+                aria-pressed={viewMode === 'list'}
+              >
+                List
+              </button>
+              <button
+                type="button"
+                className={`view-btn ${viewMode === 'grid' ? 'active' : ''}`}
+                onClick={() => setView('grid')}
+                aria-pressed={viewMode === 'grid'}
+              >
+                Grid
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div className="wearable-list scrollable">
+        <div className={`wearable-items scrollable ${viewMode}`}>
           {rows.length === 0 ? (
             <p className="empty">
               No equipped wearables on bound gotchis yet. Mint cAavegotchis from Wallet Gotchis, then return
               here.
             </p>
           ) : (
-            rows.map((row) => {
-              const checked = row.alreadyMinted ? true : Boolean(selected[row.key]);
-              return (
-                <label
-                  key={row.key}
-                  className={`wearable-row ${checked ? 'checked' : ''} ${row.alreadyMinted ? 'minted' : ''}`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    disabled={minting || row.alreadyMinted}
-                    onChange={() => toggle(row)}
-                  />
-                  <div className="wearable-meta">
-                    <span className="wearable-name">{row.name}</span>
-                    <span className="wearable-sub">
-                      #{row.sourceTokenId} · {slotLabel(row.slotIndex)} · {row.rarity}
-                      {row.bindKind === 'rental' ? ' · borrowed' : ' · owned'}
-                    </span>
-                  </div>
-                  <span
-                    className={`wearable-price ${
-                      row.alreadyMinted || row.importFeeUsd <= 0 ? 'free' : ''
-                    }`}
-                  >
-                    {row.alreadyMinted ? 'Minted' : row.importFeeUsd <= 0 ? 'FREE' : `$${row.importFeeUsd}`}
-                  </span>
-                </label>
-              );
-            })
+            rows.map(renderRow)
           )}
         </div>
       </div>

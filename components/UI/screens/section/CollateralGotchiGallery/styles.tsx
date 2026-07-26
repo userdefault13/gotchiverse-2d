@@ -128,6 +128,95 @@ export default css`
     font-size: 1.5rem;
   }
 
+  .price-tag {
+    color: #ff7ae9;
+    font-weight: 700;
+  }
+
+  .price-tag.free {
+    color: #6dffb0;
+  }
+
+  .price-note {
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 1.25rem;
+  }
+
+  .wearables-toggle {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.8rem;
+    margin: 0 0 0.9rem;
+    padding: 0.85rem 1rem;
+    border-radius: 0.8rem;
+    border: 0.15rem solid rgba(255, 122, 233, 0.45);
+    background: rgba(200, 42, 194, 0.18);
+    color: #fff;
+    font-size: 1.4rem;
+    line-height: 1.35;
+    cursor: pointer;
+  }
+
+  .wearables-toggle input {
+    margin-top: 0.25rem;
+    width: 1.5rem;
+    height: 1.5rem;
+    flex: 0 0 auto;
+  }
+
+  .gear-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    max-height: 14rem;
+    overflow-y: auto;
+    margin: 0 0 1rem;
+    padding-right: 0.3rem;
+  }
+
+  .gear-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 0.7rem;
+    align-items: center;
+    padding: 0.55rem 0.7rem;
+    border-radius: 0.6rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 0.12rem solid rgba(255, 255, 255, 0.2);
+  }
+
+  .gear-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 0;
+  }
+
+  .gear-name {
+    font-size: 1.3rem;
+    color: #fff;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .gear-sub {
+    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.65);
+    text-transform: capitalize;
+  }
+
+  .gear-price {
+    font-family: 'Kimberley Rg', sans-serif;
+    font-size: 1.2rem;
+    color: #ff7ae9;
+    white-space: nowrap;
+  }
+
+  .gear-price.free {
+    color: #6dffb0;
+  }
+
   .mint-cta {
     margin-top: 1.2rem;
   }

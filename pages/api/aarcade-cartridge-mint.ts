@@ -205,6 +205,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
+    // Pull latest rules (e.g. bindSnapshot: strip) before hero binds.
+    try {
+      await fetch(`${simBase}/cartridges/${encodeURIComponent(cartridgeId)}/sync-rules`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ sessionToken }),
+        cache: 'no-store',
+      });
+    } catch {
+      /* non-fatal — bind still proceeds with cartridge rules */
+    }
+
     if (phase === 'bind-owned' || phase === 'bind-rental') {
       const bindPath = phase === 'bind-owned' ? 'bind-owned' : 'bind-rental';
       const bindRes = await fetch(

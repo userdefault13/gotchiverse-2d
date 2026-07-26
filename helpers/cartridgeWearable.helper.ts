@@ -98,6 +98,11 @@ export function importFeeUsdForModifier(mod: number, bindKind: 'owned' | 'rental
   return RARITY_IMPORT_FEE_USD[mod] ?? 1;
 }
 
+/** Official Aavegotchi item art CDN (itemTypeId === svgId). */
+export function wearableThumbnailUrl(itemTypeId: number): string {
+  return `https://app.aavegotchi.com/images/items/${Number(itemTypeId) || 0}.svg`;
+}
+
 export function wearableDisplayMeta(itemTypeId: number): {
   name: string;
   rarity: string;

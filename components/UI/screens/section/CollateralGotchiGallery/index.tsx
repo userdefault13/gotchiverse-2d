@@ -1,6 +1,7 @@
 import styles from './styles';
 import { CollateralGotchiCard, GotchiSelectCard } from 'components/UI/component';
 import { Button } from 'components/UI/elements';
+import { WearableThumbnail } from 'components/UI/widgets';
 import { getMintableCollaterals, type CollateralObject } from 'helpers/ethers.helper';
 import useAavegotchiSound from 'hooks/useAavegotchiSound';
 import { useEffect, useMemo, useState } from 'react';
@@ -8,6 +9,7 @@ import { useUser } from 'contexts/UserContext';
 import type { GotchiverseAavegotchi } from 'types';
 import LazyLoad from 'react-lazyload';
 import { mintedSourceTokenIds } from 'helpers/cartridgeHero.helper';
+import { listEquippedWearableSlots, slotLabel } from 'helpers/cartridgeWearable.helper';
 
 type MintTab = 'caavegotchi' | 'wallet';
 
@@ -19,8 +21,8 @@ interface Props {
   mintError?: string | null;
   selectedWalletGotchiId?: string | null;
   onSelectWalletGotchi?: (gotchi: GotchiverseAavegotchi) => void;
-  onMintWalletGotchi?: () => void | Promise<void>;
-  onMintAllOwnedWalletGotchis?: () => void | Promise<void>;
+  onMintWalletGotchi?: (opts: { withWearables: boolean }) => void | Promise<void>;
+  onMintAllOwnedWalletGotchis?: (opts: { withWearables: boolean }) => void | Promise<void>;
 }
 
 export const CollateralGotchiGallery = ({
@@ -47,6 +49,8 @@ export const CollateralGotchiGallery = ({
 
   // Prefer Wallet Gotchis when the player has any — Mint All lives on that tab.
   const [tab, setTab] = useState<MintTab>(() => (walletGotchis.length > 0 ? 'wallet' : 'caavegotchi'));
+  const [mintWithWearables, setMintWithWearables] = useState(true);
+
   useEffect(() => {
     if (walletGotchis.length > 0 && tab === 'caavegotchi' && unmintedOwned.length > 0) {
       setTab('wallet');
@@ -64,13 +68,13 @@ export const CollateralGotchiGallery = ({
   const handleMintWallet = () => {
     if (minting || !selectedWalletGotchiId) return;
     click();
-    void onMintWalletGotchi?.();
+    void onMintWalletGotchi?.({ withWearables: mintWithWearables });
   };
 
   const handleMintAllOwned = () => {
     if (minting || unmintedOwned.length === 0) return;
     click();
-    void onMintAllOwnedWalletGotchis?.();
+    void onMintAllOwnedWalletGotchis?.({ withWearables: mintWithWearables });
   };
 
   const label = selectedCollateral
@@ -80,6 +84,27 @@ export const CollateralGotchiGallery = ({
   const selectedWallet = walletGotchis.find((g) => g.id === selectedWalletGotchiId) || null;
   const selectedAlreadyMinted = selectedWallet ? mintedIds.has(String(selectedWallet.id)) : false;
   const walletEligible = Boolean(selectedWallet) && !selectedAlreadyMinted;
+
+  const selectedGear = useMemo(() => {
+    if (!selectedWallet) return [];
+    const bindKind = selectedWallet.isLent ? 'rental' : 'owned';
+    return listEquippedWearableSlots(selectedWallet, bindKind);
+  }, [selectedWallet]);
+
+  const selectedGearUsd = selectedGear.reduce((sum, s) => sum + (s.importFeeUsd || 0), 0);
+  const hasSelectedGear = selectedGear.length > 0;
+
+  const mintAllGear = useMemo(() => {
+    if (!mintWithWearables) return { count: 0, usd: 0 };
+    let count = 0;
+    let usd = 0;
+    for (const g of unmintedOwned) {
+      const slots = listEquippedWearableSlots(g, 'owned');
+      count += slots.length;
+      usd += slots.reduce((sum, s) => sum + (s.importFeeUsd || 0), 0);
+    }
+    return { count, usd };
+  }, [unmintedOwned, mintWithWearables]);
 
   return (
     <>
@@ -142,8 +167,64 @@ export const CollateralGotchiGallery = ({
         ) : (
           <>
             <p className="gallery-caption">
-              Owners and borrowers can mint for <span className="price-tag free">FREE</span>.
+              Gotchi mint is <span className="price-tag free">FREE</span>. Optional wearables mint as individual
+              cWearables (owned free · borrowed rarity fees) then equip automatically.
             </p>
+
+            {hasSelectedGear || unmintedOwned.some((g) => listEquippedWearableSlots(g, 'owned').length > 0) ? (
+              <label className="wearables-toggle">
+                <input
+                  type="checkbox"
+                  checked={mintWithWearables}
+                  disabled={minting}
+                  onChange={() => {
+                    click();
+                    setMintWithWearables((v) => !v);
+                  }}
+                />
+                <span>
+                  Mint with wearables
+                  {hasSelectedGear ? (
+                    <>
+                      {' '}
+                      · {selectedGear.length} on #{selectedWallet?.id}
+                      {selectedGearUsd > 0 ? (
+                        <>
+                          {' '}
+                          · <span className="price-tag">${selectedGearUsd}</span>{' '}
+                          <span className="price-note">(sim)</span>
+                        </>
+                      ) : (
+                        <>
+                          {' '}
+                          · <span className="price-tag free">FREE</span>
+                        </>
+                      )}
+                    </>
+                  ) : null}
+                </span>
+              </label>
+            ) : null}
+
+            {mintWithWearables && hasSelectedGear ? (
+              <div className="gear-preview scrollable">
+                {selectedGear.map((slot) => (
+                  <div key={`${slot.slotIndex}:${slot.itemTypeId}`} className="gear-row">
+                    <WearableThumbnail itemTypeId={slot.itemTypeId} name={slot.name} size={36} />
+                    <div className="gear-meta">
+                      <span className="gear-name">{slot.name}</span>
+                      <span className="gear-sub">
+                        {slotLabel(slot.slotIndex)} · {slot.rarity}
+                      </span>
+                    </div>
+                    <span className={`gear-price ${slot.importFeeUsd <= 0 ? 'free' : ''}`}>
+                      {slot.importFeeUsd <= 0 ? 'FREE' : `$${slot.importFeeUsd}`}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+
             <div className="mint-cta mint-cta-stack mint-cta-top">
               <Button
                 size={2.4}
@@ -153,9 +234,13 @@ export const CollateralGotchiGallery = ({
               >
                 {minting
                   ? 'Minting…'
-                  : unmintedOwned.length > 0
-                    ? `Mint All Owned Unminted (${unmintedOwned.length})`
-                    : 'All Owned Minted'}
+                  : unmintedOwned.length === 0
+                    ? 'All Owned Minted'
+                    : mintWithWearables && mintAllGear.count > 0
+                      ? mintAllGear.usd > 0
+                        ? `Mint All Owned + ${mintAllGear.count} Wearables · $${mintAllGear.usd}`
+                        : `Mint All Owned + ${mintAllGear.count} Wearables · FREE`
+                      : `Mint All Owned Unminted (${unmintedOwned.length})`}
               </Button>
               <Button
                 size={2.4}
@@ -167,12 +252,18 @@ export const CollateralGotchiGallery = ({
                   ? 'Minting…'
                   : selectedAlreadyMinted
                     ? `Already Minted · #${selectedWallet?.id}`
-                    : selectedWallet
-                      ? `Mint Free · #${selectedWallet.id}`
-                      : 'Select a Wallet Gotchi'}
+                    : !selectedWallet
+                      ? 'Select a Wallet Gotchi'
+                      : mintWithWearables && hasSelectedGear
+                        ? selectedGearUsd > 0
+                          ? `Mint #${selectedWallet.id} + ${selectedGear.length} Wearables · $${selectedGearUsd}`
+                          : `Mint #${selectedWallet.id} + ${selectedGear.length} Wearables · FREE`
+                        : `Mint Free · #${selectedWallet.id}`}
               </Button>
               <p className="mint-hint">
-                Mint all binds every owned gotchi not already on your cartridge.
+                {mintWithWearables
+                  ? 'Each wearable mints as its own cWearable, then equips onto the new hero.'
+                  : 'Mint without wearables — naked cAavegotchi. Import gear later under cWearables.'}
               </p>
               {mintError ? <p className="mint-error">{mintError}</p> : null}
             </div>

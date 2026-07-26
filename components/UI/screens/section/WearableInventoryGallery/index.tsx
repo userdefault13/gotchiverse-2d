@@ -1,6 +1,7 @@
 import styles from './styles';
 import { useUser } from 'contexts/UserContext';
 import { slotLabel } from 'helpers/cartridgeWearable.helper';
+import { WearableThumbnail } from 'components/UI/widgets';
 
 export const WearableInventoryGallery = (): JSX.Element => {
   const [{ wearableInventory, cartridgeHeroes }] = useUser();
@@ -26,6 +27,7 @@ export const WearableInventoryGallery = (): JSX.Element => {
             ) : (
               items.map((item) => (
                 <div key={item.id} className={`wearable-card rarity-${item.rarity}`}>
+                  <WearableThumbnail itemTypeId={item.itemTypeId} name={item.name} size={56} />
                   <p className="wearable-name">{item.name}</p>
                   <p className="wearable-meta">
                     {item.rarity} · {slotLabel(item.slotIndex)}

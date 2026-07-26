@@ -82,7 +82,7 @@ export default css`
 
   .wearable-row {
     display: grid;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: auto auto 1fr auto;
     gap: 1rem;
     align-items: center;
     padding: 0.9rem 1rem;

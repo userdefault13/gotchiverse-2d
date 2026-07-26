@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import styles from './styles';
 import { Button } from 'components/UI/elements';
+import { WearableThumbnail } from 'components/UI/widgets';
 import useAavegotchiSound from 'hooks/useAavegotchiSound';
 import type { GotchiverseAavegotchi } from 'types';
 import {
@@ -111,6 +112,7 @@ export const WearableImportPanel = ({
                     disabled={importing}
                     onChange={() => toggle(slot)}
                   />
+                  <WearableThumbnail itemTypeId={slot.itemTypeId} name={slot.name} size={44} />
                   <div className="wearable-meta">
                     <span className="wearable-name">{slot.name}</span>
                     <span className="wearable-sub">

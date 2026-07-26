@@ -156,6 +156,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ error: 'No wearables to import', code: 'EMPTY_ITEMS' });
   }
   const simPay = req.body?.simPay !== false;
+  const equipAfterImport = req.body?.equipAfterImport === true;
+  const heroId = String(req.body?.heroId || '').trim();
+  if (equipAfterImport && !heroId) {
+    return res.status(400).json({ error: 'heroId required when equipAfterImport', code: 'HERO_REQUIRED' });
+  }
 
   try {
     const session = await createSession(gameId, wallet);
@@ -183,6 +188,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const minted: unknown[] = [];
     let alreadyMinted = 0;
     let imported = 0;
+    let equipped = 0;
 
     for (const item of items) {
       const importRes = await fetch(
@@ -210,6 +216,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           cartridgeId,
           imported,
           alreadyMinted,
+          equipped,
           minted,
           wearableInventory: Array.isArray(lastCartridge?.wearableInventory)
             ? lastCartridge.wearableInventory
@@ -222,6 +229,78 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       if (importBody?.minted) minted.push(importBody.minted);
     }
 
+    if (equipAfterImport && heroId) {
+      const selectRes = await fetch(
+        `${simBase()}/cartridges/${encodeURIComponent(cartridgeId)}/select-hero`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({ cAavegotchiId: heroId, sessionToken: session.sessionToken }),
+          cache: 'no-store',
+        },
+      );
+      const selectBody = await readJson(selectRes);
+      if (!selectRes.ok) {
+        return res.status(selectRes.status >= 400 && selectRes.status < 500 ? selectRes.status : 502).json({
+          error: String(selectBody?.error || 'Failed selecting hero for equip'),
+          code: String(selectBody?.code || 'SELECT_HERO_FAILED'),
+          cartridgeId,
+          imported,
+          alreadyMinted,
+          equipped,
+          minted,
+          wearableInventory: Array.isArray(lastCartridge?.wearableInventory)
+            ? lastCartridge.wearableInventory
+            : [],
+        });
+      }
+      lastCartridge = selectBody;
+
+      for (const row of minted) {
+        if (!row || typeof row !== 'object') continue;
+        const w = row as Record<string, unknown>;
+        const cWearableId = String(w.id || '').trim();
+        if (!cWearableId) continue;
+        // Skip if already on this hero.
+        if (w.equippedTo != null && String(w.equippedTo) === heroId) {
+          equipped += 1;
+          continue;
+        }
+        const slotIndex = Number(w.slotIndex);
+        const equipRes = await fetch(
+          `${simBase()}/cartridges/${encodeURIComponent(cartridgeId)}/wearables/equip`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify({
+              cWearableId,
+              slotIndex: Number.isInteger(slotIndex) ? slotIndex : undefined,
+              sessionToken: session.sessionToken,
+            }),
+            cache: 'no-store',
+          },
+        );
+        const equipBody = await readJson(equipRes);
+        if (!equipRes.ok) {
+          console.warn('aarcade-cartridge-wearables: equip failed', equipRes.status, equipBody);
+          return res.status(equipRes.status >= 400 && equipRes.status < 500 ? equipRes.status : 502).json({
+            error: String(equipBody?.error || `Failed equipping ${cWearableId}`),
+            code: String(equipBody?.code || 'EQUIP_FAILED'),
+            cartridgeId,
+            imported,
+            alreadyMinted,
+            equipped,
+            minted,
+            wearableInventory: Array.isArray(lastCartridge?.wearableInventory)
+              ? lastCartridge.wearableInventory
+              : [],
+          });
+        }
+        lastCartridge = equipBody;
+        equipped += 1;
+      }
+    }
+
     return res.status(200).json({
       ok: true,
       wallet,
@@ -231,6 +310,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       sourceTokenId,
       imported,
       alreadyMinted,
+      equipped,
       minted,
       wearableInventory: Array.isArray(lastCartridge?.wearableInventory)
         ? lastCartridge.wearableInventory

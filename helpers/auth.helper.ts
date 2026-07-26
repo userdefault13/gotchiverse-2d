@@ -365,6 +365,7 @@ export type AarcadeWearablesResult = {
   wearableInventory: import('helpers/cartridgeWearable.helper').CWearable[];
   imported?: number;
   alreadyMinted?: number;
+  equipped?: number;
   error?: string;
   code?: string;
 };
@@ -420,6 +421,9 @@ export const importCartridgeWearables = async (
     cartridgeId?: string | null;
     network?: string | null;
     gameId?: string;
+    /** After import, select hero and equip each minted cWearable. */
+    equipAfterImport?: boolean;
+    heroId?: string | null;
   },
 ): Promise<AarcadeWearablesResult> => {
   const { cartridgeGameIdForNetwork } = await import('helpers/cartridgeGameId');
@@ -440,6 +444,8 @@ export const importCartridgeWearables = async (
         bindKind: opts.bindKind,
         items: opts.items,
         simPay: true,
+        equipAfterImport: opts.equipAfterImport === true,
+        heroId: opts.heroId || undefined,
       }),
       cache: 'no-store',
     });
@@ -459,6 +465,7 @@ export const importCartridgeWearables = async (
         wearableInventory: inventory,
         imported: Number(data?.imported) || 0,
         alreadyMinted: Number(data?.alreadyMinted) || 0,
+        equipped: Number(data?.equipped) || 0,
         error: String(data?.error || 'Import failed'),
         code: data?.code ? String(data.code) : 'IMPORT_FAILED',
       };
@@ -470,6 +477,7 @@ export const importCartridgeWearables = async (
       wearableInventory: inventory,
       imported: Number(data?.imported) || 0,
       alreadyMinted: Number(data?.alreadyMinted) || 0,
+      equipped: Number(data?.equipped) || 0,
     };
   } catch (err) {
     console.warn('importCartridgeWearables failed', err);
