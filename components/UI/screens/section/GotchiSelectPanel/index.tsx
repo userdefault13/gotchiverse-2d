@@ -14,10 +14,12 @@ import {
   GotchiSelectCard,
   ManageWearablesCard,
   MintCartridgeCard,
+  WearableStackCard,
 } from 'components/UI/component';
 
 import { fetchAndSetGlobalAavegotchis, getSpectator } from 'helpers/gotchi.helper';
 import { mapCartridgeHeroToGotchi } from 'helpers/cartridgeHero.helper';
+import { stackWearableInventory } from 'helpers/cartridgeWearable.helper';
 import { useUser } from 'contexts/UserContext';
 import { useGame } from 'contexts/GameContext';
 import { ChannelReadyToggle } from 'components/UI/elements/buttons/channelReadyToggle';
@@ -40,6 +42,8 @@ interface Props {
   mintStep?: 'cartridge' | 'caavegotchi' | 'wearables-import' | 'wearables' | null;
   onMintCartridgeClick?: () => void;
   onManageWearablesClick?: () => void;
+  /** From wearables manage mode — switch right rail back to cAavegotchi mint. */
+  onManageCaavegotchisClick?: () => void;
   /** Manage mode: bound cAavegotchis open a stub manage modal instead of selecting for play. */
   onManageCaavegotchiClick?: (gotchi: GotchiverseAavegotchi) => void;
 }
@@ -52,6 +56,7 @@ export const GotchiSelectPanel = ({
   mintStep,
   onMintCartridgeClick,
   onManageWearablesClick,
+  onManageCaavegotchisClick,
   onManageCaavegotchiClick,
 }: Props): JSX.Element => {
   const [{ currentAccount, currentNetwork }] = useWeb3();
@@ -60,21 +65,27 @@ export const GotchiSelectPanel = ({
   const [sort, setSort] = useState<SortOption>();
   const [search, setSearch] = useState<string>();
   const [searchInput, setSearchInput] = useState<string>();
-  const [{ userAavegotchis, hasCartridge, cartridgeHeroes }] = useUser();
+  const [{ userAavegotchis, hasCartridge, cartridgeHeroes, wearableInventory }] = useUser();
   const [{ gameConfig }] = useGame();
   const [channelReady, setChannelReady] = useState<boolean>();
   const [optionLoaded, setOptionLoaded] = useState<boolean>(false);
 
   // Soft-launch Base/RH: left rail is Freebie + Manage + bound cAavegotchis (wallet gotchis mint from right tab).
   const cartridgeSelectMode = currentNetwork === 'base' || currentNetwork === 'robinhood';
+  const wearablesManageMode = mintStep === 'wearables';
 
   const cartridgeGotchis = useMemo(() => {
     if (!currentAccount || !cartridgeHeroes?.length) return [] as GotchiverseAavegotchi[];
     return cartridgeHeroes.map((hero) => mapCartridgeHeroToGotchi(hero, currentAccount));
   }, [cartridgeHeroes, currentAccount]);
 
+  const wearableStacks = useMemo(
+    () => (wearablesManageMode ? stackWearableInventory(wearableInventory) : []),
+    [wearablesManageMode, wearableInventory],
+  );
+
   // Legacy (matic / non–soft-launch): show L1 wallet gotchis in the left rail.
-  const showWalletGotchis = !cartridgeSelectMode;
+  const showWalletGotchis = !cartridgeSelectMode && !wearablesManageMode;
 
   const loadOptions = () => {
     let sortOption = localStorage.getItem('gotchiSortOption') || 'brs';
@@ -139,9 +150,13 @@ export const GotchiSelectPanel = ({
   }, [currentAccount, click, handleSelect]);
 
   const visibleWalletGotchis = showWalletGotchis ? userAavegotchis || [] : [];
-  const gridItemCount = (visibleWalletGotchis?.length || 0) + (cartridgeGotchis?.length || 0);
+  const visibleHeroes = wearablesManageMode ? [] : cartridgeGotchis;
+  const gridItemCount =
+    (visibleWalletGotchis?.length || 0) +
+    (visibleHeroes?.length || 0) +
+    (wearableStacks?.length || 0);
 
-  // Freebie + Manage/Mint Cartridge (+ Manage Wearables when cartridge) + heroes + wallet.
+  // Freebie + Manage/Mint Cartridge (+ Manage Wearables when cartridge) + heroes/stacks + wallet.
   const placeholderAavegotchis = useMemo(() => {
     const fixed = 2 + (hasCartridge ? 1 : 0);
     const filled = gridItemCount + fixed;
@@ -159,49 +174,55 @@ export const GotchiSelectPanel = ({
   return (
     <>
       <div className="details-container">
-        <h1 className="select-panel-title">Select your Gotchi</h1>
-        <div className="filter-section">
-          <div className="filter-option">
-            <SearchInput
-              width="100%"
-              height="100%"
-              color={`${getThemeColor('info')}`}
-              value={searchInput || ''}
-              onChange={setSearchInput}
-              placeholder="Token ID, Name"
-              fontFamily="Kimberley Rg"
-              fontSize="1.2rem"
-              shadow={false}
-            />
-          </div>
-          <div className="filter-option">
-            <SortSelect
-              options={sortOptions}
-              placeholder="Sort by"
-              selected={sort}
-              onSelect={(name: string, value: string, direction: 'asc' | 'desc') => {
-                setSort({ name, value, direction });
-              }}
-              color="info"
-              width="13.5rem"
-              useTheme={true}
-              fontFamily="Kimberley Rg"
-              fontSize="1.2rem"
-              shadow={false}
-            />
-          </div>
-          <div className="filter-option channel-toggle">
-            {channelReady !== undefined && (
-              <ChannelReadyToggle
-                label="Ready to Channel"
-                borderColor="#00B9E1"
-                backgroundColor="rgba(81, 27, 221, 0.5)"
-                active={channelReady}
-                onClick={() => setChannelReady(!channelReady)}
+        <h1 className="select-panel-title">
+          {wearablesManageMode ? 'Your cWearables' : 'Select your Gotchi'}
+        </h1>
+        {!wearablesManageMode ? (
+          <div className="filter-section">
+            <div className="filter-option">
+              <SearchInput
+                width="100%"
+                height="100%"
+                color={`${getThemeColor('info')}`}
+                value={searchInput || ''}
+                onChange={setSearchInput}
+                placeholder="Token ID, Name"
+                fontFamily="Kimberley Rg"
+                fontSize="1.2rem"
+                shadow={false}
               />
-            )}
+            </div>
+            <div className="filter-option">
+              <SortSelect
+                options={sortOptions}
+                placeholder="Sort by"
+                selected={sort}
+                onSelect={(name: string, value: string, direction: 'asc' | 'desc') => {
+                  setSort({ name, value, direction });
+                }}
+                color="info"
+                width="13.5rem"
+                useTheme={true}
+                fontFamily="Kimberley Rg"
+                fontSize="1.2rem"
+                shadow={false}
+              />
+            </div>
+            <div className="filter-option channel-toggle">
+              {channelReady !== undefined && (
+                <ChannelReadyToggle
+                  label="Ready to Channel"
+                  borderColor="#00B9E1"
+                  backgroundColor="rgba(81, 27, 221, 0.5)"
+                  active={channelReady}
+                  onClick={() => setChannelReady(!channelReady)}
+                />
+              )}
+            </div>
           </div>
-        </div>
+        ) : (
+          <p className="wearables-caption">Minted stacks on this cartridge. Equip on Aarcade.</p>
+        )}
 
         {!fetching && !cartridgeSelectMode && userAavegotchis?.length === 0 && !search && channelReady && (
           <div className="empty-state">
@@ -221,23 +242,35 @@ export const GotchiSelectPanel = ({
                 handleSelect={joinAsObservoor}
               />
             </div>
-            <div className="gotchi-card">
-              <MintCartridgeCard
-                network={currentNetwork}
-                isSelected={!!mintMode && mintStep !== 'wearables' && mintStep !== 'wearables-import'}
-                hasCartridge={!!hasCartridge}
-                onClick={onMintCartridgeClick}
-              />
-            </div>
+            {!wearablesManageMode ? (
+              <div className="gotchi-card">
+                <MintCartridgeCard
+                  network={currentNetwork}
+                  isSelected={!!mintMode && mintStep !== 'wearables' && mintStep !== 'wearables-import'}
+                  hasCartridge={!!hasCartridge}
+                  onClick={onMintCartridgeClick}
+                />
+              </div>
+            ) : null}
             {hasCartridge ? (
               <div className="gotchi-card">
                 <ManageWearablesCard
                   isSelected={mintStep === 'wearables'}
-                  onClick={onManageWearablesClick}
+                  manageCaavegotchis={wearablesManageMode}
+                  onClick={
+                    wearablesManageMode ? onManageCaavegotchisClick : onManageWearablesClick
+                  }
                 />
               </div>
             ) : null}
-            {cartridgeGotchis.map((gotchi) => (
+            {wearablesManageMode
+              ? wearableStacks.map((stack) => (
+                  <div key={stack.itemTypeId} className="gotchi-card">
+                    <WearableStackCard stack={stack} />
+                  </div>
+                ))
+              : null}
+            {visibleHeroes.map((gotchi) => (
               <div key={gotchi.id} className="gotchi-card">
                 <GotchiSelectCard
                   gotchi={gotchi}

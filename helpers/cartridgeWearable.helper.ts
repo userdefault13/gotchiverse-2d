@@ -139,6 +139,90 @@ export function listEquippedWearableSlots(
   return out;
 }
 
+/** Aarcade import identity — same source+item+slot = already minted; other sources stack. */
+export function wearableImportRefId(
+  sourceTokenId: string | number,
+  itemTypeId: number,
+  slotIndex: number,
+): string {
+  return `import-${String(sourceTokenId)}-${itemTypeId}-${slotIndex}`;
+}
+
+export type MintableWearableRow = EquippedWearableSlot & {
+  sourceTokenId: string;
+  gotchiName: string;
+  bindKind: 'owned' | 'rental';
+  alreadyMinted: boolean;
+  key: string;
+};
+
+/** Equipped wearables on bound wallet gotchis that can be imported (stacks across sources). */
+export function listMintableWearablesFromBoundGotchis(
+  walletGotchis: GotchiverseAavegotchi[] | null | undefined,
+  boundSourceTokenIds: Set<string>,
+  inventory: CWearable[] | null | undefined,
+): MintableWearableRow[] {
+  const mintedRefs = new Set(
+    (inventory || [])
+      .map((w) => String(w.refId || '').trim())
+      .filter(Boolean),
+  );
+  const out: MintableWearableRow[] = [];
+  for (const gotchi of walletGotchis || []) {
+    const tid = String(gotchi?.id || '').trim();
+    if (!tid || !boundSourceTokenIds.has(tid)) continue;
+    const bindKind: 'owned' | 'rental' = gotchi.isLent ? 'rental' : 'owned';
+    for (const slot of listEquippedWearableSlots(gotchi, bindKind)) {
+      const refId = wearableImportRefId(tid, slot.itemTypeId, slot.slotIndex);
+      out.push({
+        ...slot,
+        sourceTokenId: tid,
+        gotchiName: String(gotchi.name || `#${tid}`),
+        bindKind,
+        alreadyMinted: mintedRefs.has(refId),
+        key: `${tid}:${slot.slotIndex}:${slot.itemTypeId}`,
+      });
+    }
+  }
+  return out;
+}
+
+export type WearableStack = {
+  itemTypeId: number;
+  name: string;
+  rarity: string;
+  rarityScoreModifier: number;
+  count: number;
+  /** Representative slot for display. */
+  slotIndex: number;
+  items: CWearable[];
+};
+
+/** Group cartridge inventory by itemTypeId for xN stack cards. */
+export function stackWearableInventory(inventory: CWearable[] | null | undefined): WearableStack[] {
+  const map = new Map<number, WearableStack>();
+  for (const item of inventory || []) {
+    const id = Number(item.itemTypeId);
+    if (!Number.isFinite(id) || id <= 0) continue;
+    const existing = map.get(id);
+    if (existing) {
+      existing.count += 1;
+      existing.items.push(item);
+    } else {
+      map.set(id, {
+        itemTypeId: id,
+        name: item.name,
+        rarity: item.rarity,
+        rarityScoreModifier: item.rarityScoreModifier,
+        count: 1,
+        slotIndex: item.slotIndex,
+        items: [item],
+      });
+    }
+  }
+  return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+}
+
 export function normalizeCWearables(raw: unknown): CWearable[] {
   if (!Array.isArray(raw)) return [];
   return raw

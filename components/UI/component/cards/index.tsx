@@ -2,7 +2,9 @@ export * from './gotchiSelectCard';
 export * from './gotchiPlaceholderCard';
 export * from './mintCartridgeCard';
 export * from './manageWearablesCard';
+export * from './wearableStackCard';
 export * from './collateralGotchiCard';
+
 
 export * from './installationCard';
 export * from './inventoryCard';

@@ -11,7 +11,7 @@ import {
   CartridgeMintPanel,
   CollateralGotchiGallery,
   WearableImportPanel,
-  WearableInventoryGallery,
+  WearableMintGallery,
 } from 'components/UI/screens/section';
 import { ContractParcel, GotchiverseAavegotchi, GotchiverseParcel, JsonParcel, Parcel, RealmEvent } from 'types';
 import { fetchAavegotchiURL, setAavegtochiToLocalStorage, getGotchiData, isTrueSpectator, brsToRarity } from 'helpers/gotchi.helper';
@@ -44,6 +44,7 @@ import {
   listEquippedWearableSlots,
   normalizeCWearables,
   wearablesFromCartridgeSnapshot,
+  type MintableWearableRow,
 } from 'helpers/cartridgeWearable.helper';
 
 
@@ -527,7 +528,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
         );
       }
       if (okCount + skipCount > 0) {
-        toast.info('Import wearables when minting a single gotchi with gear, or view inventory under cWearables.', {
+        toast.info('Import equipped wearables under cWearables (Mint All / multi-select).', {
           theme: 'dark',
         });
       }
@@ -588,6 +589,81 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
         type: 'UPDATE_USER_CARTRIDGE',
         wearableInventory: result.wearableInventory,
       });
+    }
+  };
+
+  /** Import selected/all mintable wearables grouped by source gotchi (stacks across sources). */
+  const handleMintWearableRows = async (rows: MintableWearableRow[]) => {
+    if (minting || !currentAccount || rows.length === 0) return;
+    const queue = rows.filter((r) => !r.alreadyMinted);
+    if (queue.length === 0) {
+      toast.info('Selected wearables are already minted', { theme: 'dark' });
+      return;
+    }
+
+    const bySource = new Map<string, MintableWearableRow[]>();
+    for (const row of queue) {
+      const key = `${row.bindKind}:${row.sourceTokenId}`;
+      const list = bySource.get(key) || [];
+      list.push(row);
+      bySource.set(key, list);
+    }
+
+    setMinting(true);
+    setMintError(null);
+    let imported = 0;
+    let alreadyMinted = 0;
+    try {
+      const groups = Array.from(bySource.values());
+      for (let i = 0; i < groups.length; i++) {
+        const group = groups[i];
+        const first = group[0];
+        toast.info(
+          `Minting wearables ${i + 1}/${groups.length} · from #${first.sourceTokenId}`,
+          { theme: 'dark' },
+        );
+        const result = await importCartridgeWearables(currentAccount, {
+          sourceTokenId: first.sourceTokenId,
+          items: group.map((r) => ({ itemTypeId: r.itemTypeId, slotIndex: r.slotIndex })),
+          bindKind: first.bindKind,
+          cartridgeId,
+          network: currentNetwork,
+        });
+        if (!result.ok) {
+          const msg = result.error || `Failed importing from #${first.sourceTokenId}`;
+          setMintError(msg);
+          toast.error(msg, { theme: 'dark' });
+          break;
+        }
+        imported += Number(result.imported) || 0;
+        alreadyMinted += Number(result.alreadyMinted) || 0;
+        userDispatch({
+          type: 'UPDATE_USER_CARTRIDGE',
+          cartridgeId: result.cartridgeId || cartridgeId,
+          hasCartridge: true,
+          wearableInventory: result.wearableInventory,
+        });
+      }
+      if (imported + alreadyMinted > 0) {
+        toast.success(
+          `Minted ${imported} cWearable${imported === 1 ? '' : 's'}${
+            alreadyMinted ? ` · ${alreadyMinted} already owned` : ''
+          }`,
+          { theme: 'dark' },
+        );
+      }
+      // Refresh inventory so left stacks / right mint list stay in sync.
+      if (cartridgeId) {
+        const refreshed = await getCartridgeWearables(currentAccount, cartridgeId);
+        if (refreshed.ok) {
+          userDispatch({
+            type: 'UPDATE_USER_CARTRIDGE',
+            wearableInventory: refreshed.wearableInventory,
+          });
+        }
+      }
+    } finally {
+      setMinting(false);
     }
   };
 
@@ -767,6 +843,10 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
                   if (entering) return;
                   void handleManageWearablesClick();
                 }}
+                onManageCaavegotchisClick={() => {
+                  if (entering || minting) return;
+                  enterCaavegotchiStep();
+                }}
                 onManageCaavegotchiClick={(gotchi) => {
                   if (entering) return;
                   setManageHero(gotchi);
@@ -841,7 +921,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
                       </div>
                       <p className="gotchi-caption">
                         {mintStep === 'wearables'
-                          ? 'Inventory — manage/equip on Aarcade'
+                          ? 'Mint from bound gotchis · equip on Aarcade'
                           : 'Choose equipped wearables to mint as cWearables'}
                       </p>
                     </div>
@@ -1013,7 +1093,12 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
                     importError={mintError}
                   />
                 ) : mintStep === 'wearables' && currentNetwork && globalProvider ? (
-                  <WearableInventoryGallery />
+                  <WearableMintGallery
+                    onMintSelected={handleMintWearableRows}
+                    onMintAll={handleMintWearableRows}
+                    minting={minting}
+                    mintError={mintError}
+                  />
                 ) : (
                   selectedGotchi &&
                   currentNetwork &&

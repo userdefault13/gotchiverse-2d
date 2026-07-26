@@ -1,5 +1,5 @@
 import type { GotchiverseAavegotchi, Tuple } from 'types';
-import { collateralByAddress, getMintableCollaterals, type CollateralObject } from 'helpers/ethers.helper';
+import { collateralByAddress, collaterals, type CollateralObject } from 'helpers/ethers.helper';
 
 export type CartridgeHero = {
   id: string;
@@ -59,8 +59,10 @@ export function collateralFromSimId(simId: string | undefined | null): Collatera
     .trim()
     .toLowerCase();
   if (!id) return null;
+  // Full collateral list (not mint gallery): aTUSD shares svgId with aUSDC and is
+  // filtered out of getMintableCollaterals(), but bound heroes still need preview data.
+  const pool = collaterals.filter((c) => c.name && c.name !== 'testGHST');
   const galleryName = SIM_TO_GALLERY_NAME[id];
-  const pool = getMintableCollaterals();
   if (galleryName) {
     return pool.find((c) => c.name === galleryName) || null;
   }

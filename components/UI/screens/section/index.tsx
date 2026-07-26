@@ -5,5 +5,7 @@ export * from './CartridgeMintPanel';
 export * from './CollateralGotchiGallery';
 export * from './WearableImportPanel';
 export * from './WearableInventoryGallery';
+export * from './WearableMintGallery';
+
 export * from './SettingsModal';
 export * from './UnconnectedScreen';

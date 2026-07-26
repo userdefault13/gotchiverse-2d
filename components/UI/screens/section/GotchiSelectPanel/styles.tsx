@@ -33,6 +33,13 @@ export default css`
     padding: 0;
     height: 3.5rem;
   }
+
+  .wearables-caption {
+    margin: 0.4rem 0 0.8rem;
+    font-size: 1.4rem;
+    line-height: 1.3;
+    color: var(--col-info-200);
+  }
   @media (max-width: 1023px) {
     .select-panel-title {
       font-size: 2.8rem;
