@@ -111,7 +111,16 @@ function isSelectedPlayer(id: string): boolean {
 async function addPlayers(players: Player[]): Promise<void> {
   await Promise.all(
     players.map(async (player) => {
-      if (isNaked(player.isSpectator)) displayPlayer(player);
+      const nakeyId = /^0x[a-fA-F0-9]{40}$/i.test(String(player.id || ''));
+      // Colyseus payloads historically omitted isSpectator — treat wallet-address ids as Nakey.
+      if (nakeyId && GlobalState.GAME.state.gameConfig.enableNakedGotchis) {
+        player = { ...player, isSpectator: true, name: player.name || 'Nakey Gotchi' };
+      }
+
+      if (isNaked(player.isSpectator)) {
+        displayPlayer(player);
+        return;
+      }
 
       if (scene.textures.exists(player.id) || scene.loadedPlayerIds.includes(player.id)) {
         // player is already loaded, just apply properties
@@ -250,6 +259,15 @@ const displayPlayer = (player: Player): void => {
     scene[`${id}_bottom`].setDepth(20);
   } else {
     updatePlayerPosition({ id, x, y, noTween: true });
+    // Repair Nakey sprites that were first added without isSpectator (missing 0x texture).
+    if (isNaked(isSpectator)) {
+      const spr = scene[id]?.getByName?.('gotchi_sprite');
+      if (spr && scene.textures.exists('defaultGotchi') && spr.texture?.key !== 'defaultGotchi') {
+        spr.setTexture('defaultGotchi', 0);
+        spr.setDisplaySize(64, 64);
+        spr.setVisible(true);
+      }
+    }
   }
   if (healthbarActive && !isTrueSpectator(isSpectator)) toggleHealthBar(id, true, health);
 
@@ -288,10 +306,10 @@ const displayPlayer = (player: Player): void => {
     }
   }
 
-  setDeadState(id, isDead);
+  setDeadState(id, Boolean(isDead));
 
   // Player was just created on server. Treat as a new spawn (player will have 50% opacity)
-  if (created && !isDead) handleRespawn(id);
+  if ((created || process.env.NEXT_PUBLIC_NETCODE === 'colyseus') && !isDead) handleRespawn(id);
   else updateFocusTransparency({ id, state: isFocused });
 };
 
@@ -495,7 +513,11 @@ async function onPlayerSocketInit(player: Player): Promise<void> {
     await MapController.initMap();
     Quests.toggleHint(GlobalState.GAME.state.gameConfig.enableQuestHint);
     cameraSettings = getDefaultCameraSettings();
-    scene.cameras.main.setZoom(cameraSettings.zoom).setBounds(cameraSettings.left, 0, cameraSettings.right, cameraSettings.height);
+    // Use map width/height — left/right were CAMERA_BOUNDS fields misused as setBounds width,
+    // which left empty purple letterboxing on wide viewports / after MetaMask sidebar resize.
+    scene.cameras.main
+      .setZoom(cameraSettings.zoom)
+      .setBounds(0, 0, cameraSettings.width, cameraSettings.height);
     if (!scene[player.id]) return;
     scene.cameras.main.startFollow(scene[player.id], true);
     SFXController.fadeIn('gotchi_spawn');

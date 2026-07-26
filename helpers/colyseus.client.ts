@@ -77,14 +77,21 @@ function endpoint(): string {
 }
 
 function toPlayerPayload(p: RemotePlayer) {
+  const id = String(p.gotchiId || '');
+  // Nakey freebie uses wallet address as id — must keep isSpectator so FE uses defaultGotchi.
+  const nakey = /^0x[a-fA-F0-9]{40}$/i.test(id);
+  const localNakey =
+    Boolean(localGotchiId) &&
+    String(localGotchiId).toLowerCase() === id.toLowerCase() &&
+    nakey;
   return {
-    id: p.gotchiId,
-    name: p.name || `Gotchi #${p.gotchiId}`,
+    id,
+    name: p.name || (nakey ? 'Nakey Gotchi' : `Gotchi #${id}`),
     x: p.x,
     y: p.y,
     health: 1000,
     maxHealth: 1000,
-    isSpectator: false,
+    isSpectator: nakey || localNakey,
   };
 }
 

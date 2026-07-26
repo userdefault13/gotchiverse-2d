@@ -263,7 +263,8 @@ async function socketConnect(
         y: spawn.y,
         health: 1000,
         maxHealth: 1000,
-        isSpectator: false,
+        // Preserve Nakey/Observoor so Phaser uses defaultGotchi (not a missing 0x texture).
+        isSpectator: Boolean(selectedPlayer.isSpectator),
       } as any);
     } catch (e) {
       console.warn('onPlayerSocketInit (colyseus) failed', e);

@@ -422,7 +422,12 @@ export function setZoomDefaults(init?: boolean): void {
   // we are allowing zoom out to 175% of AOI size
   // this 25% leeway should still allow enough time to preload the next zone while moving
   let zoom = WINDOW_WIDTH / WINDOW_RATIO / (ALLOW_UNLIMITED_ZOOM_OUT ? MAP_SIZE.width : AOI.width * 1.75);
-  if (GameController.MAP === 'aarena') zoom = 0.25;
+  if (GameController.MAP === 'aarena') {
+    // Never zoom out past "map fills the viewport" — otherwise Phaser clear color (#150628)
+    // shows as a big purple slab (often mistaken for a MetaMask sidebar leftover).
+    const fillZoom = MAP_SIZE.width > 0 ? WINDOW_WIDTH / MAP_SIZE.width : 0.25;
+    zoom = Math.max(0.25, fillZoom);
+  }
 
   if (ALLOW_UNLIMITED_ZOOM_OUT) MAX_ZOOM_OUT = 0.05;
   else MAX_ZOOM_OUT = Math.round(zoom * 64) / 64;
@@ -471,10 +476,11 @@ export const showStarfield = (enable: boolean) => {
 
 function updateCameraBounds() {
   const mapWidthDisplay = scene.zoom * MAP_SIZE.width;
-  if (mapWidthDisplay < WINDOW_WIDTH) {
-    scene.cameras.main.setBounds(CAMERA_BOUNDS.left, 0, CAMERA_BOUNDS.right, MAP_SIZE.height);
-  } else {
+  // Aarena: always clamp to the real map — expanding bounds past the tilemap shows purple void.
+  if (GameController.MAP === 'aarena' || mapWidthDisplay >= WINDOW_WIDTH) {
     scene.cameras.main.setBounds(0, 0, MAP_SIZE.width, MAP_SIZE.height);
+  } else {
+    scene.cameras.main.setBounds(CAMERA_BOUNDS.left, 0, CAMERA_BOUNDS.right, MAP_SIZE.height);
   }
 }
 

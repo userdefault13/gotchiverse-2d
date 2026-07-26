@@ -34,6 +34,34 @@ const PhaserGameLoader = (props: PhaserGameLoaderProps) => {
   }, []);
 
   useEffect(() => {
+    // MetaMask / browser side panels change layout without a reliable window resize on some builds.
+    const refreshScale = () => {
+      try {
+        const game = (window as unknown as { game?: { scale?: { refresh?: () => void } } }).game;
+        game?.scale?.refresh?.();
+      } catch {
+        /* ignore */
+      }
+      try {
+        // IonPhaser may stash the instance on the parent
+        const parent = document.getElementById('pahserGameLoader');
+        const canvas = parent?.querySelector('canvas');
+        if (canvas) {
+          window.dispatchEvent(new Event('resize'));
+        }
+      } catch {
+        /* ignore */
+      }
+    };
+    window.addEventListener('resize', refreshScale);
+    window.visualViewport?.addEventListener('resize', refreshScale);
+    return () => {
+      window.removeEventListener('resize', refreshScale);
+      window.visualViewport?.removeEventListener('resize', refreshScale);
+    };
+  }, []);
+
+  useEffect(() => {
     // init debug console
     Performance.init(phaserDispatch);
     // Wait until the account and gameScene are set to update the gameConfig because that trigger the initial rendering.
@@ -53,6 +81,7 @@ const PhaserGameLoader = (props: PhaserGameLoaderProps) => {
           },
           scale: {
             mode: Phaser.Scale.RESIZE,
+            autoCenter: Phaser.Scale.CENTER_BOTH,
           },
           parent: 'pahserGameLoader',
           backgroundColor: '#150628',
@@ -75,7 +104,11 @@ const PhaserGameLoader = (props: PhaserGameLoaderProps) => {
   // Wait until everything has loaded to load the initial scene
   if (gameConfig) {
     return (
-      <div id="pahserGameLoader" className="fixed" style={{ height, top, width: '100vw', zIndex: 0 }}>
+      <div
+        id="pahserGameLoader"
+        className="fixed"
+        style={{ height, top, left: 0, right: 0, width: '100%', zIndex: 0 }}
+      >
         <IonPhaserComponent
           // @ts-ignore */
           game={gameConfig.game}
