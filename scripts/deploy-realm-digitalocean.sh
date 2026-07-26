@@ -33,14 +33,53 @@ EOF
   exit 1
 fi
 
-if ! command -v doctl >/dev/null 2>&1; then
-  log "installing doctl"
-  curl -fsSL -o /tmp/doctl.tgz https://github.com/digitalocean/doctl/releases/download/v1.163.0/doctl-1.163.0-linux-amd64.tar.gz
+ensure_doctl() {
+  # Prefer an already-working doctl on PATH.
+  if command -v doctl >/dev/null 2>&1 && doctl version >/dev/null 2>&1; then
+    return 0
+  fi
+
+  # Drop a previously downloaded Linux binary that cannot run on macOS.
+  if [[ -x "${HOME}/bin/doctl" ]] && ! "${HOME}/bin/doctl" version >/dev/null 2>&1; then
+    log "removing unusable ~/bin/doctl"
+    rm -f "${HOME}/bin/doctl"
+  fi
+
+  if command -v brew >/dev/null 2>&1; then
+    log "installing doctl via Homebrew"
+    brew install doctl >/dev/null
+    return 0
+  fi
+
+  local os arch asset
+  case "$(uname -s)" in
+    Darwin) os=darwin ;;
+    Linux) os=linux ;;
+    *)
+      log "unsupported OS for auto-install: $(uname -s); install doctl manually"
+      exit 1
+      ;;
+  esac
+  case "$(uname -m)" in
+    x86_64|amd64) arch=amd64 ;;
+    arm64|aarch64) arch=arm64 ;;
+    *)
+      log "unsupported arch for auto-install: $(uname -m); install doctl manually"
+      exit 1
+      ;;
+  esac
+
+  asset="doctl-1.163.0-${os}-${arch}.tar.gz"
+  log "installing doctl (${os}/${arch})"
+  curl -fsSL -o /tmp/doctl.tgz "https://github.com/digitalocean/doctl/releases/download/v1.163.0/${asset}"
   tar -xzf /tmp/doctl.tgz -C /tmp
   mkdir -p "$HOME/bin"
   mv /tmp/doctl "$HOME/bin/doctl"
+  chmod +x "$HOME/bin/doctl"
   export PATH="$HOME/bin:$PATH"
-fi
+}
+
+ensure_doctl
 
 doctl auth init -t "$DIGITALOCEAN_ACCESS_TOKEN" >/dev/null
 
@@ -62,18 +101,7 @@ else
 fi
 
 log "setting JWT_SECRET on app"
-# Patch secret via apps update with inline env — doctl supports --update-env-vars style in newer versions.
-# Fallback: write a temp spec with the secret value inlined for SECRET type.
-TMP_SPEC="$(mktemp)"
-python3 - <<PY > "$TMP_SPEC"
-import os, pathlib, re, yaml, sys
-# PyYAML may be missing — do a minimal string inject for JWT_SECRET placeholder
-text = pathlib.Path("$SPEC").read_text()
-# Ensure JWT_SECRET secret is present; doctl create doesn't set SECRET values from local env automatically.
-print(text)
-PY
-
-# Use DO API to set secret env
+# Patch SECRET via DO Apps API (stdlib json only — no PyYAML).
 python3 - <<PY
 import json, os, urllib.request
 token=os.environ["DIGITALOCEAN_ACCESS_TOKEN"]
