@@ -266,7 +266,7 @@ export function attachColyseusCombat(
       Players.handlePlayerDeath(id);
       if (String(Players.selectedPlayer?.id) === id) {
         const ms = Number(msg.respawnMs) || 2500;
-        void import('components/controllers/InputController').then((mod) => {
+        void import('components/controllers/inputController').then((mod) => {
           mod.default?.updateDisableKeyboard?.(true);
           setTimeout(() => mod.default?.updateDisableKeyboard?.(false), ms);
         });
@@ -317,7 +317,7 @@ export function attachColyseusCombat(
       }
       Players.handleRespawn(id, 2500);
       if (String(Players.selectedPlayer?.id) === id) {
-        void import('components/controllers/InputController').then((mod) => {
+        void import('components/controllers/inputController').then((mod) => {
           mod.default?.updateDisableKeyboard?.(false);
         });
         if (Number.isFinite(Number(msg.ap))) {
