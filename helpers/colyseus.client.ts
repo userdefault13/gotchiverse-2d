@@ -86,9 +86,9 @@ function syncLocalVitals(player: RemotePlayer) {
       lastSyncedAp = roundedAp;
       try {
         GlobalState.REALM.dispatch({ type: 'UPDATE_PLAYERS_AP', AP: roundedAp });
-        // Keep maxAP / maxHealth on HUD in sync when server profile differs from preview.
-        if (Number.isFinite(maxAp) || Number.isFinite(maxHp)) {
-          const prev = (GlobalState.REALM?.state?.userTraits || {}) as Record<string, number>;
+        // Optionally refresh maxAP / maxHealth when server profile differs from HUD seed.
+        const prev = GlobalState.REALM?.state?.userTraits;
+        if (prev && (Number.isFinite(maxAp) || Number.isFinite(maxHp))) {
           const nextMaxAp = Number.isFinite(maxAp) ? Math.round(maxAp) : prev.maxAP;
           const nextMaxHp = Number.isFinite(maxHp) ? Math.round(maxHp) : prev.maxHealth;
           if (nextMaxAp !== prev.maxAP || nextMaxHp !== prev.maxHealth) {
