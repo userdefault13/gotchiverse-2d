@@ -547,6 +547,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
                 selectedId={selectedGotchi?.id}
                 storedId={storedId}
                 mintMode={mintMode}
+                mintStep={mintStep}
                 onMintCartridgeClick={handleMintCartridgeClick}
               />
 

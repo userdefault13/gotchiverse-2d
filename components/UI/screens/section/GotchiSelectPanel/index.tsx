@@ -31,6 +31,8 @@ interface Props {
   selectedId?: string;
   storedId?: string;
   mintMode?: boolean;
+  /** `cartridge` | `caavegotchi` mint step — Base hides L1 wallet gotchis until cAavegotchi bind. */
+  mintStep?: 'cartridge' | 'caavegotchi' | null;
   onMintCartridgeClick?: () => void;
 }
 
@@ -39,6 +41,7 @@ export const GotchiSelectPanel = ({
   handleSelect,
   selectedId,
   mintMode,
+  mintStep,
   onMintCartridgeClick,
 }: Props): JSX.Element => {
   const [{ currentAccount, currentNetwork }] = useWeb3();
@@ -56,6 +59,15 @@ export const GotchiSelectPanel = ({
     if (!currentAccount || !cartridgeHeroes?.length) return [] as GotchiverseAavegotchi[];
     return cartridgeHeroes.map((hero) => mapCartridgeHeroToGotchi(hero, currentAccount));
   }, [cartridgeHeroes, currentAccount]);
+
+  // Soft-launch Base: Nakey + Mint Cartridge first; reveal L1 wallet gotchis only
+  // while binding a cAavegotchi. RH stays cartridge-only. Bound cAavegotchis always show.
+  const showWalletGotchis =
+    currentNetwork === 'robinhood'
+      ? false
+      : currentNetwork === 'base'
+        ? mintStep === 'caavegotchi'
+        : true;
 
   const loadOptions = () => {
     let sortOption = localStorage.getItem('gotchiSortOption') || 'brs';
@@ -119,11 +131,13 @@ export const GotchiSelectPanel = ({
     handleSelect(getSpectator(currentAccount));
   }, [currentAccount]);
 
+  const visibleWalletGotchis = showWalletGotchis ? userAavegotchis || [] : [];
+
   // Reserve slots for Nakey + Mint/Manage Cartridge + cartridge heroes + owned gotchis.
   const placeholderAavegotchis = useMemo(() => {
-    const filled = (userAavegotchis?.length || 0) + (cartridgeGotchis?.length || 0) + 2;
+    const filled = (visibleWalletGotchis?.length || 0) + (cartridgeGotchis?.length || 0) + 2;
     return Array.from({ length: Math.max((placeholderCount || 0) - filled, 0) }, (_, i) => i);
-  }, [userAavegotchis, cartridgeGotchis, placeholderCount]);
+  }, [visibleWalletGotchis, cartridgeGotchis, placeholderCount]);
 
   const handleOpenBaazaar = () => window.open(gotchiverseLinks.aavegotchi.marketplace, '_blank');
 
@@ -211,8 +225,8 @@ export const GotchiSelectPanel = ({
             </div>
           </div>
         )} */}
-        <div className={`gotchi-list-container ${userAavegotchis?.length > 9 ? 'shade' : ''}`}>
-          <div className={`gotchi-list-inner scrollable ${userAavegotchis?.length > 12 ? 'info' : 'hidden'}`}>
+        <div className={`gotchi-list-container ${visibleWalletGotchis?.length > 9 ? 'shade' : ''}`}>
+          <div className={`gotchi-list-inner scrollable ${visibleWalletGotchis?.length > 12 ? 'info' : 'hidden'}`}>
             <div className="gotchi-card">
               <GotchiSelectCard
                 gotchi={getSpectator(currentAccount)}
@@ -239,7 +253,7 @@ export const GotchiSelectPanel = ({
                 />
               </div>
             ))}
-            {userAavegotchis?.map((gotchi, i) => (
+            {visibleWalletGotchis.map((gotchi, i) => (
               <div key={i} className="gotchi-card">
                 <LazyLoad once overflow={true} height={160}>
                   <GotchiSelectCard
@@ -265,7 +279,7 @@ export const GotchiSelectPanel = ({
               <h4 className="title">No results found with search: &quot;{search}&quot;</h4>
             </div>
           )} */}
-        {userAavegotchis?.length < 12 && currentNetwork !== 'robinhood' && (
+        {showWalletGotchis && userAavegotchis?.length < 12 && currentNetwork !== 'robinhood' && (
           <div className="cta-baazaar-container">
             <BuyCTACard
               type="card-baazaar"
