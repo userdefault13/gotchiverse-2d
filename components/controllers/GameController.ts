@@ -269,7 +269,19 @@ async function socketConnect(
       (map === 'aarena' || map === 'aarena-rh' ? aarenaFallback : { x: 42 * 64 + 10 * 64, y: 52 * 64 + 10 * 64 });
     let previewMaxHp = 1000;
     let previewMaxAp = 100;
-    let previewTraits: Record<string, number> | null = null;
+    let previewTraits: {
+      maxHealth?: number;
+      maxAP?: number;
+      alchemicaCarryingCapacity?: number;
+      defense?: number;
+      evasion?: number;
+      luck?: number;
+      attackSpeed?: number;
+      meleePower?: number;
+      rangedPower?: number;
+      healthRegenAmount?: number;
+      apRegenAmount?: number;
+    } | null = null;
     try {
       const { computeClientCombatTraits } = await import('helpers/gotchi.helper');
       const preview = computeClientCombatTraits(selectedPlayer as any);
