@@ -14,7 +14,8 @@ services:
       branch: cursor/vercel-colyseus-mvp-9c04
       deploy_on_push: true
     source_dir: infra/realm-server
-    dockerfile_path: Dockerfile
+    # Path is relative to repo root (not source_dir) — root Dockerfile is the Next.js FE.
+    dockerfile_path: infra/realm-server/Dockerfile
     http_port: 2567
     instance_count: 1
     instance_size_slug: basic-xxs
