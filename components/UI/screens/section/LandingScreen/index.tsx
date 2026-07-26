@@ -14,7 +14,8 @@ import { NewsList } from 'components/UI/widgets';
 import { GotchiSelectModal } from 'components/UI/screens/section';
 import { http } from 'data/actions';
 import _ from 'lodash';
-import { getAarcadeCartridgeStatus, getIsValidated } from 'helpers/auth.helper';
+import { getAarcadeCartridgeStatus, getCartridgeWearables, getIsValidated } from 'helpers/auth.helper';
+
 import GlobalState from 'contexts/GlobalState';
 import { gotchiverseLinks } from 'data/links';
 import { Parallax } from 'react-scroll-parallax';
@@ -279,6 +280,7 @@ export const LandingScreen = (): JSX.Element => {
       cartridgeId: null as string | null,
       hasCartridge: false,
       cartridgeHeroes: [] as import('helpers/cartridgeHero.helper').CartridgeHero[],
+      wearableInventory: [] as import('helpers/cartridgeWearable.helper').CWearable[],
     };
     userDispatch(clearPayload);
     GlobalState.USER?.dispatch?.(clearPayload);
@@ -286,12 +288,19 @@ export const LandingScreen = (): JSX.Element => {
     const status = await getAarcadeCartridgeStatus(address, { fresh: true, network: net });
     if (!status) return;
 
+    let wearableInventory: import('helpers/cartridgeWearable.helper').CWearable[] = [];
+    if (status.hasCartridge && status.cartridgeId) {
+      const wearables = await getCartridgeWearables(address, status.cartridgeId);
+      if (wearables.ok) wearableInventory = wearables.wearableInventory;
+    }
+
     const payload = {
       type: 'UPDATE_USER_CARTRIDGE' as const,
       cartridgeId: status.cartridgeId || null,
       hasCartridge: Boolean(status.hasCartridge && status.cartridgeId),
       cartridgeCatalogUrl: status.catalogUrl,
       cartridgeHeroes: status.hasCartridge ? status.heroes || [] : [],
+      wearableInventory,
     };
     userDispatch(payload);
     GlobalState.USER?.dispatch?.(payload);

@@ -9,7 +9,13 @@ import { SortSelect } from 'components/UI/elements/inputs/sortSelect';
 import Image from 'next/image';
 import { getThemeColor } from 'helpers/functions';
 import { GotchiTongueIcon } from 'assets';
-import { GotchiPlaceholderCard, GotchiSelectCard, MintCartridgeCard } from 'components/UI/component';
+import {
+  GotchiPlaceholderCard,
+  GotchiSelectCard,
+  ManageWearablesCard,
+  MintCartridgeCard,
+} from 'components/UI/component';
+
 import { fetchAndSetGlobalAavegotchis, getSpectator } from 'helpers/gotchi.helper';
 import { mapCartridgeHeroToGotchi } from 'helpers/cartridgeHero.helper';
 import { useUser } from 'contexts/UserContext';
@@ -30,9 +36,10 @@ interface Props {
   selectedId?: string;
   storedId?: string;
   mintMode?: boolean;
-  /** `cartridge` | `caavegotchi` mint step — Base/RH soft-launch mint flow. */
-  mintStep?: 'cartridge' | 'caavegotchi' | null;
+  /** Soft-launch right-rail mode. */
+  mintStep?: 'cartridge' | 'caavegotchi' | 'wearables-import' | 'wearables' | null;
   onMintCartridgeClick?: () => void;
+  onManageWearablesClick?: () => void;
   /** Manage mode: bound cAavegotchis open a stub manage modal instead of selecting for play. */
   onManageCaavegotchiClick?: (gotchi: GotchiverseAavegotchi) => void;
 }
@@ -42,8 +49,9 @@ export const GotchiSelectPanel = ({
   handleSelect,
   selectedId,
   mintMode,
-  mintStep: _mintStep,
+  mintStep,
   onMintCartridgeClick,
+  onManageWearablesClick,
   onManageCaavegotchiClick,
 }: Props): JSX.Element => {
   const [{ currentAccount, currentNetwork }] = useWeb3();
@@ -133,11 +141,12 @@ export const GotchiSelectPanel = ({
   const visibleWalletGotchis = showWalletGotchis ? userAavegotchis || [] : [];
   const gridItemCount = (visibleWalletGotchis?.length || 0) + (cartridgeGotchis?.length || 0);
 
-  // Freebie + Manage/Mint Cartridge + cartridge heroes + owned gotchis.
+  // Freebie + Manage/Mint Cartridge (+ Manage Wearables when cartridge) + heroes + wallet.
   const placeholderAavegotchis = useMemo(() => {
-    const filled = gridItemCount + 2;
+    const fixed = 2 + (hasCartridge ? 1 : 0);
+    const filled = gridItemCount + fixed;
     return Array.from({ length: Math.max((placeholderCount || 0) - filled, 0) }, (_, i) => i);
-  }, [gridItemCount, placeholderCount]);
+  }, [gridItemCount, placeholderCount, hasCartridge]);
 
   const handleCartridgeGotchiClick = (gotchi: GotchiverseAavegotchi) => {
     if (mintMode && onManageCaavegotchiClick) {
@@ -215,11 +224,19 @@ export const GotchiSelectPanel = ({
             <div className="gotchi-card">
               <MintCartridgeCard
                 network={currentNetwork}
-                isSelected={!!mintMode}
+                isSelected={!!mintMode && mintStep !== 'wearables' && mintStep !== 'wearables-import'}
                 hasCartridge={!!hasCartridge}
                 onClick={onMintCartridgeClick}
               />
             </div>
+            {hasCartridge ? (
+              <div className="gotchi-card">
+                <ManageWearablesCard
+                  isSelected={mintStep === 'wearables'}
+                  onClick={onManageWearablesClick}
+                />
+              </div>
+            ) : null}
             {cartridgeGotchis.map((gotchi) => (
               <div key={gotchi.id} className="gotchi-card">
                 <GotchiSelectCard

@@ -60,6 +60,7 @@ export type Action =
       hasCartridge?: State['hasCartridge'];
       cartridgeCatalogUrl?: State['cartridgeCatalogUrl'];
       cartridgeHeroes?: State['cartridgeHeroes'];
+      wearableInventory?: State['wearableInventory'];
     };
 
 export const reducer = (state: State, action: Action): State => {
@@ -133,6 +134,7 @@ export const reducer = (state: State, action: Action): State => {
         ...(action.hasCartridge !== undefined ? { hasCartridge: action.hasCartridge } : {}),
         ...(action.cartridgeCatalogUrl !== undefined ? { cartridgeCatalogUrl: action.cartridgeCatalogUrl } : {}),
         ...(action.cartridgeHeroes !== undefined ? { cartridgeHeroes: action.cartridgeHeroes } : {}),
+        ...(action.wearableInventory !== undefined ? { wearableInventory: action.wearableInventory } : {}),
       };
 
     default:

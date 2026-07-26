@@ -1,5 +1,5 @@
 import type { GotchiverseAavegotchi, Tuple } from 'types';
-import { getMintableCollaterals, type CollateralObject } from 'helpers/ethers.helper';
+import { collateralByAddress, getMintableCollaterals, type CollateralObject } from 'helpers/ethers.helper';
 
 export type CartridgeHero = {
   id: string;
@@ -35,6 +35,25 @@ export function parseCartridgeHeroCollateral(id: string | undefined | null): str
   return m ? m[1].toLowerCase() : null;
 }
 
+/** Gallery / sim collateral name for a wallet gotchi (defaults to aDAI). */
+export function collateralNameForWalletGotchi(
+  network: string | null | undefined,
+  collateralAddress: string | undefined | null,
+): string {
+  const coll = collateralByAddress(String(network || 'base'), String(collateralAddress || ''));
+  return coll?.name || coll?.maticDisplay || 'aDAI';
+}
+
+/** Token ids already bound on this cartridge (excludes starter placeholder `0`). */
+export function mintedSourceTokenIds(heroes: CartridgeHero[] | undefined | null): Set<string> {
+  const ids = new Set<string>();
+  for (const hero of heroes || []) {
+    const tid = String(hero?.sourceTokenId || '').trim();
+    if (tid && tid !== '0') ids.add(tid);
+  }
+  return ids;
+}
+
 export function collateralFromSimId(simId: string | undefined | null): CollateralObject | null {
   const id = String(simId || '')
     .trim()
@@ -57,10 +76,12 @@ export function normalizeCartridgeHeroes(raw: unknown): CartridgeHero[] {
       if (!h || typeof h !== 'object') return null;
       const row = h as Record<string, unknown>;
       const id = String(row.id || '').trim();
-      const collateral = String(row.collateral || '')
-        .trim()
-        .toLowerCase();
-      if (!id || !collateral) return null;
+      // Owned/rental binds may omit collateral until sim persists it — default dai.
+      const collateral =
+        String(row.collateral || '')
+          .trim()
+          .toLowerCase() || 'dai';
+      if (!id) return null;
       const traits = Array.isArray(row.traits)
         ? row.traits.map((n) => Number(n) || 50).slice(0, 6)
         : Array.isArray(row.modifiedTraits)

@@ -224,11 +224,12 @@ export const getAarcadeCartridgeStatus = async (
 
 export type AarcadeCartridgeMintResult = {
   ok: boolean;
-  phase?: 'ensure' | 'bind';
+  phase?: 'ensure' | 'bind' | 'bind-owned' | 'bind-rental';
   alreadyBound?: boolean;
   wallet: string;
   gameId: string;
   collateral?: string;
+  sourceTokenId?: string;
   cartridgeId: string;
   hasCartridge: boolean;
   heroes?: import('helpers/cartridgeHero.helper').CartridgeHero[];
@@ -237,7 +238,7 @@ export type AarcadeCartridgeMintResult = {
   code?: string;
 };
 
-type MintPhase = 'ensure' | 'bind';
+type MintPhase = 'ensure' | 'bind' | 'bind-owned' | 'bind-rental';
 
 async function postAarcadeCartridgeMint(
   address: string,
@@ -277,6 +278,7 @@ async function postAarcadeCartridgeMint(
         wallet: String(address).toLowerCase(),
         gameId: String(data?.gameId || gameId),
         collateral: data?.collateral ? String(data.collateral) : undefined,
+        sourceTokenId: data?.sourceTokenId ? String(data.sourceTokenId) : undefined,
         cartridgeId: data?.cartridgeId ? String(data.cartridgeId) : '',
         hasCartridge: false,
         error: String(data?.error || 'Mint failed'),
@@ -291,6 +293,7 @@ async function postAarcadeCartridgeMint(
       wallet: String(data?.wallet || address).toLowerCase(),
       gameId: String(data?.gameId || gameId),
       collateral: data?.collateral ? String(data.collateral) : undefined,
+      sourceTokenId: data?.sourceTokenId ? String(data.sourceTokenId) : undefined,
       cartridgeId: String(data?.cartridgeId || ''),
       hasCartridge: Boolean(data?.hasCartridge ?? data?.cartridgeId),
       heroes: heroesFromCartridgeSnapshot(data?.cartridge),
@@ -328,3 +331,155 @@ export const bindAarcadeStarter = async (
   opts?: { network?: string | null; gameId?: string },
 ): Promise<AarcadeCartridgeMintResult> =>
   postAarcadeCartridgeMint(address, { phase: 'bind', collateral }, opts);
+
+/** Bind an owned L1 gotchi as a cAavegotchi (`bind-owned`). Free for owners (simPay). */
+export const bindAarcadeOwnedGotchi = async (
+  address: string,
+  sourceTokenId: string,
+  collateral: string,
+  opts?: { network?: string | null; gameId?: string },
+): Promise<AarcadeCartridgeMintResult> =>
+  postAarcadeCartridgeMint(
+    address,
+    { phase: 'bind-owned', sourceTokenId, collateral },
+    opts,
+  );
+
+/** Bind a borrowed L1 gotchi as a cAavegotchi (`bind-rental`). Free for borrowers (simPay). */
+export const bindAarcadeRentalGotchi = async (
+  address: string,
+  sourceTokenId: string,
+  collateral: string,
+  opts?: { network?: string | null; gameId?: string },
+): Promise<AarcadeCartridgeMintResult> =>
+  postAarcadeCartridgeMint(
+    address,
+    { phase: 'bind-rental', sourceTokenId, collateral },
+    opts,
+  );
+
+export type AarcadeWearablesResult = {
+  ok: boolean;
+  wallet: string;
+  cartridgeId: string;
+  wearableInventory: import('helpers/cartridgeWearable.helper').CWearable[];
+  imported?: number;
+  alreadyMinted?: number;
+  error?: string;
+  code?: string;
+};
+
+/** Load cWearable inventory for a cartridge. */
+export const getCartridgeWearables = async (
+  address: string,
+  cartridgeId: string,
+): Promise<AarcadeWearablesResult> => {
+  const wallet = String(address || '').toLowerCase();
+  const id = String(cartridgeId || '').trim();
+  if (!wallet || !id) {
+    return { ok: false, wallet, cartridgeId: id, wearableInventory: [], error: 'wallet and cartridgeId required' };
+  }
+  try {
+    const qs = new URLSearchParams({ wallet, cartridgeId: id });
+    const response = await fetch(`/api/aarcade-cartridge-wearables?${qs.toString()}`, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+      cache: 'no-store',
+    });
+    const data = await response.json().catch(() => ({}));
+    const { normalizeCWearables } = await import('helpers/cartridgeWearable.helper');
+    if (!response.ok) {
+      return {
+        ok: false,
+        wallet,
+        cartridgeId: id,
+        wearableInventory: [],
+        error: String(data?.error || 'Wearables lookup failed'),
+        code: data?.code ? String(data.code) : 'LOOKUP_FAILED',
+      };
+    }
+    return {
+      ok: true,
+      wallet,
+      cartridgeId: id,
+      wearableInventory: normalizeCWearables(data?.wearableInventory),
+    };
+  } catch (err) {
+    console.warn('getCartridgeWearables failed', err);
+    return { ok: false, wallet, cartridgeId: id, wearableInventory: [], error: 'Wearables lookup failed' };
+  }
+};
+
+/** Import selected L1 equipped wearables onto the cartridge as cWearables. */
+export const importCartridgeWearables = async (
+  address: string,
+  opts: {
+    sourceTokenId: string;
+    items: { itemTypeId: number; slotIndex: number }[];
+    bindKind: 'owned' | 'rental';
+    cartridgeId?: string | null;
+    network?: string | null;
+    gameId?: string;
+  },
+): Promise<AarcadeWearablesResult> => {
+  const { cartridgeGameIdForNetwork } = await import('helpers/cartridgeGameId');
+  const gameId = String(opts.gameId || cartridgeGameIdForNetwork(opts.network));
+  const wallet = String(address || '').toLowerCase();
+  if (!wallet) {
+    return { ok: false, wallet: '', cartridgeId: '', wearableInventory: [], error: 'Wallet required' };
+  }
+  try {
+    const response = await fetch('/api/aarcade-cartridge-wearables', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        wallet,
+        gameId,
+        cartridgeId: opts.cartridgeId || undefined,
+        sourceTokenId: opts.sourceTokenId,
+        bindKind: opts.bindKind,
+        items: opts.items,
+        simPay: true,
+      }),
+      cache: 'no-store',
+    });
+    const data = await response.json().catch(() => ({}));
+    const { normalizeCWearables, wearablesFromCartridgeSnapshot } = await import(
+      'helpers/cartridgeWearable.helper'
+    );
+    const inventory =
+      normalizeCWearables(data?.wearableInventory).length > 0
+        ? normalizeCWearables(data?.wearableInventory)
+        : wearablesFromCartridgeSnapshot(data?.cartridge);
+    if (!response.ok) {
+      return {
+        ok: false,
+        wallet,
+        cartridgeId: String(data?.cartridgeId || opts.cartridgeId || ''),
+        wearableInventory: inventory,
+        imported: Number(data?.imported) || 0,
+        alreadyMinted: Number(data?.alreadyMinted) || 0,
+        error: String(data?.error || 'Import failed'),
+        code: data?.code ? String(data.code) : 'IMPORT_FAILED',
+      };
+    }
+    return {
+      ok: true,
+      wallet,
+      cartridgeId: String(data?.cartridgeId || opts.cartridgeId || ''),
+      wearableInventory: inventory,
+      imported: Number(data?.imported) || 0,
+      alreadyMinted: Number(data?.alreadyMinted) || 0,
+    };
+  } catch (err) {
+    console.warn('importCartridgeWearables failed', err);
+    return {
+      ok: false,
+      wallet,
+      cartridgeId: String(opts.cartridgeId || ''),
+      wearableInventory: [],
+      error: 'Import request failed',
+      code: 'IMPORT_FAILED',
+    };
+  }
+};

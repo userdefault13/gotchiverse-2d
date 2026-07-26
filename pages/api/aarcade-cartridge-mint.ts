@@ -24,6 +24,8 @@ const SIM_COLLATERAL_IDS = new Set([
   'rai',
 ]);
 
+type MintPhase = 'ensure' | 'bind' | 'bind-owned' | 'bind-rental';
+
 function normalizeWallet(raw: unknown): string | null {
   const wallet = String(raw || '')
     .trim()
@@ -37,6 +39,19 @@ function normalizeGameId(raw: unknown): string {
     .trim()
     .toLowerCase();
   return /^[a-z0-9][a-z0-9_-]{0,63}$/.test(gameId) ? gameId : DEFAULT_GAME_ID;
+}
+
+function normalizePhase(raw: unknown): MintPhase {
+  const phase = String(raw || 'ensure')
+    .trim()
+    .toLowerCase();
+  if (phase === 'bind' || phase === 'bind-owned' || phase === 'bind-rental') return phase;
+  return 'ensure';
+}
+
+function normalizeSourceTokenId(raw: unknown): string | null {
+  const id = String(raw || '').trim();
+  return /^\d+$/.test(id) ? id : null;
 }
 
 /** Map gallery names (aDAI, amWETH, amWMATIC, …) → cartridge-sim collateral ids. */
@@ -116,16 +131,22 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).json({ error: 'Invalid wallet' });
   }
 
-  const phaseRaw = String(req.body?.phase || 'ensure')
-    .trim()
-    .toLowerCase();
-  const phase = phaseRaw === 'bind' ? 'bind' : 'ensure';
-
-  const collateral = phase === 'bind' ? toSimCollateralId(req.body?.collateral) : null;
-  if (phase === 'bind' && !collateral) {
+  const phase = normalizePhase(req.body?.phase);
+  const needsCollateral = phase === 'bind' || phase === 'bind-owned' || phase === 'bind-rental';
+  const collateral = needsCollateral ? toSimCollateralId(req.body?.collateral) || (phase === 'bind-owned' ? 'dai' : null) : null;
+  if (needsCollateral && !collateral) {
     return res.status(400).json({
       error: 'Invalid collateral',
       code: 'INVALID_COLLATERAL',
+    });
+  }
+
+  const sourceTokenId =
+    phase === 'bind-owned' || phase === 'bind-rental' ? normalizeSourceTokenId(req.body?.sourceTokenId) : null;
+  if ((phase === 'bind-owned' || phase === 'bind-rental') && !sourceTokenId) {
+    return res.status(400).json({
+      error: 'Invalid sourceTokenId',
+      code: 'INVALID_SOURCE_TOKEN',
     });
   }
 
@@ -184,7 +205,46 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
 
-    // phase === 'bind'
+    if (phase === 'bind-owned' || phase === 'bind-rental') {
+      const bindPath = phase === 'bind-owned' ? 'bind-owned' : 'bind-rental';
+      const bindRes = await fetch(
+        `${simBase}/cartridges/${encodeURIComponent(cartridgeId)}/${bindPath}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({
+            sourceTokenId,
+            collateral,
+            sessionToken,
+            simPay,
+          }),
+          cache: 'no-store',
+        },
+      );
+      const bindBody = await readJson(bindRes);
+      if (!bindRes.ok) {
+        console.warn(`aarcade-cartridge-mint: ${bindPath} failed`, bindRes.status, bindBody);
+        return res.status(bindRes.status >= 400 && bindRes.status < 500 ? bindRes.status : 502).json({
+          error: String(bindBody?.error || `Failed to ${bindPath}`),
+          code: String(bindBody?.code || 'BIND_FAILED'),
+          cartridgeId,
+        });
+      }
+      return res.status(bindBody?.alreadyBound ? 200 : 201).json({
+        ok: true,
+        phase,
+        alreadyBound: Boolean(bindBody?.alreadyBound),
+        wallet,
+        gameId,
+        collateral,
+        sourceTokenId,
+        cartridgeId: String(bindBody?.cartridgeId || cartridgeId),
+        hasCartridge: true,
+        cartridge: bindBody,
+      });
+    }
+
+    // phase === 'bind' (starter)
     if (rosterLen(ensureBody) > 0) {
       return res.status(200).json({
         ok: true,

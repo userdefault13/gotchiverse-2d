@@ -3,5 +3,7 @@ export * from './GotchiDetailsPanel';
 export * from './GotchiSelectPanel';
 export * from './CartridgeMintPanel';
 export * from './CollateralGotchiGallery';
+export * from './WearableImportPanel';
+export * from './WearableInventoryGallery';
 export * from './SettingsModal';
 export * from './UnconnectedScreen';

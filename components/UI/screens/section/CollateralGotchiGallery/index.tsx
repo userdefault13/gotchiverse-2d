@@ -3,10 +3,11 @@ import { CollateralGotchiCard, GotchiSelectCard } from 'components/UI/component'
 import { Button } from 'components/UI/elements';
 import { getMintableCollaterals, type CollateralObject } from 'helpers/ethers.helper';
 import useAavegotchiSound from 'hooks/useAavegotchiSound';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useUser } from 'contexts/UserContext';
 import type { GotchiverseAavegotchi } from 'types';
 import LazyLoad from 'react-lazyload';
+import { mintedSourceTokenIds } from 'helpers/cartridgeHero.helper';
 
 type MintTab = 'caavegotchi' | 'wallet';
 
@@ -19,6 +20,7 @@ interface Props {
   selectedWalletGotchiId?: string | null;
   onSelectWalletGotchi?: (gotchi: GotchiverseAavegotchi) => void;
   onMintWalletGotchi?: () => void | Promise<void>;
+  onMintAllOwnedWalletGotchis?: () => void | Promise<void>;
 }
 
 export const CollateralGotchiGallery = ({
@@ -30,12 +32,28 @@ export const CollateralGotchiGallery = ({
   selectedWalletGotchiId = null,
   onSelectWalletGotchi,
   onMintWalletGotchi,
+  onMintAllOwnedWalletGotchis,
 }: Props): JSX.Element => {
   const { click } = useAavegotchiSound();
-  const [{ userAavegotchis }] = useUser();
-  const [tab, setTab] = useState<MintTab>('caavegotchi');
+  const [{ userAavegotchis, cartridgeHeroes }] = useUser();
   const items = useMemo(() => getMintableCollaterals(), []);
   const walletGotchis = userAavegotchis || [];
+
+  const mintedIds = useMemo(() => mintedSourceTokenIds(cartridgeHeroes), [cartridgeHeroes]);
+  const unmintedOwned = useMemo(
+    () => walletGotchis.filter((g) => !g.isLent && !mintedIds.has(String(g.id))),
+    [walletGotchis, mintedIds],
+  );
+
+  // Prefer Wallet Gotchis when the player has any — Mint All lives on that tab.
+  const [tab, setTab] = useState<MintTab>(() => (walletGotchis.length > 0 ? 'wallet' : 'caavegotchi'));
+  useEffect(() => {
+    if (walletGotchis.length > 0 && tab === 'caavegotchi' && unmintedOwned.length > 0) {
+      setTab('wallet');
+    }
+    // Only auto-switch when roster first becomes available.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [walletGotchis.length]);
 
   const handleMintCollateral = () => {
     if (minting || !selectedCollateral) return;
@@ -49,12 +67,19 @@ export const CollateralGotchiGallery = ({
     void onMintWalletGotchi?.();
   };
 
+  const handleMintAllOwned = () => {
+    if (minting || unmintedOwned.length === 0) return;
+    click();
+    void onMintAllOwnedWalletGotchis?.();
+  };
+
   const label = selectedCollateral
     ? selectedCollateral.maticDisplay || selectedCollateral.name
     : null;
 
   const selectedWallet = walletGotchis.find((g) => g.id === selectedWalletGotchiId) || null;
-  const walletEligible = selectedWallet ? true : false; // owners + borrowers both listed / free
+  const selectedAlreadyMinted = selectedWallet ? mintedIds.has(String(selectedWallet.id)) : false;
+  const walletEligible = Boolean(selectedWallet) && !selectedAlreadyMinted;
 
   return (
     <>
@@ -83,7 +108,7 @@ export const CollateralGotchiGallery = ({
               setTab('wallet');
             }}
           >
-            Wallet Gotchis
+            Wallet Gotchis{unmintedOwned.length > 0 ? ` (${unmintedOwned.length})` : ''}
           </button>
         </div>
 
@@ -119,26 +144,19 @@ export const CollateralGotchiGallery = ({
             <p className="gallery-caption">
               Owners and borrowers can mint for <span className="price-tag free">FREE</span>.
             </p>
-            <div className="gotchi-list-container">
-              <div className="gotchi-list-inner scrollable wallet-grid">
-                {walletGotchis.length === 0 ? (
-                  <p className="empty-wallet">No wallet gotchis on this network yet.</p>
-                ) : (
-                  walletGotchis.map((gotchi) => (
-                    <div key={gotchi.id} className="gotchi-card">
-                      <LazyLoad once overflow={true} height={160}>
-                        <GotchiSelectCard
-                          gotchi={gotchi}
-                          isSelected={gotchi.id === selectedWalletGotchiId}
-                          handleSelect={(g) => onSelectWalletGotchi?.(g)}
-                        />
-                      </LazyLoad>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
-            <div className="mint-cta">
+            <div className="mint-cta mint-cta-stack mint-cta-top">
+              <Button
+                size={2.4}
+                fullWidth
+                onClick={handleMintAllOwned}
+                disabled={unmintedOwned.length === 0 || minting}
+              >
+                {minting
+                  ? 'Minting…'
+                  : unmintedOwned.length > 0
+                    ? `Mint All Owned Unminted (${unmintedOwned.length})`
+                    : 'All Owned Minted'}
+              </Button>
               <Button
                 size={2.4}
                 fullWidth
@@ -147,16 +165,45 @@ export const CollateralGotchiGallery = ({
               >
                 {minting
                   ? 'Minting…'
-                  : selectedWallet
-                    ? `Mint Free · #${selectedWallet.id}`
-                    : 'Select a Wallet Gotchi'}
+                  : selectedAlreadyMinted
+                    ? `Already Minted · #${selectedWallet?.id}`
+                    : selectedWallet
+                      ? `Mint Free · #${selectedWallet.id}`
+                      : 'Select a Wallet Gotchi'}
               </Button>
-              {selectedWallet?.isLent ? (
-                <p className="mint-hint">Borrowed gotchi — free mint for borrowers.</p>
-              ) : selectedWallet ? (
-                <p className="mint-hint">Owned gotchi — free mint for owners.</p>
-              ) : null}
+              <p className="mint-hint">
+                Mint all binds every owned gotchi not already on your cartridge.
+              </p>
               {mintError ? <p className="mint-error">{mintError}</p> : null}
+            </div>
+            <div className="gotchi-list-container">
+              <div className="gotchi-list-inner scrollable wallet-grid">
+                {walletGotchis.length === 0 ? (
+                  <p className="empty-wallet">No wallet gotchis on this network yet.</p>
+                ) : (
+                  walletGotchis.map((gotchi) => {
+                    const alreadyMinted = mintedIds.has(String(gotchi.id));
+                    return (
+                      <div
+                        key={gotchi.id}
+                        className={`gotchi-card ${alreadyMinted ? 'already-minted' : ''}`}
+                      >
+                        <LazyLoad once overflow={true} height={160}>
+                          <GotchiSelectCard
+                            gotchi={gotchi}
+                            isSelected={gotchi.id === selectedWalletGotchiId}
+                            handleSelect={(g) => {
+                              if (alreadyMinted) return;
+                              onSelectWalletGotchi?.(g);
+                            }}
+                          />
+                        </LazyLoad>
+                        {alreadyMinted ? <span className="minted-badge">Minted</span> : null}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
             </div>
           </>
         )}

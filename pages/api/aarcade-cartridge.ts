@@ -46,10 +46,11 @@ function extractHeroes(match: CartridgeRecord | null): {
     if (!raw || typeof raw !== 'object') continue;
     const row = raw as Record<string, unknown>;
     const id = String(row.id || '').trim();
-    const collateral = String(row.collateral || '')
-      .trim()
-      .toLowerCase();
-    if (!id || !collateral) continue;
+    const collateral =
+      String(row.collateral || '')
+        .trim()
+        .toLowerCase() || 'dai';
+    if (!id) continue;
     const traits = Array.isArray(row.traits)
       ? row.traits.map((n) => Number(n) || 50).slice(0, 6)
       : [50, 50, 50, 50, 50, 50];

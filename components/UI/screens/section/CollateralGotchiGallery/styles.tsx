@@ -91,11 +91,33 @@ export default css`
 
   .gotchi-list-inner.wallet-grid {
     grid-template-columns: 1fr 1fr;
+    max-height: calc(100vh - 48rem);
   }
 
   .gotchi-card {
+    position: relative;
     width: 100%;
     min-height: 13rem;
+  }
+
+  .gotchi-card.already-minted {
+    opacity: 0.55;
+  }
+
+  .minted-badge {
+    position: absolute;
+    top: 0.6rem;
+    right: 0.6rem;
+    z-index: 2;
+    padding: 0.25rem 0.55rem;
+    border-radius: 0.4rem;
+    background: rgba(0, 0, 0, 0.75);
+    border: 1px solid #6dffb0;
+    color: #6dffb0;
+    font-family: 'Kimberley Rg', sans-serif;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    pointer-events: none;
   }
 
   .empty-wallet {
@@ -108,6 +130,17 @@ export default css`
 
   .mint-cta {
     margin-top: 1.2rem;
+  }
+
+  .mint-cta-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+
+  .mint-cta-top {
+    margin: 0 0 1.2rem;
+    flex-shrink: 0;
   }
 
   .mint-hint {
