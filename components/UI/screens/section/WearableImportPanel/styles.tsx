@@ -86,15 +86,18 @@ export default css`
     gap: 1rem;
     align-items: center;
     padding: 0.9rem 1rem;
-    border-radius: 0.8rem;
-    border: 0.2rem solid rgba(255, 255, 255, 0.25);
-    background: rgba(0, 0, 0, 0.3);
+    border-radius: 0.4rem;
+    border: 0.25rem solid rgba(255, 122, 233, 0.55);
+    background: rgba(80, 12, 70, 0.55);
+    box-shadow: inset 0 0 14px 2px rgba(255, 122, 233, 0.18);
     cursor: pointer;
+    color: #fff;
   }
 
   .wearable-row.checked {
     border-color: #ff7ae9;
-    background: rgba(200, 42, 194, 0.25);
+    background: rgba(200, 42, 194, 0.35);
+    box-shadow: 0 0 8px rgba(255, 230, 0, 0.3), inset 0 0 14px 2px rgba(255, 122, 233, 0.28);
   }
 
   .wearable-row input {

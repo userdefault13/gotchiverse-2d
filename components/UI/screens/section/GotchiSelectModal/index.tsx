@@ -214,19 +214,13 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
   }, [selectedGotchi]);
 
   const isDesktop = useMediaQuery('(min-width: 1200px), (min-height: 750px)');
-  const selectedGotchiHeight = useMemo(
-    () =>
-      selectedGotchi
-        ? isDesktop
-          ? isTrueSpectator(selectedGotchi.isSpectator)
-            ? 30
-            : 42
-          : isTrueSpectator(selectedGotchi.isSpectator)
-          ? 30
-          : 36
-        : 0,
-    [isDesktop, selectedGotchi],
-  );
+  const selectedGotchiHeight = useMemo(() => {
+    // Mint/manage modes: compact center preview so left + right rails keep room.
+    if (mintMode) return isDesktop ? 22 : 18;
+    if (!selectedGotchi) return 0;
+    if (isTrueSpectator(selectedGotchi.isSpectator)) return 30;
+    return isDesktop ? 42 : 36;
+  }, [isDesktop, selectedGotchi, mintMode]);
 
   const checkIsEvent = (spawnId: string): boolean => {
     return spawnId && spawnId[0] !== 'C' && spawnId !== 'aarena';

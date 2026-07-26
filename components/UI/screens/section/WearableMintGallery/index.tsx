@@ -105,6 +105,14 @@ export const WearableMintGallery = ({
 
   const renderRow = (row: MintableWearableRow) => {
     const checked = row.alreadyMinted ? true : Boolean(selected[row.key]);
+    const ownership = row.bindKind === 'rental' ? 'borrowed' : 'owned';
+    const priceLabel = row.alreadyMinted
+      ? 'Minted'
+      : row.importFeeUsd <= 0
+        ? 'FREE'
+        : `$${row.importFeeUsd}`;
+    const priceClass = row.alreadyMinted || row.importFeeUsd <= 0 ? 'free' : '';
+
     if (viewMode === 'grid') {
       return (
         <button
@@ -115,20 +123,18 @@ export const WearableMintGallery = ({
           onClick={() => toggle(row)}
         >
           <span className={`check-dot ${checked ? 'on' : ''}`} aria-hidden />
-          <WearableThumbnail itemTypeId={row.itemTypeId} name={row.name} size={64} />
-          <span className="wearable-name">{row.name}</span>
-          <span className="wearable-sub">
-            #{row.sourceTokenId} · {slotLabel(row.slotIndex)}
-          </span>
-          <span className="wearable-sub">
-            {row.rarity}
-            {row.bindKind === 'rental' ? ' · borrowed' : ' · owned'}
-          </span>
-          <span
-            className={`wearable-price ${row.alreadyMinted || row.importFeeUsd <= 0 ? 'free' : ''}`}
-          >
-            {row.alreadyMinted ? 'Minted' : row.importFeeUsd <= 0 ? 'FREE' : `$${row.importFeeUsd}`}
-          </span>
+          <div className="card-art">
+            <WearableThumbnail itemTypeId={row.itemTypeId} name={row.name} size={72} />
+          </div>
+          <div className="card-label">
+            <span className="wearable-name">{row.name}</span>
+            <span className="wearable-sub">
+              #{row.sourceTokenId} · {slotLabel(row.slotIndex)} · {row.rarity}
+            </span>
+            <span className="wearable-sub">
+              {ownership} · <span className={`wearable-price ${priceClass}`}>{priceLabel}</span>
+            </span>
+          </div>
         </button>
       );
     }
@@ -148,13 +154,10 @@ export const WearableMintGallery = ({
         <div className="wearable-meta">
           <span className="wearable-name">{row.name}</span>
           <span className="wearable-sub">
-            #{row.sourceTokenId} · {slotLabel(row.slotIndex)} · {row.rarity}
-            {row.bindKind === 'rental' ? ' · borrowed' : ' · owned'}
+            #{row.sourceTokenId} · {slotLabel(row.slotIndex)} · {row.rarity} · {ownership}
           </span>
         </div>
-        <span className={`wearable-price ${row.alreadyMinted || row.importFeeUsd <= 0 ? 'free' : ''}`}>
-          {row.alreadyMinted ? 'Minted' : row.importFeeUsd <= 0 ? 'FREE' : `$${row.importFeeUsd}`}
-        </span>
+        <span className={`wearable-price ${priceClass}`}>{priceLabel}</span>
       </label>
     );
   };

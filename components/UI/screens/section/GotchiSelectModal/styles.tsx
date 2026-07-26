@@ -220,12 +220,38 @@ export default css`
     }
 
     .gotchi-details.mint-mode {
+      flex: 1 1 46rem;
       padding-top: 2rem;
-      max-width: 42rem;
+      max-width: 48rem;
+      min-width: 34rem;
     }
 
     .selected-gotchi-container.mint-preview {
       pointer-events: none;
+      flex: 0 0 auto;
+      width: min(26rem, 28vw);
+      max-width: 26rem;
+      padding-bottom: 3rem;
+      justify-content: center;
+    }
+
+    .selected-gotchi-container.mint-preview .glow {
+      width: 28rem;
+      height: 10rem;
+      bottom: 18%;
+    }
+
+    .selected-gotchi-container.mint-preview .gotchi-name-container {
+      margin-top: 1.5rem;
+    }
+
+    .selected-gotchi-container.mint-preview .gotchi-name h4 {
+      font-size: 2.4em;
+    }
+
+    .selected-gotchi-container.mint-preview .gotchi-caption {
+      font-size: 1.4em;
+      line-height: 1.4em;
     }
 
     .cartridge-preview-img,

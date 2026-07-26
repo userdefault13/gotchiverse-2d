@@ -3,6 +3,7 @@ import css from 'styled-jsx/css';
 export default css`
   .details-container {
     position: relative;
+    flex: 0 0 auto;
   }
   .select-panel-title {
     font-family: 'Kimberley Bl';

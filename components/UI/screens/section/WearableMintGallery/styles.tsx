@@ -107,16 +107,17 @@ export default css`
 
   .view-toggle {
     display: flex;
-    border: 0.15rem solid rgba(255, 255, 255, 0.3);
+    border: 0.15rem solid rgba(255, 122, 233, 0.45);
     border-radius: 0.6rem;
     overflow: hidden;
+    background: rgba(0, 0, 0, 0.35);
   }
 
   .view-btn {
     appearance: none;
     border: none;
-    background: rgba(0, 0, 0, 0.35);
-    color: rgba(255, 255, 255, 0.75);
+    background: transparent;
+    color: rgba(255, 255, 255, 0.7);
     font-family: 'Kimberley Rg', sans-serif;
     font-size: 1.2rem;
     text-transform: uppercase;
@@ -140,13 +141,13 @@ export default css`
   .wearable-items.list {
     display: flex;
     flex-direction: column;
-    gap: 0.6rem;
+    gap: 0.7rem;
   }
 
   .wearable-items.grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 0.8rem;
+    gap: 1rem;
     align-content: start;
   }
 
@@ -164,15 +165,18 @@ export default css`
     gap: 1rem;
     align-items: center;
     padding: 0.9rem 1rem;
-    border-radius: 0.8rem;
-    border: 0.2rem solid rgba(255, 255, 255, 0.25);
-    background: rgba(0, 0, 0, 0.3);
+    border-radius: 0.4rem;
+    border: 0.25rem solid rgba(255, 122, 233, 0.55);
+    background: rgba(80, 12, 70, 0.55);
+    box-shadow: inset 0 0 14px 2px rgba(255, 122, 233, 0.18);
     cursor: pointer;
+    color: #fff;
   }
 
   .wearable-row.checked {
     border-color: #ff7ae9;
-    background: rgba(200, 42, 194, 0.25);
+    background: rgba(200, 42, 194, 0.35);
+    box-shadow: 0 0 8px rgba(255, 230, 0, 0.35), inset 0 0 14px 2px rgba(255, 122, 233, 0.28);
   }
 
   .wearable-row.minted {
@@ -183,28 +187,40 @@ export default css`
   .wearable-row input {
     width: 1.6rem;
     height: 1.6rem;
+    accent-color: #ff7ae9;
   }
 
   .wearable-card {
     appearance: none;
+    -webkit-appearance: none;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 0.35rem;
-    padding: 1rem 0.7rem 0.8rem;
-    border-radius: 0.8rem;
-    border: 0.2rem solid rgba(255, 255, 255, 0.25);
-    background: rgba(0, 0, 0, 0.3);
-    color: inherit;
+    align-items: stretch;
+    gap: 0;
+    padding: 0;
+    margin: 0;
+    border: 0.25rem solid #ff7ae9;
+    border-radius: 0.4rem;
+    background: rgba(80, 12, 70, 0.75);
+    box-shadow: inset 0 0 14px 2px rgba(255, 122, 233, 0.28);
+    color: #fff;
     cursor: pointer;
     text-align: center;
     position: relative;
-    min-height: 16rem;
+    min-height: 17rem;
+    font: inherit;
+    transition: box-shadow 0.1s ease-in-out;
+  }
+
+  .wearable-card:hover,
+  .wearable-card.checked {
+    box-shadow: 0 0 8px var(--col-yellow-100, #ffe600), 0 0 8px var(--col-yellow-100, #ffe600),
+      inset 0 0 14px 2px rgba(255, 122, 233, 0.35);
   }
 
   .wearable-card.checked {
-    border-color: #ff7ae9;
-    background: rgba(200, 42, 194, 0.25);
+    border-color: #ffd6f7;
+    background: rgba(120, 24, 110, 0.85);
   }
 
   .wearable-card.minted {
@@ -212,20 +228,45 @@ export default css`
     cursor: default;
   }
 
+  .wearable-card:disabled {
+    cursor: default;
+  }
+
   .check-dot {
     position: absolute;
-    top: 0.6rem;
-    left: 0.6rem;
-    width: 1.2rem;
-    height: 1.2rem;
-    border-radius: 0.25rem;
-    border: 0.15rem solid rgba(255, 255, 255, 0.55);
-    background: transparent;
+    top: 0.55rem;
+    left: 0.55rem;
+    z-index: 2;
+    width: 1.35rem;
+    height: 1.35rem;
+    border-radius: 0.3rem;
+    border: 0.18rem solid rgba(255, 214, 247, 0.75);
+    background: rgba(0, 0, 0, 0.45);
   }
 
   .check-dot.on {
     background: #ff7ae9;
-    border-color: #ff7ae9;
+    border-color: #ffd6f7;
+    box-shadow: 0 0 6px rgba(255, 122, 233, 0.8);
+  }
+
+  .card-art {
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 10rem;
+    padding: 1.2rem 0.8rem 0.8rem;
+    background: linear-gradient(160deg, rgba(255, 122, 233, 0.18), rgba(20, 8, 40, 0.9));
+  }
+
+  .card-label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    padding: 0.7rem 0.65rem 0.8rem;
+    background: #6b1a62;
+    border-top: 0.15rem solid rgba(255, 122, 233, 0.55);
   }
 
   .wearable-meta {
@@ -233,10 +274,14 @@ export default css`
     flex-direction: column;
     gap: 0.2rem;
     min-width: 0;
+    text-align: left;
   }
 
   .wearable-name {
-    font-size: 1.4rem;
+    display: block;
+    font-family: 'Kimberley Rg', sans-serif;
+    font-size: 1.25rem;
+    line-height: 1.25;
     color: #fff;
     white-space: nowrap;
     overflow: hidden;
@@ -245,19 +290,26 @@ export default css`
   }
 
   .wearable-sub {
-    font-size: 1.15rem;
-    color: rgba(255, 255, 255, 0.65);
+    display: block;
+    font-size: 1.1rem;
+    line-height: 1.3;
+    color: rgba(255, 214, 247, 0.8);
     text-transform: capitalize;
   }
 
   .wearable-price {
     font-family: 'Kimberley Rg', sans-serif;
-    font-size: 1.3rem;
+    font-size: 1.25rem;
     color: #ff7ae9;
     white-space: nowrap;
+    text-transform: none;
   }
 
   .wearable-price.free {
     color: #6dffb0;
+  }
+
+  .wearable-row .wearable-price {
+    font-size: 1.35rem;
   }
 `;
