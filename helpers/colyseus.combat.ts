@@ -336,8 +336,9 @@ export function attachColyseusCombat(
 function formatNvdaAmount(raw: string): string {
   try {
     const bi = BigInt(String(raw).split('.')[0] || '0');
-    const whole = bi / 10n ** 18n;
-    const frac = bi % 10n ** 18n;
+    const scale = BigInt(10) ** BigInt(18);
+    const whole = bi / scale;
+    const frac = bi % scale;
     const fracStr = frac.toString().padStart(18, '0').replace(/0+$/, '').slice(0, 6);
     return fracStr ? `${whole}.${fracStr}` : whole.toString();
   } catch {
