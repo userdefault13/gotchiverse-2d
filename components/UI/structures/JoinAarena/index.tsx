@@ -3,13 +3,16 @@ import Image from 'next/image';
 import styles from './styles';
 import { Lock, JoinAarenaBG, JoinAarenaBGDenver } from 'assets/images';
 import { useGame } from 'contexts/GameContext';
+import { useWeb3 } from 'contexts/Web3Context';
 
 interface JoinAarenaProps {
   handleSpawn: (id: string) => void;
 }
 
 export const JoinAarena = ({ handleSpawn }: JoinAarenaProps): JSX.Element => {
-  const [{ gameConfig, aarenaCount }] = useGame();
+  const [{ gameConfig, aarenaCount, aarenaRhCount }] = useGame();
+  const [{ currentNetwork }] = useWeb3();
+  const onlineCount = currentNetwork === 'robinhood' ? aarenaRhCount : aarenaCount;
   const enterAarena = () => {
     if (gameConfig.combatIsLive) handleSpawn('aarena');
   };
@@ -27,7 +30,9 @@ export const JoinAarena = ({ handleSpawn }: JoinAarenaProps): JSX.Element => {
           )}
           <div className="flex items-center justify-center combat-inactive">
             <Image src={gameConfig.aarenaTheme === 'denver' ? JoinAarenaBGDenver : JoinAarenaBG} alt="EVENT IMAGE" layout="fill" />
-            {gameConfig.combatIsLive && <div className="player-count">{`${aarenaCount} player${aarenaCount === 1 ? '' : 's'} online`}</div>}
+            {gameConfig.combatIsLive && (
+              <div className="player-count">{`${onlineCount} player${onlineCount === 1 ? '' : 's'} online`}</div>
+            )}
             {!gameConfig.combatIsLive && (
               <>
                 <div className="dark-overlay absolute" />

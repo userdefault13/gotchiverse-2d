@@ -1,8 +1,19 @@
 import { Router, Request, Response } from 'express';
+import { matchMaker } from 'colyseus';
 import { verifyMessage } from 'ethers';
 import { env } from '../config/env';
 import { buildSignMessage, consumeNonce, issueNonce, peekNonce } from '../auth/nonce';
 import { signAuthToken } from '../auth/jwt';
+
+async function countRoomClients(roomName: string): Promise<number> {
+  try {
+    const rooms = await matchMaker.query({ name: roomName });
+    return rooms.reduce((sum, room) => sum + (Number((room as { clients?: number }).clients) || 0), 0);
+  } catch (e) {
+    console.warn(`[users/online] count ${roomName}`, e);
+    return 0;
+  }
+}
 
 export function createHttpRouter(): Router {
   const router = Router();
@@ -13,8 +24,23 @@ export function createHttpRouter(): Router {
       service: 'gotchiverse-realm-server',
       map: 'citaadel',
       publicUrl: env.publicUrl,
-      build: 'aarena-rh-ko-20260726',
+      build: 'users-online-20260726',
       time: new Date().toISOString(),
+    });
+  });
+
+  /** Live Colyseus CCU for landing "players online" counters (Base + RH). */
+  router.get('/users/online', async (_req, res) => {
+    const [citaadelCount, aarenaCount, aarenaRhCount] = await Promise.all([
+      countRoomClients('citaadel'),
+      countRoomClients('aarena'),
+      countRoomClients('aarena-rh'),
+    ]);
+    res.json({
+      count: citaadelCount + aarenaCount + aarenaRhCount,
+      citaadelCount,
+      aarenaCount,
+      aarenaRhCount,
     });
   });
 

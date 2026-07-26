@@ -221,6 +221,7 @@ export const LandingScreen = (): JSX.Element => {
       const { parsedBody } = await http<{
         count: number;
         aarenaCount: number;
+        aarenaRhCount?: number;
         citaadelCount: number;
       }>('/users/online', {
         method: 'get',
@@ -231,11 +232,15 @@ export const LandingScreen = (): JSX.Element => {
       if (!parsedBody) throw new Error('response is undefined');
       gameDispatch({
         type: 'UPDATE_ACTIVE_COUNT',
-        activeCount: parsedBody.count,
+        activeCount: Number(parsedBody.count) || 0,
       });
       gameDispatch({
         type: 'UPDATE_AARENA_COUNT',
-        aarenaCount: parsedBody.aarenaCount,
+        aarenaCount: Number(parsedBody.aarenaCount) || 0,
+      });
+      gameDispatch({
+        type: 'UPDATE_AARENA_RH_COUNT',
+        aarenaRhCount: Number(parsedBody.aarenaRhCount) || 0,
       });
     } catch (err) {
       console.log('api error: ', err);
@@ -245,6 +250,8 @@ export const LandingScreen = (): JSX.Element => {
   useEffect(() => {
     void updateGameConfig();
     void fetchActivePlayers();
+    const poll = setInterval(() => void fetchActivePlayers(), 15_000);
+    return () => clearInterval(poll);
   }, []);
 
   const checkValidation = async (address: string) => {

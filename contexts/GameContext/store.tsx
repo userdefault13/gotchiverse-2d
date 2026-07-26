@@ -11,11 +11,14 @@ export type GameConfigPartial = Partial<GameConfig>;
 export interface State {
   activeCount: number;
   aarenaCount: number;
+  /** Robinhood Chain aarena-rh room CCU */
+  aarenaRhCount: number;
   gameConfig: GameConfig;
 }
 
 export const initialState: State = {
   aarenaCount: 0,
+  aarenaRhCount: 0,
   activeCount: 0,
   gameConfig: initialConfig,
 };
