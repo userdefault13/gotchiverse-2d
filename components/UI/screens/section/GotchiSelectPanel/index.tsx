@@ -57,7 +57,7 @@ export const GotchiSelectPanel = ({
   const [channelReady, setChannelReady] = useState<boolean>();
   const [optionLoaded, setOptionLoaded] = useState<boolean>(false);
 
-  // Soft-launch Base/RH: left rail is Manage + bound cAavegotchis only.
+  // Soft-launch Base/RH: left rail is Freebie + Manage + bound cAavegotchis (wallet gotchis mint from right tab).
   const cartridgeSelectMode = currentNetwork === 'base' || currentNetwork === 'robinhood';
 
   const cartridgeGotchis = useMemo(() => {
@@ -125,16 +125,19 @@ export const GotchiSelectPanel = ({
     localStorage.setItem('gotchiFilterOption', JSON.stringify({ channelReady: channelReady }));
   }, [sort, channelReady]);
 
-  const visibleWalletGotchis = showWalletGotchis ? userAavegotchis || [] : [];
+  const joinAsObservoor = useCallback(() => {
+    click();
+    handleSelect(getSpectator(currentAccount));
+  }, [currentAccount, click, handleSelect]);
 
-  // Soft-launch: Manage card + bound heroes. Legacy: + Nakey + wallet gotchis.
+  const visibleWalletGotchis = showWalletGotchis ? userAavegotchis || [] : [];
+  const gridItemCount = (visibleWalletGotchis?.length || 0) + (cartridgeGotchis?.length || 0);
+
+  // Freebie + Manage/Mint Cartridge + cartridge heroes + owned gotchis.
   const placeholderAavegotchis = useMemo(() => {
-    const filled =
-      (visibleWalletGotchis?.length || 0) +
-      (cartridgeGotchis?.length || 0) +
-      (cartridgeSelectMode ? 1 : 2);
+    const filled = gridItemCount + 2;
     return Array.from({ length: Math.max((placeholderCount || 0) - filled, 0) }, (_, i) => i);
-  }, [visibleWalletGotchis, cartridgeGotchis, placeholderCount, cartridgeSelectMode]);
+  }, [gridItemCount, placeholderCount]);
 
   const handleCartridgeGotchiClick = (gotchi: GotchiverseAavegotchi) => {
     if (mintMode && onManageCaavegotchiClick) {
@@ -144,66 +147,52 @@ export const GotchiSelectPanel = ({
     handleSelect(gotchi);
   };
 
-  const joinAsObservoor = useCallback(() => {
-    click();
-    handleSelect(getSpectator(currentAccount));
-  }, [currentAccount, click, handleSelect]);
-
   return (
     <>
       <div className="details-container">
         <h1 className="select-panel-title">Select your Gotchi</h1>
-        {!cartridgeSelectMode && (
-          <div className="filter-section">
-            <div className="filter-option">
-              <SearchInput
-                width="100%"
-                height="100%"
-                color={`${getThemeColor('info')}`}
-                value={searchInput || ''}
-                onChange={setSearchInput}
-                placeholder="Token ID, Name"
-                fontFamily="Kimberley Rg"
-                fontSize="1.2rem"
-                shadow={false}
-              />
-            </div>
-            <div className="filter-option">
-              <SortSelect
-                options={sortOptions}
-                placeholder="Sort by"
-                selected={sort}
-                onSelect={(name: string, value: string, direction: 'asc' | 'desc') => {
-                  setSort({ name, value, direction });
-                }}
-                color="info"
-                width="13.5rem"
-                useTheme={true}
-                fontFamily="Kimberley Rg"
-                fontSize="1.2rem"
-                shadow={false}
-              />
-            </div>
-            <div className="filter-option channel-toggle">
-              {channelReady !== undefined && (
-                <ChannelReadyToggle
-                  label="Ready to Channel"
-                  borderColor="#00B9E1"
-                  backgroundColor="rgba(81, 27, 221, 0.5)"
-                  active={channelReady}
-                  onClick={() => setChannelReady(!channelReady)}
-                />
-              )}
-            </div>
+        <div className="filter-section">
+          <div className="filter-option">
+            <SearchInput
+              width="100%"
+              height="100%"
+              color={`${getThemeColor('info')}`}
+              value={searchInput || ''}
+              onChange={setSearchInput}
+              placeholder="Token ID, Name"
+              fontFamily="Kimberley Rg"
+              fontSize="1.2rem"
+              shadow={false}
+            />
           </div>
-        )}
-        {cartridgeSelectMode && (
-          <p className="soft-launch-caption">
-            {mintMode
-              ? 'Your cAavegotchis — tap one to manage (coming soon).'
-              : 'cAavegotchis & cartridge. Use Manage to mint more.'}
-          </p>
-        )}
+          <div className="filter-option">
+            <SortSelect
+              options={sortOptions}
+              placeholder="Sort by"
+              selected={sort}
+              onSelect={(name: string, value: string, direction: 'asc' | 'desc') => {
+                setSort({ name, value, direction });
+              }}
+              color="info"
+              width="13.5rem"
+              useTheme={true}
+              fontFamily="Kimberley Rg"
+              fontSize="1.2rem"
+              shadow={false}
+            />
+          </div>
+          <div className="filter-option channel-toggle">
+            {channelReady !== undefined && (
+              <ChannelReadyToggle
+                label="Ready to Channel"
+                borderColor="#00B9E1"
+                backgroundColor="rgba(81, 27, 221, 0.5)"
+                active={channelReady}
+                onClick={() => setChannelReady(!channelReady)}
+              />
+            )}
+          </div>
+        </div>
 
         {!fetching && !cartridgeSelectMode && userAavegotchis?.length === 0 && !search && channelReady && (
           <div className="empty-state">
@@ -214,25 +203,15 @@ export const GotchiSelectPanel = ({
             <p>Turn off the filter to see all of your Aavegotchis</p>
           </div>
         )}
-        <div
-          className={`gotchi-list-container ${
-            (cartridgeSelectMode ? cartridgeGotchis.length : visibleWalletGotchis?.length) > 9 ? 'shade' : ''
-          }`}
-        >
-          <div
-            className={`gotchi-list-inner scrollable ${
-              (cartridgeSelectMode ? cartridgeGotchis.length : visibleWalletGotchis?.length) > 12 ? 'info' : 'hidden'
-            }`}
-          >
-            {!cartridgeSelectMode && (
-              <div className="gotchi-card">
-                <GotchiSelectCard
-                  gotchi={getSpectator(currentAccount)}
-                  isSelected={!mintMode && selectedId?.toLowerCase() === currentAccount?.toLowerCase()}
-                  handleSelect={joinAsObservoor}
-                />
-              </div>
-            )}
+        <div className={`gotchi-list-container ${gridItemCount > 9 ? 'shade' : ''}`}>
+          <div className={`gotchi-list-inner scrollable ${gridItemCount > 12 ? 'info' : 'hidden'}`}>
+            <div className="gotchi-card">
+              <GotchiSelectCard
+                gotchi={getSpectator(currentAccount)}
+                isSelected={!mintMode && selectedId?.toLowerCase() === currentAccount?.toLowerCase()}
+                handleSelect={joinAsObservoor}
+              />
+            </div>
             <div className="gotchi-card">
               <MintCartridgeCard
                 network={currentNetwork}

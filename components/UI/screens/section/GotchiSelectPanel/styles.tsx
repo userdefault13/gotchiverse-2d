@@ -15,14 +15,6 @@ export default css`
     white-space: nowrap;
   }
 
-  .soft-launch-caption {
-    margin: 0.6rem 0 0;
-    font-size: 1.4rem;
-    line-height: 1.3;
-    color: var(--col-info-200);
-    max-width: 36rem;
-  }
-
   .select-panel-container {
     display: flex;
     flex-direction: column;
