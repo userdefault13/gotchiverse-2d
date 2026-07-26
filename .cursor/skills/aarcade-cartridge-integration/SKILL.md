@@ -45,9 +45,19 @@ Browser never needs cartridge-sim admin secrets. Soft-launch uses `simPay: true`
 ## FE pattern
 
 1. Landing reads `cartridgeId` / `playerId` from the query string (Aarcade launch deep link).
-2. After wallet connect, call `/api/aarcade-cartridge?wallet=…` and store `hasCartridge` / `cartridgeId` on UserContext.
-3. Mint Cartridge card → collateral gallery → Mint button → `mintAarcadeCartridge` → `UPDATE_USER_CARTRIDGE`.
+2. After wallet connect / network switch, call `/api/aarcade-cartridge?wallet=…&gameId=…` scoped by chain and store `hasCartridge` / `cartridgeId` on UserContext.
+3. Mint Cartridge card → collateral gallery → Mint button → `ensure`/`bind` with chain gameId → `UPDATE_USER_CARTRIDGE`.
+
+## Per-chain gameIds
+
+| Network | gameId | Notes |
+|---------|--------|--------|
+| Base | `gotchiverse-base` | New Base mints |
+| Robinhood | `gotchiverse-rh` | New RH mints |
+| Robinhood (legacy) | `gotchiverse` | Soft-launch RH mints — RH lookup only |
+
+Base must never fall back to bare `gotchiverse`, or an RH soft-launch cartridge would unlock Base.
 
 ## Aarcade side (separate repo)
 
-Register `gameId=gotchiverse` in `gameLeaderboardConfig` + `fixtures/gotchiverse-rules-v1.json` / `GAME_RULES_FILES` so session + ensure work. Deploy Aarcade before production mint.
+Register `gotchiverse-base` and `gotchiverse-rh` (and keep legacy `gotchiverse` for existing RH soft-launch) in `gameLeaderboardConfig` + rules fixtures so session + ensure work. Deploy Aarcade before production mint.

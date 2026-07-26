@@ -81,21 +81,18 @@ export const LandingScreen = (): JSX.Element => {
       get: (searchParams, prop: string) => searchParams.get(prop),
     });
 
-    // Soft-launch deep link from Aarcade Games catalog (?cartridgeId=&playerId=)
+    // Soft-launch deep link — stash under this network's gameId only.
+    // Ownership / hasCartridge comes from checkCartridge (chain-scoped sim lookup).
     const launchCartridgeId = String(queryParams?.cartridgeId || '').trim();
-    if (launchCartridgeId) {
-      userDispatch({
-        type: 'UPDATE_USER_CARTRIDGE',
-        cartridgeId: launchCartridgeId,
-        hasCartridge: true,
-      });
-      GlobalState.USER?.dispatch?.({
-        type: 'UPDATE_USER_CARTRIDGE',
-        cartridgeId: launchCartridgeId,
-        hasCartridge: true,
-      });
+    if (launchCartridgeId && currentNetwork) {
+      const { cartridgeGameIdForNetwork, cartridgeLocalStorageKey } = await import(
+        'helpers/cartridgeGameId'
+      );
       try {
-        localStorage.setItem('aarcadeCartridgeId', launchCartridgeId);
+        localStorage.setItem(
+          cartridgeLocalStorageKey(cartridgeGameIdForNetwork(currentNetwork)),
+          launchCartridgeId,
+        );
       } catch {
         /* ignore */
       }
@@ -269,31 +266,54 @@ export const LandingScreen = (): JSX.Element => {
     });
   };
 
-  const checkCartridge = async (address: string) => {
-    const status = await getAarcadeCartridgeStatus(address, { fresh: true });
+  const checkCartridge = async (address: string, network?: string | null) => {
+    const net = network || currentNetwork;
+    const { cartridgeGameIdForNetwork, cartridgeLocalStorageKey } = await import(
+      'helpers/cartridgeGameId'
+    );
+    const gameId = cartridgeGameIdForNetwork(net);
+
+    // Clear prior chain's cartridge immediately so Base never shows an RH mint.
+    const clearPayload = {
+      type: 'UPDATE_USER_CARTRIDGE' as const,
+      cartridgeId: null as string | null,
+      hasCartridge: false,
+      cartridgeHeroes: [] as import('helpers/cartridgeHero.helper').CartridgeHero[],
+    };
+    userDispatch(clearPayload);
+    GlobalState.USER?.dispatch?.(clearPayload);
+
+    const status = await getAarcadeCartridgeStatus(address, { fresh: true, network: net });
     if (!status) return;
-    // Prefer an explicit launch cartridgeId from the query string over a sim lookup miss.
-    const launchId =
-      String(new URLSearchParams(window.location.search).get('cartridgeId') || '').trim() ||
-      (typeof localStorage !== 'undefined' ? localStorage.getItem('aarcadeCartridgeId') || '' : '');
-    const cartridgeId = status.cartridgeId || launchId || null;
+
     const payload = {
       type: 'UPDATE_USER_CARTRIDGE' as const,
-      cartridgeId,
-      hasCartridge: Boolean(status.hasCartridge || cartridgeId),
+      cartridgeId: status.cartridgeId || null,
+      hasCartridge: Boolean(status.hasCartridge && status.cartridgeId),
       cartridgeCatalogUrl: status.catalogUrl,
-      cartridgeHeroes: status.heroes || [],
+      cartridgeHeroes: status.hasCartridge ? status.heroes || [] : [],
     };
     userDispatch(payload);
     GlobalState.USER?.dispatch?.(payload);
+
+    if (payload.cartridgeId) {
+      try {
+        localStorage.setItem(cartridgeLocalStorageKey(status.gameId || gameId), payload.cartridgeId);
+      } catch {
+        /* ignore */
+      }
+    } else {
+      // Drop RH cAavegotchi selection when this chain has no cartridge.
+      setSelectedGotchi((prev) => (prev?.isCartridgeHero ? undefined : prev));
+    }
   };
 
   useEffect(() => {
     if (currentAccount) {
       void checkValidation(currentAccount);
-      void checkCartridge(currentAccount);
+      void checkCartridge(currentAccount, currentNetwork);
     }
-  }, [currentAccount]);
+  }, [currentAccount, currentNetwork]);
 
   // useEffect(() => {
   //   document.body.style.overflowY = selectedGotchi ? 'clip' : 'auto';

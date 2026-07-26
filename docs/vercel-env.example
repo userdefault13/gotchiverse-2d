@@ -48,6 +48,8 @@ NEXT_PUBLIC_AARCADE_HOME=https://aarcadeghst.com
 AARCADE_CARTRIDGE_SIM_URL=https://aarcadeghst.com/api/cartridge-sim
 # Optional; defaults to NEXT_PUBLIC_AARCADE_HOME/api/game-session
 AARCADE_GAME_SESSION_URL=
+# Root id — FE mints under gotchiverse-base (Base) and gotchiverse-rh (Robinhood).
+# Register both on Aarcade; RH also accepts legacy bare `gotchiverse` for soft-launch mints.
 NEXT_PUBLIC_AARCADE_CARTRIDGE_GAME_ID=gotchiverse
 
 # Optional

@@ -149,8 +149,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const cartridges = Array.isArray(payload?.cartridges) ? payload.cartridges : [];
+    // Never fall back to another gameId's cartridge (Base vs RH must stay separate).
     const match =
-      cartridges.find((c) => String(c?.gameId || '').toLowerCase() === gameId) || cartridges[0] || null;
+      cartridges.find((c) => String(c?.gameId || '').toLowerCase() === gameId) || null;
     const cartridgeId = match?.cartridgeId ? String(match.cartridgeId) : null;
     const { heroes, activeCAavegotchiId } = extractHeroes(match);
 

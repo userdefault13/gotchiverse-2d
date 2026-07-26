@@ -130,6 +130,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
 
   const syncCartridgeFromResult = async (result: {
     cartridgeId?: string;
+    gameId?: string;
     heroes?: CartridgeHero[];
     cartridge?: unknown;
   }) => {
@@ -138,7 +139,10 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
       heroes = heroesFromCartridgeSnapshot(result.cartridge);
     }
     if ((!heroes || heroes.length === 0) && currentAccount) {
-      const status = await getAarcadeCartridgeStatus(currentAccount, { fresh: true });
+      const status = await getAarcadeCartridgeStatus(currentAccount, {
+        fresh: true,
+        network: currentNetwork,
+      });
       if (status?.heroes) heroes = status.heroes;
     }
     userDispatch({
@@ -147,6 +151,17 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
       hasCartridge: true,
       cartridgeHeroes: heroes || [],
     });
+    if (result.cartridgeId) {
+      try {
+        const { cartridgeGameIdForNetwork, cartridgeLocalStorageKey } = await import(
+          'helpers/cartridgeGameId'
+        );
+        const gameId = result.gameId || cartridgeGameIdForNetwork(currentNetwork);
+        localStorage.setItem(cartridgeLocalStorageKey(gameId), result.cartridgeId);
+      } catch {
+        /* ignore */
+      }
+    }
     return heroes || [];
   };
 
@@ -305,7 +320,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
     setMinting(true);
     setMintError(null);
     try {
-      const result = await ensureAarcadeCartridge(currentAccount);
+      const result = await ensureAarcadeCartridge(currentAccount, { network: currentNetwork });
       if (!result.ok || !result.cartridgeId) {
         const msg = result.error || 'Mint failed';
         setMintError(msg);
@@ -333,7 +348,9 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
     setMinting(true);
     setMintError(null);
     try {
-      const result = await bindAarcadeStarter(currentAccount, selectedCollateral.name);
+      const result = await bindAarcadeStarter(currentAccount, selectedCollateral.name, {
+        network: currentNetwork,
+      });
       if (!result.ok || !result.cartridgeId) {
         const msg = result.error || 'Bind failed';
         setMintError(msg);
