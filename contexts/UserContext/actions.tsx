@@ -223,10 +223,15 @@ export const fetchAndSetMaticBalance = async (
   dispatch: React.Dispatch<Action>,
 ): Promise<void> => {
   try {
-    // Base (and any chain without a MATIC ERC-20): use native gas token balance.
+    // Base / Robinhood (and any chain without a MATIC ERC-20): use native ETH gas balance.
     const { maticAddress } = varsForNetwork(web3Options.network);
+    const useNativeGas =
+      !maticAddress ||
+      /^0x0{40}$/i.test(maticAddress) ||
+      web3Options.network === 'base' ||
+      web3Options.network === 'robinhood';
     let formattedBalance: number;
-    if (!maticAddress || /^0x0{40}$/i.test(maticAddress) || web3Options.network === 'base') {
+    if (useNativeGas) {
       const balance = await web3Options.provider.getBalance(web3Options.account);
       formattedBalance = Number(utils.formatEther(balance));
     } else {

@@ -7,15 +7,69 @@ type CartridgeRecord = {
   [key: string]: unknown;
 };
 
+type CartridgeHeroRow = {
+  id: string;
+  bindType?: string;
+  collateral: string;
+  templateId?: string;
+  sourceTokenId?: string;
+  traits?: number[];
+  level?: number;
+  kinship?: number;
+  experience?: number;
+};
+
 type AarcadeCartridgeResponse = {
   wallet: string;
   gameId: string;
   hasCartridge: boolean;
   cartridgeId: string | null;
+  heroes: CartridgeHeroRow[];
+  activeCAavegotchiId: string | null;
   cartridges: CartridgeRecord[];
   catalogUrl: string;
   checkedAt: string;
 };
+
+function extractHeroes(match: CartridgeRecord | null): {
+  heroes: CartridgeHeroRow[];
+  activeCAavegotchiId: string | null;
+} {
+  if (!match) return { heroes: [], activeCAavegotchiId: null };
+  const roster = Array.isArray(match.cAavegotchis)
+    ? match.cAavegotchis
+    : match.cAavegotchi
+    ? [match.cAavegotchi]
+    : [];
+  const heroes: CartridgeHeroRow[] = [];
+  for (const raw of roster) {
+    if (!raw || typeof raw !== 'object') continue;
+    const row = raw as Record<string, unknown>;
+    const id = String(row.id || '').trim();
+    const collateral = String(row.collateral || '')
+      .trim()
+      .toLowerCase();
+    if (!id || !collateral) continue;
+    const traits = Array.isArray(row.traits)
+      ? row.traits.map((n) => Number(n) || 50).slice(0, 6)
+      : [50, 50, 50, 50, 50, 50];
+    heroes.push({
+      id,
+      bindType: row.bindType ? String(row.bindType) : undefined,
+      collateral,
+      templateId: row.templateId ? String(row.templateId) : undefined,
+      sourceTokenId: row.sourceTokenId != null ? String(row.sourceTokenId) : undefined,
+      traits,
+      level: Number(row.level) || 1,
+      kinship: Number(row.kinship) || 0,
+      experience: Number(row.experience) || 0,
+    });
+  }
+  const activeCAavegotchiId = match.activeCAavegotchiId
+    ? String(match.activeCAavegotchiId)
+    : heroes[0]?.id || null;
+  return { heroes, activeCAavegotchiId };
+}
 
 type CacheEntry = {
   body: AarcadeCartridgeResponse;
@@ -98,12 +152,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const match =
       cartridges.find((c) => String(c?.gameId || '').toLowerCase() === gameId) || cartridges[0] || null;
     const cartridgeId = match?.cartridgeId ? String(match.cartridgeId) : null;
+    const { heroes, activeCAavegotchiId } = extractHeroes(match);
 
     const body: AarcadeCartridgeResponse = {
       wallet,
       gameId,
       hasCartridge: Boolean(cartridgeId),
       cartridgeId,
+      heroes,
+      activeCAavegotchiId,
       cartridges,
       catalogUrl,
       checkedAt: new Date().toISOString(),

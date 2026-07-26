@@ -169,6 +169,180 @@ export function attachColyseusCombat(
       console.warn('@combat.leave handler', e);
     }
   });
+
+  activeRoom.onMessage('combat.prize', (raw) => {
+    try {
+      const msg = raw as {
+        ok?: boolean;
+        amount?: string;
+        token?: string;
+        error?: string;
+        message?: string;
+      };
+      // Lazy import avoids GameController ↔ colyseus cycle.
+      void import('components/controllers/GameController').then((mod) => {
+        const toastFn = mod.default?.handleToastNotification;
+        if (!toastFn) return;
+        if (msg?.ok && msg.amount) {
+          const human = formatNvdaAmount(msg.amount);
+          toastFn({
+            message: `+${human} ${String(msg.token || 'nvda').toUpperCase()} credited to cartridge pocket`,
+            autoClose: true,
+            type: 'success',
+          });
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('rh-pocket-updated'));
+          }
+        } else if (msg?.error === 'no_cartridge') {
+          toastFn({
+            message: msg.message || 'Mint an Aarcade cartridge to earn NVDA pocket prizes.',
+            autoClose: true,
+            type: 'info',
+          });
+        } else if (msg?.error === 'test_drop_disabled') {
+          toastFn({
+            message: msg.message || 'Test drop disabled (set RH_TEST_DROP_ENABLED=true).',
+            autoClose: true,
+            type: 'info',
+          });
+        } else if (msg?.error) {
+          toastFn({
+            message: msg.message || `Prize failed: ${msg.error}`,
+            autoClose: true,
+            type: 'error',
+          });
+        }
+      });
+    } catch (e) {
+      console.warn('@combat.prize handler', e);
+    }
+  });
+
+  activeRoom.onMessage('combat.hit', (raw) => {
+    try {
+      const msg = raw as {
+        victimGotchiId?: string;
+        hp?: number;
+        maxHp?: number;
+        damage?: number;
+        evaded?: boolean;
+      };
+      const id = msg?.victimGotchiId != null ? String(msg.victimGotchiId) : '';
+      if (!id) return;
+      if (Number.isFinite(Number(msg.maxHp)) && scene?.[id]) {
+        scene[id].maxHealth = Math.round(Number(msg.maxHp));
+      }
+      if (msg.evaded) {
+        void import('components/controllers/GameController').then((mod) => {
+          // Only toast for local victim to avoid spam in crowded rooms.
+          if (String(Players.selectedPlayer?.id) === id) {
+            mod.default?.handleToastNotification?.({
+              message: 'Evaded!',
+              autoClose: true,
+              type: 'info',
+            });
+          }
+        });
+        return;
+      }
+      // KO broadcast handles death VFX — avoid double death from hit+ko.
+      Players.handleDamage({
+        id,
+        health: Math.round(Number(msg.hp) || 0),
+        damage: Math.round(Number(msg.damage) || 0),
+        playerDied: false,
+      } as any);
+    } catch (e) {
+      console.warn('@combat.hit handler', e);
+    }
+  });
+
+  activeRoom.onMessage('combat.ko', (raw) => {
+    try {
+      const msg = raw as { victimGotchiId?: string; respawnMs?: number };
+      const id = msg?.victimGotchiId != null ? String(msg.victimGotchiId) : '';
+      if (!id) return;
+      Players.setDeadState(id, true);
+      Players.handlePlayerDeath(id);
+      if (String(Players.selectedPlayer?.id) === id) {
+        const ms = Number(msg.respawnMs) || 2500;
+        void import('components/controllers/InputController').then((mod) => {
+          mod.default?.updateDisableKeyboard?.(true);
+          setTimeout(() => mod.default?.updateDisableKeyboard?.(false), ms);
+        });
+      }
+    } catch (e) {
+      console.warn('@combat.ko handler', e);
+    }
+  });
+
+  let lastApDeniedToast = 0;
+  activeRoom.onMessage('combat.ap_denied', (raw) => {
+    try {
+      const now = Date.now();
+      if (now - lastApDeniedToast < 1500) return;
+      lastApDeniedToast = now;
+      const msg = raw as { message?: string };
+      void import('components/controllers/GameController').then((mod) => {
+        mod.default?.handleToastNotification?.({
+          message: msg?.message || 'Not enough stamina',
+          autoClose: true,
+          type: 'info',
+        });
+      });
+    } catch (e) {
+      console.warn('@combat.ap_denied handler', e);
+    }
+  });
+
+  activeRoom.onMessage('combat.respawn', (raw) => {
+    try {
+      const msg = raw as {
+        gotchiId?: string;
+        x?: number;
+        y?: number;
+        hp?: number;
+        maxHp?: number;
+        ap?: number;
+        maxAp?: number;
+      };
+      if (msg?.gotchiId == null || msg.x == null || msg.y == null) return;
+      const id = String(msg.gotchiId);
+      Players.updatePlayerPosition({ id, x: msg.x, y: msg.y, noTween: true });
+      if (Number.isFinite(Number(msg.maxHp)) && scene?.[id]) {
+        scene[id].maxHealth = Math.round(Number(msg.maxHp));
+      }
+      if (Number.isFinite(Number(msg.hp))) {
+        Players.updateHealth({ id, health: Math.round(Number(msg.hp)) } as any);
+      }
+      Players.handleRespawn(id, 2500);
+      if (String(Players.selectedPlayer?.id) === id) {
+        void import('components/controllers/InputController').then((mod) => {
+          mod.default?.updateDisableKeyboard?.(false);
+        });
+        if (Number.isFinite(Number(msg.ap))) {
+          void import('contexts/GlobalState').then((mod) => {
+            const GS = mod.default;
+            GS.REALM.dispatch({ type: 'UPDATE_PLAYERS_AP', AP: Math.round(Number(msg.ap)) });
+          });
+        }
+      }
+    } catch (e) {
+      console.warn('@combat.respawn handler', e);
+    }
+  });
+}
+
+function formatNvdaAmount(raw: string): string {
+  try {
+    const bi = BigInt(String(raw).split('.')[0] || '0');
+    const whole = bi / 10n ** 18n;
+    const frac = bi % 10n ** 18n;
+    const fracStr = frac.toString().padStart(18, '0').replace(/0+$/, '').slice(0, 6);
+    return fracStr ? `${whole}.${fracStr}` : whole.toString();
+  } catch {
+    return String(raw);
+  }
 }
 
 export function detachColyseusCombat(): void {

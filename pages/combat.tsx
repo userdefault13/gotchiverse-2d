@@ -72,7 +72,8 @@ const Combat = () => {
       !['local', 'alpha', 'development'].includes(process.env.APP_ENV) &&
       currentNetwork !== process.env.REALM_NETWORK &&
       currentNetwork !== 'matic' &&
-      currentNetwork !== 'base'
+      currentNetwork !== 'base' &&
+      currentNetwork !== 'robinhood'
     ) {
       void router.push('/');
     }

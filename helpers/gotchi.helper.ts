@@ -45,6 +45,8 @@ import { scene } from 'components/controllers/SceneController';
 import { CollateralObject, collateralObjects } from './vars';
 import { formatUnits } from 'ethers/lib/utils';
 import { formatDigit } from './functions';
+import { collateralFromSimId, parseCartridgeHeroCollateral } from './cartridgeHero.helper';
+import { fetchCartridgeHeroSideSVGs, svgSidesToSvgSpritesheet } from './collateralPreview';
 
 export async function fetchAndSetGlobalAavegotchis(
   updateAddresses: boolean,
@@ -54,6 +56,15 @@ export async function fetchAndSetGlobalAavegotchis(
     channelReady?: boolean;
   },
 ): Promise<void> {
+  // RH aarena path: no Base/Matic diamond or core subgraph ownership.
+  if (GlobalState.WEB3.state.currentNetwork === 'robinhood') {
+    GlobalState.USER.dispatch({
+      type: 'UPDATE_USER_AAVEGOTCHIS',
+      userAavegotchis: [],
+    });
+    return;
+  }
+
   const res = await fetchAavegotchis(GlobalState.WEB3.state.currentAccount, filter);
 
   // console.log('@fetchAavegotchis: res', res);
@@ -235,12 +246,20 @@ export async function fetchAavegotchiURL(gotchiData: SelectedPlayer | Player): P
   if (isTrueSpectator(gotchiData.isSpectator)) return { url: '', sprite: '' };
 
   const id = gotchiData.id;
-  const result = await fetchAavegotchiURLById(id);
+  const selected = gotchiData as SelectedPlayer;
+  const result = await fetchAavegotchiURLById(id, {
+    cartridgeCollateral: selected.cartridgeCollateral || (selected.isCartridgeHero ? parseCartridgeHeroCollateral(id) : undefined),
+    network: selected.network as NetworkNames | undefined,
+  });
   return result;
 }
 
-export async function fetchAavegotchiURLById(id: string): Promise<GotchiUrl> {
-  const sideviewArray = await fetchAavegotchiSideSVGs(id);
+export async function fetchAavegotchiURLById(
+  id: string,
+  opts?: { cartridgeCollateral?: string; network?: NetworkNames },
+): Promise<GotchiUrl> {
+  const cartridgeCollateral = opts?.cartridgeCollateral || parseCartridgeHeroCollateral(id);
+  const sideviewArray = await fetchAavegotchiSideSVGs(id, opts);
   const urlOptions = { removeShadow: true, removeBackground: true };
 
   // Mutate each aavegotchi side to get the final game result in both svg and url blob format
@@ -248,7 +267,10 @@ export async function fetchAavegotchiURLById(id: string): Promise<GotchiUrl> {
   // console.log(allSides); // Array of objects with url and svg
   // extract the svgs to be combined in _aavegotchiSpriteSVG.
   const allSvgs = _.map(allSides, ({ svg }) => svg);
-  const sprite = _aavegotchiSpriteSVG(allSvgs, 2);
+  // Cartridge heroes: SVG sheet with per-frame data-URI images (keeps class fills).
+  const sprite = cartridgeCollateral
+    ? svgSidesToSvgSpritesheet(allSvgs, { columns: 2 })
+    : _aavegotchiSpriteSVG(allSvgs, 2);
   // console.log('sprite4Sideviews', sprite);
 
   // strippedGotchi = svg;
@@ -336,7 +358,28 @@ export const getSpectator = (currentAccount: string): Aavegotchi => {
   };
 };
 
-export const fetchAavegotchiSideSVGs = async (id: string): Promise<string[]> => {
+export const fetchAavegotchiSideSVGs = async (
+  id: string,
+  opts?: { cartridgeCollateral?: string; network?: NetworkNames },
+): Promise<string[]> => {
+  // Soft-launch cartridge hero — collateral preview art (not L1 token SVGs).
+  const simCollateral = opts?.cartridgeCollateral || parseCartridgeHeroCollateral(id);
+  if (simCollateral) {
+    const cacheKey = `cartridge:${simCollateral}`;
+    if (GlobalState.CHAT.state.gotchiSides[cacheKey]) {
+      return GlobalState.CHAT.state.gotchiSides[cacheKey];
+    }
+    const collateral = collateralFromSimId(simCollateral);
+    if (collateral) {
+      const svgs = await fetchCartridgeHeroSideSVGs(collateral, opts?.network);
+      GlobalState.CHAT.dispatch({
+        type: 'PUSH_GOTCHI_SIDES',
+        gotchiSides: { [cacheKey]: svgs, [id]: svgs },
+      });
+      return svgs;
+    }
+  }
+
   // gotchi is Nakey or has wrong id number return defaultGotchi.
   if (isNaN(Number(id)) || id.includes('0x')) return defaultGotchi;
   // Try ChatContext first we're storing the unmutated svgs there.
@@ -398,24 +441,52 @@ export async function fetchAavegotchiSvg(id: string, currentNetwork: NetworkName
 }
 
 export function getGotchiData(
-  gotchi: AavegotchiObject | Aavegotchi,
+  gotchi: AavegotchiObject | Aavegotchi | GotchiverseAavegotchi,
   currentNetwork: NetworkNames,
   currentAccount: string,
   isDemoMode: boolean,
 ): SelectedPlayer {
   const { isSpectator, name, collateral, equippedWearables } = gotchi;
+  const cartridgeHero = gotchi as GotchiverseAavegotchi;
+  const isCartridgeHero = Boolean(cartridgeHero.isCartridgeHero);
+  const cartridgeCollateral =
+    cartridgeHero.cartridgeCollateral ||
+    (isCartridgeHero ? parseCartridgeHeroCollateral(String(cartridgeHero.id || '')) : undefined) ||
+    undefined;
 
   let collateralColor;
   let rightHand;
   let leftHand;
 
   if (!isSpectator) {
-    collateralColor = collateralByAddress(currentNetwork, collateral).primaryColor;
-    rightHand = getHandWearables(equippedWearables[5]);
-    leftHand = getHandWearables(equippedWearables[4]);
+    if (isCartridgeHero) {
+      const coll = collateralFromSimId(cartridgeCollateral);
+      collateralColor = coll?.primaryColor || '#64438E';
+    } else {
+      collateralColor = collateralByAddress(currentNetwork, collateral).primaryColor;
+      rightHand = getHandWearables(equippedWearables[5]);
+      leftHand = getHandWearables(equippedWearables[4]);
+    }
   }
 
   const authToken = typeof localStorage !== 'undefined' ? localStorage.getItem('authToken') || '' : '';
+
+  const rawTraits =
+    (gotchi as GotchiverseAavegotchi).withSetsNumericTraits ||
+    (gotchi as GotchiverseAavegotchi).numericTraits;
+  const withSetsNumericTraits =
+    Array.isArray(rawTraits) && rawTraits.length >= 4
+      ? ([
+          Number(rawTraits[0]) || 50,
+          Number(rawTraits[1]) || 50,
+          Number(rawTraits[2]) || 50,
+          Number(rawTraits[3]) || 50,
+          Number(rawTraits[4]) || 50,
+          Number(rawTraits[5]) || 50,
+        ] as Tuple<number, 6>)
+      : isCartridgeHero || Boolean(gotchi.isSpectator)
+        ? ([50, 50, 50, 50, 50, 50] as Tuple<number, 6>)
+        : undefined;
 
   return {
     authToken,
@@ -430,6 +501,9 @@ export function getGotchiData(
     collateralColor,
     rightHand,
     leftHand,
+    isCartridgeHero: isCartridgeHero || undefined,
+    cartridgeCollateral,
+    withSetsNumericTraits,
   };
 }
 
@@ -463,41 +537,76 @@ export async function getGotchiCombatTraits(account: string, map: 'citaadel' | '
 }
 
 /**
- * Lightweight client fallback when REALM `/user/combat-traits` is unavailable.
- * Avoids importing server-only shared.utils.api (dotenv/fs) into the Next bundle.
- * Roughly mirrors shared combat formulas for select-screen display only.
+ * Client combat preview aligned with realm-server combatStats.ts / GAME_CONFIG
+ * (Bible Ch.2 trait mappings; traits-only — no wearables).
  */
-export function computeClientCombatTraits(gotchi: Aavegotchi | GotchiverseAavegotchi) {
-  const traits = gotchi.withSetsNumericTraits || [50, 50, 50, 50, 0, 0];
-  const nrg = Number(traits[0]) || 50;
-  const agg = Number(traits[1]) || 50;
-  const spk = Number(traits[2]) || 50;
-  const brn = Number(traits[3]) || 50;
+export function computeClientCombatTraits(
+  gotchi: Aavegotchi | GotchiverseAavegotchi | { withSetsNumericTraits?: number[]; withSetsRarityScore?: string | number },
+) {
+  const traits = gotchi.withSetsNumericTraits || [50, 50, 50, 50, 50, 50];
+  const nrg = Number(traits[0]);
+  const agg = Number(traits[1]);
+  const spk = Number(traits[2]);
+  const brn = Number(traits[3]);
+  const NRG = Number.isFinite(nrg) ? Math.min(99, Math.max(0, Math.round(nrg))) : 50;
+  const AGG = Number.isFinite(agg) ? Math.min(99, Math.max(0, Math.round(agg))) : 50;
+  const SPK = Number.isFinite(spk) ? Math.min(99, Math.max(0, Math.round(spk))) : 50;
+  const BRN = Number.isFinite(brn) ? Math.min(99, Math.max(0, Math.round(brn))) : 50;
   const brs = Number(gotchi.withSetsRarityScore) || 0;
 
-  const maxHealth = Math.min(2500, Math.max(200, 500 + (50 - nrg) * 10 + Math.floor(brs / 20)));
-  const maxAP = Math.min(500, Math.max(50, 100 + (nrg - 50) * 2));
-  const defense = Math.max(0, Math.round(50 + (spk - 50) * 1.5));
-  const meleePower = Math.max(1, Math.round(20 + (agg - 50) * 0.8));
-  const rangedPower = Math.max(1, Math.round(20 + (brn - 50) * 0.8));
-  const evasion = Math.max(0, Number(((spk < 50 ? (50 - spk) * 0.002 : 0) + 0.05).toFixed(3)));
-  const attackSpeed = Math.max(0.5, Number((1 + Math.max(0, agg - 50) * 0.01).toFixed(2)));
-  const healthRegenAmount = Math.max(0, Number((1 + Math.max(0, 50 - spk) * 0.02).toFixed(2)));
-  const apRegenAmount = Math.max(0, Number((1 + Math.max(0, nrg - 50) * 0.02).toFixed(2)));
-  const alchemicaCarryingCapacity = Math.max(1, Math.round(100 + brs / 10));
+  // Match shared.utils.api getPlayerMaxHealth / getPlayerMaxAP
+  let maxHealth = 1000;
+  if (NRG < 50) maxHealth += 10 * (50 - NRG);
+  maxHealth = Math.min(2500, maxHealth);
+
+  let maxAP = 100;
+  if (NRG > 50) maxAP += 1 * (NRG - 49);
+  maxAP = Math.min(500, maxAP);
+
+  // Defense: AGG < 50; Melee: BRN < 50; Ranged: BRN > 50 (same as server)
+  let defense = 0;
+  if (AGG < 50) defense += 50 - AGG;
+
+  let meleePower = 0;
+  if (BRN < 50) meleePower = Math.round(1.5 * (50 - BRN));
+
+  let rangedPower = 0;
+  if (BRN > 50) rangedPower = 1 * (BRN - 49);
+
+  const evasion = 0; // baseEvasion; SPK≥50 raises luck for evade rolls
+  let luck = 1;
+  if (SPK >= 50) luck = Number((1 + 0.005 * (SPK - 50)).toFixed(3));
+
+  let attackSpeed = 1;
+  if (AGG > 50) attackSpeed += 0.01 * (AGG - 49);
+  attackSpeed = Math.min(2, attackSpeed);
+
+  let healthRegenAmount = 7.5;
+  let apRegenAmount = 3;
+  if (SPK < 50) {
+    const regenMult = 1 + 0.02 * (50 - SPK);
+    healthRegenAmount *= regenMult;
+    apRegenAmount *= regenMult;
+  }
+
+  const alchemicaCarryingCapacity = Math.max(250, Math.ceil(100 * Math.pow(Math.max(brs, 300) / 300, 2)));
+
+  const calculatedDefense = defense * 0.005;
+  const damageReduction = Number(Math.min(1, calculatedDefense / (1 + calculatedDefense)).toFixed(3));
 
   return {
     maxHealth,
     maxAP,
-    healthRegenAmount,
-    apRegenAmount,
+    healthRegenAmount: Number(healthRegenAmount.toFixed(2)),
+    apRegenAmount: Number(apRegenAmount.toFixed(2)),
     alchemicaCarryingCapacity,
     evasion,
     meleePower,
     rangedPower,
     defense,
-    attackSpeed,
-    luck: Math.max(0, spk),
+    damageReduction,
+    attackSpeed: Number(attackSpeed.toFixed(2)),
+    luck,
     wearableTraitBonuses: {},
   };
 }

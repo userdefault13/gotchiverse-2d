@@ -1,4 +1,4 @@
-import { Logo, SettingsIcon2, VerifyIcon } from 'assets';
+import { LogoBase, LogoRh, SettingsIcon2, VerifyIcon } from 'assets';
 import { SettingsModal } from 'components/UI/screens/section';
 import { GameGuide } from 'components/UI/widgets/GameGuide';
 import { useUserWalletDataContext } from 'components/utility/WalletConnect';
@@ -40,13 +40,16 @@ export const Navigation = (): JSX.Element => {
     if (query.settingsOpen === 'true') setSettingsModalOpen(true);
   }, []);
 
+  const isRobinhood = currentNetwork === 'robinhood';
+  const brandLogo = isRobinhood ? LogoRh : LogoBase;
+
   return (
     <>
-      <nav className="navigation-container">
+      <nav className={`navigation-container${isRobinhood ? ' rh' : ''}`}>
         <nav className="navigation-content flex">
           <div className="logo-container">
             <div className="logo-wrapper" onClick={async () => await router.push('/')}>
-              <Image alt="" src={Logo} layout="fill" />
+              <Image alt="" src={brandLogo} layout="fill" />
             </div>
             <GameGuide color="info" />
           </div>

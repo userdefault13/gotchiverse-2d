@@ -102,6 +102,8 @@ function parseVeinType(raw: string | undefined): VeinType {
 
 export async function fetchFoundryConfig(apiBase?: string): Promise<FoundryRemoteConfig | null> {
   if (!apiBase) return null;
+  // Don't probe REALM unless PoC is explicitly on — avoids noisy 404 on aarena-only hosts.
+  if (process.env.NEXT_PUBLIC_ENABLE_FOUNDRY_POC !== 'true') return null;
   try {
     const res = await fetch(`${apiBase.replace(/\/$/, '')}/foundry/config`);
     if (!res.ok) return null;

@@ -29,6 +29,23 @@ export default css`
     padding: 0 1.2rem 0.8rem;
   }
 
+  .eth-icon {
+    display: inline-flex;
+    flex-shrink: 0;
+    width: 4rem;
+    height: 4rem;
+    border-radius: 50%;
+    overflow: hidden;
+    line-height: 0;
+  }
+
+  .eth-icon :global(img) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+  }
+
   .content {
     margin-left: 2rem;
   }

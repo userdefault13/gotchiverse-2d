@@ -390,11 +390,13 @@ function gotchiSpawnAnim(id) {
 const toggleHealthBar = (id: string, state: boolean, health: number): void => {
   let healthBar = scene[`${id}_top`]?.getByName('health');
   if (state) {
+    const maxHealth = scene[id]?.maxHealth || 1000;
     if (!healthBar) {
-      healthBar = new HealthBar(-16, -45, isSelectedPlayer(id) ? 'player' : 'friends', scene[id].maxHealth).setName('health');
+      healthBar = new HealthBar(-16, -45, isSelectedPlayer(id) ? 'player' : 'friends', maxHealth).setName('health');
       scene[`${id}_top`].add(healthBar);
     }
-    updateHealth({ id, health });
+    const nextHealth = Number.isFinite(Number(health)) ? Number(health) : maxHealth;
+    updateHealth({ id, health: nextHealth, maxHealth } as Health);
   } else {
     if (healthBar) healthBar.destroy();
   }
@@ -1041,14 +1043,18 @@ const handleDamage = (data: Damage): void => {
 };
 
 const updateHealth = (data: Health): void => {
-  const { id, health } = data;
+  const { id, health, maxHealth } = data;
   const player = scene[id];
   if (!player) return;
-  player.health = health || 0;
-  const healthBar = scene[`${id}_top`].getByName('health');
-  if (healthBar) healthBar.getDamage(health);
+  const nextHealth = Number(health);
+  player.health = Number.isFinite(nextHealth) ? nextHealth : 0;
+  if (Number.isFinite(Number(maxHealth)) && Number(maxHealth) > 0) {
+    player.maxHealth = Number(maxHealth);
+  }
+  const healthBar = scene[`${id}_top`]?.getByName('health');
+  if (healthBar) healthBar.getDamage(player.health, player.maxHealth);
   // update UI for selected player in one place
-  if (Players.isSelectedPlayer(id)) GlobalState.REALM.dispatch({ type: 'UPDATE_PLAYERS_HEALTH', health });
+  if (Players.isSelectedPlayer(id)) GlobalState.REALM.dispatch({ type: 'UPDATE_PLAYERS_HEALTH', health: player.health });
 };
 
 const handlePlayerDeath = (id: string): void => {

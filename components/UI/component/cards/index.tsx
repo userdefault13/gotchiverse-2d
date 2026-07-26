@@ -1,5 +1,7 @@
 export * from './gotchiSelectCard';
 export * from './gotchiPlaceholderCard';
+export * from './mintCartridgeCard';
+export * from './collateralGotchiCard';
 export * from './installationCard';
 export * from './inventoryCard';
 export * from './nftTrayCard';

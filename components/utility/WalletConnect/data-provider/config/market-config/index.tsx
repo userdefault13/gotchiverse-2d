@@ -3,6 +3,7 @@ import { MarketDataType } from '../types';
 
 export enum CustomMarket {
   proto_base = 'proto_base',
+  proto_robinhood = 'proto_robinhood',
   proto_kovan = 'proto_kovan',
   proto_mainnet = 'proto_mainnet',
   proto_avalanche = 'proto_avalanche',
@@ -18,6 +19,10 @@ export const marketsData: {
 } = {
   [CustomMarket.proto_base]: {
     chainId: ChainId.base,
+    aTokenPrefix: 'A',
+  },
+  [CustomMarket.proto_robinhood]: {
+    chainId: ChainId.robinhood,
     aTokenPrefix: 'A',
   },
   [CustomMarket.proto_matic]: {

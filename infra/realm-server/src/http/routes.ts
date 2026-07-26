@@ -13,8 +13,19 @@ export function createHttpRouter(): Router {
       service: 'gotchiverse-realm-server',
       map: 'citaadel',
       publicUrl: env.publicUrl,
-      build: 'rush-origin-20260725',
+      build: 'aarena-rh-ko-20260726',
       time: new Date().toISOString(),
+    });
+  });
+
+  /** Foundry PoC probe — disabled stub so FE doesn't 404 when PoC isn't on this host. */
+  router.get('/foundry/config', (_req, res) => {
+    res.json({
+      enableParcelFoundryPoC: false,
+      antennaLinkRangePx: 8000,
+      maxAntennasPerPlayer: 3,
+      wildNodes: [],
+      wallReceivers: [],
     });
   });
 
@@ -22,11 +33,11 @@ export function createHttpRouter(): Router {
     res.json({
       data: {
         requireMetaMaskSign: true,
-        maps: ['citaadel', 'aarena'],
+        maps: ['citaadel', 'aarena', 'aarena-rh'],
         netcode: 'colyseus',
         colyseusUrl: env.publicUrl,
         roomName: 'citaadel',
-        // Keep false until AarenaRoom is deployed and join is verified, then flip true.
+        // Keep false until AarenaRoom join is verified in prod, then flip true.
         combatIsLive: env.combatIsLive,
       },
     });

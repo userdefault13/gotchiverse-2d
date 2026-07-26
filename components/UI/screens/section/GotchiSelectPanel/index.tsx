@@ -9,12 +9,14 @@ import { SortSelect } from 'components/UI/elements/inputs/sortSelect';
 import Image from 'next/image';
 import { getThemeColor } from 'helpers/functions';
 import { GotchiTongueIcon, Baazaar } from 'assets';
-import { GotchiPlaceholderCard, GotchiSelectCard, BuyCTACard } from 'components/UI/component';
+import { GotchiPlaceholderCard, GotchiSelectCard, BuyCTACard, MintCartridgeCard } from 'components/UI/component';
 import { fetchAndSetGlobalAavegotchis, getSpectator } from 'helpers/gotchi.helper';
+import { mapCartridgeHeroToGotchi } from 'helpers/cartridgeHero.helper';
 import { useUser } from 'contexts/UserContext';
 import { useGame } from 'contexts/GameContext';
 import { ChannelReadyToggle } from 'components/UI/elements/buttons/channelReadyToggle';
 import { gotchiverseLinks } from 'data/links';
+import type { GotchiverseAavegotchi } from 'types';
 
 const sortOptions: SortOption[] = [
   { name: 'Token ID', value: 'tokenId', direction: 'asc' },
@@ -28,19 +30,32 @@ interface Props {
   handleSelect: (gotchi: Aavegotchi) => void;
   selectedId?: string;
   storedId?: string;
+  mintMode?: boolean;
+  onMintCartridgeClick?: () => void;
 }
 
-export const GotchiSelectPanel = ({ placeholderCount, handleSelect, selectedId }: Props): JSX.Element => {
+export const GotchiSelectPanel = ({
+  placeholderCount,
+  handleSelect,
+  selectedId,
+  mintMode,
+  onMintCartridgeClick,
+}: Props): JSX.Element => {
   const [{ currentAccount, currentNetwork }] = useWeb3();
   const { click } = useAavegotchiSound();
   const [fetching, setFetching] = useState(false);
   const [sort, setSort] = useState<SortOption>();
   const [search, setSearch] = useState<string>();
   const [searchInput, setSearchInput] = useState<string>();
-  const [{ userAavegotchis }] = useUser();
+  const [{ userAavegotchis, hasCartridge, cartridgeHeroes }] = useUser();
   const [{ gameConfig }] = useGame();
   const [channelReady, setChannelReady] = useState<boolean>();
   const [optionLoaded, setOptionLoaded] = useState<boolean>(false);
+
+  const cartridgeGotchis = useMemo(() => {
+    if (!currentAccount || !cartridgeHeroes?.length) return [] as GotchiverseAavegotchi[];
+    return cartridgeHeroes.map((hero) => mapCartridgeHeroToGotchi(hero, currentAccount));
+  }, [cartridgeHeroes, currentAccount]);
 
   const loadOptions = () => {
     let sortOption = localStorage.getItem('gotchiSortOption') || 'brs';
@@ -104,10 +119,11 @@ export const GotchiSelectPanel = ({ placeholderCount, handleSelect, selectedId }
     handleSelect(getSpectator(currentAccount));
   }, [currentAccount]);
 
-  const placeholderAavegotchis = useMemo(
-    () => Array.from({ length: userAavegotchis ? Math.max(placeholderCount - userAavegotchis.length - 1, 0) : placeholderCount }, (_, i) => i),
-    [userAavegotchis, placeholderCount],
-  );
+  // Reserve slots for Nakey + Mint/Manage Cartridge + cartridge heroes + owned gotchis.
+  const placeholderAavegotchis = useMemo(() => {
+    const filled = (userAavegotchis?.length || 0) + (cartridgeGotchis?.length || 0) + 2;
+    return Array.from({ length: Math.max((placeholderCount || 0) - filled, 0) }, (_, i) => i);
+  }, [userAavegotchis, cartridgeGotchis, placeholderCount]);
 
   const handleOpenBaazaar = () => window.open(gotchiverseLinks.aavegotchi.marketplace, '_blank');
 
@@ -198,20 +214,37 @@ export const GotchiSelectPanel = ({ placeholderCount, handleSelect, selectedId }
         <div className={`gotchi-list-container ${userAavegotchis?.length > 9 ? 'shade' : ''}`}>
           <div className={`gotchi-list-inner scrollable ${userAavegotchis?.length > 12 ? 'info' : 'hidden'}`}>
             <div className="gotchi-card">
-              <GotchiSelectCard gotchi={getSpectator(currentAccount)} isSelected={false} handleSelect={joinAsObservoor} />
+              <GotchiSelectCard
+                gotchi={getSpectator(currentAccount)}
+                isSelected={!mintMode && selectedId?.toLowerCase() === currentAccount?.toLowerCase()}
+                handleSelect={joinAsObservoor}
+              />
             </div>
-            {/* <ObservorButton isNakedGotchi={gameConfig.enableNakedGotchis} onClick={joinAsObservoor} />
-              {gameConfig.enableNakedGotchis ? (
-                <>
-                {gameConfig.enableNakedGotchis && <p className="nakey-gotchi-disclaimer">This week only! Play with a free Aavegotchi!</p>}
-                </>
-              ) : null} */}
+            <div className="gotchi-card">
+              <MintCartridgeCard
+                network={currentNetwork}
+                isSelected={!!mintMode}
+                hasCartridge={!!hasCartridge}
+                onClick={onMintCartridgeClick}
+              />
+            </div>
+            {cartridgeGotchis.map((gotchi) => (
+              <div key={gotchi.id} className="gotchi-card">
+                <GotchiSelectCard
+                  gotchi={gotchi}
+                  isSelected={!mintMode && gotchi.id === selectedId}
+                  handleSelect={(g) => {
+                    handleSelect(g);
+                  }}
+                />
+              </div>
+            ))}
             {userAavegotchis?.map((gotchi, i) => (
               <div key={i} className="gotchi-card">
                 <LazyLoad once overflow={true} height={160}>
                   <GotchiSelectCard
                     gotchi={gotchi}
-                    isSelected={gotchi.id === selectedId}
+                    isSelected={!mintMode && gotchi.id === selectedId}
                     handleSelect={(gotchi) => {
                       handleSelect(gotchi);
                     }}
@@ -232,7 +265,7 @@ export const GotchiSelectPanel = ({ placeholderCount, handleSelect, selectedId }
               <h4 className="title">No results found with search: &quot;{search}&quot;</h4>
             </div>
           )} */}
-        {userAavegotchis?.length < 12 && (
+        {userAavegotchis?.length < 12 && currentNetwork !== 'robinhood' && (
           <div className="cta-baazaar-container">
             <BuyCTACard
               type="card-baazaar"

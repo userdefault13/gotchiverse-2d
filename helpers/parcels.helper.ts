@@ -264,6 +264,8 @@ export function getParcelSpawnPixels(parcelId?: string): { x: number; y: number 
 }
 
 export const fetchContractOwnedParcels = async (owner: string, provider: Provider, network: NetworkNames): Promise<ContractParcel[]> => {
+  // Robinhood Chain has no Realm diamond — skip Base contract calls (CALL_EXCEPTION).
+  if (network === 'robinhood') return [];
   const realmDiamond = getContract(network, provider);
   // console.log('realmDiamond', realmDiamond);
   try {
@@ -281,6 +283,7 @@ export const fetchContractOwnedParcels = async (owner: string, provider: Provide
     }));
   } catch (error) {
     console.error('@fetchContractOwnedParcels', error);
+    return [];
   }
 };
 

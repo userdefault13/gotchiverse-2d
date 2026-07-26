@@ -15,6 +15,7 @@ import { useGame } from 'contexts/GameContext';
 import { DebugConsole } from 'components/UI/component/extras/DebugConsole';
 import { useRealm } from 'contexts/RealmContext';
 import { Leaderboard } from '../components/Leaderboard';
+import { RhStockPrizePanel } from '../components/RhStockPrizePanel';
 
 export const AarenaHUD = () => {
   const [, phaserDispatch] = usePhaser();
@@ -61,6 +62,7 @@ export const AarenaHUD = () => {
   return (
     <>
       <NotificationStack />
+      <RhStockPrizePanel />
       <ExitArenaModal />
       <GameAlert />
       <GameNav />

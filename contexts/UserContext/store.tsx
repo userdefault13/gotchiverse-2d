@@ -1,4 +1,5 @@
 import { BigNumber } from '@ethersproject/bignumber';
+import type { CartridgeHero } from 'helpers/cartridgeHero.helper';
 import type { AlchemicaBalance, GotchiverseAavegotchi, GotchiverseParcel, Installation, OngoingUpgrades } from 'types';
 
 export interface State {
@@ -19,6 +20,8 @@ export interface State {
   cartridgeId?: string | null;
   hasCartridge?: boolean;
   cartridgeCatalogUrl?: string;
+  /** Bound cAavegotchis on the player's Gotchiverse cartridge. */
+  cartridgeHeroes?: CartridgeHero[];
 }
 
 export const initialState: State = {
@@ -28,4 +31,5 @@ export const initialState: State = {
   cartridgeId: null,
   hasCartridge: false,
   cartridgeCatalogUrl: undefined,
+  cartridgeHeroes: [],
 };

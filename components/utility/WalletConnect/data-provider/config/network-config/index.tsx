@@ -75,8 +75,9 @@ export function getDefaultChainId() {
 }
 
 export function getSupportedChainIds(): number[] {
+  // Base Gotchiverse + Robinhood Chain aarena (Stock Token prize path).
   if (process.env.REALM_NETWORK === 'base' || process.env.NETWORK === 'base') {
-    return [ChainId.base];
+    return [ChainId.base, ChainId.robinhood];
   }
   if (process.env.APP_ENV === 'alpha') return [80001];
   else {

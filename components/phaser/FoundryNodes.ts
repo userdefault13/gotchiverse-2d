@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 import { scene } from 'components/controllers/SceneController';
+import GameController from 'components/controllers/GameController';
 import GlobalState from 'contexts/GlobalState';
 import { FOUNDRY_DEFAULTS } from 'helpers/foundry/config';
 import { FoundryNet, FoundryStore } from 'helpers/foundry';
@@ -176,6 +177,8 @@ async function init(): Promise<void> {
   const cfg = GlobalState.GAME.state?.gameConfig as { enableParcelFoundryPoC?: boolean } | undefined;
   const enabled = Boolean(cfg?.enableParcelFoundryPoC) || process.env.NEXT_PUBLIC_ENABLE_FOUNDRY_POC === 'true';
   if (!enabled) return;
+  // Citaadel-only feature — skip on aarena / aarena-rh.
+  if (GameController.MAP === 'aarena') return;
 
   await FoundryNet.init(process.env.NEXT_PUBLIC_API_URL);
   FoundryStore.setFoundryEnabled(true);

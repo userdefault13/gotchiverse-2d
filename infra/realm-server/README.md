@@ -22,6 +22,16 @@ npm run dev
 # http://localhost:2567/health
 ```
 
+## Rooms
+
+| Name | Map | Notes |
+|------|-----|--------|
+| `citaadel` | citaadel | Walkable hub |
+| `aarena` | aarena | Base chain combat (visual) |
+| `aarena-rh` | aarena | Robinhood Chain combat + HP/KO → SIM NVDA pocket |
+
+RH Stock Token prize phase 2: [docs/RH_AARENA_STOCK_PRIZES_PHASE2.md](./docs/RH_AARENA_STOCK_PRIZES_PHASE2.md).
+
 ## Droplet (Docker + Caddy)
 
 ```bash

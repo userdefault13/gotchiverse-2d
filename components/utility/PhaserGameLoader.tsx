@@ -35,23 +35,20 @@ const PhaserGameLoader = (props: PhaserGameLoaderProps) => {
 
   useEffect(() => {
     // MetaMask / browser side panels change layout without a reliable window resize on some builds.
+    // Do NOT dispatchEvent('resize') here — that re-enters this listener and stack-overflows.
+    let scheduled = false;
     const refreshScale = () => {
-      try {
-        const game = (window as unknown as { game?: { scale?: { refresh?: () => void } } }).game;
-        game?.scale?.refresh?.();
-      } catch {
-        /* ignore */
-      }
-      try {
-        // IonPhaser may stash the instance on the parent
-        const parent = document.getElementById('pahserGameLoader');
-        const canvas = parent?.querySelector('canvas');
-        if (canvas) {
-          window.dispatchEvent(new Event('resize'));
+      if (scheduled) return;
+      scheduled = true;
+      requestAnimationFrame(() => {
+        scheduled = false;
+        try {
+          const game = (window as unknown as { game?: { scale?: { refresh?: () => void } } }).game;
+          game?.scale?.refresh?.();
+        } catch {
+          /* ignore */
         }
-      } catch {
-        /* ignore */
-      }
+      });
     };
     window.addEventListener('resize', refreshScale);
     window.visualViewport?.addEventListener('resize', refreshScale);

@@ -7,6 +7,7 @@ import { env } from './config/env';
 import { createHttpRouter } from './http/routes';
 import { CitaadelRoom } from './rooms/CitaadelRoom';
 import { AarenaRoom } from './rooms/AarenaRoom';
+import { AarenaRhRoom } from './rooms/AarenaRhRoom';
 
 const app = express();
 
@@ -54,6 +55,7 @@ const gameServer = new Server({
 
 gameServer.define('citaadel', CitaadelRoom);
 gameServer.define('aarena', AarenaRoom);
+gameServer.define('aarena-rh', AarenaRhRoom);
 
 server.listen(env.port, env.host, () => {
   console.log(`[realm-server] HTTP+Colyseus listening on ${env.host}:${env.port}`);

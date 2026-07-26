@@ -131,6 +131,8 @@ export function chainIdToName(chainId: number): NetworkNames {
       return 'goerli';
     case 8453:
       return 'base';
+    case 4663:
+      return 'robinhood';
 
     default:
       break;
@@ -268,7 +270,7 @@ export function removeUnnecessaryDecimal(price: string) {
   return price;
 }
 
-interface CollateralObject {
+export interface CollateralObject {
   name: string;
   kovanAddress: string;
   mainnetAddress: string;
@@ -546,6 +548,21 @@ export const collaterals: CollateralObject[] = [
   },
 ];
 
+/** Unique collateral types for cAavegotchi / mint-cartridge gallery (skip test + dup svgIds). */
+export function getMintableCollaterals(): CollateralObject[] {
+  const seen = new Set<number>();
+  return collaterals.filter((c) => {
+    if (!c.name || c.name === 'testGHST') return false;
+    if (seen.has(c.svgId)) return false;
+    seen.add(c.svgId);
+    return true;
+  });
+}
+
+export function collateralDisplayName(collateral: CollateralObject): string {
+  return collateral.maticDisplay || collateral.name;
+}
+
 export const approveToken = async (token: AavegotchiTokens, contractName: DiamondName, network?: NetworkNames, signer?: Signer) => {
   if (!token) {
     console.error('No token selected!');
@@ -601,6 +618,27 @@ export async function addPolygon(): Promise<void> {
           symbol: 'MATIC',
         },
         blockExplorerUrls: ['https://polygonscan.com/'],
+      },
+    ],
+  });
+}
+
+/** Add / switch MetaMask to Robinhood Chain mainnet (4663 / 0x1237). */
+export async function addRobinhood(): Promise<void> {
+  // @ts-expect-error
+  await window.ethereum?.request({
+    method: 'wallet_addEthereumChain',
+    params: [
+      {
+        chainId: '0x1237',
+        rpcUrls: [process.env.NEXT_PUBLIC_ROBINHOOD_RPC || 'https://rpc.mainnet.chain.robinhood.com'],
+        chainName: 'Robinhood Chain',
+        nativeCurrency: {
+          name: 'Ether',
+          decimals: 18,
+          symbol: 'ETH',
+        },
+        blockExplorerUrls: ['https://robinhoodchain.blockscout.com/'],
       },
     ],
   });

@@ -114,6 +114,8 @@ export function chainIdToName(chainId) {
       return 'goerli';
     case 8453:
       return 'base';
+    case 4663:
+      return 'robinhood';
     case 31337:
       return 'localhost';
     default:

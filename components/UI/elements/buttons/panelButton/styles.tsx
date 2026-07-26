@@ -53,7 +53,7 @@ export default css`
     border-bottom: 0.3rem solid var(--col-purple-border);
   }
   .info .cap {
-    background: linear-gradient(to bottom, rgb(0, 78, 122), rgb(0, 78, 122) 75%, rgb(24, 93, 134) 75%, rgb(24, 93, 134));
+    background: linear-gradient(to bottom, var(--col-info-600), var(--col-info-600) 75%, var(--col-info-700) 75%, var(--col-info-700));
     background-size: 100% 0.8rem;
     background-position-y: 0.1rem;
     border-top: 0.3rem solid var(--col-info-border);

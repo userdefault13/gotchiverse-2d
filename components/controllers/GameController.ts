@@ -62,6 +62,7 @@ import {
   colyseusSendCombat,
   colyseusSendMove,
   colyseusSendPing,
+  colyseusSendTestDrop,
   colyseusTeleportToParcel,
   isColyseusNetcode,
 } from 'helpers/colyseus.client';
@@ -215,10 +216,21 @@ async function socketConnect(
 
   // Walkable MVP: Colyseus room instead of legacy zone WebSocket protocol
   if (isColyseusNetcode()) {
-    const map = GameController.MAP === 'aarena' ? 'aarena' : 'citaadel';
+    const network = GlobalState.WEB3?.state?.currentNetwork;
+    const map =
+      GameController.MAP === 'aarena'
+        ? network === 'robinhood'
+          ? 'aarena-rh'
+          : 'aarena'
+        : 'citaadel';
     const selectedSpawnLoc =
       map === 'citaadel' && spawnId && spawnId.charAt(0) === 'C' ? spawnId : undefined;
-    const ok = await colyseusConnect(selectedPlayer, { spawnLocId: selectedSpawnLoc, map });
+    const cartridgeId = GlobalState.USER?.state?.cartridgeId || null;
+    const ok = await colyseusConnect(selectedPlayer, {
+      spawnLocId: selectedSpawnLoc,
+      map,
+      cartridgeId,
+    });
     if (!ok) {
       handleToastNotification({
         message: 'Ruh roh, error connecting to the portal. Try refreshing your browser to try again.',
@@ -254,15 +266,27 @@ async function socketConnect(
       livePos ||
       parcelSpawn ||
       colyseusLocalSpawn() ||
-      (map === 'aarena' ? aarenaFallback : { x: 42 * 64 + 10 * 64, y: 52 * 64 + 10 * 64 });
+      (map === 'aarena' || map === 'aarena-rh' ? aarenaFallback : { x: 42 * 64 + 10 * 64, y: 52 * 64 + 10 * 64 });
+    let previewMaxHp = 1000;
+    let previewMaxAp = 100;
+    let previewTraits: Record<string, number> | null = null;
+    try {
+      const { computeClientCombatTraits } = await import('helpers/gotchi.helper');
+      const preview = computeClientCombatTraits(selectedPlayer as any);
+      previewMaxHp = preview.maxHealth || 1000;
+      previewMaxAp = preview.maxAP || 100;
+      previewTraits = preview;
+    } catch {
+      /* keep defaults */
+    }
     try {
       await Players.onPlayerSocketInit({
         id: selectedPlayer.id,
         name: selectedPlayer.name,
         x: spawn.x,
         y: spawn.y,
-        health: 1000,
-        maxHealth: 1000,
+        health: previewMaxHp,
+        maxHealth: previewMaxHp,
         // Preserve Nakey/Observoor so Phaser uses defaultGotchi (not a missing 0x texture).
         isSpectator: Boolean(selectedPlayer.isSpectator),
       } as any);
@@ -307,23 +331,23 @@ async function socketConnect(
 
     // Seed HUD traits so bars aren't "undefined / undefined"
     const defaultTraits = {
-      alchemicaCarryingCapacity: 100,
-      maxHealth: 1000,
-      ap: 100,
-      maxAP: 100,
-      defense: 0,
-      evasion: 0,
-      luck: 0,
-      speed: 1,
-      melee: 0,
-      range: 0,
-      regen: 0,
-      apRegenAmount: 0,
-      healthRegenAmount: 0,
+      alchemicaCarryingCapacity: previewTraits?.alchemicaCarryingCapacity ?? 100,
+      maxHealth: previewMaxHp,
+      ap: previewMaxAp,
+      maxAP: previewMaxAp,
+      defense: previewTraits?.defense ?? 0,
+      evasion: previewTraits?.evasion ?? 0,
+      luck: previewTraits?.luck ?? 0,
+      speed: previewTraits?.attackSpeed ?? 1,
+      melee: previewTraits?.meleePower ?? 0,
+      range: previewTraits?.rangedPower ?? 0,
+      regen: previewTraits?.healthRegenAmount ?? 0,
+      apRegenAmount: previewTraits?.apRegenAmount ?? 0,
+      healthRegenAmount: previewTraits?.healthRegenAmount ?? 0,
     };
     GlobalState.REALM.dispatch({
       type: 'UPDATE_PLAYERS_HEALTH',
-      health: 1000,
+      health: previewMaxHp,
     });
     GlobalState.REALM.dispatch({
       type: 'UPDATE_USER_TRAITS',
@@ -342,7 +366,7 @@ async function socketConnect(
     });
 
     // Simple ENTER NOW lobby (no real queue) — use 'approved' so ENTER NOW is shown.
-    if (map === 'aarena') {
+    if (map === 'aarena' || map === 'aarena-rh') {
       // Ensure PVP shoot mode + weapons are live for arcade combat (mapConfig is set at scene create).
       const shoot = scene?.mapConfig?.SHOOT_MODE as 'PVE' | 'PVP' | undefined;
       InputController.updateShootMode(shoot);
@@ -1542,6 +1566,15 @@ function sendData(channel: string, action: string | null, data): void {
       }
       return;
     }
+    // RH aarena: hotkey alchemica drop → SIM NVDA pocket (server gated by RH_TEST_DROP_ENABLED).
+    if (channel === 'game-actions' && action === 'token-drop') {
+      const token = String(data?.token || 'nvda');
+      if (!colyseusSendTestDrop(token)) {
+        console.warn('@sendData token-drop ignored — not on aarena-rh');
+      }
+      return;
+    }
+
     if (channel === 'movement') {
       const payload = action ? data?.data || data : data;
       if (action === 'teleport') {

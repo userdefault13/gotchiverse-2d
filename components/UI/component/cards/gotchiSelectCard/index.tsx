@@ -2,15 +2,18 @@ import styles from './styles';
 import Image from 'next/image';
 import { GotchiverseAavegotchi } from 'types';
 import { GotchiSVG } from 'components/UI/widgets';
-import { BorrowedIcon, FreeTagIcon } from 'assets';
+import { BorrowedIcon, FreeTagIcon, GotchiLoading } from 'assets';
 
 import { gotchiCanChannel } from 'helpers/parcels.helper';
 import { useUser } from 'contexts/UserContext';
 import useAavegotchiSound from 'hooks/useAavegotchiSound';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import { useGame } from 'contexts/GameContext';
 import { ChannelReadyToggle } from 'components/UI/elements/buttons/channelReadyToggle';
 import { brsToRarity } from 'helpers/gotchi.helper';
+import { collateralFromSimId } from 'helpers/cartridgeHero.helper';
+import { fetchCollateralGotchiBlobUrl } from 'helpers/collateralPreview';
+import { useWeb3 } from 'contexts/Web3Context';
 
 interface Props {
   gotchi?: GotchiverseAavegotchi;
@@ -22,22 +25,70 @@ export const GotchiSelectCard = ({ gotchi, handleSelect, isSelected }: Props): J
   const { click, oops } = useAavegotchiSound();
   const isSpectator = gotchi?.isSpectator;
   const isLent = gotchi?.isLent;
+  const isCartridgeHero = Boolean(gotchi?.isCartridgeHero);
 
   const [{ gameConfig }] = useGame();
+  const [{ currentNetwork }] = useWeb3();
   const [{ parcelAccessOwners }] = useUser();
   const [isBlocked, setIsBlocked] = useState<boolean>(true);
+  const [cartridgeBlobUrl, setCartridgeBlobUrl] = useState<string>('');
 
   useEffect(() => {
     if (!gotchi) return;
+    if (gotchi.isCartridgeHero) {
+      setIsBlocked(false);
+      return;
+    }
     setIsBlocked(!parcelAccessOwners.includes(gotchi.originalOwner.id.toLowerCase()));
   }, [parcelAccessOwners, gotchi]);
 
-  const rarity = useMemo(() => 'gotchi-' + (gotchi.isSpectator ? 'freebie' : brsToRarity(Number(gotchi?.baseRarityScore))), [gotchi]);
+  useEffect(() => {
+    if (!isCartridgeHero || !gotchi?.cartridgeCollateral) {
+      setCartridgeBlobUrl('');
+      return;
+    }
+    const collateral = collateralFromSimId(gotchi.cartridgeCollateral);
+    if (!collateral) return;
+    let cancelled = false;
+    let createdUrl = '';
+    void fetchCollateralGotchiBlobUrl(collateral, currentNetwork).then((url) => {
+      if (cancelled) {
+        URL.revokeObjectURL(url);
+        return;
+      }
+      createdUrl = url;
+      setCartridgeBlobUrl(url);
+    });
+    return () => {
+      cancelled = true;
+      if (createdUrl) URL.revokeObjectURL(createdUrl);
+    };
+  }, [isCartridgeHero, gotchi?.cartridgeCollateral, currentNetwork]);
+
+  const rarity = useMemo(
+    () => 'gotchi-' + (gotchi?.isSpectator ? 'freebie' : brsToRarity(Number(gotchi?.baseRarityScore))),
+    [gotchi],
+  );
+
+  const collateralColor = useMemo(() => {
+    if (!isCartridgeHero) return undefined;
+    return collateralFromSimId(gotchi?.cartridgeCollateral)?.primaryColor;
+  }, [isCartridgeHero, gotchi?.cartridgeCollateral]);
 
   return (
     <>
       <div
-        className={`gotchi-panel clickable ${rarity} ${isLent ? 'borrowed' : ''} ${gameConfig.gotchiverseTheme} ${isSelected ? 'selected' : ''}`}
+        className={`gotchi-panel clickable ${rarity} ${isLent ? 'borrowed' : ''} ${
+          isCartridgeHero ? 'cartridge-hero' : ''
+        } ${gameConfig.gotchiverseTheme} ${isSelected ? 'selected' : ''}`}
+        style={
+          collateralColor
+            ? ({
+                '--border-color': collateralColor,
+                '--label-bg-color': collateralColor,
+              } as CSSProperties)
+            : undefined
+        }
         onClick={() => {
           if (!isBlocked) {
             click();
@@ -47,31 +98,42 @@ export const GotchiSelectCard = ({ gotchi, handleSelect, isSelected }: Props): J
       >
         <div className="gotchi-img">
           <div className="icons">
-            {/* <span className="top-left" /> */}
             <span className={`top-right ${isSpectator ? 'free-tag' : ''}`}>
               {isSpectator && <Image alt="" src={FreeTagIcon} />}
               {isLent && <Image alt="" src={BorrowedIcon} />}
             </span>
-            {/* <span className="bottom-left" /> */}
             <span className="bottom-right">
-              {!isSpectator && gotchiCanChannel(gotchi?.lastChanneledAlchemica) && (
-                <ChannelReadyToggle size="3rem" active={gotchi?.readyToChannel} backgroundColor={`var(--col-${rarity}-card-label-bg)`} />
+              {!isSpectator && !isCartridgeHero && gotchiCanChannel(gotchi?.lastChanneledAlchemica) && (
+                <ChannelReadyToggle
+                  size="3rem"
+                  active={gotchi?.readyToChannel}
+                  backgroundColor={`var(--col-${rarity}-card-label-bg)`}
+                />
               )}
             </span>
           </div>
           <div className={`gotchi-img-wrapper ${isSpectator ? 'spectator' : ''}`}>
-            <GotchiSVG height={gotchi?.isSpectator ? 10 : 12} tokenId={gotchi?.id} options={{ removeBg: true }} isSpectator={isSpectator} />
+            {isCartridgeHero ? (
+              <div className="cartridge-hero-avatar">
+                <Image
+                  alt=""
+                  src={cartridgeBlobUrl || GotchiLoading}
+                  layout="fill"
+                  objectFit="contain"
+                  unoptimized={!!cartridgeBlobUrl}
+                />
+              </div>
+            ) : (
+              <GotchiSVG
+                height={gotchi?.isSpectator ? 10 : 12}
+                tokenId={gotchi?.id}
+                options={{ removeBg: true }}
+                isSpectator={isSpectator}
+              />
+            )}
           </div>
         </div>
         <p className="gotchi-name">{gotchi?.name}</p>
-        {/* {isBlocked
-          ? (
-          <div className="dark-layer">
-            <span>Cannot choose</span>
-            <p>Borrowed Gotchi</p>
-          </div>
-            )
-          : null} */}
       </div>
       <style jsx>{`
         .gotchi-panel {
@@ -79,6 +141,11 @@ export const GotchiSelectCard = ({ gotchi, handleSelect, isSelected }: Props): J
           --label-bg-color: var(--col-${rarity}-card-label-bg);
           --box-inner-bg: var(--col-${rarity}-card-bg);
           --box-inner-shadow: var(--col-${rarity}-card-inner-shadow);
+        }
+        .cartridge-hero-avatar {
+          position: relative;
+          width: 10rem;
+          height: 10rem;
         }
       `}</style>
       <style jsx>{styles}</style>

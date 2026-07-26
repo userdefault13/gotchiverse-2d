@@ -195,6 +195,10 @@ export interface GotchiverseAavegotchi extends Aavegotchi {
   secondsUntilChannel?: number;
   readyToChannel?: boolean;
   originalOwnerId?: string;
+  /** Soft-launch cartridge-bound cAavegotchi (not an L1 token). */
+  isCartridgeHero?: boolean;
+  /** Sim collateral id (dai, weth, …) when isCartridgeHero. */
+  cartridgeCollateral?: string;
 }
 
 export enum Direction {

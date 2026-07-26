@@ -94,6 +94,26 @@ export const networkConfigs: Record<string, BaseNetworkConfig> = {
     explorerLink: 'https://basescan.org',
     rpcOnly: true,
   },
+  [ChainId.robinhood]: {
+    name: 'Robinhood Chain',
+    publicJsonRPCUrl: [
+      process.env.NEXT_PUBLIC_ROBINHOOD_RPC || 'https://rpc.mainnet.chain.robinhood.com',
+    ],
+    publicJsonRPCWSUrl: 'wss://rpc.mainnet.chain.robinhood.com',
+    addresses: {
+      walletBalanceProvider: '0x0000000000000000000000000000000000000000',
+      uiPoolDataProvider: '0x0000000000000000000000000000000000000000',
+      uiIncentiveDataProvider: '0x0000000000000000000000000000000000000000',
+    },
+    protocolDataUrl: '',
+    baseAsset: 'ETH',
+    baseAssetWrappedAddress: '0x0000000000000000000000000000000000000000',
+    rewardTokenSymbol: 'ETH',
+    rewardTokenDecimals: 18,
+    incentivePrecision: 18,
+    explorerLink: 'https://robinhoodchain.blockscout.com',
+    rpcOnly: true,
+  },
   [ChainId.mumbai]: {
     name: 'Mumbai',
     publicJsonRPCUrl: ['https://rpc-mumbai.maticvigil.com'],

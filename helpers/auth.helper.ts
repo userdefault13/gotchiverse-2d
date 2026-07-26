@@ -141,6 +141,8 @@ export type AarcadeCartridgeStatus = {
   gameId: string;
   hasCartridge: boolean;
   cartridgeId: string | null;
+  heroes: import('helpers/cartridgeHero.helper').CartridgeHero[];
+  activeCAavegotchiId?: string | null;
   catalogUrl: string;
   checkedAt?: string | null;
 };
@@ -174,11 +176,14 @@ export const getAarcadeCartridgeStatus = async (
     });
     if (!response.ok) return null;
     const data = await response.json();
+    const { normalizeCartridgeHeroes } = await import('helpers/cartridgeHero.helper');
     return {
       wallet: String(data?.wallet || address).toLowerCase(),
       gameId: String(data?.gameId || AARCADE_CARTRIDGE_GAME_ID),
       hasCartridge: Boolean(data?.hasCartridge),
       cartridgeId: data?.cartridgeId ? String(data.cartridgeId) : null,
+      heroes: normalizeCartridgeHeroes(data?.heroes),
+      activeCAavegotchiId: data?.activeCAavegotchiId ? String(data.activeCAavegotchiId) : null,
       catalogUrl: String(data?.catalogUrl || getAarcadeGamesCatalogUrl()),
       checkedAt: data?.checkedAt ?? null,
     };
@@ -187,3 +192,103 @@ export const getAarcadeCartridgeStatus = async (
     return null;
   }
 };
+
+export type AarcadeCartridgeMintResult = {
+  ok: boolean;
+  phase?: 'ensure' | 'bind';
+  alreadyBound?: boolean;
+  wallet: string;
+  gameId: string;
+  collateral?: string;
+  cartridgeId: string;
+  hasCartridge: boolean;
+  heroes?: import('helpers/cartridgeHero.helper').CartridgeHero[];
+  cartridge?: unknown;
+  error?: string;
+  code?: string;
+};
+
+type MintPhase = 'ensure' | 'bind';
+
+async function postAarcadeCartridgeMint(
+  address: string,
+  body: Record<string, unknown>,
+): Promise<AarcadeCartridgeMintResult> {
+  if (!address) {
+    return {
+      ok: false,
+      wallet: '',
+      gameId: AARCADE_CARTRIDGE_GAME_ID,
+      cartridgeId: '',
+      hasCartridge: false,
+      error: 'Wallet required',
+      code: 'NO_WALLET',
+    };
+  }
+  try {
+    const response = await fetch('/api/aarcade-cartridge-mint', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        wallet: address,
+        gameId: AARCADE_CARTRIDGE_GAME_ID,
+        simPay: true,
+        ...body,
+      }),
+      cache: 'no-store',
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      return {
+        ok: false,
+        phase: body.phase as MintPhase | undefined,
+        wallet: String(address).toLowerCase(),
+        gameId: String(data?.gameId || AARCADE_CARTRIDGE_GAME_ID),
+        collateral: data?.collateral ? String(data.collateral) : undefined,
+        cartridgeId: data?.cartridgeId ? String(data.cartridgeId) : '',
+        hasCartridge: false,
+        error: String(data?.error || 'Mint failed'),
+        code: data?.code ? String(data.code) : 'MINT_FAILED',
+      };
+    }
+    const { heroesFromCartridgeSnapshot } = await import('helpers/cartridgeHero.helper');
+    return {
+      ok: true,
+      phase: (data?.phase as MintPhase) || (body.phase as MintPhase),
+      alreadyBound: Boolean(data?.alreadyBound),
+      wallet: String(data?.wallet || address).toLowerCase(),
+      gameId: String(data?.gameId || AARCADE_CARTRIDGE_GAME_ID),
+      collateral: data?.collateral ? String(data.collateral) : undefined,
+      cartridgeId: String(data?.cartridgeId || ''),
+      hasCartridge: Boolean(data?.hasCartridge ?? data?.cartridgeId),
+      heroes: heroesFromCartridgeSnapshot(data?.cartridge),
+      cartridge: data?.cartridge,
+    };
+  } catch (err) {
+    console.warn('postAarcadeCartridgeMint failed', err);
+    return {
+      ok: false,
+      phase: body.phase as MintPhase | undefined,
+      wallet: String(address).toLowerCase(),
+      gameId: AARCADE_CARTRIDGE_GAME_ID,
+      cartridgeId: '',
+      hasCartridge: false,
+      error: 'Mint request failed',
+      code: 'MINT_FAILED',
+    };
+  }
+}
+
+/** Step 1: free cartridge ensure (session → cartridges/ensure). */
+export const ensureAarcadeCartridge = async (address: string): Promise<AarcadeCartridgeMintResult> =>
+  postAarcadeCartridgeMint(address, { phase: 'ensure' });
+
+/**
+ * Step 2: bind starter cAavegotchi.
+ * `collateral` accepts gallery names (aDAI, amWETH, …); server maps to sim ids.
+ */
+export const bindAarcadeStarter = async (
+  address: string,
+  collateral: string,
+): Promise<AarcadeCartridgeMintResult> =>
+  postAarcadeCartridgeMint(address, { phase: 'bind', collateral });

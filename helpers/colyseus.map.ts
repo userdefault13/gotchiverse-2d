@@ -1,9 +1,11 @@
-export type ColyseusMapId = 'citaadel' | 'aarena';
+export type ColyseusMapId = 'citaadel' | 'aarena' | 'aarena-rh';
 
 let currentMap: ColyseusMapId = 'citaadel';
 
 export function setColyseusMap(map: ColyseusMapId): void {
-  currentMap = map === 'aarena' ? 'aarena' : 'citaadel';
+  if (map === 'aarena-rh') currentMap = 'aarena-rh';
+  else if (map === 'aarena') currentMap = 'aarena';
+  else currentMap = 'citaadel';
 }
 
 export function getColyseusMap(): ColyseusMapId {
@@ -11,5 +13,5 @@ export function getColyseusMap(): ColyseusMapId {
 }
 
 export function isColyseusAarenaMap(): boolean {
-  return currentMap === 'aarena';
+  return currentMap === 'aarena' || currentMap === 'aarena-rh';
 }

@@ -23,7 +23,7 @@ function isFoundryPoCEnabled(): boolean {
 }
 
 function isCitaadelMap(): boolean {
-  return getColyseusMap() !== 'aarena';
+  return !isColyseusAarenaMap();
 }
 
 type RemotePlayer = {
@@ -33,8 +33,79 @@ type RemotePlayer = {
   name: string;
   x: number;
   y: number;
+  hp?: number;
+  maxHp?: number;
+  ap?: number;
+  maxAp?: number;
   onChange?: (cb: () => void) => void;
 };
+
+/** Join traits for aarena combat — cartridge/Nakey fall back to 50 baseline. */
+function traitsForJoin(selectedPlayer: SelectedPlayer): number[] {
+  const raw =
+    (selectedPlayer as { withSetsNumericTraits?: number[] }).withSetsNumericTraits ||
+    (selectedPlayer as { numericTraits?: number[] }).numericTraits;
+  if (Array.isArray(raw) && raw.length >= 4) {
+    return raw.slice(0, 6).map((n) => {
+      const v = Number(n);
+      if (!Number.isFinite(v)) return 50;
+      return Math.min(99, Math.max(0, Math.round(v)));
+    });
+  }
+  // Cartridge heroes / Nakey / Freebie → Bible baseline 50/50
+  return [50, 50, 50, 50, 50, 50];
+}
+
+let lastSyncedHp = -1;
+let lastSyncedAp = -1;
+
+function syncLocalVitals(player: RemotePlayer) {
+  if (!localGotchiId || String(player.gotchiId) !== String(localGotchiId)) return;
+  const hp = Number(player.hp);
+  const maxHp = Number(player.maxHp);
+  const ap = Number(player.ap);
+  const maxAp = Number(player.maxAp);
+  if (Number.isFinite(hp)) {
+    const roundedHp = Math.round(hp);
+    const roundedMax = Number.isFinite(maxHp) ? Math.round(maxHp) : undefined;
+    if (roundedHp !== lastSyncedHp || (roundedMax != null && phaserScene?.[localGotchiId] && (phaserScene[localGotchiId] as { maxHealth?: number }).maxHealth !== roundedMax)) {
+      lastSyncedHp = roundedHp;
+      if (roundedMax != null && phaserScene?.[localGotchiId]) {
+        (phaserScene[localGotchiId] as { maxHealth?: number }).maxHealth = roundedMax;
+      }
+      Players.updateHealth({
+        id: String(localGotchiId),
+        health: roundedHp,
+        ...(roundedMax != null ? { maxHealth: roundedMax } : {}),
+      } as any);
+    }
+  }
+  if (Number.isFinite(ap)) {
+    const roundedAp = Math.round(ap);
+    if (roundedAp !== lastSyncedAp) {
+      lastSyncedAp = roundedAp;
+      try {
+        GlobalState.REALM.dispatch({ type: 'UPDATE_PLAYERS_AP', AP: roundedAp });
+        // Keep maxAP / maxHealth on HUD in sync when server profile differs from preview.
+        if (Number.isFinite(maxAp) || Number.isFinite(maxHp)) {
+          const prev = (GlobalState.REALM?.state?.userTraits || {}) as Record<string, number>;
+          const nextMaxAp = Number.isFinite(maxAp) ? Math.round(maxAp) : prev.maxAP;
+          const nextMaxHp = Number.isFinite(maxHp) ? Math.round(maxHp) : prev.maxHealth;
+          if (nextMaxAp !== prev.maxAP || nextMaxHp !== prev.maxHealth) {
+            GlobalState.REALM.dispatch({
+              type: 'UPDATE_USER_TRAITS',
+              userTraits: { ...prev, ap: roundedAp, maxAP: nextMaxAp, maxHealth: nextMaxHp },
+              userTraitsBases: GlobalState.REALM?.state?.userTraitsBases,
+              userWearableTraitBonuses: GlobalState.REALM?.state?.userWearableTraitBonuses || {},
+            });
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to sync local AP', e);
+      }
+    }
+  }
+}
 
 let client: Client | null = null;
 let room: Room | null = null;
@@ -84,13 +155,15 @@ function toPlayerPayload(p: RemotePlayer) {
     Boolean(localGotchiId) &&
     String(localGotchiId).toLowerCase() === id.toLowerCase() &&
     nakey;
+  const maxHealth = Number.isFinite(Number(p.maxHp)) ? Math.round(Number(p.maxHp)) : 1000;
+  const health = Number.isFinite(Number(p.hp)) ? Math.round(Number(p.hp)) : maxHealth;
   return {
     id,
     name: p.name || (nakey ? 'Nakey Gotchi' : `Gotchi #${id}`),
     x: p.x,
     y: p.y,
-    health: 1000,
-    maxHealth: 1000,
+    health,
+    maxHealth,
     isSpectator: nakey || localNakey,
   };
 }
@@ -264,8 +337,14 @@ function bindRoomHandlers(activeRoom: Room) {
       }
     }
     void Players.addPlayers([payload as any]);
+    if (String(player.gotchiId) === String(localGotchiId)) {
+      syncLocalVitals(player);
+    }
     if (typeof player.onChange === 'function') {
-      player.onChange(() => syncPlayerPosition(player));
+      player.onChange(() => {
+        syncPlayerPosition(player);
+        syncLocalVitals(player);
+      });
     }
   });
 
@@ -275,7 +354,10 @@ function bindRoomHandlers(activeRoom: Room) {
       clearInterval(poll);
       return;
     }
-    room.state.players.forEach((p: RemotePlayer) => syncPlayerPosition(p));
+    room.state.players.forEach((p: RemotePlayer) => {
+      syncPlayerPosition(p);
+      syncLocalVitals(p);
+    });
   }, 100);
   activeRoom.onLeave((code) => {
     console.warn('@colyseus onLeave', code, { intentionalLeave });
@@ -408,7 +490,7 @@ export function colyseusHandleKeyMove(direction: string, sprint = false): void {
 
 export async function colyseusConnect(
   selectedPlayer: SelectedPlayer,
-  opts?: { spawnLocId?: string; map?: 'citaadel' | 'aarena' },
+  opts?: { spawnLocId?: string; map?: 'citaadel' | 'aarena' | 'aarena-rh'; cartridgeId?: string | null },
 ): Promise<boolean> {
   const token = selectedPlayer.authToken || (typeof localStorage !== 'undefined' ? localStorage.getItem('authToken') : null);
   if (!token) {
@@ -441,7 +523,8 @@ export async function colyseusConnect(
     console.warn('REALM URL resolve failed before Colyseus join', e);
   }
   client = new Client(endpoint());
-  const roomName: 'citaadel' | 'aarena' = opts?.map === 'aarena' ? 'aarena' : 'citaadel';
+  const roomName: 'citaadel' | 'aarena' | 'aarena-rh' =
+    opts?.map === 'aarena-rh' ? 'aarena-rh' : opts?.map === 'aarena' ? 'aarena' : 'citaadel';
   setColyseusMap(roomName);
   try {
     const joinOpts: Record<string, string> = {
@@ -449,13 +532,24 @@ export async function colyseusConnect(
       gotchiId: String(selectedPlayer.id),
       name: selectedPlayer.name || `Gotchi #${selectedPlayer.id}`,
     };
+    if (roomName === 'aarena' || roomName === 'aarena-rh') {
+      // Colyseus join options are stringly; server parseJoinTraits accepts JSON.
+      joinOpts.traits = JSON.stringify(traitsForJoin(selectedPlayer));
+    }
+    if (roomName === 'aarena-rh') {
+      joinOpts.chain = 'rh';
+      const cartridgeId =
+        opts?.cartridgeId ||
+        (typeof GlobalState !== 'undefined' ? GlobalState.USER?.state?.cartridgeId : null);
+      if (cartridgeId) joinOpts.cartridgeId = String(cartridgeId);
+    }
     // Parcel spawn is citaadel-only; aarena uses server SPAWN_BOUNDS.
     if (roomName === 'citaadel' && opts?.spawnLocId) {
       joinOpts.spawnLocId = opts.spawnLocId;
     }
     room = await client.joinOrCreate(roomName, joinOpts);
     bindRoomHandlers(room);
-    if (roomName === 'aarena') {
+    if (isColyseusAarenaMap()) {
       seedColyseusWeapons(selectedPlayer);
     }
     setConnected(true);
@@ -467,7 +561,7 @@ export async function colyseusConnect(
     if (me) {
       const restore = reconnectPreservePos;
       reconnectPreservePos = null;
-      if (restore && roomName === 'aarena') {
+      if (restore && isColyseusAarenaMap()) {
         lastLocalPos = { x: restore.x, y: restore.y };
         localAuthorityUntil = Date.now() + LOCAL_AUTHORITY_MS;
         void Players.addPlayers([
@@ -630,6 +724,13 @@ export function colyseusIsConnected(): boolean {
 export function colyseusSendCombat(action: 'melee' | 'fire', data: unknown): boolean {
   if (!isColyseusAarenaMap()) return false;
   return sendCombat(action, data);
+}
+
+/** Aarena-rh test drop — hotkeys 7/8/9/0 → SIM NVDA when RH_TEST_DROP_ENABLED. */
+export function colyseusSendTestDrop(token: string): boolean {
+  if (!room || getColyseusMap() !== 'aarena-rh') return false;
+  room.send('prize.testDrop', { token });
+  return true;
 }
 
 /** Prefer wearable types from select screen; default L=melee R=ranged for arcade MVP. */
