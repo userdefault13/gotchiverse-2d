@@ -11,7 +11,7 @@ services:
   - name: realm
     github:
       repo: userdefault13/gotchiverse-2d
-      branch: cursor/vercel-colyseus-mvp-9c04
+      branch: master
       deploy_on_push: true
     source_dir: infra/realm-server
     # Path is relative to repo root (not source_dir) — root Dockerfile is the Next.js FE.
@@ -37,7 +37,7 @@ services:
         # Overwritten to the DO ingress URL by deploy script until custom DNS is live.
         value: https://realm.aarcadeghst.com
       - key: CORS_ORIGINS
-        value: "https://gotchiverse-2d.vercel.app,https://*.vercel.app,http://localhost:3001,http://127.0.0.1:3001"
+        value: "https://gotchiverse-2d.xyz,https://www.gotchiverse-2d.xyz,https://gotchiverse-2d.vercel.app,https://*.vercel.app,http://localhost:3001,http://127.0.0.1:3001"
       - key: JWT_SECRET
         type: SECRET
         value: "replace-via-deploy-script"
