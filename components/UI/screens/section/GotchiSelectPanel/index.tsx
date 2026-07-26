@@ -246,7 +246,7 @@ export const GotchiSelectPanel = ({
               <div className="gotchi-card">
                 <MintCartridgeCard
                   network={currentNetwork}
-                  isSelected={!!mintMode && mintStep !== 'wearables' && mintStep !== 'wearables-import'}
+                  isSelected={!!mintMode && mintStep !== 'wearables-import'}
                   hasCartridge={!!hasCartridge}
                   onClick={onMintCartridgeClick}
                 />
