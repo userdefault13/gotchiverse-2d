@@ -35,14 +35,16 @@ export default css`
   .alchemica {
     display: flex;
     flex-direction: row;
-    gap: .4rem;
+    gap: 0.6rem;
     align-items: center;
-    margin-top: 1.6rem;
-    width: 11.2rem;
+    margin-top: 1.4rem;
+    width: 13.2rem;
   }
   .alchemica .image {
-    width: 4rem;
-    height: 4rem;
+    position: relative;
+    width: 6.4rem;
+    height: 6.4rem;
+    flex: 0 0 auto;
   }
   .alchemica .text {
     text-align: left;

@@ -60,4 +60,62 @@ export default css`
     margin-top: 8px;
     color: #f0c050;
   }
+
+  .recipes {
+    margin-top: 10px;
+    border-top: 1px solid rgba(80, 220, 230, 0.25);
+    padding-top: 8px;
+  }
+
+  .recipe {
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px dashed rgba(80, 220, 230, 0.2);
+  }
+
+  .recipe-title {
+    font-weight: 700;
+    color: #50dce6;
+  }
+
+  .recipe-desc,
+  .recipe-io {
+    color: #c0c8d4;
+    line-height: 1.35;
+    margin: 2px 0 4px;
+  }
+
+  .recipe button {
+    background: #1a2838;
+    border: 1px solid #50dce6;
+    color: #e8f0f8;
+    font-size: 11px;
+    padding: 3px 6px;
+    cursor: pointer;
+  }
+
+  .mat-group {
+    margin-top: 6px;
+  }
+
+  .mat-label {
+    color: #50dce6;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .mat-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    color: #c0c8d4;
+    font-size: 10px;
+  }
+
+  .tier {
+    color: #f0c050;
+    font-weight: 400;
+    font-size: 10px;
+  }
 `;

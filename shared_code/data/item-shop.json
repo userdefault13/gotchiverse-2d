@@ -164,5 +164,49 @@
       "autoRestockCron": "* * * * *",
       "autoRestockAmount": 1
     }
+  },
+  "5": {
+    "itemTypeId": 5,
+    "type": "foundry",
+    "category": "foundry",
+    "cooldownCategory": "hp",
+    "label": "Antenna Relay Kit",
+    "labelTooltip": "Foundry Antenna Relay Kit",
+    "description": "Assemble one Antenna Relay using dish frame, core, fasteners, wire, and alchemica craft power from your foundry cargo.",
+    "propDescription": {},
+    "foundryKitId": "antenna-kit",
+    "cost": {
+      "FUD": 5,
+      "FOMO": 5,
+      "ALPHA": 2,
+      "KEK": 1
+    },
+    "purchasable": true,
+    "enabled": true,
+    "inventory": {
+      "quickslot": false,
+      "weight": 1
+    },
+    "actions": ["use"],
+    "actionsMetadata": {
+      "use": [
+        {
+          "command": "foundryPurchaseAntenna",
+          "config": {
+            "kitId": "antenna-kit"
+          }
+        }
+      ]
+    },
+    "dimensions": {
+      "width": 16,
+      "height": 16
+    },
+    "supplyConfig": {
+      "initialQuantityAvailable": 99,
+      "maxQuantityAvailable": 99,
+      "autoRestockCron": "* * * * *",
+      "autoRestockAmount": 1
+    }
   }
 }

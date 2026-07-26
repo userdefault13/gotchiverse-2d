@@ -218,6 +218,27 @@ export default css`
       justify-content: flex-start;
       gap: 0;
     }
+
+    .gotchi-details.mint-mode {
+      padding-top: 2rem;
+      max-width: 42rem;
+    }
+
+    .selected-gotchi-container.mint-preview {
+      pointer-events: none;
+    }
+
+    .cartridge-preview-img,
+    .collateral-preview-svg {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .collateral-preview-svg :global(svg) {
+      width: 100%;
+      height: 100%;
+    }
     .spawn-location-container {
       position: relative;
       margin-top: 4rem;

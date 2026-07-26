@@ -71,6 +71,7 @@ export type Action =
   | { type: 'UPDATE_NFT_DISPLAY_ADMIN'; nftDisplayAdminState: State['nftDisplayAdminState'] }
   | { type: 'UPDATE_EVENT_HOLOGRAM'; eventHologramState: State['eventHologramState'] }
   | { type: 'UPDATE_ACTIVE_EVENTS_MODAL'; activeEventsModal: State['activeEventsModal'] }
+  | { type: 'UPDATE_TRAVEL_PARCELS_MODAL'; travelParcelsModal: State['travelParcelsModal'] }
   | { type: 'UPDATE_EXIT_ARENA_MODAL'; exitArenaModal: State['exitArenaModal'] }
   | { type: 'UPDATE_CONTROLLER_GUIDE'; controllerGuideOpen: State['controllerGuideOpen'] };
 
@@ -180,6 +181,9 @@ export const reducer = (state: State, action: Action): State => {
       };
     case 'UPDATE_ACTIVE_EVENTS_MODAL':
       return { ...state, activeEventsModal: action.activeEventsModal };
+
+    case 'UPDATE_TRAVEL_PARCELS_MODAL':
+      return { ...state, travelParcelsModal: action.travelParcelsModal };
 
     case 'UPDATE_EVENT_HOLOGRAM':
       return {

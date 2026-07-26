@@ -1,6 +1,5 @@
 import React, { useEffect } from 'react';
 import App from 'next/app';
-import Head from 'next/head';
 import 'react-toastify/dist/ReactToastify.css';
 import '../styles/globalStyles.css';
 import '../styles/palettes.scss';
@@ -61,21 +60,14 @@ class MyApp extends App {
       <ParallaxProvider>
         <GlobalContextProvider>
           <Initializer />
-          <Head>
-            <link href="https://unpkg.com/nes.css@2.3.0/css/nes.min.css" rel="stylesheet" />
-
-            <link rel="preload" href="/fonts/Pixelar Regular.woff2" as="font" crossOrigin="" />
-            <link rel="preload" href="/fonts/Alien-Encounters-Regular.ttf" as="font" crossOrigin="" />
-            <link rel="preload" href="/fonts/Alien-Encounters-Solid-Regular.ttf" as="font" crossOrigin="" />
-          </Head>
 
           <NextReusableHead
             title="Enter the Gotchiverse"
             description="A play-and-earn metaverse for Aavegotchis"
             siteName="Aavegotchi Gotchiverse"
-            faviconPath="https://verse.aavegotchi.com/favicon.ico"
-            url="https://verse.aavegotchi.com"
-            image="https://verse.aavegotchi.com/gotchiverse.png"
+            faviconPath="/favicon.png"
+            url="https://gotchiverse-2d.vercel.app"
+            image="https://gotchiverse-2d.vercel.app/apple-touch-icon.png"
           />
 
           <ToastContainer

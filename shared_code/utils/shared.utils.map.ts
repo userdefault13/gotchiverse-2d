@@ -6,13 +6,20 @@ const _ = require('lodash');
 const sharedParcelUtils = require('./shared.utils.parcel');
 import { ALCHEMICA_SIZE, TILE_SIZE, HOOD_SIZE, GAME_CONFIG, HOODS_EXCLUSION, SPAWN_DISTRICTS, HOOD_WIDTH, HOOD_HEIGHT, MAP_ID_CITAADEL, MAP_ID_AARENA } from '../constants/const.game';
 
+// Optional legacy API-server helper. This FE repo only ships a stub at
+// server/physicsManager.js (no getAllBoundsByLabel) so Next/Turbopack can
+// resolve the path without treating spawn helpers as a hard dependency.
 let physicsManagerIsAvailable = false;
 let getAllBoundsByLabel;
 try {
-  ({ getAllBoundsByLabel } = require('../../server/physicsManager'));
-  physicsManagerIsAvailable = true;
-} catch (e) {
-  console.warn('physicsManager not found, methods not imported');
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  const loaded = require('../../server/physicsManager');
+  if (typeof loaded?.getAllBoundsByLabel === 'function') {
+    getAllBoundsByLabel = loaded.getAllBoundsByLabel;
+    physicsManagerIsAvailable = true;
+  }
+} catch {
+  // Expected when the API server sources are absent.
 }
 // min padding between alchemica spawns in units of alchemica (0 makes them touch, 1 makes them min 1 alchemica width/height apart, etc)
 const ALCHEMICA_SPAWN_GAP = 0.5;

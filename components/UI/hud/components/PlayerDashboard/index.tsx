@@ -240,7 +240,7 @@ export const PlayerDashboard = (): JSX.Element => {
                             return (
                               <div key={key} className="alchemica flex">
                                 <div className="alchemica-item-image-wrapper">
-                                  <Image alt="" src={getAlchemicaIcon(key)} objectFit="contain" />
+                                  <Image alt="" src={getAlchemicaIcon(key)} layout="fill" objectFit="contain" />
                                 </div>
                                 <span className={`alchemica-value ${key}`}>
                                   {formatAlchemicaValue(alchemica?.[key] ? Number(alchemica[key]) : 0)}

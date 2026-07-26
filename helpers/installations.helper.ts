@@ -106,6 +106,9 @@ export const getGlobalInstallationPosition = (id: string, getCentre?: boolean): 
 };
 
 export const getInstallationKeyByTypeData = (typeData: InstallationTypeLocal): string => {
+  // Waalls / Lodges share one spritesheet each; frames map by level.
+  if (Number(typeData.installationType) === 3) return 'waall';
+  if (Number(typeData.installationType) === 4) return 'lodge';
   return ALCHEMICA_BASED_INSTALLATION_TYPES.includes(typeData.installationType)
     ? `${typeData.installationType}_${typeData.alchemicaType}`
     : typeData.itemId.toString();
@@ -361,10 +364,31 @@ export const getActiveParcelByTokenId = (id: number | boolean): Parcel => {
 
 // returns aaltar id from activeParcel
 export const getActiveParcelAaltarId = (activeParcel) => {
-  if (activeParcel) {
-    return _.find(activeParcel.installations, (id) => {
-      return isAaltar(id);
-    });
+  if (activeParcel?.installations?.length) {
+    const fromParcel = _.find(activeParcel.installations, (id) => isAaltar(id));
+    if (fromParcel) return fromParcel;
+  }
+  // Colyseus play mode often has no activeParcel.installations — fall back to spawned sprites.
+  const parcelId = activeParcel?.parcelId || activeParcel?.id;
+  if (parcelId) {
+    return getLocalInstallationsByParcelId(String(parcelId)).find((id) => isAaltar(id));
+  }
+};
+
+/** Resolve the aaltar installation id for any install on the same parcel (play-mode safe). */
+export const getAaltarIdForInstallation = (installationId?: string): string | undefined => {
+  if (!installationId) return undefined;
+  try {
+    const data = getInstallationIdDataById(installationId) as unknown as InstallationIdData;
+    if (!data?.parcelId) return undefined;
+    const fromLocal = getLocalInstallationsByParcelId(data.parcelId).find((id) => isAaltar(id));
+    if (fromLocal) return fromLocal;
+    // Last resort: scan owned parcel metadata if build mode populated installations[].
+    const owned = GlobalState.REALM?.state?.ownedParcels || [];
+    const parcel = owned.find((p) => p.parcelId === data.parcelId || p.id === data.parcelId);
+    return getActiveParcelAaltarId(parcel);
+  } catch {
+    return undefined;
   }
 };
 

@@ -10,11 +10,15 @@ import useAavegotchiSound from 'hooks/useAavegotchiSound';
 import { Loader, FilterSelect, SearchInput, SortSelect } from 'components/UI/elements';
 import { Recipe, SortOption, TileType, NetworkNames, InstallationType } from 'types';
 import { RecipeBookToggle } from './RecipeBookToggle';
-import { RecipeBookModal } from './RecipeBookModal';
+import { RecipeBookModal, RecipeBookPage } from './RecipeBookModal';
 import styles from './styles';
-import { RecipeCard } from 'components/UI/component';
+import { FoundryRecipeCard, RecipeCard } from 'components/UI/component';
 import { gotchiverseSubgraph } from 'shared_code/web3/shared.const.web3';
 import { useGame } from 'contexts/GameContext';
+import { FOUNDRY_RECIPES, FoundryRecipe } from 'helpers/foundry/recipes';
+import { FoundryNet } from 'helpers/foundry';
+import { getLocalWaallRecipes, isWaallItemId } from 'helpers/waalls.helper';
+import { getLocalLodgeRecipes, isLodgeItemId } from 'helpers/lodge.helper';
 
 interface Props {
   selectRecipe: (recipe: Recipe) => void;
@@ -64,7 +68,25 @@ const typeFilters = [
     name: 'Maakers',
     value: 'maaker',
   },
+  {
+    name: 'Waalls',
+    value: 'waall',
+  },
+  {
+    name: 'Lodges',
+    value: 'lodge',
+  },
 ];
+
+/** Networks that load recipes from the Gotchiverse subgraph (filters/search/sort). */
+const SUBGRAPH_RECIPE_NETWORKS: NetworkNames[] = ['matic', 'base'];
+
+const isNotDeprecatedYet = (deprecatedAt?: string | number): boolean => {
+  if (deprecatedAt == null || deprecatedAt === '' || Number(deprecatedAt) === 0) return true;
+  const now = Date.now() / 1000;
+  return Number(deprecatedAt) >= now;
+};
+
 export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
   const [{ gameConfig }] = useGame();
   const [{ currentNetwork, globalProvider }] = useWeb3();
@@ -87,8 +109,23 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
     harvester: true,
     decoration: true,
     maaker: true,
+    waall: true,
+    lodge: true,
   });
   const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [bookPage, setBookPage] = useState(0);
+  const [craftToast, setCraftToast] = useState('');
+
+  const foundryEnabled =
+    Boolean((gameConfig as { enableParcelFoundryPoC?: boolean })?.enableParcelFoundryPoC) ||
+    process.env.NEXT_PUBLIC_ENABLE_FOUNDRY_POC === 'true';
+
+  const bookPages: RecipeBookPage[] = foundryEnabled
+    ? [
+        { id: 'onchain', label: 'RECIPES BOOK', shortLabel: 'On-chain installations' },
+        { id: 'foundry', label: 'LOGISTICS RECIPES', shortLabel: 'Off-chain foundry salvage' },
+      ]
+    : [{ id: 'onchain', label: 'RECIPES BOOK', shortLabel: 'On-chain installations' }];
 
   const onSetSortBy = (name: string, value: string, direction: 'asc' | 'desc') => {
     setSort({
@@ -97,57 +134,71 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
       direction,
     });
   };
-  const fetchAndSetRecipesMatic = async (nameFilter: string, typeFilter, sortBy: SortOption) => {
+  const fetchAndSetRecipesSubgraph = async (nameFilter: string, typeFilter, sortBy: SortOption) => {
     setPending(true);
+    try {
+      const installations = await useSubgraph<{ installationTypes: InstallationType[] }>(
+        getInstallationTypes(nameFilter, typeFilter),
+        gotchiverseSubgraph,
+      );
 
-    const now = new Date().valueOf() / 1000;
+      const installationTypes: InstallationType[] = (installations?.installationTypes || []).filter((installation: InstallationType) =>
+        isNotDeprecatedYet(installation.deprecatedAt),
+      );
 
-    const installations = await useSubgraph<{ installationTypes: InstallationType[] }>(
-      getInstallationTypes(nameFilter, typeFilter),
-      gotchiverseSubgraph,
-    );
+      const tiles = typeFilter.tile
+        ? await useSubgraph<{ tileTypes: TileType[] }>(getTileTypes(nameFilter), gotchiverseSubgraph)
+        : { tileTypes: [] };
+      const tileTypes: TileType[] = (tiles?.tileTypes || []).filter((tile: TileType) => isNotDeprecatedYet((tile as any).deprecatedAt));
 
-    // Filter based deprecatedAt
-    const installationTypes: InstallationType[] = installations.installationTypes.filter((installation: InstallationType) => {
-      return !Number(installation.deprecatedAt) || Number(installation.deprecatedAt >= now);
-    });
-    console.log('installations', installationTypes);
-    const tiles = typeFilter.tile ? await useSubgraph<{ tileTypes: TileType[] }>(getTileTypes(nameFilter), gotchiverseSubgraph) : { tileTypes: [] };
-    const tileTypes: TileType[] = tiles.tileTypes.filter((tile: TileType) => {
-      return !Number(tile.deprecatedAt) || Number(tile.deprecatedAt >= now);
-    });
-    console.log('tiles', tileTypes);
-    const recipes = _.concat<InstallationType | TileType>(installationTypes, tileTypes).map((item: InstallationType | TileType): Recipe => {
-      const isInstallation = 'installationType' in item;
-      const data: Recipe = {
-        id: item.id,
-        name: item.name,
-        ingredients: {
-          fud: Number(ethers.utils.formatEther(item.alchemicaCost[0])),
-          fomo: Number(ethers.utils.formatEther(item.alchemicaCost[1])),
-          alpha: Number(ethers.utils.formatEther(item.alchemicaCost[2])),
-          kek: Number(ethers.utils.formatEther(item.alchemicaCost[3])),
-        },
-        craftingTime: Number(item.craftTime),
-        itemType: isInstallation ? item.installationType : item.tileType,
-        type: isInstallation ? 'INSTALLATION' : 'TILE',
-        installationType: isInstallation ? Number(item.installationType) : undefined,
-        deprecated: false,
-        endDate: undefined,
-      };
-      return data;
-    });
+      const recipes = _.concat<InstallationType | TileType>(installationTypes, tileTypes).map((item: InstallationType | TileType): Recipe => {
+        const isInstallation = 'installationType' in item;
+        const costs = item.alchemicaCost || ['0', '0', '0', '0'];
+        const data: Recipe = {
+          id: item.id,
+          name: item.name,
+          ingredients: {
+            fud: Number(ethers.utils.formatEther(costs[0] || '0')),
+            fomo: Number(ethers.utils.formatEther(costs[1] || '0')),
+            alpha: Number(ethers.utils.formatEther(costs[2] || '0')),
+            kek: Number(ethers.utils.formatEther(costs[3] || '0')),
+          },
+          craftingTime: Number(item.craftTime),
+          itemType: isInstallation ? item.installationType : item.tileType,
+          type: isInstallation ? 'INSTALLATION' : 'TILE',
+          installationType: isInstallation ? Number(item.installationType) : undefined,
+          deprecated: false,
+          endDate: undefined,
+        };
+        return data;
+      });
 
-    let sorted;
+      // Waalls / Lodges were never deployed on-chain — merge local L1 recipes when filter allows.
+      const localWaalls =
+        typeFilter.waall !== false
+          ? getLocalWaallRecipes().filter((r) => !nameFilter || r.name.toLowerCase().includes(String(nameFilter).toLowerCase()))
+          : [];
+      const localLodges =
+        typeFilter.lodge !== false
+          ? getLocalLodgeRecipes().filter((r) => !nameFilter || r.name.toLowerCase().includes(String(nameFilter).toLowerCase()))
+          : [];
+      const withoutLocal = recipes.filter((r) => !isWaallItemId(r.id) && !isLodgeItemId(r.id));
+      const merged = _.concat(withoutLocal, localWaalls, localLodges);
 
-    if (sortBy.value === 'id') sorted = _.sortBy(recipes, (recipe: Recipe) => Number(recipe.id));
-    else if (sortBy.value === 'name') sorted = _.sortBy(recipes, (recipe: Recipe) => recipe.name);
-    else if (sortBy.value === 'cost') sorted = _.sortBy(recipes, (recipe: Recipe) => recipe.ingredients.fud);
-    if (sortBy.direction === 'desc') sorted = _.reverse(sorted);
+      let sorted: Recipe[];
+      if (sortBy.value === 'id') sorted = _.sortBy(merged, (recipe: Recipe) => Number(recipe.id));
+      else if (sortBy.value === 'name') sorted = _.sortBy(merged, (recipe: Recipe) => recipe.name);
+      else if (sortBy.value === 'cost') sorted = _.sortBy(merged, (recipe: Recipe) => recipe.ingredients.fud);
+      else sorted = merged;
+      if (sortBy.direction === 'desc') sorted = _.reverse(sorted);
 
-    setRecipes(sorted);
-
-    setPending(false);
+      setRecipes(sorted);
+    } catch (err) {
+      console.warn('RecipeBook: failed to load recipes from subgraph', err);
+      setRecipes([]);
+    } finally {
+      setPending(false);
+    }
   };
 
   const fetchContractRecipe = async (network: NetworkNames, provider: providers.Provider, type: 'INSTALLATION' | 'TILE'): Promise<Recipe[]> => {
@@ -191,7 +242,8 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
     const fetchedInstallations = await fetchContractRecipe(currentNetwork, globalProvider, 'INSTALLATION');
     const fetchedTiles = await fetchContractRecipe(currentNetwork, globalProvider, 'TILE');
     const fetchedItems = _.concat(fetchedInstallations, fetchedTiles);
-    setRecipes(fetchedItems);
+    const withoutLocal = fetchedItems.filter((r) => !isWaallItemId(r.id) && !isLodgeItemId(r.id));
+    setRecipes(_.concat(withoutLocal, getLocalWaallRecipes(), getLocalLodgeRecipes()));
     setPending(false);
   };
 
@@ -202,16 +254,39 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
   }, [currentNetwork, globalProvider]);
 
   useEffect(() => {
-    if (open && currentNetwork === 'matic' && sort !== undefined) {
-      void fetchAndSetRecipesMatic(nameFilter, typeFilter, sort);
+    if (open && SUBGRAPH_RECIPE_NETWORKS.includes(currentNetwork) && sort !== undefined) {
+      void fetchAndSetRecipesSubgraph(nameFilter, typeFilter, sort);
     }
   }, [currentNetwork, nameFilter, typeFilter, sort, open]);
+
+  useEffect(() => {
+    if (!open) {
+      setBookPage(0);
+      setCraftToast('');
+    }
+  }, [open]);
+
+  const handleCraftFoundryRecipe = (recipe: FoundryRecipe) => {
+    click();
+    const result = FoundryNet.craftRecipe(recipe.id);
+    setCraftToast(result.message);
+    window.setTimeout(() => setCraftToast(''), 2500);
+  };
+
+  const showOnChainPage = bookPage === 0;
+  const showFoundryPage = foundryEnabled && bookPage === 1;
 
   return (
     <>
       <RecipeBookToggle onClick={() => setOpen(true)} disabled={disabled} />
-      <RecipeBookModal open={open} onClose={() => setOpen(false)}>
-        {pending && (
+      <RecipeBookModal
+        open={open}
+        onClose={() => setOpen(false)}
+        pages={bookPages}
+        activePage={bookPage}
+        onPageChange={setBookPage}
+      >
+        {showOnChainPage && pending && (
           <>
             <div className="loading-box"></div>
             <div className="loading-content">
@@ -220,26 +295,42 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
             </div>
           </>
         )}
-        <div className="filter-container">
-          <div className="search-input">
-            <SearchInput value={nameFilter || ''} onChange={setNameFilter} color={getThemeColor()} placeholder="Search by name, type, etc..." />
+        {showOnChainPage && (
+          <div className="filter-container">
+            <div className="search-input">
+              <SearchInput value={nameFilter || ''} onChange={setNameFilter} color={getThemeColor()} placeholder="Search by name, type, etc..." />
+            </div>
+            <div className="filter-options">
+              <FilterSelect
+                filters={typeFilters}
+                width="17rem"
+                onChange={(state) => {
+                  setTypeFilter(state);
+                }}
+              />
+              <SortSelect options={sortOptions} selected={sort} placeholder="Sort by" width="14rem" onSelect={onSetSortBy} useTheme={true} />
+            </div>
           </div>
-          <div className="filter-options">
-            <FilterSelect
-              filters={typeFilters}
-              width="17rem"
-              onChange={(state) => {
-                setTypeFilter(state);
-              }}
-            />
-            <SortSelect options={sortOptions} selected={sort} placeholder="Sort by" width="14rem" onSelect={onSetSortBy} useTheme={true} />
+        )}
+        {showFoundryPage ? (
+          <div className="foundry-intro">
+            Off-chain logistics: mine ores/gases → smelt (costs alchemica power) → parts → assemble Antenna Relay → place on map.
           </div>
-        </div>
+        ) : null}
+        {craftToast ? <div className="craft-toast">{craftToast}</div> : null}
         <div className={`scrollable ${gameConfig.gotchiverseTheme}`}>
           <div className="content">
-            {recipes?.map((recipe, i) => (
-              <RecipeCard onClick={handleSelect} recipe={recipe} key={i} />
-            ))}
+            {showOnChainPage && !pending && recipes?.length === 0 ? (
+              <div className="empty-recipes">No recipes found</div>
+            ) : null}
+            {showOnChainPage
+              ? recipes?.map((recipe, i) => <RecipeCard onClick={handleSelect} recipe={recipe} key={`${recipe.type}-${recipe.id}-${i}`} />)
+              : null}
+            {showFoundryPage
+              ? FOUNDRY_RECIPES.map((recipe) => (
+                  <FoundryRecipeCard recipe={recipe} key={recipe.id} onCraft={handleCraftFoundryRecipe} />
+                ))
+              : null}
           </div>
         </div>
       </RecipeBookModal>

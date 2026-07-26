@@ -30,6 +30,7 @@
   "exclude": [
     "node_modules",
     "shared_code",
+    "infra",
     "docs/foundry/realm-server-patch",
     "docs/foundry/lore"
   ]

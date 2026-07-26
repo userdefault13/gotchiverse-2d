@@ -456,12 +456,18 @@ function handleClickAttack(pointer: Phaser.Input.Pointer, type: AttackType, hand
   // if (GameController.MAP !== 'aarena') return;
   const playerObject = scene[Players.selectedPlayer.id];
   if (!playerObject || isTrueSpectator(Players.selectedPlayer.isSpectator)) return;
-  // calculate direction on click instead of every update
+  // Prefer live mapConfig — module `shootMode` can stay stale across citaadel→aarena.
+  if (!scene?.mapConfig?.SHOOT_MODE && !shootMode) return;
+
   const pointerWorld = {
     x: pointer.worldX,
     y: pointer.worldY,
   };
-  const direction = normalizeVector(subtractVectors(pointerWorld, playerObject));
+  let direction = normalizeVector(subtractVectors(pointerWorld, playerObject));
+  // Server drops 0,0 dirs silently — fall back to last WASD / default facing.
+  if (direction.x === 0 && direction.y === 0) {
+    direction = directionFromLastMove();
+  }
   if (type === AttackType.Melee) {
     const duration = computeMeleeChargeDuration();
     // console.log('Rush chared for ', duration, 'seconds');
@@ -485,12 +491,28 @@ function handleClickAttack(pointer: Phaser.Input.Pointer, type: AttackType, hand
   }
 }
 
+function directionFromLastMove(): { x: number; y: number } {
+  switch (scene?.lastUpdate?.direction) {
+    case Direction.LEFT:
+      return { x: -1, y: 0 };
+    case Direction.RIGHT:
+      return { x: 1, y: 0 };
+    case Direction.UP:
+      return { x: 0, y: -1 };
+    case Direction.DOWN:
+      return { x: 0, y: 1 };
+    default:
+      return { x: 0, y: 1 };
+  }
+}
+
 function getAttackType(side: Hand): AttackType {
   if (side === Hand.Right) {
-    return GlobalState.REALM.state.rightWeapon === 'Melee Weapon' ? AttackType.Melee : AttackType.Ranged;
-  } else {
-    return GlobalState.REALM.state.leftWeapon === 'Melee Weapon' ? AttackType.Melee : AttackType.Ranged;
+    const w = GlobalState.REALM.state.rightWeapon || 'Ranged Weapon';
+    return w === 'Melee Weapon' ? AttackType.Melee : AttackType.Ranged;
   }
+  const w = GlobalState.REALM.state.leftWeapon || 'Melee Weapon';
+  return w === 'Melee Weapon' ? AttackType.Melee : AttackType.Ranged;
 }
 
 function toggleMouseMovement(active: boolean): void {
@@ -538,7 +560,7 @@ function toggleMouseMovement(active: boolean): void {
           );
         }
       } else if (!gameObjects.length && combatControls === 'arcade' && !Installations.buildModeState) {
-        if (!shootMode) return;
+        if (!scene?.mapConfig?.SHOOT_MODE && !shootMode) return;
         const playerObject = scene[Players.selectedPlayer.id];
 
         const hand = scene.rightClicked ? Hand.Right : Hand.Left;
@@ -557,7 +579,7 @@ function toggleMouseMovement(active: boolean): void {
         if (combatControls === 'arcade' && !GlobalState.GAME.state.gameConfig.enableRangedCharge && attackType === AttackType.Ranged) {
           handleClickAttack(pointer, AttackType.Ranged, hand);
           if (scene.continuousFireInterval) clearInterval(scene.continuousFireInterval);
-          scene.continuousFireInterval = setInterval(handleClickAttack, 100, AttackType.Ranged, hand);
+          scene.continuousFireInterval = window.setInterval(() => handleClickAttack(pointer, AttackType.Ranged, hand), 100);
         }
       } else if (!gameObjects.length && !Installations.buildModeState && combatControls === 'moba') {
         if (scene.rightClicked) {
@@ -588,7 +610,7 @@ function toggleMouseMovement(active: boolean): void {
         }
         Players.handleClickToMove(pointer);
       } else if (combatControls === 'arcade' && !Installations.buildModeState) {
-        if (!shootMode) return;
+        if (!scene?.mapConfig?.SHOOT_MODE && !shootMode) return;
         const hand = scene.rightClicked ? Hand.Right : Hand.Left;
         const attackType = getAttackType(hand);
         const chargeType = attackType === AttackType.Melee ? 'isMeleeCharging' : 'isMissileCharging';
@@ -741,7 +763,7 @@ function handleExitBuildMode() {
     if (scene.buildInstallation) {
       Installations.toggleBrush();
       setActiveBrush(undefined, GlobalState.USER.dispatch);
-    } else if (Installations.buildModeState) {
+    } else if (Installations.buildModeState || GlobalState.UI?.state?.hud === 'BUILD') {
       void Installations.toggleBuildMode(false);
       SFXController.playFX('click');
     }

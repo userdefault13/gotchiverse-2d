@@ -1,7 +1,6 @@
-import FoundryNodes from 'components/phaser/FoundryNodes';
 import { useGame } from 'contexts/GameContext';
-import { FoundryNet, FoundryStore } from 'helpers/foundry';
-import { FoundryState } from 'helpers/foundry/types';
+import { FoundryNet, FoundryStore, FOUNDRY_RECIPES, MATERIAL_GROUPS } from 'helpers/foundry';
+import { FoundryState, MaterialKey } from 'helpers/foundry/types';
 import { useEffect, useState } from 'react';
 import styles from './styles';
 
@@ -13,6 +12,7 @@ export const FoundryPanel = (): JSX.Element | null => {
 
   const [state, setState] = useState<FoundryState | null>(null);
   const [placeMode, setPlaceMode] = useState(false);
+  const [recipesOpen, setRecipesOpen] = useState(false);
   const [toast, setToast] = useState('');
 
   useEffect(() => {
@@ -32,6 +32,11 @@ export const FoundryPanel = (): JSX.Element | null => {
   const statusColor =
     state.netherlink === 'green' ? '#50dce6' : state.netherlink === 'amber' ? '#f08c32' : '#dc4650';
 
+  const formatInputs = (inputs: Partial<Record<MaterialKey, number>>) =>
+    Object.entries(inputs)
+      .map(([k, v]) => `${k}×${v}`)
+      .join(', ');
+
   return (
     <>
       <style jsx>{styles}</style>
@@ -50,22 +55,36 @@ export const FoundryPanel = (): JSX.Element | null => {
           <strong>{state.pollution}</strong>
         </div>
         <div className="row">
-          <span>Cargo</span>
+          <span>Cargo (power)</span>
           <strong>
             {state.cargo.fud}/{state.cargo.fomo}/{state.cargo.alpha}/{state.cargo.kek}
           </strong>
         </div>
+        {MATERIAL_GROUPS.map((group) => (
+          <div className="mat-group" key={group.label}>
+            <div className="mat-label">{group.label}</div>
+            <div className="mat-row">
+              {group.keys.map((key) => (
+                <span key={key} title={key}>
+                  {key.replace(/([A-Z])/g, ' $1').trim().slice(0, 3)} {state.materials[key]}
+                </span>
+              ))}
+            </div>
+          </div>
+        ))}
         <div className="row">
-          <span>Salvage</span>
-          <strong>
-            A{state.salvage.antenna} D{state.salvage.dish} S{state.salvage.slag}
-          </strong>
+          <span>Link-breakers</span>
+          <strong>{state.enemies.filter((e) => e.hp > 0).length}</strong>
         </div>
         <div className="hint">{state.walkLedgerHint}</div>
         <div className="actions">
+          <button type="button" onClick={() => setRecipesOpen(!recipesOpen)}>
+            {recipesOpen ? 'Hide Recipes' : 'Recipes'}
+          </button>
           <button
             type="button"
-            onClick={() => {
+            onClick={async () => {
+              const { default: FoundryNodes } = await import('components/phaser/FoundryNodes');
               FoundryNodes.setPlaceMode(!placeMode);
               setPlaceMode(!placeMode);
             }}
@@ -75,8 +94,7 @@ export const FoundryPanel = (): JSX.Element | null => {
           <button
             type="button"
             onClick={() => {
-              const r = FoundryNet.meshTransfer();
-              flash(r.message);
+              flash(FoundryNet.meshTransfer().message);
             }}
           >
             Mesh Transfer
@@ -84,8 +102,7 @@ export const FoundryPanel = (): JSX.Element | null => {
           <button
             type="button"
             onClick={() => {
-              const r = FoundryNet.bounceFreight();
-              flash(r.message);
+              flash(FoundryNet.bounceFreight().message);
             }}
           >
             Bounce Freight
@@ -93,21 +110,51 @@ export const FoundryPanel = (): JSX.Element | null => {
           <button
             type="button"
             onClick={() => {
-              const r = FoundryNet.factionPulse();
-              flash(r.message);
+              flash(FoundryNet.factionPulse().message);
             }}
           >
             Link-breaker Raid
           </button>
           <button
             type="button"
-            onClick={() => {
+            onClick={async () => {
+              const { default: FoundryNodes } = await import('components/phaser/FoundryNodes');
               flash(FoundryNodes.tryInteractNearby());
             }}
           >
             Interact Nearby
           </button>
         </div>
+        {recipesOpen ? (
+          <div className="recipes">
+            {FOUNDRY_RECIPES.map((recipe) => (
+              <div className="recipe" key={recipe.id}>
+                <div className="recipe-title">
+                  {recipe.label} <span className="tier">[{recipe.tier}]</span>
+                </div>
+                <div className="recipe-desc">{recipe.description}</div>
+                <div className="recipe-io">
+                  In: {formatInputs(recipe.inputs)}
+                  {Object.keys(recipe.power).length
+                    ? ` · Power: ${Object.entries(recipe.power)
+                        .map(([k, v]) => `${k.toUpperCase()}×${v}`)
+                        .join(' ')}`
+                    : ''}
+                  {' → '}
+                  {formatInputs(recipe.outputs)}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    flash(FoundryNet.craftRecipe(recipe.id).message);
+                  }}
+                >
+                  Craft
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : null}
         {toast ? <div className="toast">{toast}</div> : null}
       </div>
     </>

@@ -6,6 +6,12 @@ export default css`
     border: 0.2rem solid var(--col-purple-border);
     width: 100%;
   }
+  .toast-container.clickable {
+    cursor: pointer;
+  }
+  .toast-container.clickable:hover {
+    filter: brightness(1.05);
+  }
   .toast-container.success {
     border-color: var(--col-success-400);
   }

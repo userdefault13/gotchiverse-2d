@@ -9,14 +9,17 @@ const DECAY = 0.0001;
 
 const mapInProps = (bounceGateEvents: RealmEvent[]) => {
   const now = Date.now() / 1000;
-  // First map in parcelId for each event;
-  return _.map(bounceGateEvents, (event) => {
-    const parcelData: JsonParcel = PARCELS_BY_TOKEN_ID[event.id];
-    event.parcelId = parcelData.parcelId;
-    event.parcel = parcelData;
-    event.active = !event.cancelled && event.startTime < now && event.endTime > now;
-    return event;
-  });
+  // First map in parcelId for each event; skip events with unknown parcels.
+  return _.compact(
+    _.map(bounceGateEvents, (event) => {
+      const parcelData: JsonParcel = PARCELS_BY_TOKEN_ID[event.id];
+      if (!parcelData?.parcelId) return null;
+      event.parcelId = parcelData.parcelId;
+      event.parcel = parcelData;
+      event.active = !event.cancelled && event.startTime < now && event.endTime > now;
+      return event;
+    }),
+  );
 };
 
 const updatePriorities = (bounceGateEvents: RealmEvent[]) => {
@@ -42,7 +45,7 @@ const addParcelImages = async (bounceGateEvents: RealmEvent[]) => {
     const parcelToImage = await response.json();
 
     bounceGateEvents = bounceGateEvents.map((event) => {
-      event.image = parcelToImage.data[event.parcelId].image;
+      event.image = parcelToImage?.data?.[event.parcelId]?.image;
       return event;
     });
   }
@@ -56,7 +59,7 @@ const fetchAndMapOnlinePlayers = async (bounceGateEvents: RealmEvent[]) => {
   if (response.status === 200) {
     const parcelToUsers = await response.json();
     bounceGateEvents = bounceGateEvents.map((event) => {
-      event.count = parcelToUsers.data[event.parcelId].count;
+      event.count = parcelToUsers?.data?.[event.parcelId]?.count ?? 0;
       return event;
     });
   }
@@ -64,8 +67,11 @@ const fetchAndMapOnlinePlayers = async (bounceGateEvents: RealmEvent[]) => {
 };
 
 export const fetchEventsList = async (network: string, owner?: string) => {
-  const timeSecondsNow = Number(Number(Date.now() / 1000).toFixed()).toString();
-  const query = `{bounceGateEvents( where:{ cancelled:false, endTime_gt:"${timeSecondsNow}" ${owner ? ', creator: "' + owner + '"' : ''}}){
+  // Base Gotchiverse subgraph does not index `bounceGateEvents`; skip to avoid 400 spam.
+  if (process.env.NEXT_PUBLIC_DISABLE_BOUNCE_GATES === 'true') return [];
+  try {
+    const timeSecondsNow = Number(Number(Date.now() / 1000).toFixed()).toString();
+    const query = `{bounceGateEvents( where:{ cancelled:false, endTime_gt:"${timeSecondsNow}" ${owner ? ', creator: "' + owner + '"' : ''}}){
       id
       title
       priority
@@ -75,19 +81,23 @@ export const fetchEventsList = async (network: string, owner?: string) => {
       cancelled
       equipped
   }}`;
-  const graph = network && network === 'mumbai' ? 'https://api.thegraph.com/subgraphs/name/froid1911/relm-1689' : gotchiverseSubgraph;
-  const eventsRes: BounceGateEvents = await useSubgraph(query, graph);
-  // console.log('eventsRes:', eventsRes);
+    const graph = network && network === 'mumbai' ? 'https://api.thegraph.com/subgraphs/name/froid1911/relm-1689' : gotchiverseSubgraph;
+    const eventsRes: BounceGateEvents = await useSubgraph(query, graph);
+    // console.log('eventsRes:', eventsRes);
 
-  let eventsData: RealmEvent[] = eventsRes.bounceGateEvents;
-  // manual filter out wrong events
-  eventsData = _.filter(eventsData, ({ endTime }) => endTime.toString().length <= 10);
-  if (!eventsData.length) return [];
+    let eventsData: RealmEvent[] = eventsRes?.bounceGateEvents || [];
+    // manual filter out wrong events
+    eventsData = _.filter(eventsData, ({ endTime }) => endTime.toString().length <= 10);
+    if (!eventsData.length) return [];
 
-  eventsData = mapInProps(eventsData);
-  eventsData = updatePriorities(eventsData);
-  eventsData = await addParcelImages(eventsData);
-  eventsData = await fetchAndMapOnlinePlayers(eventsData);
-  console.log('EventsList:', eventsData);
-  return eventsData;
+    eventsData = mapInProps(eventsData);
+    eventsData = updatePriorities(eventsData);
+    eventsData = await addParcelImages(eventsData);
+    eventsData = await fetchAndMapOnlinePlayers(eventsData);
+    console.log('EventsList:', eventsData);
+    return eventsData;
+  } catch (err) {
+    console.warn('fetchEventsList failed', err);
+    return [];
+  }
 };

@@ -68,10 +68,17 @@ export const marketsData = Object.keys(_marketsData).reduce((acc: { [key: string
 }, {});
 
 export function getDefaultChainId() {
+  if (process.env.REALM_NETWORK === 'base' || process.env.NETWORK === 'base') {
+    return ChainId.base;
+  }
   return marketsData[availableMarkets[0]].chainId;
 }
 
 export function getSupportedChainIds(): number[] {
+  // Base Gotchiverse + Robinhood Chain aarena (Stock Token prize path).
+  if (process.env.REALM_NETWORK === 'base' || process.env.NETWORK === 'base') {
+    return [ChainId.base, ChainId.robinhood];
+  }
   if (process.env.APP_ENV === 'alpha') return [80001];
   else {
     return Array.from(

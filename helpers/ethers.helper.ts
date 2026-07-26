@@ -23,6 +23,26 @@ export function getErrMessage(tx): string {
       errMsg = 'Max parcel upgrades already in progress. Speed them up with GLTR or leverage Maaker installation.';
     } else if (errMsg.includes('invalid arrayify value')) {
       errMsg = 'Wrong Signature';
+    } else if (errMsg.includes("reading 'toHexString'") || errMsg.includes('toHexString')) {
+      errMsg = 'Equip signature missing. On Base, retry Confirm; otherwise the REALM signature API may be down.';
+    } else if (errMsg.includes('Equip signature unavailable')) {
+      errMsg = 'Equip signature unavailable. REALM signature API is not configured for this network.';
+    } else if (
+      errMsg.includes("Gotchi can't channel yet") ||
+      errMsg.includes('already channeled') ||
+      errMsg.includes('Gotchi channeling')
+    ) {
+      errMsg = 'This Gotchi already channeled today. Wait until UTC midnight or switch Gotchi.';
+    } else if (errMsg.includes('Parcel channeling') || errMsg.includes('channeling too soon')) {
+      errMsg = 'Parcel channel cooldown active. Wait for the Aaltar timer.';
+    } else if (errMsg.includes('Access rights') || errMsg.includes('access right')) {
+      errMsg = 'No channel access on this parcel.';
+    } else if (errMsg.includes('kinship') || errMsg.includes('Kinship')) {
+      errMsg = 'Gotchi kinship too low to channel.';
+    } else if (errMsg.includes('Incorrect last duration')) {
+      errMsg = 'Channel cooldown mismatch. Refresh the Aaltar dashboard and try again.';
+    } else if (errMsg.includes('call revert exception') || errMsg.includes('CALL_EXCEPTION')) {
+      errMsg = 'Transaction would revert. Check Base network, Gotchi ownership, and parcel access.';
     }
   }
 
@@ -109,6 +129,10 @@ export function chainIdToName(chainId: number): NetworkNames {
       return 'matic';
     case 5:
       return 'goerli';
+    case 8453:
+      return 'base';
+    case 4663:
+      return 'robinhood';
 
     default:
       break;
@@ -246,7 +270,7 @@ export function removeUnnecessaryDecimal(price: string) {
   return price;
 }
 
-interface CollateralObject {
+export interface CollateralObject {
   name: string;
   kovanAddress: string;
   mainnetAddress: string;
@@ -524,6 +548,21 @@ export const collaterals: CollateralObject[] = [
   },
 ];
 
+/** Unique collateral types for cAavegotchi / mint-cartridge gallery (skip test + dup svgIds). */
+export function getMintableCollaterals(): CollateralObject[] {
+  const seen = new Set<number>();
+  return collaterals.filter((c) => {
+    if (!c.name || c.name === 'testGHST') return false;
+    if (seen.has(c.svgId)) return false;
+    seen.add(c.svgId);
+    return true;
+  });
+}
+
+export function collateralDisplayName(collateral: CollateralObject): string {
+  return collateral.maticDisplay || collateral.name;
+}
+
 export const approveToken = async (token: AavegotchiTokens, contractName: DiamondName, network?: NetworkNames, signer?: Signer) => {
   if (!token) {
     console.error('No token selected!');
@@ -554,9 +593,14 @@ export function collateralByAddress(network: string, address: string): Collatera
   //   else if (network === 'matic') return add.maticAddress.toLowerCase() === address.toLowerCase();
   //   else return add.kovanAddress.toLowerCase() === address.toLowerCase();
   // });
-  const collateral = collaterals.find((add) => add.maticAddress.toLowerCase() === address.toLowerCase());
+  if (!address) {
+    return collaterals[0];
+  }
+  const collateral = collaterals.find((add) => add.maticAddress?.toLowerCase() === address.toLowerCase());
 
   if (collateral != null) return collateral;
+  // Base collaterals may not be in the legacy matic table yet — keep enter flow alive.
+  return collaterals[0];
 }
 
 export async function addPolygon(): Promise<void> {
@@ -574,6 +618,47 @@ export async function addPolygon(): Promise<void> {
           symbol: 'MATIC',
         },
         blockExplorerUrls: ['https://polygonscan.com/'],
+      },
+    ],
+  });
+}
+
+/** Add / switch MetaMask to Robinhood Chain mainnet (4663 / 0x1237). */
+export async function addRobinhood(): Promise<void> {
+  // @ts-expect-error
+  await window.ethereum?.request({
+    method: 'wallet_addEthereumChain',
+    params: [
+      {
+        chainId: '0x1237',
+        rpcUrls: [process.env.NEXT_PUBLIC_ROBINHOOD_RPC || 'https://rpc.mainnet.chain.robinhood.com'],
+        chainName: 'Robinhood Chain',
+        nativeCurrency: {
+          name: 'Ether',
+          decimals: 18,
+          symbol: 'ETH',
+        },
+        blockExplorerUrls: ['https://robinhoodchain.blockscout.com/'],
+      },
+    ],
+  });
+}
+
+export async function addBase(): Promise<void> {
+  // @ts-expect-error
+  await window.ethereum?.request({
+    method: 'wallet_addEthereumChain',
+    params: [
+      {
+        chainId: '0x2105',
+        rpcUrls: [process.env.NEXT_PUBLIC_BASE_RPC || 'https://mainnet.base.org'],
+        chainName: 'Base',
+        nativeCurrency: {
+          name: 'Ether',
+          decimals: 18,
+          symbol: 'ETH',
+        },
+        blockExplorerUrls: ['https://basescan.org/'],
       },
     ],
   });

@@ -1,5 +1,6 @@
 import AlphaIcon from './alpha.png';
 import AdminSearch from './admin-search.svg';
+import BaseIcon from './base.png';
 import BookIcon from './book.svg';
 import BorrowedIcon from './borrowedIcon.svg';
 import BotIcon from './bot.svg';
@@ -74,6 +75,7 @@ import OnChainFomoIcon from './onchain_fomo.svg';
 import OnChainFudIcon from './onchain_fud.svg';
 import OnChainKekIcon from './onchain_kek.svg';
 import PolygonIcon from './polygon.svg';
+import RhIcon from './rh.svg';
 import PriceCheckMark from './price-check.svg';
 import PriceConfirmIcon from './price-confirm.svg';
 import PriceNoconfirmIcon from './price-noconfirm.svg';
@@ -157,6 +159,7 @@ export {
   Inactive,
   AdminSearch,
   AlphaIcon,
+  BaseIcon,
   BookIcon,
   BorrowedIcon,
   BotIcon,
@@ -219,6 +222,7 @@ export {
   OnChainFudIcon,
   OnChainKekIcon,
   PolygonIcon,
+  RhIcon,
   PriceCheckMark,
   PriceConfirmIcon,
   PriceNoconfirmIcon,

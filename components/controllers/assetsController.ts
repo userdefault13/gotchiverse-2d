@@ -186,6 +186,8 @@ const installationList: TextureConfig[] = [
   { id: '159', preload: true },
   { id: '160', preload: true },
   { id: '161', preload: true },
+  { id: 'waall', preload: true },
+  { id: 'lodge', preload: true },
   { id: 'maaker_door', preload: true },
   { id: 'maaker_bot', preload: true },
   { id: 'equip', preload: true, animationConfig: { isLoop: true } },
@@ -785,7 +787,7 @@ const globalLoadTexture = async (list: TextureConfig[]): Promise<void> => {
   const preloads = USE_DYNAMIC_LOAD ? _.filter(list, ({ preload }) => preload) : list;
   // console.log('preloads', preloads);
   for (let i = 0; i < preloads.length; i++) {
-    const texture = list[i];
+    const texture = preloads[i];
     await loadTexture(texture);
   }
 };
@@ -869,18 +871,32 @@ const checkTexture = async (key: string, url: string, type = 'image'): Promise<b
 
 const checkLocalTexture = async (key: string): Promise<boolean> => {
   // console.log('@checkLocalTexture:', key);
-  return await new Promise((resolve, reject) => {
+  return await new Promise((resolve) => {
     const texture = allTexturesConfig[key];
-    if (!texture) return false;
-    if (scene.textures.exists(key) && scene.textures?.get(key).key !== '__MISSING') resolve(true);
+    if (!texture) {
+      resolve(false);
+      return;
+    }
+    if (scene.textures.exists(key) && scene.textures?.get(key).key !== '__MISSING') {
+      resolve(true);
+      return;
+    }
 
     // Texture not found, load texture
     void loadTexture(texture);
     scene.load.start();
-    scene.load.on(`filecomplete-${texture.type}-${key}`, (key, type) => {
-      // console.log('@checkTexture:', key, type, data);
-      resolve(true);
-    });
+    const event = `filecomplete-${texture.type}-${key}`;
+    let settled = false;
+    const finish = (ok: boolean) => {
+      if (settled) return;
+      settled = true;
+      scene.load.off(event, onComplete);
+      resolve(ok);
+    };
+    const onComplete = () => finish(true);
+    scene.load.on(event, onComplete);
+    // Avoid hanging forever if the asset 404s.
+    setTimeout(() => finish(scene.textures.exists(key)), 8000);
   });
 };
 

@@ -68,7 +68,13 @@ const Combat = () => {
 
   // Reroute if selected player address doesnt match, or network not correct
   useEffect(() => {
-    if (!['local', 'alpha', 'development'].includes(process.env.APP_ENV) && currentNetwork !== 'matic') {
+    if (
+      !['local', 'alpha', 'development'].includes(process.env.APP_ENV) &&
+      currentNetwork !== process.env.REALM_NETWORK &&
+      currentNetwork !== 'matic' &&
+      currentNetwork !== 'base' &&
+      currentNetwork !== 'robinhood'
+    ) {
       void router.push('/');
     }
   }, [selectedPlayer, currentAccount, currentNetwork]);
@@ -80,7 +86,9 @@ const Combat = () => {
         <title>Aarena | Gotchiverse</title>
         <meta property="og:title" content="Aarena | Gotchiverse" key="title" />
       </Head>
-      {(!gameLoaded || !selectedPlayer || !connected) && <LoadingScene isAarena />}
+      {/* Once the scene has loaded, never cover it with the boot LoadingScene on a
+          transient Colyseus disconnect — that looked like "attack → stuck loading". */}
+      {(!gameLoaded || !selectedPlayer) && <LoadingScene isAarena />}
       {selectedPlayer && <PhaserGameLoader gameScene={gameScene} />}
       {connected && gameLoaded && <Hud />}
       {gameLoaded && socketConnected && <AarenaLobby />}

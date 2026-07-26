@@ -1,6 +1,4 @@
 /* eslint-disable @typescript-eslint/indent */
-import Moralis from 'moralis';
-import { EvmChain } from '@moralisweb3/common-evm-utils';
 import _ from 'lodash';
 import { getNFTDisplayStatuses, getOwnedAavegotchisOfOwner } from 'web3/subgraph/queries';
 import { useSubgraph } from 'web3/subgraph';
@@ -9,6 +7,32 @@ import { NFTDisplay } from 'components/phaser/NFTDisplay';
 import { _isSafeURL } from 'helpers/realm.helper';
 import GlobalState from 'contexts/GlobalState';
 import { gotchiverseSubgraph } from 'shared_code/web3/shared.const.web3';
+
+// Lazy-load Moralis so Next.js SSR/build does not evaluate the CJS bundle at collect-page-data time.
+let Moralis: typeof import('moralis').default | null = null;
+let EvmChain: typeof import('@moralisweb3/common-evm-utils').EvmChain | null = null;
+let moralisStarted = false;
+
+async function ensureMoralis() {
+  if (!Moralis) {
+    const moralisMod = await import('moralis');
+    Moralis = moralisMod.default;
+  }
+  if (!EvmChain) {
+    const evmMod = await import('@moralisweb3/common-evm-utils');
+    EvmChain = evmMod.EvmChain;
+  }
+  return { Moralis, EvmChain };
+}
+
+async function startMoralisIfNeeded() {
+  const { Moralis: moralis } = await ensureMoralis();
+  if (!moralisStarted) {
+    await moralis.start({ apiKey: process.env.MORALIS_API_KEY });
+    moralisStarted = true;
+  }
+  return moralis;
+}
 
 interface MoralisControllerInterface {
   init: () => void;
@@ -110,9 +134,8 @@ const allowedMoralisNetworks: MoralisNetwork[] = ['POLYGON', 'ETHEREUM'];
 let allowedCollections: AllowedCollection[];
 
 const init = async (): Promise<void> => {
-  await Moralis.start({
-    apiKey: process.env.MORALIS_API_KEY,
-  });
+  if (typeof window === 'undefined') return;
+  await startMoralisIfNeeded();
   await getAllowedCollections();
 };
 
@@ -120,6 +143,10 @@ const getCollectionsByNetwork = (network: MoralisNetwork): AllowedCollection[] =
   if (!_.includes(allowedMoralisNetworks, network)) {
     console.error('@Moralis.getWalletNFTs: not a valid network', network);
     return;
+  }
+  if (!EvmChain) {
+    console.warn('@Moralis.getCollectionsByNetwork: Moralis not initialized');
+    return [];
   }
   const chain = EvmChain[network];
   return _.filter(allowedCollections, ({ chainId }) => Number(chainId) === Number(chain.apiHex));
@@ -147,8 +174,10 @@ const getWalletNFTs = async (
   const emptyData: PaginatedNFTDisplayData = { data: [], page: 0, cursor: null };
 
   if (!address) return emptyData; // no valid address
+  const moralis = await startMoralisIfNeeded();
+  const { EvmChain: chainEnum } = await ensureMoralis();
   const contractList = getCollectionsByNetwork(network);
-  const chain = EvmChain[network];
+  const chain = chainEnum[network];
   const allowedContracts = _.map(contractList, ({ contractAddress }) => contractAddress.toLowerCase());
   const params = {
     address: TEST_WALLET || address,
@@ -166,7 +195,7 @@ const getWalletNFTs = async (
 
   let res;
   try {
-    res = await Moralis.EvmApi.nft.getWalletNFTs(params);
+    res = await moralis.EvmApi.nft.getWalletNFTs(params);
   } catch (error) {
     console.error('@getWalletNFTs:ERR', error);
   }
@@ -286,7 +315,7 @@ const transformNFTData = async (evmNFT, nftOwner: string, withMetadata?: boolean
   const data = _.pick(evmNFT, ['metadata', 'tokenId', 'tokenAddress', 'tokenUri', 'contractType']);
 
   if (Number(collectionId) === 8) {
-    data.tokenUri = `https://api.gotchiverse.io/metadata/fakegotchisart?tokenId=${data.tokenId}`;
+    data.tokenUri = `${process.env.NEXT_PUBLIC_API_URL}/metadata/fakegotchisart?tokenId=${data.tokenId}`;
   }
   const nft = {
     id,

@@ -22,15 +22,16 @@ export default class HealthBar extends Phaser.GameObjects.Graphics {
   // eslint-disable-next-line @typescript-eslint/ban-types
   enemyConfig: {};
 
-  constructor(x: number, y: number, type: 'player' | 'enemy', max?: number) {
+  constructor(x: number, y: number, type: 'player' | 'friends' | 'enemy', max?: number) {
     super(scene);
     this.bar = this;
     this.x = x;
     this.y = y;
-    this.value = max || 1000;
-    this.percentage = 66 / max || 1000;
+    const maxHp = Number(max);
+    this.maxHP = Number.isFinite(maxHp) && maxHp > 0 ? maxHp : 1000;
+    this.value = this.maxHP;
+    this.percentage = 1;
     this.type = type;
-    this.maxHP = max || 1000;
 
     this.enemyConfig = {
       100: {
@@ -54,12 +55,13 @@ export default class HealthBar extends Phaser.GameObjects.Graphics {
     this.draw();
   }
 
-  getDamage(amount) {
-    this.value = amount;
-
-    if (this.value < 0) {
-      this.value = 0;
+  /** `amount` is remaining HP (not damage dealt). Optional max refreshes bar scale. */
+  getDamage(amount: number, max?: number) {
+    if (Number.isFinite(Number(max)) && Number(max) > 0) {
+      this.maxHP = Number(max);
     }
+    const next = Number(amount);
+    this.value = Number.isFinite(next) ? Math.max(0, next) : 0;
 
     this.draw();
     return this.value === 0;
@@ -67,48 +69,34 @@ export default class HealthBar extends Phaser.GameObjects.Graphics {
 
   draw() {
     this.bar.clear();
+    const maxHp = this.maxHP > 0 ? this.maxHP : 1000;
+    const ratio = Math.max(0, Math.min(1, this.value / maxHp));
 
     if (this.type === 'player' || this.type === 'friends') {
-      this.percentage = 66 / this.maxHP;
-      // background
-      this.bar.fillStyle(this.type === 'player' ? 0xa3a3a3 : 0x686984); // grey bg (0xa3a3a3) = player
+      // background (grey track is intentional)
+      this.bar.fillStyle(this.type === 'player' ? 0xa3a3a3 : 0x686984);
       this.bar.fillRoundedRect(this.x, this.y, 70, 16, 2);
       // border
-      this.bar.lineStyle(2, this.type === 'player' ? 0x000000 : 0x3a3b56, 1); // black = selected player, 0x3a3b56 = other player
+      this.bar.lineStyle(2, this.type === 'player' ? 0x000000 : 0x3a3b56, 1);
       this.bar.strokeRoundedRect(this.x, this.y, 70, 16, 2);
-      // health color
-      this.bar.fillStyle(this.type === 'player' ? 0xff38ff : 0xc000b7); // bright pink = 0xff38ff (selected player), bd00c4 = other player
+      // health fill — magenta for local player, purple for others
+      this.bar.fillStyle(this.type === 'player' ? 0xff38ff : 0xc000b7);
 
-      const d = Math.floor(this.percentage * this.value);
-      this.bar.fillRoundedRect(this.x + 2, this.y + 2, d, 12, 2);
+      const d = Math.floor(66 * ratio);
+      if (d > 0) {
+        this.bar.fillRoundedRect(this.x + 2, this.y + 2, d, 12, 2);
+      }
     }
 
     if (this.type === 'enemy') {
-      this.percentage = 238 / this.maxHP;
-      this.bar.fillStyle(0xA3A3A3, 0.5);
+      this.bar.fillStyle(0xa3a3a3, 0.5);
       this.bar.fillRoundedRect(this.x, this.y, 240, 20, 2);
       this.bar.fillStyle(0xff0000, 1);
-      // health
-      // const p = (this.value / this.maxHP) * 100;
-      // if (p <= 70 && p > 40) {
-      //   this.bar.lineStyle(2, this.enemyConfig[70].outlineColor, 1);
-      //   this.bar.fillStyle(this.enemyConfig[70].fillColor);
-      // } else if (p <= 40 && p > 20) {
-      //   this.bar.lineStyle(2, this.enemyConfig[40].outlineColor, 1);
-      //   this.bar.fillStyle(this.enemyConfig[40].fillColor);
-      // } else if (p <= 20) {
-      //   this.bar.lineStyle(2, this.enemyConfig[20].outlineColor, 1);
-      //   this.bar.fillStyle(this.enemyConfig[20].fillColor);
-      // } else {
-      //   this.bar.lineStyle(2, this.enemyConfig[100].outlineColor, 1);
-      //   this.bar.fillStyle(this.enemyConfig[100].fillColor);
-      // }
 
-      const d = Math.floor(this.percentage * this.value);
-      // this.bar.strokeRoundedRect(this.x, this.y, 240, 24, 4);
-      this.bar.fillRoundedRect(this.x + 1, this.y, d, 20, 2);
-
-      // console.log(`value =${this.value} diff =${d}, p=${p}`);
+      const d = Math.floor(238 * ratio);
+      if (d > 0) {
+        this.bar.fillRoundedRect(this.x + 1, this.y, d, 20, 2);
+      }
     }
   }
 

@@ -20,6 +20,12 @@ export interface SelectedPlayer {
   leftHand?: HandWearable | undefined;
   isSpectator?: boolean;
   spectatorColor?: number;
+  /** Soft-launch cartridge-bound cAavegotchi (not an L1 token id). */
+  isCartridgeHero?: boolean;
+  /** Sim collateral id (dai, uni, …) for in-game sprite. */
+  cartridgeCollateral?: string;
+  /** Modified numeric traits [NRG,AGG,SPK,BRN,EYC,EYS] for aarena combat join. */
+  withSetsNumericTraits?: [number, number, number, number, number, number];
 }
 
 export interface Player {
@@ -125,6 +131,7 @@ export interface CollisionEvent {
 export interface Health {
   id: string;
   health: number;
+  maxHealth?: number;
 }
 
 export interface Damage extends Health {

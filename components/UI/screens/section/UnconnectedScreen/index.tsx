@@ -4,11 +4,15 @@ import { Button, WalletConnectButton } from 'components/UI/elements';
 import { useWeb3 } from 'contexts/Web3Context';
 import { useUserWalletDataContext } from 'components/utility/WalletConnect';
 import Image from 'next/image';
-import { addPolygon } from 'helpers/ethers.helper';
+import { addBase, addRobinhood } from 'helpers/ethers.helper';
 import styles from './styles';
 import { GotchiverseLogo, GotchiverseTitleHalloween } from 'assets';
 import GameController from 'components/controllers/GameController';
 import { useGame } from 'contexts/GameContext';
+import { ChainId } from 'components/utility/WalletConnect/data-provider/chains';
+import { isRealmAllowedNetwork } from 'web3/web3';
+
+const EXPECTED_NETWORK = process.env.REALM_NETWORK || process.env.NETWORK || 'base';
 
 export const UnconnectedScreen = (): JSX.Element => {
   const { showSelectWalletModal, handleNetworkChange, walletModalVisible } = useUserWalletDataContext();
@@ -23,11 +27,18 @@ export const UnconnectedScreen = (): JSX.Element => {
     showSelectWalletModal(true);
   };
 
-  const connectToPolygon = async () => {
-    // click();
-    handleNetworkChange(137);
-    void addPolygon();
+  const connectToBase = async () => {
+    handleNetworkChange(ChainId.base);
+    void addBase();
   };
+
+  const connectToRobinhood = async () => {
+    handleNetworkChange(ChainId.robinhood);
+    void addRobinhood();
+  };
+
+  const onExpectedNetwork = isRealmAllowedNetwork(currentNetwork);
+
   return (
     <>
       <Layout scene="unconnected">
@@ -47,11 +58,22 @@ export const UnconnectedScreen = (): JSX.Element => {
                       </Button>
                     </div>
                   )}
-                  {currentAccount && !['kovan', 'matic', 'rinkeby'].includes(currentNetwork || 'void') && (
-                    <div className="connect-to-polygon">
-                      <Button size={3.2} onClick={connectToPolygon} color={gameConfig.gotchiverseTheme} secondary fullWidth>
-                        Connect to Polygon
+                  {currentAccount && !onExpectedNetwork && (
+                    <div className="connect-to-base" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <Button size={3.2} onClick={connectToBase} color={gameConfig.gotchiverseTheme} secondary fullWidth>
+                        Connect to Base
                       </Button>
+                      {EXPECTED_NETWORK === 'base' && (
+                        <Button
+                          size={3.2}
+                          onClick={connectToRobinhood}
+                          color={gameConfig.gotchiverseTheme}
+                          secondary
+                          fullWidth
+                        >
+                          Connect to Robinhood Chain
+                        </Button>
+                      )}
                     </div>
                   )}
                 </>

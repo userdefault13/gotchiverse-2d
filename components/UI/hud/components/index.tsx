@@ -1,6 +1,7 @@
 export * from './SideTray';
 export * from './AccessRightsModal';
 export * from './Events/ActiveEventsModal';
+export * from './Events/TravelParcelsModal';
 export * from './CarriedAlchemicaPanel';
 export * from './ChatBox';
 export * from './ChatBar';
@@ -30,3 +31,4 @@ export * from './ExitArenaModal';
 export * from './AarenaLobby';
 export * from './Leaderboard';
 export * from './FoundryPanel';
+export * from './RhStockPrizePanel';

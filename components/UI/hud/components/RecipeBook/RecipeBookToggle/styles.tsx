@@ -5,9 +5,9 @@ export default css`
     border: 0.4rem solid var(--col-pink-border);
     background: rgba(0, 0, 0, 0.7);
     color: var(--col-pink-400);
-    width: 25.6rem;
-    font-size: 3.2rem;
-    height: 8.5rem;
+    width: 22rem;
+    font-size: 2.6rem;
+    height: 6.4rem;
     position: relative;
     text-align: left;
     padding: 0;
@@ -27,10 +27,10 @@ export default css`
   .icon-container {
     background-color: var(--col-pink-600);
     /* border-right: .3rem solid var(--col-pink-border); */
-    width: 8rem;
+    width: 6.4rem;
     height: 100%;
     position: relative;
-    margin-right: 2.4rem;
+    margin-right: 1.6rem;
     background: linear-gradient(to bottom, rgba(200, 42, 194, 0), var(--col-pink-border) 30%, var(--col-pink-border));
     clip-path: polygon(
       0% 0%,
@@ -53,7 +53,7 @@ export default css`
     left: 50%;
     top: 50%;
     object-fit: contain;
-    transform: translate(-50%, -50%) scale(1.6);
+    transform: translate(-50%, -50%) scale(1.15);
     transition: 100ms ease;
     display: flex;
     align-items: center;
@@ -67,7 +67,7 @@ export default css`
     box-shadow: 0 0 0.8rem 0.2rem var(--col-halloween-400);
   }
   .toggle-button:not(:disabled):hover span {
-    transform: translate(-50%, -50%) scale(1.8);
+    transform: translate(-50%, -50%) scale(1.3);
   }
 
   .right-cap {
@@ -75,7 +75,7 @@ export default css`
     border-bottom: 0.4rem solid var(--col-pink-border);
     border-top: 0.4rem solid var(--col-pink-border);
     width: 1.2rem;
-    left: 8rem;
+    left: 6.4rem;
     height: calc(100% - 2.4rem);
     top: 1.2rem;
     position: absolute;

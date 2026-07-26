@@ -163,9 +163,10 @@ export default css`
     flex-grow: 1;
     padding-left: 0.5em;
     padding-right: 1.5em;
-    height: 2.5em;
+    height: 3.8em;
     margin-left: 0.8em;
     clip-path: polygon(0 0, calc(100% - 1em) 0, 100% 50%, calc(100% - 1em) 100%, 0% 100%);
+    align-items: center;
   }
 
   .total-collected-alchemica {
@@ -196,12 +197,15 @@ export default css`
   .alchemica {
     flex: 1 0 25%;
     align-items: center;
-    gap: 0.4em;
+    justify-content: center;
+    gap: 0.35em;
   }
 
   .alchemica-item-image-wrapper {
-    width: 2.7em;
-    height: 2.7em;
+    position: relative;
+    width: 3.6em;
+    height: 3.6em;
+    flex: 0 0 3.6em;
   }
 
   .trait-details {

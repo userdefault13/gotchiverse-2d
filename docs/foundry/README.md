@@ -1,6 +1,6 @@
 # Hybrid Grid Foundry PoC
 
-Citaadel parcels = baseload Alchemica Foundry. Wild Grid = richer veins + salvage. Haul home via **Walk Ledger**, **Bounce Freight**, or **Antenna Spine**.
+Citaadel parcels = baseload Alchemica Foundry. Wild Grid = mineral/gas veins + Yield Fields. Mine **raw materials** at veins; get **alchemica cargo** from Yield Fields or Link-breaker kills; craft with alchemica power; place **Antenna Relays**; haul via Walk Ledger / Bounce Freight / Antenna Spine.
 
 ## In this client
 

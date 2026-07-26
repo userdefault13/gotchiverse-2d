@@ -57,9 +57,13 @@ export default css`
     text-align: center;
     color: var(--col-pink-300);
     text-transform: uppercase;
-    font-size: 2.6rem;
-    line-height: 2rem;
-    margin-bottom: 0.4rem;
+    font-size: 2.4rem;
+    line-height: 1.1;
+    margin-bottom: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
   }
   .recipe.limited-edition .name-container p {
     color: var(--col-legendary-400);

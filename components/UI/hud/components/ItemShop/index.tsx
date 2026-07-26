@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { ShopItem, ShopPurchase, Status, StatusNotification, TokenCounters } from 'types';
 import styles from './styles';
 import _ from 'lodash';
-import { shopItemsById, AVAILABLE_SHOP_ITEMS, AllowedItemTypeId } from 'helpers/items.helpers';
+import { shopItemsById, AVAILABLE_SHOP_ITEMS, AllowedItemTypeId, isFoundryShopItem, getFoundryKitId } from 'helpers/items.helpers';
 import { getZeroTokens } from 'helpers/realm.helper';
 import { getOnChainAlchemicaIcon } from 'helpers/functions';
 import Image from 'next/image';
@@ -13,6 +13,8 @@ import GameController from 'components/controllers/GameController';
 import { useUI } from 'contexts/UIContexts';
 import { handleStatusNotification } from 'contexts/NotificationContext/actions';
 import { fetchItemStoreAvilable } from 'helpers/api.helpers';
+import { isColyseusNetcode } from 'helpers/colyseus.client';
+import { FoundryNet } from 'helpers/foundry';
 
 interface Props {
   open: boolean;
@@ -79,9 +81,41 @@ export const ItemShop = ({ open, onClose }: Props): JSX.Element => {
 
   // Handle Shop Actions
   const handlePurchase = async () => {
+    const cartLines = _.map(cartItems, (quantity, id) => ({ id: Number(id), quantity }));
+    const foundryLines = cartLines.filter((line) => isFoundryShopItem(shopItemsById[line.id]));
+    const legacyLines = cartLines.filter((line) => !isFoundryShopItem(shopItemsById[line.id]));
+
+    if (isColyseusNetcode() && foundryLines.length) {
+      const info = getOrderDescription({ items: foundryLines });
+      const notification: StatusNotification = { type: 'purchase', data: { status: 'init', info } };
+      await handleStatusNotification(notification, { signature: false, sound: true });
+
+      let ok = true;
+      for (const line of foundryLines) {
+        const item = shopItemsById[line.id];
+        for (let i = 0; i < line.quantity; i += 1) {
+          const r = FoundryNet.purchaseSalvage(getFoundryKitId(item));
+          if (!r.ok) ok = false;
+        }
+      }
+
+      if (legacyLines.length) {
+        ok = false;
+      }
+
+      setPurchaseState(ok ? 'success' : 'failed');
+      if (ok) setCartItems({});
+      const doneNotification: StatusNotification = {
+        type: 'purchase',
+        data: { status: ok ? 'success' : 'failed', error: legacyLines.length ? 'Foundry kits require separate checkout' : '' },
+      };
+      void handleStatusNotification(doneNotification);
+      return;
+    }
+
     const purchaseData: ShopPurchase = {};
     // Transform purchaseData in BE readable purchaseData.
-    purchaseData.items = _.map(cartItems, (quantity, id) => ({ id: Number(id), quantity }));
+    purchaseData.items = cartLines;
     const info = getOrderDescription(purchaseData);
     // Init Notification, notification message/title will be predefined.
     const notification: StatusNotification = { type: 'purchase', data: { status: 'init', info } };

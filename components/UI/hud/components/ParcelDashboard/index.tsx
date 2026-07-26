@@ -13,6 +13,7 @@ import {
   formatTimeLeft,
   getCapacities,
   getClaimableAlchemica,
+  getContractGotchiLastChannel,
   getContractParcelLastChannel,
   getContractParcelLastClaimded,
   getHarvestRates,
@@ -20,6 +21,7 @@ import {
   getParcelCurrentRound,
   getRemainingAlchemica,
   getTotalClaimed,
+  secondsUntilGotchiCanChannel,
   secondsUntilParcelCanChannel,
   secondsUntilParcelCanClaim,
   surveyParcel,
@@ -60,6 +62,11 @@ export const ParcelDashboard = (): JSX.Element => {
   const { oops } = useAavegotchiSound();
   const [{ gameConfig }] = useGame();
 
+  const foundryEnabled =
+    Boolean((gameConfig as { enableParcelFoundryPoC?: boolean })?.enableParcelFoundryPoC) ||
+    process.env.NEXT_PUBLIC_ENABLE_FOUNDRY_POC === 'true';
+  const [foundryState, setFoundryState] = useState(() => FoundryStore.getState());
+
   const [channelLoading, setChannelLoading] = useState(false);
   const [claimLoading, setClaimLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
@@ -81,8 +88,14 @@ export const ParcelDashboard = (): JSX.Element => {
   const [rates, setRates] = useState<number[]>();
   const [capacities, setCapacities] = useState<number[]>();
 
-  const [secondsUntilChannel, setSecondsUntilChannel] = useState<number>();
+  const [secondsUntilParcelChannel, setSecondsUntilParcelChannel] = useState<number>();
+  const [secondsUntilGotchiChannel, setSecondsUntilGotchiChannel] = useState<number>();
+  const [gotchiLastChanneledStr, setGotchiLastChanneledStr] = useState<string>('0');
   const [secondsUntilClaim, setSecondsUntilClaim] = useState<number>();
+
+  /** Parcel altar cooldown OR gotchi daily UTC lock — UI previously only checked parcel. */
+  const secondsUntilChannel = Math.max(secondsUntilParcelChannel || 0, secondsUntilGotchiChannel || 0);
+  const channelBlockedByGotchi = (secondsUntilGotchiChannel || 0) > (secondsUntilParcelChannel || 0);
 
   const alchemicas: Tokens[] = ['fud', 'fomo', 'alpha', 'kek'];
 
@@ -100,8 +113,31 @@ export const ParcelDashboard = (): JSX.Element => {
       setRates(undefined);
       setCapacities(undefined);
       setSurveyRound(undefined);
+      setSecondsUntilParcelChannel(undefined);
+      setSecondsUntilGotchiChannel(undefined);
+      setGotchiLastChanneledStr('0');
     }
   }, [parcelDashboardState]);
+
+  useEffect(() => {
+    if (!parcelDashboardState.open || !globalProvider || !currentNetwork || selectedPlayer?.id == null) return;
+    void getSetGotchiChannelTime(selectedPlayer.id);
+  }, [parcelDashboardState.open, globalProvider, currentNetwork, selectedPlayer?.id]);
+
+  // Tick gotchi UTC countdown while dashboard is open
+  useEffect(() => {
+    if (!parcelDashboardState.open) return;
+    const id = setInterval(() => {
+      setSecondsUntilGotchiChannel(secondsUntilGotchiCanChannel(gotchiLastChanneledStr) || 0);
+    }, 60 * 1000);
+    return () => clearInterval(id);
+  }, [parcelDashboardState.open, gotchiLastChanneledStr]);
+
+  useEffect(() => {
+    if (!foundryEnabled) return;
+    setFoundryState(FoundryStore.getState());
+    return FoundryStore.subscribe(setFoundryState);
+  }, [foundryEnabled]);
 
   const handleClose = () => {
     uiDispatch({
@@ -148,7 +184,10 @@ export const ParcelDashboard = (): JSX.Element => {
 
   // get Current alchemica data related to reservoir states
   const getAndSetAlchemicaData = async (realmId: number) => {
-    const claimable = await getClaimableAlchemica(ethersSigner, currentNetwork, realmId);
+    const reader = globalProvider || ethersSigner;
+    if (!reader || !currentNetwork) return;
+
+    const claimable = await getClaimableAlchemica(reader, currentNetwork, realmId);
     // console.log('claimable', claimable);
     if (claimable) {
       setCollected(claimable);
@@ -157,17 +196,19 @@ export const ParcelDashboard = (): JSX.Element => {
       // console.log('enoughToClaim', !!enoughToClaim);
     }
 
-    const remaining = await getRemainingAlchemica(ethersSigner, currentNetwork, realmId);
+    const remaining = await getRemainingAlchemica(reader, currentNetwork, realmId);
     // console.log('remaining', remaining);
     if (remaining) setRemaining(remaining);
 
-    const totalClaimed = await getTotalClaimed(ethersSigner, currentNetwork, realmId);
+    const totalClaimed = await getTotalClaimed(reader, currentNetwork, realmId);
     // console.log('totalClaimed', totalClaimed);
     if (totalClaimed) setTotalClaimed(totalClaimed);
 
-    const surveying = await getIsSurveying(globalProvider, currentNetwork, realmId);
-    // console.log('surveying', surveying);
-    setIsSurveying(surveying);
+    if (globalProvider) {
+      const surveying = await getIsSurveying(globalProvider, currentNetwork, realmId);
+      // console.log('surveying', surveying);
+      setIsSurveying(surveying);
+    }
 
     if (totalClaimed && remaining) {
       const hasSurveyed = _.sum(totalClaimed) + _.sum(remaining) !== 0;
@@ -175,17 +216,20 @@ export const ParcelDashboard = (): JSX.Element => {
       setHasSurveyed(hasSurveyed);
     }
 
-    const capacities = await getCapacities(ethersSigner, currentNetwork, realmId);
+    const capacities = await getCapacities(reader, currentNetwork, realmId);
     if (capacities) setHasReservoirs(_.sum(capacities) !== 0);
   };
 
-  // current reservoirs/hervesters data
+  // current reservoirs/harvesters data
   const getAndSetHarvestingData = async (realmId: number) => {
-    const rates = await getHarvestRates(ethersSigner, currentNetwork, realmId);
+    const reader = globalProvider || ethersSigner;
+    if (!reader || !currentNetwork) return;
+
+    const rates = await getHarvestRates(reader, currentNetwork, realmId);
     // console.log('rates', rates);
     if (rates) setRates(rates);
 
-    const capacities = await getCapacities(ethersSigner, currentNetwork, realmId);
+    const capacities = await getCapacities(reader, currentNetwork, realmId);
     // console.log('capacities', capacities);
     if (capacities) setCapacities(capacities);
   };
@@ -194,21 +238,28 @@ export const ParcelDashboard = (): JSX.Element => {
     if (!installationId || !realmId) return;
 
     const parcelLastChannel = await getContractParcelLastChannel(globalProvider, currentNetwork, realmId);
-    // console.log('parcelLastChannel', parcelLastChannel);
-    const secondsUntilChannel = secondsUntilParcelCanChannel(parcelLastChannel, installationId.toString());
-    // console.log('secondsUntilChannel', secondsUntilChannel);
-    setSecondsUntilChannel(secondsUntilChannel);
+    const lastChanneledStr = parcelLastChannel != null ? parcelLastChannel.toString() : '0';
+    const parcelSeconds = secondsUntilParcelCanChannel(lastChanneledStr, installationId.toString()) || 0;
+    setSecondsUntilParcelChannel(parcelSeconds);
 
-    // Reset Aaltar Icon
-    if (scene && parcelLastChannel) Installations.updateParcelLastChannel(parcelDashboardState.altarId, parcelLastChannel.toString());
+    // Reset Aaltar Icon (including never-channeled `0`)
+    if (scene && parcelDashboardState.altarId) {
+      Installations.updateParcelLastChannel(parcelDashboardState.altarId, lastChanneledStr);
+    }
 
     if (channelInterval) clearInterval(channelInterval);
     channelInterval = setInterval(() => {
-      const secondsUntilChannel = secondsUntilParcelCanChannel(currentNetwork, parcelLastChannel);
-      // console.log('secondsUntilChannel', secondsUntilChannel);
-      setSecondsUntilChannel(secondsUntilChannel);
-      if (secondsUntilChannel === 0) clearInterval(channelInterval);
+      const nextParcel = secondsUntilParcelCanChannel(lastChanneledStr, installationId.toString()) || 0;
+      setSecondsUntilParcelChannel(nextParcel);
+      if (nextParcel === 0) clearInterval(channelInterval);
     }, 60 * 1000);
+  };
+
+  const getSetGotchiChannelTime = async (gotchiId: string | number) => {
+    if (!globalProvider || !currentNetwork || gotchiId == null || gotchiId === '') return;
+    const gotchiLast = await getContractGotchiLastChannel(globalProvider, currentNetwork, gotchiId);
+    setGotchiLastChanneledStr(gotchiLast);
+    setSecondsUntilGotchiChannel(secondsUntilGotchiCanChannel(gotchiLast) || 0);
   };
 
   const getSetClaimTime = async (realmId: number) => {
@@ -236,17 +287,65 @@ export const ParcelDashboard = (): JSX.Element => {
 
   // CALLS
   const handleChannel = async () => {
+    if (!ethersSigner || !currentNetwork) {
+      oops();
+      showNotificationWithTimeout(notificationDispatch, {
+        type: 'error',
+        message: 'Wallet not connected. Connect on Base and try again.',
+        options: { sound: true },
+      });
+      return;
+    }
+    if (currentNetwork !== 'base' && currentNetwork !== 'mumbai' && currentNetwork !== 'matic') {
+      oops();
+      showNotificationWithTimeout(notificationDispatch, {
+        type: 'error',
+        message: `Wrong network (${currentNetwork}). Switch to Base and try again.`,
+        options: { sound: true },
+      });
+      return;
+    }
+    if (selectedPlayer?.id == null || selectedPlayer?.id === '') {
+      oops();
+      showNotificationWithTimeout(notificationDispatch, {
+        type: 'error',
+        message: 'No Aavegotchi selected.',
+        options: { sound: true },
+      });
+      return;
+    }
+    if (realmId == null) {
+      oops();
+      showNotificationWithTimeout(notificationDispatch, {
+        type: 'error',
+        message: 'Parcel id missing. Close and reopen the Aaltar dashboard.',
+        options: { sound: true },
+      });
+      return;
+    }
+
     const channelContract: ChannelData = {
       realmId: realmId,
       gotchiId: Number(selectedPlayer.id),
     };
     setChannelLoading(true);
-    const results = calculateChannellingResults({
-      altarId: parcelDashboardState.altarId,
-      playerId: selectedPlayer.id,
-    });
-
-    console.log('Will channel:', results);
+    let results;
+    try {
+      results = calculateChannellingResults({
+        altarId: parcelDashboardState.altarId,
+        playerId: selectedPlayer.id,
+      });
+      console.log('Will channel:', results);
+    } catch (previewErr: any) {
+      oops();
+      setChannelLoading(false);
+      showNotificationWithTimeout(notificationDispatch, {
+        type: 'error',
+        message: previewErr?.message || 'Channel preview failed',
+        options: { sound: true },
+      });
+      return;
+    }
 
     const id = showTransactionNotification(notificationDispatch, {
       message: 'Channeling Alchemica',
@@ -256,13 +355,8 @@ export const ParcelDashboard = (): JSX.Element => {
       await Installations.addFlamesToAaltar(parcelDashboardState.altarId, true);
       const tx = await channelAlchemica(ethersSigner, currentNetwork, channelContract);
       // console.log('@handleChannel TX:', tx);
-      await Installations.addFlamesToAaltar(parcelDashboardState.altarId, false);
 
       if (tx?.status) {
-        // parcelDashboardState.altarId
-        // getInstallationIdDataById(parcelDashboardState.altarId);
-        // getInstallationTypeById(parcelDashboardState.altarId);
-
         GameController.handleToastNotification({
           message: `You channelled ${results.fud.toFixed(3)} FUD, ${results.fomo.toFixed(3)} FOMO, ${results.alpha.toFixed(
             3,
@@ -273,6 +367,7 @@ export const ParcelDashboard = (): JSX.Element => {
 
         SFXController.playFX('channeling_end');
         await getSetChannelTime(realmId, installationId);
+        if (selectedPlayer?.id != null) await getSetGotchiChannelTime(selectedPlayer.id);
         updateTransactionNotificationStatus(notificationDispatch, id, 'success');
         realmDispatch({
           type: 'UPDATE_CHANNEL_ID',
@@ -287,12 +382,12 @@ export const ParcelDashboard = (): JSX.Element => {
         oops();
         updateTransactionNotificationStatus(notificationDispatch, id, 'error', getErrMessage(tx));
       }
-
-      setChannelLoading(false);
     } catch (error) {
       oops();
-      // console.log('@handleChannel:ERROR', error?.data?.message || error.message || '');
-      updateTransactionNotificationStatus(notificationDispatch, id, 'error', error?.data?.message || error.message || '');
+      console.warn('@handleChannel:ERROR', error);
+      updateTransactionNotificationStatus(notificationDispatch, id, 'error', getErrMessage(error) || error?.message || 'Channel failed');
+    } finally {
+      await Installations.addFlamesToAaltar(parcelDashboardState.altarId, false);
       setChannelLoading(false);
     }
   };
@@ -311,7 +406,7 @@ export const ParcelDashboard = (): JSX.Element => {
       const tx = await emptyReservoirs(ethersSigner, currentNetwork, channelContract);
       console.log('@handleClaim TX:', tx);
 
-      const tint = collected
+      const tint = (collected || [])
         .map((amount, index) => {
           if (amount > 0) return alchemicas[index];
           else return undefined;
@@ -320,11 +415,12 @@ export const ParcelDashboard = (): JSX.Element => {
 
       if (tx?.status) {
         GameController.handleToastNotification({
-          message: `You collected ${collected[0]} FUD, ${collected[1]} FOMO, ${collected[2]} ALPHA and ${collected[3]} KEK!`,
+          message: `You collected ${collected?.[0] ?? 0} FUD, ${collected?.[1] ?? 0} FOMO, ${collected?.[2] ?? 0} ALPHA and ${
+            collected?.[3] ?? 0
+          } KEK!`,
           autoClose: true,
           type: 'success',
         });
-        // updateLastChannelIcon
         await getAndSetAlchemicaData(realmId);
         await getSetClaimTime(realmId);
         updateTransactionNotificationStatus(notificationDispatch, id, 'success');
@@ -334,12 +430,11 @@ export const ParcelDashboard = (): JSX.Element => {
         oops();
         updateTransactionNotificationStatus(notificationDispatch, id, 'error', getErrMessage(tx));
       }
-
-      setClaimLoading(false);
     } catch (error) {
       oops();
       console.log('@handleClaim:ERROR', error?.data?.message || error.message);
       updateTransactionNotificationStatus(notificationDispatch, id, 'error', error?.data?.message || error.message);
+    } finally {
       setClaimLoading(false);
     }
   };
@@ -436,15 +531,20 @@ export const ParcelDashboard = (): JSX.Element => {
               <AlchemicaStats total={totalClaimed} rates={rates} capacities={capacities} />
             </div>
           </div>
-          {((gameConfig as { enableParcelFoundryPoC?: boolean })?.enableParcelFoundryPoC ||
-            process.env.NEXT_PUBLIC_ENABLE_FOUNDRY_POC === 'true') && (
+          {foundryEnabled && (
             <div className="foundry-strip" style={{ marginTop: 12, padding: 8, border: '1px solid #50dce6', fontSize: 12 }}>
               <div style={{ color: '#50dce6', fontWeight: 700 }}>FOUNDRY PoC</div>
               <div>
-                Pollution {FoundryStore.getState().pollution} · Tithe {FoundryStore.getState().titheAccrued} · Netherlink{' '}
-                {FoundryStore.getState().netherlink.toUpperCase()}
+                Pollution {foundryState.pollution} · Tithe {foundryState.titheAccrued} · Netherlink{' '}
+                {foundryState.netherlink.toUpperCase()}
               </div>
-              <div style={{ opacity: 0.85 }}>{FoundryStore.getState().walkLedgerHint}</div>
+              <div>
+                Cargo {foundryState.cargo.fud}/{foundryState.cargo.fomo}/{foundryState.cargo.alpha}/{foundryState.cargo.kek}
+                {' · '}
+                Relay {foundryState.materials?.antennaRelay ?? 0} · Steel {foundryState.materials?.steel ?? 0} · Wire{' '}
+                {foundryState.materials?.wire ?? 0}
+              </div>
+              <div style={{ opacity: 0.85 }}>{foundryState.walkLedgerHint}</div>
             </div>
           )}
           <div className="button-group">
@@ -456,7 +556,11 @@ export const ParcelDashboard = (): JSX.Element => {
                 <div className="comment">
                   <ChannelIcon size={24} fill={channelLoading || !!secondsUntilChannel ? 'white' : 'var(--col-purple-300)'} />
                   <span className={channelLoading || !!secondsUntilChannel ? 'disabled' : 'channel'}>
-                    {secondsUntilChannel ? `${formatTimeLeft(secondsUntilChannel)} REMAINING` : 'READY TO CHANNEL'}
+                    {secondsUntilChannel
+                      ? channelBlockedByGotchi
+                        ? `GOTCHI LOCKED ${formatTimeLeft(secondsUntilChannel)} (UTC midnight)`
+                        : `${formatTimeLeft(secondsUntilChannel)} REMAINING`
+                      : 'READY TO CHANNEL'}
                   </span>
                 </div>
               )}

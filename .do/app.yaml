@@ -1,0 +1,54 @@
+# DigitalOcean App Platform spec for Gotchiverse REALM (Colyseus + HTTP BFF).
+# Deploy:  export DIGITALOCEAN_ACCESS_TOKEN=... && bash scripts/deploy-realm-digitalocean.sh
+#
+# Requires the DO account to have GitHub connected (App Platform → Create → GitHub).
+# After create, CNAME realm.aarcadeghst.com → <app>.ondigitalocean.app (Cloudflare DNS only).
+
+name: gotchiverse-realm
+region: nyc
+
+services:
+  - name: realm
+    github:
+      repo: userdefault13/gotchiverse-2d
+      branch: cursor/vercel-colyseus-mvp-9c04
+      deploy_on_push: true
+    source_dir: infra/realm-server
+    # Path is relative to repo root (not source_dir) — root Dockerfile is the Next.js FE.
+    dockerfile_path: infra/realm-server/Dockerfile
+    http_port: 2567
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    health_check:
+      http_path: /health
+      initial_delay_seconds: 15
+      period_seconds: 20
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 4
+    envs:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: "0.0.0.0"
+      - key: PORT
+        value: "2567"
+      - key: PUBLIC_URL
+        # Overwritten to the DO ingress URL by deploy script until custom DNS is live.
+        value: https://realm.aarcadeghst.com
+      - key: CORS_ORIGINS
+        value: "https://gotchiverse-2d.vercel.app,https://*.vercel.app,http://localhost:3001,http://127.0.0.1:3001"
+      - key: JWT_SECRET
+        type: SECRET
+        value: "replace-via-deploy-script"
+      - key: JWT_TTL_SECONDS
+        value: "86400"
+      - key: CORE_SUBGRAPH_URL
+        value: https://api.goldsky.com/api/public/project_cmh3flagm0001r4p25foufjtt/subgraphs/aavegotchi-core-base/prod/gn
+      - key: GOTCHIVERSE_SUBGRAPH_URL
+        value: https://api.goldsky.com/api/public/project_cmh3flagm0001r4p25foufjtt/subgraphs/gotchiverse-base/prod/gn
+      - key: SKIP_OWNERSHIP_CHECK
+        value: "true"
+      # Flip true once AarenaRoom combat handlers are deployed (registerCombat).
+      - key: COMBAT_IS_LIVE
+        value: "true"

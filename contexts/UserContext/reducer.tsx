@@ -53,6 +53,13 @@ export type Action =
   | {
       type: 'UPDATE_USER_IS_VERIFIED';
       isVerified: State['isVerified'];
+    }
+  | {
+      type: 'UPDATE_USER_CARTRIDGE';
+      cartridgeId?: State['cartridgeId'];
+      hasCartridge?: State['hasCartridge'];
+      cartridgeCatalogUrl?: State['cartridgeCatalogUrl'];
+      cartridgeHeroes?: State['cartridgeHeroes'];
     };
 
 export const reducer = (state: State, action: Action): State => {
@@ -119,6 +126,14 @@ export const reducer = (state: State, action: Action): State => {
       };
     case 'UPDATE_USER_IS_VERIFIED':
       return { ...state, isVerified: action.isVerified };
+    case 'UPDATE_USER_CARTRIDGE':
+      return {
+        ...state,
+        ...(action.cartridgeId !== undefined ? { cartridgeId: action.cartridgeId } : {}),
+        ...(action.hasCartridge !== undefined ? { hasCartridge: action.hasCartridge } : {}),
+        ...(action.cartridgeCatalogUrl !== undefined ? { cartridgeCatalogUrl: action.cartridgeCatalogUrl } : {}),
+        ...(action.cartridgeHeroes !== undefined ? { cartridgeHeroes: action.cartridgeHeroes } : {}),
+      };
 
     default:
       return state;

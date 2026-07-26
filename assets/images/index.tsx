@@ -36,6 +36,10 @@ import SpiderWebSmall from './spiderWeb-small.svg';
 import Spider from './spider.png';
 import PinkRay from './ray_pink.png';
 import Logo from './logo.png';
+import LogoBase from './logo-base.png';
+import LogoRh from './logo-rh.png';
+import GotchiverseBaseCartridge from './gotchiverse-base-cartridge.png';
+import GotchiverseRhCartridge from './gotchiverse-rh-cartridge.png';
 import CompanyLogo from './pixelcraft.png';
 import AarcadeLogo from './aarcade.png';
 import MainBackground from './main-bg.png';
@@ -103,6 +107,10 @@ export {
   LoadingBackground,
   GotchiverseTitleHalloween,
   Logo,
+  LogoBase,
+  LogoRh,
+  GotchiverseBaseCartridge,
+  GotchiverseRhCartridge,
   CompanyLogo,
   AarcadeLogo,
   MainBackground,

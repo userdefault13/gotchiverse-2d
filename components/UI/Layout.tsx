@@ -17,7 +17,7 @@ const Layout = ({ children, blur, scene }: Props) => {
       <NotificationStack />
       <div className={`bg-container ${scene}`}>
         <span className="bg-img">
-          <Image alt="" src={MainBackground} layout="fill" objectFit="cover" />
+          <Image alt="" src={MainBackground} fill sizes="100vw" style={{ objectFit: 'cover' }} />
         </span>
         {isHalloween && <div className={`darken ${scene === 'connected' ? scene : ''}`}></div>}
         {isHalloween && scene === 'unconnected' && (

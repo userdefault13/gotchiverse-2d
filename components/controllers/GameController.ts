@@ -46,8 +46,37 @@ import { createTestBodies, getDefaultCameraSettings, getGroupMemberById, toggleU
 import { toast } from 'react-toastify';
 import { binarySchemas, decode, decodeSchemaName } from 'shared_code/utils/shared.utils.binary';
 import _ from 'lodash';
-import { MAP_ID_CITAADEL, DEFAULT_GOTCHI_PROPERTIES } from 'shared_code/constants/const.game';
+import {
+  MAP_ID_CITAADEL,
+  MAP_ID_AARENA,
+  DEFAULT_GOTCHI_PROPERTIES,
+  MAP_CONFIG_BY_ID,
+} from 'shared_code/constants/const.game';
 import { handleChatEvent, unsubscribeToChatChannels } from 'contexts/ChatContext/actions';
+import {
+  colyseusConnect,
+  colyseusHandleKeyMove,
+  colyseusIsConnected,
+  colyseusLocalSpawn,
+  colyseusNudgeIfTrapped,
+  colyseusSendCombat,
+  colyseusSendMove,
+  colyseusSendPing,
+  colyseusSendTestDrop,
+  colyseusTeleportToParcel,
+  isColyseusNetcode,
+} from 'helpers/colyseus.client';
+import {
+  colyseusResetParcelSync,
+  colyseusSeedParcels,
+  colyseusSpawnFromSelectedParcel,
+  colyseusUpdateCurrentParcel,
+} from 'helpers/colyseus.parcels';
+import {
+  colyseusLoadInstallations,
+  colyseusPreloadNearbyInstallations,
+  colyseusResetInstallationSync,
+} from 'helpers/colyseus.installations';
 import { NFTDisplay } from 'components/phaser/NFTDisplay';
 import { scene } from 'components/controllers/SceneController';
 import MinigameController from './minigameController';
@@ -62,7 +91,6 @@ import Potions from 'components/phaser/Potions';
 import { getParcelTokenIdById } from 'shared_code/utils/shared.utils.parcel';
 import { getParcelDataById } from 'helpers/parcels.helper';
 import { PARCELS_BY_ID } from 'shared_code/models/model.realm';
-
 const version = packageJSON.version;
 // used for onSocket close to determine if user was actualy connected or if the server was down
 let wasConnected = false;
@@ -185,6 +213,182 @@ async function socketConnect(
   }
 
   scene.onSocketReconnect = undefined;
+
+  // Walkable MVP: Colyseus room instead of legacy zone WebSocket protocol
+  if (isColyseusNetcode()) {
+    const network = GlobalState.WEB3?.state?.currentNetwork;
+    const map =
+      GameController.MAP === 'aarena'
+        ? network === 'robinhood'
+          ? 'aarena-rh'
+          : 'aarena'
+        : 'citaadel';
+    const selectedSpawnLoc =
+      map === 'citaadel' && spawnId && spawnId.charAt(0) === 'C' ? spawnId : undefined;
+    const cartridgeId = GlobalState.USER?.state?.cartridgeId || null;
+    const ok = await colyseusConnect(selectedPlayer, {
+      spawnLocId: selectedSpawnLoc,
+      map,
+      cartridgeId,
+    });
+    if (!ok) {
+      handleToastNotification({
+        message: 'Ruh roh, error connecting to the portal. Try refreshing your browser to try again.',
+        autoClose: false,
+        type: 'error',
+      });
+      return;
+    }
+
+    const aarenaBounds = (MAP_CONFIG_BY_ID as Record<string, { SPAWN_BOUNDS?: { left: number; right: number; top: number; bottom: number } }>)[
+      MAP_ID_AARENA
+    ]?.SPAWN_BOUNDS;
+    const aarenaFallback =
+      aarenaBounds != null
+        ? {
+            x: Math.round((aarenaBounds.left + aarenaBounds.right) / 2),
+            y: Math.round((aarenaBounds.top + aarenaBounds.bottom) / 2),
+          }
+        : { x: 4096, y: 4096 };
+
+    // Prefer live sprite (mid-session reconnect), then selected parcel (citaadel),
+    // then server spawn, then map default — never yank aarena to plaza center if we already moved.
+    const liveSprite =
+      selectedPlayer?.id != null && scene?.[selectedPlayer.id]
+        ? scene[selectedPlayer.id]
+        : null;
+    const livePos =
+      liveSprite && typeof liveSprite.x === 'number' && typeof liveSprite.y === 'number'
+        ? { x: liveSprite.x, y: liveSprite.y }
+        : null;
+    const parcelSpawn = map === 'citaadel' ? colyseusSpawnFromSelectedParcel(selectedSpawnLoc) : null;
+    const spawn =
+      livePos ||
+      parcelSpawn ||
+      colyseusLocalSpawn() ||
+      (map === 'aarena' || map === 'aarena-rh' ? aarenaFallback : { x: 42 * 64 + 10 * 64, y: 52 * 64 + 10 * 64 });
+    let previewMaxHp = 1000;
+    let previewMaxAp = 100;
+    let previewTraits: Record<string, number> | null = null;
+    try {
+      const { computeClientCombatTraits } = await import('helpers/gotchi.helper');
+      const preview = computeClientCombatTraits(selectedPlayer as any);
+      previewMaxHp = preview.maxHealth || 1000;
+      previewMaxAp = preview.maxAP || 100;
+      previewTraits = preview;
+    } catch {
+      /* keep defaults */
+    }
+    try {
+      await Players.onPlayerSocketInit({
+        id: selectedPlayer.id,
+        name: selectedPlayer.name,
+        x: spawn.x,
+        y: spawn.y,
+        health: previewMaxHp,
+        maxHealth: previewMaxHp,
+        // Preserve Nakey/Observoor so Phaser uses defaultGotchi (not a missing 0x texture).
+        isSpectator: Boolean(selectedPlayer.isSpectator),
+      } as any);
+    } catch (e) {
+      console.warn('onPlayerSocketInit (colyseus) failed', e);
+    }
+
+    // Snap server position to selected parcel when the room ignored spawnLocId.
+    if (parcelSpawn) {
+      colyseusSendMove(parcelSpawn.x, parcelSpawn.y);
+    }
+
+    if (map === 'citaadel') {
+      colyseusResetParcelSync();
+      colyseusResetInstallationSync();
+      colyseusSeedParcels(spawn.x, spawn.y, true);
+      colyseusUpdateCurrentParcel(spawn.x, spawn.y);
+
+      // Colyseus has no AOI installation payloads — hydrate from Base contract grids.
+      const ownedNearSpawn = (GlobalState.REALM?.state?.ownedParcels || [])
+        .map((p: { parcelId?: string; id?: string }) => p.parcelId || p.id)
+        .filter((id: string | undefined): id is string => Boolean(id && String(id).charAt(0) === 'C'));
+      const installTargets = _.uniq(
+        [selectedSpawnLoc, scene.lastParcelCollisionId, ...ownedNearSpawn].filter(Boolean) as string[],
+      );
+      colyseusPreloadNearbyInstallations(spawn.x, spawn.y, {
+        force: true,
+        prioritize: selectedSpawnLoc || scene.lastParcelCollisionId,
+        maxParcels: 20,
+      });
+      void colyseusLoadInstallations(installTargets).then(() => {
+        const retryIds = _.uniq(
+          [selectedSpawnLoc, scene.lastParcelCollisionId].filter(Boolean) as string[],
+        );
+        if (!retryIds.length) return;
+        window.setTimeout(() => {
+          void colyseusLoadInstallations(retryIds, { force: true });
+          colyseusPreloadNearbyInstallations(spawn.x, spawn.y, { force: true });
+        }, 1500);
+      });
+    }
+
+    // Seed HUD traits so bars aren't "undefined / undefined"
+    const defaultTraits = {
+      alchemicaCarryingCapacity: previewTraits?.alchemicaCarryingCapacity ?? 100,
+      maxHealth: previewMaxHp,
+      ap: previewMaxAp,
+      maxAP: previewMaxAp,
+      defense: previewTraits?.defense ?? 0,
+      evasion: previewTraits?.evasion ?? 0,
+      luck: previewTraits?.luck ?? 0,
+      speed: previewTraits?.attackSpeed ?? 1,
+      melee: previewTraits?.meleePower ?? 0,
+      range: previewTraits?.rangedPower ?? 0,
+      regen: previewTraits?.healthRegenAmount ?? 0,
+      apRegenAmount: previewTraits?.apRegenAmount ?? 0,
+      healthRegenAmount: previewTraits?.healthRegenAmount ?? 0,
+    };
+    GlobalState.REALM.dispatch({
+      type: 'UPDATE_PLAYERS_HEALTH',
+      health: previewMaxHp,
+    });
+    GlobalState.REALM.dispatch({
+      type: 'UPDATE_USER_TRAITS',
+      userTraits: defaultTraits,
+      userTraitsBases: { ...defaultTraits },
+      userWearableTraitBonuses: {},
+    });
+
+    GlobalState.PHASER.dispatch({
+      type: 'UPDATE_CONNECTED',
+      connected: true,
+    });
+    GlobalState.PHASER.dispatch({
+      type: 'UPDATE_SOCKET_CONNECTED',
+      socketConnected: true,
+    });
+
+    // Simple ENTER NOW lobby (no real queue) — use 'approved' so ENTER NOW is shown.
+    if (map === 'aarena' || map === 'aarena-rh') {
+      // Ensure PVP shoot mode + weapons are live for arcade combat (mapConfig is set at scene create).
+      const shoot = scene?.mapConfig?.SHOOT_MODE as 'PVE' | 'PVP' | undefined;
+      InputController.updateShootMode(shoot);
+      toggleShooting(Boolean(shoot));
+      GlobalState.REALM.dispatch({
+        type: 'UPDATE_AARENA_QUEUE',
+        aarenaQueue: { state: true, status: 'approved' },
+      });
+      // Server spawn should be clear; still nudge if FE/server desync lands in a block.
+      setTimeout(() => colyseusNudgeIfTrapped(), 100);
+    }
+
+    // Legacy zone sockets start music in onopen; Colyseus has no onopen — start BGM here.
+    SFXController.musicPlay(
+      GlobalState.GAME.state.gameConfig.miniGameRoundActive
+        ? MinigameController.getMusicTheme()
+        : SFXController.getDefaultMusicTheme(),
+    );
+    SFXController.ensureMusicUnlocked();
+
+    return;
+  }
 
   let socketUrl = transferObj?.socketUrl;
   let zoneId = transferObj?.zoneId;
@@ -635,7 +839,10 @@ async function socketConnect(
           if (data?.parcel?.type) {
             currentParcel = PARCELS_BY_ID[data.parcel.id];
             if (data.parcel.owner && currentParcel) _.assign(currentParcel, { owner: data.parcel.owner });
-            if (currentParcel) currentParcel = _.pick(currentParcel, ['tokenId', 'parcelHash', 'owner']);
+            if (currentParcel?.district != null) {
+              GlobalState.REALM.dispatch({ type: 'UPDATE_CURRENT_DISTRICT', currentDistrict: Number(currentParcel.district) });
+            }
+            if (currentParcel) currentParcel = _.pick(currentParcel, ['tokenId', 'parcelHash', 'owner', 'district']);
           }
 
           GlobalState.REALM.dispatch({ type: 'UPDATE_CURRENT_PARCEL', currentParcel });
@@ -1340,6 +1547,57 @@ function clearDynamicData() {
 
 // avoid socket idletimeout of around 30 seconds by sending a 'ping' event every 30 seconds of inactivity
 function sendData(channel: string, action: string | null, data): void {
+  if (isColyseusNetcode()) {
+    if (channel === 'ping') {
+      colyseusSendPing();
+      return;
+    }
+    if (channel === 'combat') {
+      if (action === 'melee' || action === 'fire') {
+        const ok = colyseusSendCombat(action, data);
+        if (!ok) {
+          console.warn('@sendData combat dropped — not on aarena Colyseus room');
+          handleToastNotification({
+            message: 'Combat not connected. Re-enter the Aarena (REALM server must be running).',
+            autoClose: true,
+            type: 'error',
+          });
+        }
+      }
+      return;
+    }
+    // RH aarena: hotkey alchemica drop → SIM NVDA pocket (server gated by RH_TEST_DROP_ENABLED).
+    if (channel === 'game-actions' && action === 'token-drop') {
+      const token = String(data?.token || 'nvda');
+      if (!colyseusSendTestDrop(token)) {
+        console.warn('@sendData token-drop ignored — not on aarena-rh');
+      }
+      return;
+    }
+
+    if (channel === 'movement') {
+      const payload = action ? data?.data || data : data;
+      if (action === 'teleport') {
+        const parcelId = String(payload?.parcelId || data?.parcelId || '');
+        if (parcelId) void colyseusTeleportToParcel(parcelId);
+        return;
+      }
+      if (action === 'keys' || payload?.direction !== undefined) {
+        colyseusHandleKeyMove(payload?.direction, Boolean(payload?.isSprint));
+        return;
+      }
+      const position = payload?.position || payload?.data?.position;
+      if (position && typeof position.x === 'number' && typeof position.y === 'number') {
+        // Click-to-move / mouse path
+        colyseusHandleKeyMove('none', false);
+        colyseusSendMove(position.x, position.y);
+      }
+      return;
+    }
+    // Other legacy channels are no-ops in the walkable Colyseus MVP
+    return;
+  }
+
   if (action) data = { action, data };
   // send the timestamp that each msg was sent
   if (socket?.readyState === 1) {
@@ -1350,6 +1608,16 @@ function sendData(channel: string, action: string | null, data): void {
 }
 
 function sendPing() {
+  if (isColyseusNetcode()) {
+    if (colyseusIsConnected()) {
+      colyseusSendPing();
+      Performance.start('ping');
+    } else {
+      clearInterval(idleTimer);
+    }
+    return;
+  }
+
   if (socket.readyState === 1) {
     // console.log('ping server');
     sendData('ping', null, {});

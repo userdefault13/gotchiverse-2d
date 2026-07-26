@@ -23,7 +23,7 @@ export const RecipeBookToggle = ({ onClick, disabled }: Props): JSX.Element => {
       <button className={`toggle-button ${gameConfig.gotchiverseTheme}`} onClick={handleClick} disabled={false}>
         <div className="icon-container">
           <span>
-            <Image alt="" src={BookIcon} height={90} width={62} />
+            <Image alt="" src={BookIcon} height={52} width={36} />
           </span>
         </div>
         <div className="right-cap"></div>

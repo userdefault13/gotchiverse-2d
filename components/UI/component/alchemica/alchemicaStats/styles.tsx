@@ -18,17 +18,19 @@ export default css`
   }
   .alchemica-container {
     background: linear-gradient(180deg, rgba(200, 42, 194, 0) -15.34%, rgba(200, 42, 194, 0.45) 100%);
-    padding: 0.5rem 0 0;
+    padding: 0.6rem 0 0.2rem;
     margin: 0.2rem 0 0.4rem;
     display: flex;
     justify-content: space-evenly;
+    align-items: center;
     border-bottom: 1px solid;
     border-image: radial-gradient(50% 2354449.91% at 50% 99.92%, var(--col-pink-400) 0%, rgba(200, 42, 194, 0.4) 100%) 1;
   }
   .icon-container {
-    padding: 0rem;
-    width: 4rem;
-    height: 4rem;
+    position: relative;
+    padding: 0;
+    width: 6.4rem;
+    height: 6.4rem;
   }
   .balances-container {
     display: flex;

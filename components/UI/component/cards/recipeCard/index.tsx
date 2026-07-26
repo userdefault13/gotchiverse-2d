@@ -15,6 +15,9 @@ interface Props {
 export const RecipeCard = ({ recipe, onClick }: Props): JSX.Element => {
   const [{ gameConfig }] = useGame();
 
+  // Match inventory cards — drop "Level N" so long names (e.g. Gotchi Lodge) fit one line.
+  const displayName = recipe.name.split('Level')[0].trim();
+
   // const formatTimeLeft = (date: Date) => {
   //   const now = new Date();
   //   const secondsLeft = (date.valueOf() - now.valueOf()) / 1000;
@@ -45,7 +48,7 @@ export const RecipeCard = ({ recipe, onClick }: Props): JSX.Element => {
             </div>
           )} */}
           <div className="name-container">
-            <p>{recipe.name}</p>
+            <p>{displayName}</p>
           </div>
         </div>
         <div className="ingredients-container">

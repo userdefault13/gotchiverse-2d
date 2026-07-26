@@ -112,13 +112,10 @@ export const getUsersParcels = (accounts: string[], filter?: { district?: number
 
   return `{
       parcels (first: ${first}, skip: ${skip}, where: { owner_in: [${accounts.map((account) => `"${account.toLocaleLowerCase()}"`)}]${
-    filter.district ? `, district: ${filter.district}` : ''
-  }${filter.search ? `, parcelHash_contains: "${filter.search.toLowerCase()}"` : ''} }, orderBy: district) {
+    filter?.district ? `, district: ${filter.district}` : ''
+  }${filter?.search ? `, parcelHash_contains: "${filter.search.toLowerCase()}"` : ''} }, orderBy: district) {
         parcelId
         id
-        owner {
-          id
-        }
         parcelHash
         district
         size
@@ -175,13 +172,14 @@ export const getAavegotchiLastChanneled = (ids: number[]): string => {
 };
 
 export const getParcelLastChanneled = (ids: number[]): string => {
+  const idList = ids.map((id) => `"${id}"`).join(',');
   return `{
     parcels (
-      where: { id_in: [${ids}]}
+      where: { id_in: [${idList}]}
       first: ${ids.length !== 0 ? ids.length : 1}
     ) {
       id
-      owner,
+      owner
       lastChanneledAlchemica
       equippedInstallations {
         id
@@ -209,6 +207,8 @@ export const getInstallationTypes = (name: string, types: any): string => {
   types.harvester && installationTypes.push(1);
   types.reservoir && installationTypes.push(2);
   types.maaker && installationTypes.push(6);
+  types.waall && installationTypes.push(3);
+  types.lodge && installationTypes.push(4);
   installationTypes.push(5);
   installationTypes.push(8);
 
@@ -238,6 +238,7 @@ export const getTileTypes = (name: string): string => {
         craftTime
         tileType
         deprecated
+        deprecatedAt
       }
     }
   `;

@@ -7,6 +7,8 @@ import GlobalState from 'contexts/GlobalState';
 import { ElementBgAp, ElementBgEnemy, ElementBgHp, ElementBgPLM2, ElementIconAttack, ElementIconLifespan } from 'assets/icons/itemshop';
 import SFXController from 'components/controllers/SFXController';
 import { scene } from 'components/controllers/SceneController';
+import { getColyseusMap } from 'helpers/colyseus.map';
+import { isColyseusNetcode } from 'helpers/colyseus.client';
 
 export const SHOP_ITEMS: ShopItem[] = _.values(itemsJSON) as unknown as ShopItem[];
 export const AVAILABLE_SHOP_ITEMS: ShopItem[] = _.filter(SHOP_ITEMS, 'purchasable');
@@ -17,6 +19,14 @@ export type AllowedItemTypeId = typeof SHOP_ITEM_IDS[number];
 // reconstruct shopItemsById
 export const shopItemsById = _.keyBy(SHOP_ITEMS, 'itemTypeId');
 
+export function isFoundryShopItem(item: ShopItem | undefined): boolean {
+  return Boolean(item && (item.type === 'foundry' || item.category === 'foundry'));
+}
+
+export function getFoundryKitId(item: ShopItem): string {
+  return item.foundryKitId || 'antenna-kit';
+}
+
 export const ITEM_ICONS: { [id in ItemsIcon]: string } = {
   ap: LightningIcon,
   hp: HeartIcon,
@@ -25,8 +35,18 @@ export const ITEM_ICONS: { [id in ItemsIcon]: string } = {
 };
 
 // Used to drop alchemica breadcrumbs on token click.
+// On aarena-rh (Colyseus), hotkeys credit SIM NVDA pocket when RH_TEST_DROP_ENABLED (no wallet gate).
 export const handleDrop = (token: AllowedTokenTypes): void => {
-  if (scene.disableKeyboard || !GlobalState.GAME.state.gameConfig.enableGotchiInventory) return;
+  if (scene.disableKeyboard) return;
+
+  // RH Colyseus test path — skip inventory/wallet gates; server gates via RH_TEST_DROP_ENABLED.
+  if (isColyseusNetcode() && getColyseusMap() === 'aarena-rh') {
+    SFXController.playFX('click');
+    GameController.sendData('game-actions', 'token-drop', { token });
+    return;
+  }
+
+  if (!GlobalState.GAME.state.gameConfig.enableGotchiInventory) return;
   if (!Number(GlobalState.REALM.state.playerWallet[token.toLocaleLowerCase()])) {
     // Balance is 0;
     SFXController.playFX('oops');
@@ -67,6 +87,12 @@ export const initItemsHelper = (): void => {
       quickslotImage: PLM2,
       icon: PLM2,
       cooldown: GlobalState.GAME.state.gameConfig.cooldownsByItemType.enemy,
+    },
+    5: {
+      image: ElementBgAp,
+      icon: LightningIcon,
+      cooldown: 0,
+      alchemicaType: 'FUD',
     },
   };
 

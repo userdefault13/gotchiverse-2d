@@ -28,8 +28,34 @@ const PhaserGameLoader = (props: PhaserGameLoaderProps) => {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const Phaser = require('phaser');
     setPhaser(Phaser);
-    setHeight(`${GameController.MAP === 'aarena' ? 'calc(100vh - 5rem)' : '100vh'}`);
-    setTop(`${GameController.MAP === 'aarena' ? '5rem' : '0rem'}`);
+    // Keep the Phaser canvas below the fixed GameNav so HUD controls stay clickable.
+    setHeight('calc(100vh - 5rem)');
+    setTop('5rem');
+  }, []);
+
+  useEffect(() => {
+    // MetaMask / browser side panels change layout without a reliable window resize on some builds.
+    // Do NOT dispatchEvent('resize') here — that re-enters this listener and stack-overflows.
+    let scheduled = false;
+    const refreshScale = () => {
+      if (scheduled) return;
+      scheduled = true;
+      requestAnimationFrame(() => {
+        scheduled = false;
+        try {
+          const game = (window as unknown as { game?: { scale?: { refresh?: () => void } } }).game;
+          game?.scale?.refresh?.();
+        } catch {
+          /* ignore */
+        }
+      });
+    };
+    window.addEventListener('resize', refreshScale);
+    window.visualViewport?.addEventListener('resize', refreshScale);
+    return () => {
+      window.removeEventListener('resize', refreshScale);
+      window.visualViewport?.removeEventListener('resize', refreshScale);
+    };
   }, []);
 
   useEffect(() => {
@@ -52,6 +78,7 @@ const PhaserGameLoader = (props: PhaserGameLoaderProps) => {
           },
           scale: {
             mode: Phaser.Scale.RESIZE,
+            autoCenter: Phaser.Scale.CENTER_BOTH,
           },
           parent: 'pahserGameLoader',
           backgroundColor: '#150628',
@@ -74,7 +101,11 @@ const PhaserGameLoader = (props: PhaserGameLoaderProps) => {
   // Wait until everything has loaded to load the initial scene
   if (gameConfig) {
     return (
-      <div id="pahserGameLoader" className="fixed" style={{ height, top, width: '100vw' }}>
+      <div
+        id="pahserGameLoader"
+        className="fixed"
+        style={{ height, top, left: 0, right: 0, width: '100%', zIndex: 0 }}
+      >
         <IonPhaserComponent
           // @ts-ignore */
           game={gameConfig.game}

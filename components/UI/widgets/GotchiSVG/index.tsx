@@ -23,43 +23,63 @@ export const GotchiSVG = ({ tokenId, options, side = 0, height = 12, isSpectator
 
   const fetchGotchiSvg = async (id: string) => {
     setLoading(true);
-    const sideviewArray = await fetchAavegotchiSideSVGs(id);
-    setSideviews(sideviewArray);
-    !isTrueSpectator(isSpectator) && setSvg(options ? customiseSvg(sideviewArray[side], options) : sideviewArray[side]);
-    setLoading(false);
-  };
-
-  const setSide = (selectSide: number) => {
-    if (sideviews) {
-      setSvg(options ? customiseSvg(sideviews[selectSide], options) : sideviews[selectSide]);
+    try {
+      const sideviewArray = await fetchAavegotchiSideSVGs(id);
+      setSideviews(sideviewArray);
+      if (!isTrueSpectator(isSpectator) && sideviewArray?.[side]) {
+        setSvg(options ? customiseSvg(sideviewArray[side], options) : sideviewArray[side]);
+      }
+    } catch (error) {
+      console.warn('@GotchiSVG fetch failed', id, error);
+    } finally {
+      setLoading(false);
     }
   };
-
-  useEffect(() => {
-    if (svg) setSvg(options ? customiseSvg(svg, options) : svg);
-  }, [options]);
 
   useEffect(() => {
     if (currentNetwork && globalProvider && !isTrueSpectator(isSpectator)) void fetchGotchiSvg(tokenId);
   }, [tokenId, currentNetwork, globalProvider, isSpectator]);
 
+  const removeBg = Boolean(options?.removeBg);
+  const animate = Boolean(options?.animate);
+
+  // Apply side (0 front, 1 left, 2 right, 3 back) once SVGs are loaded — including enter-portal flip.
   useEffect(() => {
-    setSide(side);
-  }, [side]);
+    if (isTrueSpectator(isSpectator)) return;
+    if (!sideviews?.[side]) return;
+    const opts = options ? { ...options, removeBg, animate } : undefined;
+    setSvg(opts ? customiseSvg(sideviews[side], opts) : sideviews[side]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only re-style when side or flags change
+  }, [side, sideviews, isSpectator, removeBg, animate]);
 
   useEffect(() => {
-    if (svg) {
-      const blob = convertInlineSVGToBlobURL(svg);
-      setBlob(blob);
-    }
+    if (!svg) return;
+    const next = convertInlineSVGToBlobURL(svg);
+    setBlob(next);
+    return () => {
+      try {
+        URL.revokeObjectURL(next);
+      } catch {
+        /* ignore */
+      }
+    };
   }, [svg]);
+
+  const src = isTrueSpectator(isSpectator)
+    ? getObservorSides()[side]
+    : blob && !loading
+      ? blob
+      : GotchiLoading;
 
   return (
     <div style={{ height: `${height}rem`, width: `${height}rem`, position: 'relative', borderRadius: `${radius}px` }}>
-      <Image alt=""
-        src={isTrueSpectator(isSpectator) ? getObservorSides()[side] : blob && !loading ? blob : GotchiLoading}
+      <Image
+        key={`${tokenId}-${side}-${src === GotchiLoading ? 'loading' : 'ready'}`}
+        alt=""
+        src={src}
         layout="fill"
         objectFit="contain"
+        unoptimized={typeof src === 'string' && src.startsWith('blob:')}
       />
     </div>
   );

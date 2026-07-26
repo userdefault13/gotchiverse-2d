@@ -1,3242 +1,3602 @@
 {
-    "0":{
-       "itemId":0,
-       "width":1,
-       "height":1,
-       "name":"The Void",
-       "type":"INSTALLATION",
-       "installationType":0,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "1":{
-       "itemId":1,
-       "width":2,
-       "height":2,
-       "name":"LE Golden Aaltar",
-       "type":"INSTALLATION",
-       "installationType":0,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":9000,
-       "spillRate":10000,
-       "harvestRate":0,
-       "alchemicaCost":[
-          3000,
-          1500,
-          2000,
-          750
-       ]
-    },
-    "2":{
-       "itemId":2,
-       "width":2,
-       "height":2,
-       "name":"LE Golden Aaltar",
-       "type":"INSTALLATION",
-       "installationType":0,
-       "alchemicaType":0,
-       "level":2,
-       "craftTime":65000,
-       "spillRadius":8000,
-       "spillRate":9000,
-       "harvestRate":0,
-       "alchemicaCost":[
-          300,
-          150,
-          75,
-          10
-       ]
-    },
-    "3":{
-       "itemId":3,
-       "width":2,
-       "height":2,
-       "name":"LE Golden Aaltar",
-       "type":"INSTALLATION",
-       "installationType":0,
-       "alchemicaType":0,
-       "level":3,
-       "craftTime":160000,
-       "spillRadius":7000,
-       "spillRate":8000,
-       "harvestRate":0,
-       "alchemicaCost":[
-          600,
-          300,
-          150,
-          20
-       ]
-    },
-    "4":{
-       "itemId":4,
-       "width":2,
-       "height":2,
-       "name":"LE Golden Aaltar",
-       "type":"INSTALLATION",
-       "installationType":0,
-       "alchemicaType":0,
-       "level":4,
-       "craftTime":320000,
-       "spillRadius":6000,
-       "spillRate":7000,
-       "harvestRate":0,
-       "alchemicaCost":[
-          1000,
-          750,
-          375,
-          100
-       ]
-    },
-    "5":{
-       "itemId":5,
-       "width":2,
-       "height":2,
-       "name":"LE Golden Aaltar",
-       "type":"INSTALLATION",
-       "installationType":0,
-       "alchemicaType":0,
-       "level":5,
-       "craftTime":475000,
-       "spillRadius":5000,
-       "spillRate":6000,
-       "harvestRate":0,
-       "alchemicaCost":[
-          2000,
-          1500,
-          750,
-          200
-       ]
-    },
-    "6":{
-       "itemId":6,
-       "width":2,
-       "height":2,
-       "name":"LE Golden Aaltar",
-       "type":"INSTALLATION",
-       "installationType":0,
-       "alchemicaType":0,
-       "level":6,
-       "craftTime":630000,
-       "spillRadius":4000,
-       "spillRate":5000,
-       "harvestRate":0,
-       "alchemicaCost":[
-          4000,
-          3000,
-          1500,
-          400
-       ]
-    },
-    "7":{
-       "itemId":7,
-       "width":2,
-       "height":2,
-       "name":"LE Golden Aaltar",
-       "type":"INSTALLATION",
-       "installationType":0,
-       "alchemicaType":0,
-       "level":7,
-       "craftTime":1250000,
-       "spillRadius":3000,
-       "spillRate":4000,
-       "harvestRate":0,
-       "alchemicaCost":[
-          5000,
-          7500,
-          3750,
-          1500
-       ]
-    },
-    "8":{
-       "itemId":8,
-       "width":2,
-       "height":2,
-       "name":"LE Golden Aaltar",
-       "type":"INSTALLATION",
-       "installationType":0,
-       "alchemicaType":0,
-       "level":8,
-       "craftTime":1900000,
-       "spillRadius":2000,
-       "spillRate":3000,
-       "harvestRate":0,
-       "alchemicaCost":[
-          10000,
-          15000,
-          7500,
-          3000
-       ]
-    },
-    "9":{
-       "itemId":9,
-       "width":2,
-       "height":2,
-       "name":"LE Golden Aaltar",
-       "type":"INSTALLATION",
-       "installationType":0,
-       "alchemicaType":0,
-       "level":9,
-       "craftTime":3200000,
-       "spillRadius":1000,
-       "spillRate":2000,
-       "harvestRate":0,
-       "alchemicaCost":[
-          20000,
-          30000,
-          15000,
-          6000
-       ]
-    },
-    "10":{
-       "itemId":10,
-       "width":2,
-       "height":2,
-       "name":"Alchemical Aaltar Level 1",
-       "type":"INSTALLATION",
-       "installationType":0,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":2000,
-       "spillRate":10000,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "11":{
-       "itemId":11,
-       "width":2,
-       "height":2,
-       "name":"Alchemical Aaltar Level 2",
-       "type":"INSTALLATION",
-       "installationType":0,
-       "alchemicaType":0,
-       "level":2,
-       "craftTime":65000,
-       "spillRadius":1800,
-       "spillRate":9000,
-       "harvestRate":0,
-       "alchemicaCost":[
-          300,
-          150,
-          75,
-          10
-       ]
-    },
-    "12":{
-       "itemId":12,
-       "width":2,
-       "height":2,
-       "name":"Alchemical Aaltar Level 3",
-       "type":"INSTALLATION",
-       "installationType":0,
-       "alchemicaType":0,
-       "level":3,
-       "craftTime":160000,
-       "spillRadius":1600,
-       "spillRate":8000,
-       "harvestRate":0,
-       "alchemicaCost":[
-          600,
-          300,
-          150,
-          20
-       ]
-    },
-    "13":{
-       "itemId":13,
-       "width":2,
-       "height":2,
-       "name":"Alchemical Aaltar Level 4",
-       "type":"INSTALLATION",
-       "installationType":0,
-       "alchemicaType":0,
-       "level":4,
-       "craftTime":320000,
-       "spillRadius":1400,
-       "spillRate":7000,
-       "harvestRate":0,
-       "alchemicaCost":[
-          1000,
-          750,
-          375,
-          100
-       ]
-    },
-    "14":{
-       "itemId":14,
-       "width":2,
-       "height":2,
-       "name":"Alchemical Aaltar Level 5",
-       "type":"INSTALLATION",
-       "installationType":0,
-       "alchemicaType":0,
-       "level":5,
-       "craftTime":475000,
-       "spillRadius":1200,
-       "spillRate":6000,
-       "harvestRate":0,
-       "alchemicaCost":[
-          2000,
-          1500,
-          750,
-          200
-       ]
-    },
-    "15":{
-       "itemId":15,
-       "width":2,
-       "height":2,
-       "name":"Alchemical Aaltar Level 6",
-       "type":"INSTALLATION",
-       "installationType":0,
-       "alchemicaType":0,
-       "level":6,
-       "craftTime":630000,
-       "spillRadius":1000,
-       "spillRate":5000,
-       "harvestRate":0,
-       "alchemicaCost":[
-          4000,
-          3000,
-          1500,
-          400
-       ]
-    },
-    "16":{
-       "itemId":16,
-       "width":2,
-       "height":2,
-       "name":"Alchemical Aaltar Level 7",
-       "type":"INSTALLATION",
-       "installationType":0,
-       "alchemicaType":0,
-       "level":7,
-       "craftTime":1250000,
-       "spillRadius":800,
-       "spillRate":4000,
-       "harvestRate":0,
-       "alchemicaCost":[
-          5000,
-          7500,
-          3750,
-          1500
-       ]
-    },
-    "17":{
-       "itemId":17,
-       "width":2,
-       "height":2,
-       "name":"Alchemical Aaltar Level 8",
-       "type":"INSTALLATION",
-       "installationType":0,
-       "alchemicaType":0,
-       "level":8,
-       "craftTime":1900000,
-       "spillRadius":600,
-       "spillRate":3000,
-       "harvestRate":0,
-       "alchemicaCost":[
-          10000,
-          15000,
-          7500,
-          3000
-       ]
-    },
-    "18":{
-       "itemId":18,
-       "width":2,
-       "height":2,
-       "name":"Alchemical Aaltar Level 9",
-       "type":"INSTALLATION",
-       "installationType":0,
-       "alchemicaType":0,
-       "level":9,
-       "craftTime":3200000,
-       "spillRadius":400,
-       "spillRate":2000,
-       "harvestRate":0,
-       "alchemicaCost":[
-          20000,
-          30000,
-          15000,
-          6000
-       ]
-    },
-    "19":{
-       "itemId":19,
-       "width":1,
-       "height":1,
-       "name":"Common Rofl Gnome",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "20":{
-       "itemId":20,
-       "width":1,
-       "height":1,
-       "name":"Uncommon Rofl Gnome",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "21":{
-       "itemId":21,
-       "width":1,
-       "height":1,
-       "name":"Rare Rofl Gnome",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "22":{
-       "itemId":22,
-       "width":1,
-       "height":1,
-       "name":"Legendary Rofl Gnome",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "23":{
-       "itemId":23,
-       "width":1,
-       "height":1,
-       "name":"Mythical Rofl Gnome",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "24":{
-       "itemId":24,
-       "width":1,
-       "height":1,
-       "name":"Godlike Rofl Gnome",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "25":{
-       "itemId":25,
-       "width":1,
-       "height":1,
-       "name":"Common REALM Globe",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "26":{
-       "itemId":26,
-       "width":1,
-       "height":1,
-       "name":"Uncommon REALM Globe",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "27":{
-       "itemId":27,
-       "width":1,
-       "height":1,
-       "name":"Rare REALM Globe",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "28":{
-       "itemId":28,
-       "width":1,
-       "height":1,
-       "name":"Legendary REALM Globe",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "29":{
-       "itemId":29,
-       "width":1,
-       "height":1,
-       "name":"Mythical REALM Globe",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "30":{
-       "itemId":30,
-       "width":1,
-       "height":1,
-       "name":"Godlike REALM Globe",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "31":{
-       "itemId":31,
-       "width":1,
-       "height":1,
-       "name":"Common Smol Flower",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "32":{
-       "itemId":32,
-       "width":1,
-       "height":1,
-       "name":"Uncommon Smol Flower",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "33":{
-       "itemId":33,
-       "width":1,
-       "height":1,
-       "name":"Rare Smol Flower",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "34":{
-       "itemId":34,
-       "width":1,
-       "height":1,
-       "name":"Legendary Smol Flower",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "35":{
-       "itemId":35,
-       "width":1,
-       "height":1,
-       "name":"Mythical Smol Flower",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "36":{
-       "itemId":36,
-       "width":1,
-       "height":1,
-       "name":"Godlike Smol Flower",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "37":{
-       "itemId":37,
-       "width":1,
-       "height":1,
-       "name":"Common Laava Lamp",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "38":{
-       "itemId":38,
-       "width":1,
-       "height":1,
-       "name":"Uncommon Laava Lamp",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "39":{
-       "itemId":39,
-       "width":1,
-       "height":1,
-       "name":"Rare Laava Lamp",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "40":{
-       "itemId":40,
-       "width":1,
-       "height":1,
-       "name":"Legendary Laava Lamp",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "41":{
-       "itemId":41,
-       "width":1,
-       "height":1,
-       "name":"Mythical Laava Lamp",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "42":{
-       "itemId":42,
-       "width":1,
-       "height":1,
-       "name":"Godlike Laava Lamp",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "43":{
-       "itemId":43,
-       "width":1,
-       "height":1,
-       "name":"Common GM Light",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "44":{
-       "itemId":44,
-       "width":1,
-       "height":1,
-       "name":"Uncommon GM Light",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "45":{
-       "itemId":45,
-       "width":1,
-       "height":1,
-       "name":"Rare GM Light",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "46":{
-       "itemId":46,
-       "width":1,
-       "height":1,
-       "name":"Legendary GM Light",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "47":{
-       "itemId":47,
-       "width":1,
-       "height":1,
-       "name":"Mythical GM Light",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "48":{
-       "itemId":48,
-       "width":1,
-       "height":1,
-       "name":"Godlike GM Light",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "49":{
-       "itemId":49,
-       "width":1,
-       "height":1,
-       "name":"Common Caamp Fire",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "50":{
-       "itemId":50,
-       "width":1,
-       "height":1,
-       "name":"Uncommon Caamp Fire",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "51":{
-       "itemId":51,
-       "width":1,
-       "height":1,
-       "name":"Rare Caamp Fire",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "52":{
-       "itemId":52,
-       "width":1,
-       "height":1,
-       "name":"Legendary Caamp Fire",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "53":{
-       "itemId":53,
-       "width":1,
-       "height":1,
-       "name":"Mythical Caamp Fire",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "54":{
-       "itemId":54,
-       "width":1,
-       "height":1,
-       "name":"Godlike Caamp Fire",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "55":{
-       "itemId":55,
-       "width":4,
-       "height":4,
-       "name":"Graand Fountain",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          10000,
-          0,
-          6008.2,
-          0
-       ]
-    },
-    "56":{
-       "itemId":56,
-       "width":2,
-       "height":2,
-       "name":"FUD Harvester Level 1",
-       "type":"INSTALLATION",
-       "installationType":1,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":4.2,
-       "alchemicaCost":[
-          125,
-          63,
-          0,
-          0
-       ]
-    },
-    "57":{
-       "itemId":57,
-       "width":2,
-       "height":2,
-       "name":"FUD Harvester Level 2",
-       "type":"INSTALLATION",
-       "installationType":1,
-       "alchemicaType":0,
-       "level":2,
-       "craftTime":86400,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":10,
-       "alchemicaCost":[
-          178,
-          89,
-          0,
-          0
-       ]
-    },
-    "58":{
-       "itemId":58,
-       "width":2,
-       "height":2,
-       "name":"FUD Harvester Level 3",
-       "type":"INSTALLATION",
-       "installationType":1,
-       "alchemicaType":0,
-       "level":3,
-       "craftTime":172800,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":18,
-       "alchemicaCost":[
-          227,
-          115,
-          0,
-          0
-       ]
-    },
-    "59":{
-       "itemId":59,
-       "width":2,
-       "height":2,
-       "name":"FUD Harvester Level 4",
-       "type":"INSTALLATION",
-       "installationType":1,
-       "alchemicaType":0,
-       "level":4,
-       "craftTime":259200,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":30,
-       "alchemicaCost":[
-          255,
-          161,
-          0,
-          6.7
-       ]
-    },
-    "60":{
-       "itemId":60,
-       "width":2,
-       "height":2,
-       "name":"FUD Harvester Level 5",
-       "type":"INSTALLATION",
-       "installationType":1,
-       "alchemicaType":0,
-       "level":5,
-       "craftTime":345600,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":50,
-       "alchemicaCost":[
-          385,
-          243,
-          0,
-          10
-       ]
-    },
-    "61":{
-       "itemId":61,
-       "width":2,
-       "height":2,
-       "name":"FUD Harvester Level 6",
-       "type":"INSTALLATION",
-       "installationType":1,
-       "alchemicaType":0,
-       "level":6,
-       "craftTime":432000,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":85,
-       "alchemicaCost":[
-          592,
-          374,
-          0,
-          16
-       ]
-    },
-    "62":{
-       "itemId":62,
-       "width":2,
-       "height":2,
-       "name":"FUD Harvester Level 7",
-       "type":"INSTALLATION",
-       "installationType":1,
-       "alchemicaType":0,
-       "level":7,
-       "craftTime":518400,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":150,
-       "alchemicaCost":[
-          665,
-          548,
-          0,
-          44
-       ]
-    },
-    "63":{
-       "itemId":63,
-       "width":2,
-       "height":2,
-       "name":"FUD Harvester Level 8",
-       "type":"INSTALLATION",
-       "installationType":1,
-       "alchemicaType":0,
-       "level":8,
-       "craftTime":604800,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":277,
-       "alchemicaCost":[
-          892,
-          745,
-          0,
-          59
-       ]
-    },
-    "64":{
-       "itemId":64,
-       "width":2,
-       "height":2,
-       "name":"FUD Harvester Level 9",
-       "type":"INSTALLATION",
-       "installationType":1,
-       "alchemicaType":0,
-       "level":9,
-       "craftTime":691200,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":527,
-       "alchemicaCost":[
-          729,
-          911,
-          0,
-          109
-       ]
-    },
-    "65":{
-       "itemId":65,
-       "width":2,
-       "height":2,
-       "name":"FOMO Harvester Level 1",
-       "type":"INSTALLATION",
-       "installationType":1,
-       "alchemicaType":1,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":2.1,
-       "alchemicaCost":[
-          104,
-          83,
-          0,
-          0
-       ]
-    },
-    "66":{
-       "itemId":66,
-       "width":2,
-       "height":2,
-       "name":"FOMO Harvester Level 2",
-       "type":"INSTALLATION",
-       "installationType":1,
-       "alchemicaType":1,
-       "level":2,
-       "craftTime":95616,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":4.6,
-       "alchemicaCost":[
-          156,
-          119,
-          0,
-          0
-       ]
-    },
-    "67":{
-       "itemId":67,
-       "width":2,
-       "height":2,
-       "name":"FOMO Harvester Level 3",
-       "type":"INSTALLATION",
-       "installationType":1,
-       "alchemicaType":1,
-       "level":3,
-       "craftTime":190989,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":8.3,
-       "alchemicaCost":[
-          200,
-          153,
-          0,
-          0
-       ]
-    },
-    "68":{
-       "itemId":68,
-       "width":2,
-       "height":2,
-       "name":"FOMO Harvester Level 4",
-       "type":"INSTALLATION",
-       "installationType":1,
-       "alchemicaType":1,
-       "level":4,
-       "craftTime":290304,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":14,
-       "alchemicaCost":[
-          212,
-          212,
-          0,
-          6.7
-       ]
-    },
-    "69":{
-       "itemId":69,
-       "width":2,
-       "height":2,
-       "name":"FOMO Harvester Level 5",
-       "type":"INSTALLATION",
-       "installationType":1,
-       "alchemicaType":1,
-       "level":5,
-       "craftTime":392727,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":22,
-       "alchemicaCost":[
-          319,
-          319,
-          0,
-          10
-       ]
-    },
-    "70":{
-       "itemId":70,
-       "width":2,
-       "height":2,
-       "name":"FOMO Harvester Level 6",
-       "type":"INSTALLATION",
-       "installationType":1,
-       "alchemicaType":1,
-       "level":6,
-       "craftTime":478080,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":38,
-       "alchemicaCost":[
-          491,
-          491,
-          0,
-          16
-       ]
-    },
-    "71":{
-       "itemId":71,
-       "width":2,
-       "height":2,
-       "name":"FOMO Harvester Level 7",
-       "type":"INSTALLATION",
-       "installationType":1,
-       "alchemicaType":1,
-       "level":7,
-       "craftTime":570240,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":68,
-       "alchemicaCost":[
-          488,
-          734,
-          0,
-          49
-       ]
-    },
-    "72":{
-       "itemId":72,
-       "width":2,
-       "height":2,
-       "name":"FOMO Harvester Level 8",
-       "type":"INSTALLATION",
-       "installationType":1,
-       "alchemicaType":1,
-       "level":8,
-       "craftTime":672000,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":125,
-       "alchemicaCost":[
-          657,
-          986,
-          0,
-          66
-       ]
-    },
-    "73":{
-       "itemId":73,
-       "width":2,
-       "height":2,
-       "name":"FOMO Harvester Level 9",
-       "type":"INSTALLATION",
-       "installationType":1,
-       "alchemicaType":1,
-       "level":9,
-       "craftTime":774144,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":238,
-       "alchemicaCost":[
-          403,
-          1209,
-          0,
-          121
-       ]
-    },
-    "74":{
-       "itemId":74,
-       "width":2,
-       "height":2,
-       "name":"ALPHA Harvester Level 1",
-       "type":"INSTALLATION",
-       "installationType":1,
-       "alchemicaType":2,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":1.5,
-       "alchemicaCost":[
-          94,
-          63,
-          5.2,
-          0
-       ]
-    },
-    "75":{
-       "itemId":75,
-       "width":2,
-       "height":2,
-       "name":"ALPHA Harvester Level 2",
-       "type":"INSTALLATION",
-       "installationType":1,
-       "alchemicaType":2,
-       "level":2,
-       "craftTime":82944,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":2.8,
-       "alchemicaCost":[
-          133,
-          82,
-          7.4,
-          0
-       ]
-    },
-    "76":{
-       "itemId":76,
-       "width":2,
-       "height":2,
-       "name":"ALPHA Harvester Level 3",
-       "type":"INSTALLATION",
-       "installationType":1,
-       "alchemicaType":2,
-       "level":3,
-       "craftTime":163705,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":4.8,
-       "alchemicaCost":[
-          172,
-          107,
-          12,
-          0
-       ]
-    },
-    "77":{
-       "itemId":77,
-       "width":2,
-       "height":2,
-       "name":"ALPHA Harvester Level 4",
-       "type":"INSTALLATION",
-       "installationType":1,
-       "alchemicaType":2,
-       "level":4,
-       "craftTime":248832,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":7.8,
-       "alchemicaCost":[
-          181,
-          150,
-          16,
-          5.4
-       ]
-    },
-    "78":{
-       "itemId":78,
-       "width":2,
-       "height":2,
-       "name":"ALPHA Harvester Level 5",
-       "type":"INSTALLATION",
-       "installationType":1,
-       "alchemicaType":2,
-       "level":5,
-       "craftTime":339316,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":13,
-       "alchemicaCost":[
-          274,
-          228,
-          22,
-          9.1
-       ]
-    },
-    "79":{
-       "itemId":79,
-       "width":2,
-       "height":2,
-       "name":"ALPHA Harvester Level 6",
-       "type":"INSTALLATION",
-       "installationType":1,
-       "alchemicaType":2,
-       "level":6,
-       "craftTime":414720,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":22,
-       "alchemicaCost":[
-          421,
-          351,
-          35,
-          14
-       ]
-    },
-    "80":{
-       "itemId":80,
-       "width":2,
-       "height":2,
-       "name":"ALPHA Harvester Level 7",
-       "type":"INSTALLATION",
-       "installationType":1,
-       "alchemicaType":2,
-       "level":7,
-       "craftTime":518400,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":39,
-       "alchemicaCost":[
-          418,
-          525,
-          51,
-          42
-       ]
-    },
-    "81":{
-       "itemId":81,
-       "width":2,
-       "height":2,
-       "name":"ALPHA Harvester Level 8",
-       "type":"INSTALLATION",
-       "installationType":1,
-       "alchemicaType":2,
-       "level":8,
-       "craftTime":577920,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":73,
-       "alchemicaCost":[
-          563,
-          704,
-          69,
-          56
-       ]
-    },
-    "82":{
-       "itemId":82,
-       "width":2,
-       "height":2,
-       "name":"ALPHA Harvester Level 9",
-       "type":"INSTALLATION",
-       "installationType":1,
-       "alchemicaType":2,
-       "level":9,
-       "craftTime":663552,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":138,
-       "alchemicaCost":[
-          691,
-          863,
-          86,
-          104
-       ]
-    },
-    "83":{
-       "itemId":83,
-       "width":2,
-       "height":2,
-       "name":"KEK Harvester Level 1",
-       "type":"INSTALLATION",
-       "installationType":1,
-       "alchemicaType":3,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0.3,
-       "alchemicaCost":[
-          115,
-          73,
-          0,
-          3.1
-       ]
-    },
-    "84":{
-       "itemId":84,
-       "width":2,
-       "height":2,
-       "name":"KEK Harvester Level 2",
-       "type":"INSTALLATION",
-       "installationType":1,
-       "alchemicaType":3,
-       "level":2,
-       "craftTime":101376,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0.71,
-       "alchemicaCost":[
-          163,
-          104,
-          0,
-          3.7
-       ]
-    },
-    "85":{
-       "itemId":85,
-       "width":2,
-       "height":2,
-       "name":"KEK Harvester Level 3",
-       "type":"INSTALLATION",
-       "installationType":1,
-       "alchemicaType":3,
-       "level":3,
-       "craftTime":200084,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":1.6,
-       "alchemicaCost":[
-          210,
-          131,
-          0,
-          5.2
-       ]
-    },
-    "86":{
-       "itemId":86,
-       "width":2,
-       "height":2,
-       "name":"KEK Harvester Level 4",
-       "type":"INSTALLATION",
-       "installationType":1,
-       "alchemicaType":3,
-       "level":4,
-       "craftTime":304128,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":2.7,
-       "alchemicaCost":[
-          221,
-          188,
-          0,
-          15
-       ]
-    },
-    "87":{
-       "itemId":87,
-       "width":2,
-       "height":2,
-       "name":"KEK Harvester Level 5",
-       "type":"INSTALLATION",
-       "installationType":1,
-       "alchemicaType":3,
-       "level":5,
-       "craftTime":414720,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":4.1,
-       "alchemicaCost":[
-          335,
-          279,
-          0,
-          22
-       ]
-    },
-    "88":{
-       "itemId":88,
-       "width":2,
-       "height":2,
-       "name":"KEK Harvester Level 6",
-       "type":"INSTALLATION",
-       "installationType":1,
-       "alchemicaType":3,
-       "level":6,
-       "craftTime":506880,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":7,
-       "alchemicaCost":[
-          514,
-          429,
-          0,
-          34
-       ]
-    },
-    "89":{
-       "itemId":89,
-       "width":2,
-       "height":2,
-       "name":"KEK Harvester Level 7",
-       "type":"INSTALLATION",
-       "installationType":1,
-       "alchemicaType":3,
-       "level":7,
-       "craftTime":604800,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":13,
-       "alchemicaCost":[
-          511,
-          641,
-          0,
-          77
-       ]
-    },
-    "90":{
-       "itemId":90,
-       "width":2,
-       "height":2,
-       "name":"KEK Harvester Level 8",
-       "type":"INSTALLATION",
-       "installationType":1,
-       "alchemicaType":3,
-       "level":8,
-       "craftTime":698880,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":24,
-       "alchemicaCost":[
-          688,
-          861,
-          0,
-          103
-       ]
-    },
-    "91":{
-       "itemId":91,
-       "width":2,
-       "height":2,
-       "name":"KEK Harvester Level 9",
-       "type":"INSTALLATION",
-       "installationType":1,
-       "alchemicaType":3,
-       "level":9,
-       "craftTime":811008,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":45,
-       "alchemicaCost":[
-          422,
-          1055,
-          0,
-          169
-       ]
-    },
-    "92":{
-       "itemId":92,
-       "width":2,
-       "height":2,
-       "name":"FUD Reservoir Level 1",
-       "type":"INSTALLATION",
-       "installationType":2,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":810,
-       "spillRate":6650,
-       "harvestRate":0,
-       "alchemicaCost":[
-          290,
-          100,
-          0,
-          0
-       ]
-    },
-    "93":{
-       "itemId":93,
-       "width":2,
-       "height":2,
-       "name":"FUD Reservoir Level 2",
-       "type":"INSTALLATION",
-       "installationType":2,
-       "alchemicaType":0,
-       "level":2,
-       "craftTime":18677,
-       "spillRadius":720,
-       "spillRate":5700,
-       "harvestRate":0,
-       "alchemicaCost":[
-          342,
-          114,
-          0,
-          0
-       ]
-    },
-    "94":{
-       "itemId":94,
-       "width":2,
-       "height":2,
-       "name":"FUD Reservoir Level 3",
-       "type":"INSTALLATION",
-       "installationType":2,
-       "alchemicaType":0,
-       "level":3,
-       "craftTime":30189,
-       "spillRadius":630,
-       "spillRate":4750,
-       "harvestRate":0,
-       "alchemicaCost":[
-          528,
-          176,
-          0,
-          0
-       ]
-    },
-    "95":{
-       "itemId":95,
-       "width":2,
-       "height":2,
-       "name":"FUD Reservoir Level 4",
-       "type":"INSTALLATION",
-       "installationType":2,
-       "alchemicaType":0,
-       "level":4,
-       "craftTime":48762,
-       "spillRadius":540,
-       "spillRate":3800,
-       "harvestRate":0,
-       "alchemicaCost":[
-          824,
-          326,
-          0,
-          17
-       ]
-    },
-    "96":{
-       "itemId":96,
-       "width":2,
-       "height":2,
-       "name":"FUD Reservoir Level 5",
-       "type":"INSTALLATION",
-       "installationType":2,
-       "alchemicaType":0,
-       "level":5,
-       "craftTime":77202,
-       "spillRadius":450,
-       "spillRate":2850,
-       "harvestRate":0,
-       "alchemicaCost":[
-          1348,
-          539,
-          0,
-          28
-       ]
-    },
-    "97":{
-       "itemId":97,
-       "width":2,
-       "height":2,
-       "name":"FUD Reservoir Level 6",
-       "type":"INSTALLATION",
-       "installationType":2,
-       "alchemicaType":0,
-       "level":6,
-       "craftTime":124337,
-       "spillRadius":360,
-       "spillRate":2375,
-       "harvestRate":0,
-       "alchemicaCost":[
-          2332,
-          933,
-          0,
-          47
-       ]
-    },
-    "98":{
-       "itemId":98,
-       "width":2,
-       "height":2,
-       "name":"FUD Reservoir Level 7",
-       "type":"INSTALLATION",
-       "installationType":2,
-       "alchemicaType":0,
-       "level":7,
-       "craftTime":197379,
-       "spillRadius":270,
-       "spillRate":1900,
-       "harvestRate":0,
-       "alchemicaCost":[
-          3420,
-          1710,
-          0,
-          171
-       ]
-    },
-    "99":{
-       "itemId":99,
-       "width":2,
-       "height":2,
-       "name":"FUD Reservoir Level 8",
-       "type":"INSTALLATION",
-       "installationType":2,
-       "alchemicaType":0,
-       "level":8,
-       "craftTime":317050,
-       "spillRadius":180,
-       "spillRate":1425,
-       "harvestRate":0,
-       "alchemicaCost":[
-          4940,
-          2470,
-          0,
-          247
-       ]
-    },
-    "100":{
-       "itemId":100,
-       "width":2,
-       "height":2,
-       "name":"FUD Reservoir Level 9",
-       "type":"INSTALLATION",
-       "installationType":2,
-       "alchemicaType":0,
-       "level":9,
-       "craftTime":503316,
-       "spillRadius":90,
-       "spillRate":950,
-       "harvestRate":0,
-       "alchemicaCost":[
-          3420,
-          2280,
-          0,
-          342
-       ]
-    },
-    "101":{
-       "itemId":101,
-       "width":2,
-       "height":2,
-       "name":"FOMO Reservoir Level 1",
-       "type":"INSTALLATION",
-       "installationType":2,
-       "alchemicaType":1,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":990,
-       "spillRate":7350,
-       "harvestRate":0,
-       "alchemicaCost":[
-          260,
-          130,
-          0,
-          0
-       ]
-    },
-    "102":{
-       "itemId":102,
-       "width":2,
-       "height":2,
-       "name":"FOMO Reservoir Level 2",
-       "type":"INSTALLATION",
-       "installationType":2,
-       "alchemicaType":1,
-       "level":2,
-       "craftTime":20856,
-       "spillRadius":880,
-       "spillRate":6300,
-       "harvestRate":0,
-       "alchemicaCost":[
-          315,
-          156,
-          0,
-          0
-       ]
-    },
-    "103":{
-       "itemId":103,
-       "width":2,
-       "height":2,
-       "name":"FOMO Reservoir Level 3",
-       "type":"INSTALLATION",
-       "installationType":2,
-       "alchemicaType":1,
-       "level":3,
-       "craftTime":33409,
-       "spillRadius":770,
-       "spillRate":5250,
-       "harvestRate":0,
-       "alchemicaCost":[
-          486,
-          243,
-          0,
-          0
-       ]
-    },
-    "104":{
-       "itemId":104,
-       "width":2,
-       "height":2,
-       "name":"FOMO Reservoir Level 4",
-       "type":"INSTALLATION",
-       "installationType":2,
-       "alchemicaType":1,
-       "level":4,
-       "craftTime":53638,
-       "spillRadius":660,
-       "spillRate":4200,
-       "harvestRate":0,
-       "alchemicaCost":[
-          721,
-          446,
-          0,
-          17
-       ]
-    },
-    "105":{
-       "itemId":105,
-       "width":2,
-       "height":2,
-       "name":"FOMO Reservoir Level 5",
-       "type":"INSTALLATION",
-       "installationType":2,
-       "alchemicaType":1,
-       "level":5,
-       "craftTime":85780,
-       "spillRadius":550,
-       "spillRate":3150,
-       "harvestRate":0,
-       "alchemicaCost":[
-          1192,
-          738,
-          0,
-          30
-       ]
-    },
-    "106":{
-       "itemId":106,
-       "width":2,
-       "height":2,
-       "name":"FOMO Reservoir Level 6",
-       "type":"INSTALLATION",
-       "installationType":2,
-       "alchemicaType":1,
-       "level":6,
-       "craftTime":134698,
-       "spillRadius":440,
-       "spillRate":2625,
-       "harvestRate":0,
-       "alchemicaCost":[
-          2062,
-          1288,
-          0,
-          52
-       ]
-    },
-    "107":{
-       "itemId":107,
-       "width":2,
-       "height":2,
-       "name":"FOMO Reservoir Level 7",
-       "type":"INSTALLATION",
-       "installationType":2,
-       "alchemicaType":1,
-       "level":7,
-       "craftTime":222051,
-       "spillRadius":330,
-       "spillRate":2100,
-       "harvestRate":0,
-       "alchemicaCost":[
-          2844,
-          2358,
-          0,
-          189
-       ]
-    },
-    "108":{
-       "itemId":108,
-       "width":2,
-       "height":2,
-       "name":"FOMO Reservoir Level 8",
-       "type":"INSTALLATION",
-       "installationType":2,
-       "alchemicaType":1,
-       "level":8,
-       "craftTime":352278,
-       "spillRadius":220,
-       "spillRate":1575,
-       "harvestRate":0,
-       "alchemicaCost":[
-          4095,
-          3419,
-          0,
-          273
-       ]
-    },
-    "109":{
-       "itemId":109,
-       "width":2,
-       "height":2,
-       "name":"FOMO Reservoir Level 9",
-       "type":"INSTALLATION",
-       "installationType":2,
-       "alchemicaType":1,
-       "level":9,
-       "craftTime":570425,
-       "spillRadius":110,
-       "spillRate":1050,
-       "harvestRate":0,
-       "alchemicaCost":[
-          2520,
-          3150,
-          0,
-          378
-       ]
-    },
-    "110":{
-       "itemId":110,
-       "width":2,
-       "height":2,
-       "name":"ALPHA Reservoir Level 1",
-       "type":"INSTALLATION",
-       "installationType":2,
-       "alchemicaType":2,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":1170,
-       "spillRate":7700,
-       "harvestRate":0,
-       "alchemicaCost":[
-          225,
-          90,
-          10,
-          0
-       ]
-    },
-    "111":{
-       "itemId":111,
-       "width":2,
-       "height":2,
-       "name":"ALPHA Reservoir Level 2",
-       "type":"INSTALLATION",
-       "installationType":2,
-       "alchemicaType":2,
-       "level":2,
-       "craftTime":18054,
-       "spillRadius":1040,
-       "spillRate":6600,
-       "harvestRate":0,
-       "alchemicaCost":[
-          270,
-          108,
-          15,
-          0
-       ]
-    },
-    "112":{
-       "itemId":112,
-       "width":2,
-       "height":2,
-       "name":"ALPHA Reservoir Level 3",
-       "type":"INSTALLATION",
-       "installationType":2,
-       "alchemicaType":2,
-       "level":3,
-       "craftTime":28981,
-       "spillRadius":910,
-       "spillRate":5500,
-       "harvestRate":0,
-       "alchemicaCost":[
-          417,
-          167,
-          23,
-          0
-       ]
-    },
-    "113":{
-       "itemId":113,
-       "width":2,
-       "height":2,
-       "name":"ALPHA Reservoir Level 4",
-       "type":"INSTALLATION",
-       "installationType":2,
-       "alchemicaType":2,
-       "level":4,
-       "craftTime":45511,
-       "spillRadius":780,
-       "spillRate":4400,
-       "harvestRate":0,
-       "alchemicaCost":[
-          618,
-          309,
-          38,
-          15
-       ]
-    },
-    "114":{
-       "itemId":114,
-       "width":2,
-       "height":2,
-       "name":"ALPHA Reservoir Level 5",
-       "type":"INSTALLATION",
-       "installationType":2,
-       "alchemicaType":2,
-       "level":5,
-       "craftTime":75486,
-       "spillRadius":650,
-       "spillRate":3300,
-       "harvestRate":0,
-       "alchemicaCost":[
-          1022,
-          511,
-          64,
-          26
-       ]
-    },
-    "115":{
-       "itemId":115,
-       "width":2,
-       "height":2,
-       "name":"ALPHA Reservoir Level 6",
-       "type":"INSTALLATION",
-       "installationType":2,
-       "alchemicaType":2,
-       "level":6,
-       "craftTime":120193,
-       "spillRadius":520,
-       "spillRate":2750,
-       "harvestRate":0,
-       "alchemicaCost":[
-          1767,
-          884,
-          110,
-          44
-       ]
-    },
-    "116":{
-       "itemId":116,
-       "width":2,
-       "height":2,
-       "name":"ALPHA Reservoir Level 7",
-       "type":"INSTALLATION",
-       "installationType":2,
-       "alchemicaType":2,
-       "level":7,
-       "craftTime":189155,
-       "spillRadius":390,
-       "spillRate":2200,
-       "harvestRate":0,
-       "alchemicaCost":[
-          2430,
-          1620,
-          198,
-          162
-       ]
-    },
-    "117":{
-       "itemId":117,
-       "width":2,
-       "height":2,
-       "name":"ALPHA Reservoir Level 8",
-       "type":"INSTALLATION",
-       "installationType":2,
-       "alchemicaType":2,
-       "level":8,
-       "craftTime":302959,
-       "spillRadius":260,
-       "spillRate":1650,
-       "harvestRate":0,
-       "alchemicaCost":[
-          3510,
-          2340,
-          293,
-          234
-       ]
-    },
-    "118":{
-       "itemId":118,
-       "width":2,
-       "height":2,
-       "name":"ALPHA Reservoir Level 9",
-       "type":"INSTALLATION",
-       "installationType":2,
-       "alchemicaType":2,
-       "level":9,
-       "craftTime":486539,
-       "spillRadius":130,
-       "spillRate":1100,
-       "harvestRate":0,
-       "alchemicaCost":[
-          2160,
-          2160,
-          270,
-          324
-       ]
-    },
-    "119":{
-       "itemId":119,
-       "width":2,
-       "height":2,
-       "name":"KEK Reservoir Level 1",
-       "type":"INSTALLATION",
-       "installationType":2,
-       "alchemicaType":3,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":630,
-       "spillRate":6300,
-       "harvestRate":0,
-       "alchemicaCost":[
-          275,
-          110,
-          0,
-          5
-       ]
-    },
-    "120":{
-       "itemId":120,
-       "width":2,
-       "height":2,
-       "name":"KEK Reservoir Level 2",
-       "type":"INSTALLATION",
-       "installationType":2,
-       "alchemicaType":3,
-       "level":2,
-       "craftTime":22412,
-       "spillRadius":560,
-       "spillRate":5400,
-       "harvestRate":0,
-       "alchemicaCost":[
-          330,
-          132,
-          0,
-          6
-       ]
-    },
-    "121":{
-       "itemId":121,
-       "width":2,
-       "height":2,
-       "name":"KEK Reservoir Level 3",
-       "type":"INSTALLATION",
-       "installationType":2,
-       "alchemicaType":3,
-       "level":3,
-       "craftTime":35421,
-       "spillRadius":490,
-       "spillRate":4500,
-       "harvestRate":0,
-       "alchemicaCost":[
-          509,
-          204,
-          0,
-          9
-       ]
-    },
-    "122":{
-       "itemId":122,
-       "width":2,
-       "height":2,
-       "name":"KEK Reservoir Level 4",
-       "type":"INSTALLATION",
-       "installationType":2,
-       "alchemicaType":3,
-       "level":4,
-       "craftTime":56889,
-       "spillRadius":420,
-       "spillRate":3600,
-       "harvestRate":0,
-       "alchemicaCost":[
-          755,
-          378,
-          0,
-          38
-       ]
-    },
-    "123":{
-       "itemId":123,
-       "width":2,
-       "height":2,
-       "name":"KEK Reservoir Level 5",
-       "type":"INSTALLATION",
-       "installationType":2,
-       "alchemicaType":3,
-       "level":5,
-       "craftTime":89211,
-       "spillRadius":350,
-       "spillRate":2700,
-       "harvestRate":0,
-       "alchemicaCost":[
-          1249,
-          624,
-          0,
-          62
-       ]
-    },
-    "124":{
-       "itemId":124,
-       "width":2,
-       "height":2,
-       "name":"KEK Reservoir Level 6",
-       "type":"INSTALLATION",
-       "installationType":2,
-       "alchemicaType":3,
-       "level":6,
-       "craftTime":145060,
-       "spillRadius":280,
-       "spillRate":2250,
-       "harvestRate":0,
-       "alchemicaCost":[
-          2160,
-          1080,
-          0,
-          108
-       ]
-    },
-    "125":{
-       "itemId":125,
-       "width":2,
-       "height":2,
-       "name":"KEK Reservoir Level 7",
-       "type":"INSTALLATION",
-       "installationType":2,
-       "alchemicaType":3,
-       "level":7,
-       "craftTime":230276,
-       "spillRadius":210,
-       "spillRate":1800,
-       "harvestRate":0,
-       "alchemicaCost":[
-          2970,
-          1980,
-          0,
-          297
-       ]
-    },
-    "126":{
-       "itemId":126,
-       "width":2,
-       "height":2,
-       "name":"KEK Reservoir Level 8",
-       "type":"INSTALLATION",
-       "installationType":2,
-       "alchemicaType":3,
-       "level":8,
-       "craftTime":369891,
-       "spillRadius":140,
-       "spillRate":1350,
-       "harvestRate":0,
-       "alchemicaCost":[
-          4290,
-          2860,
-          0,
-          429
-       ]
-    },
-    "127":{
-       "itemId":127,
-       "width":2,
-       "height":2,
-       "name":"KEK Reservoir Level 9",
-       "type":"INSTALLATION",
-       "installationType":2,
-       "alchemicaType":3,
-       "level":9,
-       "craftTime":587203,
-       "spillRadius":70,
-       "spillRate":900,
-       "harvestRate":0,
-       "alchemicaCost":[
-          3960,
-          2640,
-          0,
-          528
-       ]
-    },
-    "128":{
-       "itemId":128,
-       "width":2,
-       "height":2,
-       "name":"Maaker Level 1",
-       "type":"INSTALLATION",
-       "installationType":6,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          2500,
-          300,
-          500,
-          125
-       ]
-    },
-    "129":{
-       "itemId":129,
-       "width":2,
-       "height":2,
-       "name":"Maaker Level 2",
-       "type":"INSTALLATION",
-       "installationType":6,
-       "alchemicaType":0,
-       "level":2,
-       "craftTime":4000,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          5000,
-          650,
-          950,
-          250
-       ]
-    },
-    "130":{
-       "itemId":130,
-       "width":2,
-       "height":2,
-       "name":"Maaker Level 3",
-       "type":"INSTALLATION",
-       "installationType":6,
-       "alchemicaType":0,
-       "level":3,
-       "craftTime":10000,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          10000,
-          1250,
-          1900,
-          500
-       ]
-    },
-    "131":{
-       "itemId":131,
-       "width":2,
-       "height":2,
-       "name":"Maaker Level 4",
-       "type":"INSTALLATION",
-       "installationType":6,
-       "alchemicaType":0,
-       "level":4,
-       "craftTime":20000,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          15000,
-          2500,
-          3750,
-          1500
-       ]
-    },
-    "132":{
-       "itemId":132,
-       "width":2,
-       "height":2,
-       "name":"Maaker Level 5",
-       "type":"INSTALLATION",
-       "installationType":6,
-       "alchemicaType":0,
-       "level":5,
-       "craftTime":30000,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          22500,
-          3700,
-          5600,
-          2200
-       ]
-    },
-    "133":{
-       "itemId":133,
-       "width":2,
-       "height":2,
-       "name":"Maaker Level 6",
-       "type":"INSTALLATION",
-       "installationType":6,
-       "alchemicaType":0,
-       "level":6,
-       "craftTime":40000,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          30000,
-          5000,
-          7500,
-          3000
-       ]
-    },
-    "134":{
-       "itemId":134,
-       "width":2,
-       "height":2,
-       "name":"Maaker Level 7",
-       "type":"INSTALLATION",
-       "installationType":6,
-       "alchemicaType":0,
-       "level":7,
-       "craftTime":80000,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          27500,
-          6900,
-          10300,
-          5500
-       ]
-    },
-    "135":{
-       "itemId":135,
-       "width":2,
-       "height":2,
-       "name":"Maaker Level 8",
-       "type":"INSTALLATION",
-       "installationType":6,
-       "alchemicaType":0,
-       "level":8,
-       "craftTime":120000,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          35000,
-          8750,
-          13100,
-          7000
-       ]
-    },
-    "136":{
-       "itemId":136,
-       "width":2,
-       "height":2,
-       "name":"Maaker Level 9",
-       "type":"INSTALLATION",
-       "installationType":6,
-       "alchemicaType":0,
-       "level":9,
-       "craftTime":200000,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          42500,
-          10500,
-          16000,
-          8500
-       ]
-    },
-    "137":{
-       "itemId":137,
-       "width":4,
-       "height":4,
-       "name":"NFT Display - 4x4",
-       "type":"INSTALLATION",
-       "installationType":5,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          400,
-          0,
-          600,
-          100
-       ]
-    },
-    "138":{
-       "itemId":138,
-       "width":4,
-       "height":6,
-       "name":"NFT Display - 4x6",
-       "type":"INSTALLATION",
-       "installationType":5,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          600,
-          0,
-          800,
-          200
-       ]
-    },
-    "139":{
-       "itemId":139,
-       "width":6,
-       "height":4,
-       "name":"NFT Display - 6x4",
-       "type":"INSTALLATION",
-       "installationType":5,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          600,
-          0,
-          800,
-          200
-       ]
-    },
-    "140":{
-       "itemId":140,
-       "width":8,
-       "height":8,
-       "name":"NFT Display - 8x8",
-       "type":"INSTALLATION",
-       "installationType":5,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          1600,
-          0,
-          2000,
-          600
-       ]
-    },
-    "141":{
-       "itemId":141,
-       "width":4,
-       "height":4,
-       "name":"LE Golden NFT Display - 4x4",
-       "type":"INSTALLATION",
-       "installationType":5,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          4000,
-          0,
-          6000,
-          1000
-       ]
-    },
-    "142":{
-       "itemId":142,
-       "width":4,
-       "height":6,
-       "name":"LE Golden NFT Display - 4x6",
-       "type":"INSTALLATION",
-       "installationType":5,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          6000,
-          0,
-          8000,
-          2000
-       ]
-    },
-    "143":{
-       "itemId":143,
-       "width":6,
-       "height":4,
-       "name":"LE Golden NFT Display - 6x4",
-       "type":"INSTALLATION",
-       "installationType":5,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          6000,
-          0,
-          8000,
-          2000
-       ]
-    },
-    "144":{
-       "itemId":144,
-       "width":8,
-       "height":8,
-       "name":"LE Golden NFT Display - 8x8",
-       "type":"INSTALLATION",
-       "installationType":5,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          16000,
-          0,
-          20000,
-          6000
-       ]
-    },
-    "145":{
-       "itemId":145,
-       "width":2,
-       "height":2,
-       "name":"Bounce Gate",
-       "type":"INSTALLATION",
-       "installationType":8,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "146":{
-       "itemId":146,
-       "width":2,
-       "height":1,
-       "name":"Paampkin Trio",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          600,
-          100,
-          250,
-          0
-       ]
-    },
-    "147":{
-       "itemId":147,
-       "width":1,
-       "height":1,
-       "name":"Roflkin",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          500,
-          0,
-          300,
-          50
-       ]
-    },
-    "148":{
-       "itemId":148,
-       "width":1,
-       "height":1,
-       "name":"Scareye Crow",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          700,
-          0,
-          500,
-          75
-       ]
-    },
-    "149":{
-       "itemId":149,
-       "width":1,
-       "height":1,
-       "name":"Gotchi Caandle",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          1000,
-          300,
-          1000,
-          0
-       ]
-    },
-    "150":{
-       "itemId":150,
-       "width":1,
-       "height":1,
-       "name":"Sus Baatterfly",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          3000,
-          0,
-          5000,
-          700
-       ]
-    },
-    "151":{
-       "itemId":151,
-       "width":2,
-       "height":1,
-       "name":"Skeledator",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          6000,
-          0,
-          25000,
-          2500
-       ]
-    },
-    "152":{
-       "itemId":152,
-       "width":2,
-       "height":2,
-       "name":"Feelin' Lit",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          150,
-          200,
-          100
-       ]
-    },
-    "153":{
-       "itemId":153,
-       "width":2,
-       "height":2,
-       "name":"Bulby",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          200,
-          450,
-          150,
-          50
-       ]
-    },
-    "154":{
-       "itemId":154,
-       "width":1,
-       "height":1,
-       "name":"Rednosed Rofl",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          2300,
-          0,
-          350,
-          100
-       ]
-    },
-    "155":{
-       "itemId":155,
-       "width":1,
-       "height":1,
-       "name":"Brrrooorrr",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          800,
-          0,
-          650,
-          80
-       ]
-    },
-    "156":{
-       "itemId":156,
-       "width":2,
-       "height":2,
-       "name":"Aangel Tree",
-       "type":"INSTALLATION",
-       "installationType":7,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          0,
-          0,
-          0,
-          0
-       ]
-    },
-    "157":{
-       "itemId":157,
-       "width":8,
-       "height":12,
-       "name":"NFT Display - 8x12",
-       "type":"INSTALLATION",
-       "installationType":5,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          2400,
-          0,
-          2800,
-          1000
-       ]
-    },
-    "158":{
-       "itemId":158,
-       "width":12,
-       "height":8,
-       "name":"NFT Display - 12x8",
-       "type":"INSTALLATION",
-       "installationType":5,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          2400,
-          0,
-          2800,
-          1000
-       ]
-    },
-    "159":{
-       "itemId":159,
-       "width":12,
-       "height":12,
-       "name":"NFT Display - 12x12",
-       "type":"INSTALLATION",
-       "installationType":5,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          3600,
-          0,
-          4000,
-          1600
-       ]
-    },
-    "160":{
-       "itemId":160,
-       "width":16,
-       "height":16,
-       "name":"NFT Display - 16x16",
-       "type":"INSTALLATION",
-       "installationType":5,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          6400,
-          0,
-          7000,
-          3000
-       ]
-    },
-    "161":{
-       "itemId":161,
-       "width":16,
-       "height":16,
-       "name":"LE Golden NFT Display - 16x16",
-       "type":"INSTALLATION",
-       "installationType":5,
-       "alchemicaType":0,
-       "level":1,
-       "craftTime":0,
-       "spillRadius":0,
-       "spillRate":0,
-       "harvestRate":0,
-       "alchemicaCost":[
-          64000,
-          0,
-          70000,
-          30000
-       ]
-    }
- }
+   "0": {
+      "itemId": 0,
+      "width": 1,
+      "height": 1,
+      "name": "The Void",
+      "type": "INSTALLATION",
+      "installationType": 0,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "1": {
+      "itemId": 1,
+      "width": 2,
+      "height": 2,
+      "name": "LE Golden Aaltar",
+      "type": "INSTALLATION",
+      "installationType": 0,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 9000,
+      "spillRate": 10000,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         3000,
+         1500,
+         2000,
+         750
+      ]
+   },
+   "2": {
+      "itemId": 2,
+      "width": 2,
+      "height": 2,
+      "name": "LE Golden Aaltar",
+      "type": "INSTALLATION",
+      "installationType": 0,
+      "alchemicaType": 0,
+      "level": 2,
+      "craftTime": 65000,
+      "spillRadius": 8000,
+      "spillRate": 9000,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         300,
+         150,
+         75,
+         10
+      ]
+   },
+   "3": {
+      "itemId": 3,
+      "width": 2,
+      "height": 2,
+      "name": "LE Golden Aaltar",
+      "type": "INSTALLATION",
+      "installationType": 0,
+      "alchemicaType": 0,
+      "level": 3,
+      "craftTime": 160000,
+      "spillRadius": 7000,
+      "spillRate": 8000,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         600,
+         300,
+         150,
+         20
+      ]
+   },
+   "4": {
+      "itemId": 4,
+      "width": 2,
+      "height": 2,
+      "name": "LE Golden Aaltar",
+      "type": "INSTALLATION",
+      "installationType": 0,
+      "alchemicaType": 0,
+      "level": 4,
+      "craftTime": 320000,
+      "spillRadius": 6000,
+      "spillRate": 7000,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         1000,
+         750,
+         375,
+         100
+      ]
+   },
+   "5": {
+      "itemId": 5,
+      "width": 2,
+      "height": 2,
+      "name": "LE Golden Aaltar",
+      "type": "INSTALLATION",
+      "installationType": 0,
+      "alchemicaType": 0,
+      "level": 5,
+      "craftTime": 475000,
+      "spillRadius": 5000,
+      "spillRate": 6000,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         2000,
+         1500,
+         750,
+         200
+      ]
+   },
+   "6": {
+      "itemId": 6,
+      "width": 2,
+      "height": 2,
+      "name": "LE Golden Aaltar",
+      "type": "INSTALLATION",
+      "installationType": 0,
+      "alchemicaType": 0,
+      "level": 6,
+      "craftTime": 630000,
+      "spillRadius": 4000,
+      "spillRate": 5000,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         4000,
+         3000,
+         1500,
+         400
+      ]
+   },
+   "7": {
+      "itemId": 7,
+      "width": 2,
+      "height": 2,
+      "name": "LE Golden Aaltar",
+      "type": "INSTALLATION",
+      "installationType": 0,
+      "alchemicaType": 0,
+      "level": 7,
+      "craftTime": 1250000,
+      "spillRadius": 3000,
+      "spillRate": 4000,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         5000,
+         7500,
+         3750,
+         1500
+      ]
+   },
+   "8": {
+      "itemId": 8,
+      "width": 2,
+      "height": 2,
+      "name": "LE Golden Aaltar",
+      "type": "INSTALLATION",
+      "installationType": 0,
+      "alchemicaType": 0,
+      "level": 8,
+      "craftTime": 1900000,
+      "spillRadius": 2000,
+      "spillRate": 3000,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         10000,
+         15000,
+         7500,
+         3000
+      ]
+   },
+   "9": {
+      "itemId": 9,
+      "width": 2,
+      "height": 2,
+      "name": "LE Golden Aaltar",
+      "type": "INSTALLATION",
+      "installationType": 0,
+      "alchemicaType": 0,
+      "level": 9,
+      "craftTime": 3200000,
+      "spillRadius": 1000,
+      "spillRate": 2000,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         20000,
+         30000,
+         15000,
+         6000
+      ]
+   },
+   "10": {
+      "itemId": 10,
+      "width": 2,
+      "height": 2,
+      "name": "Alchemical Aaltar Level 1",
+      "type": "INSTALLATION",
+      "installationType": 0,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 2000,
+      "spillRate": 10000,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "11": {
+      "itemId": 11,
+      "width": 2,
+      "height": 2,
+      "name": "Alchemical Aaltar Level 2",
+      "type": "INSTALLATION",
+      "installationType": 0,
+      "alchemicaType": 0,
+      "level": 2,
+      "craftTime": 65000,
+      "spillRadius": 1800,
+      "spillRate": 9000,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         300,
+         150,
+         75,
+         10
+      ]
+   },
+   "12": {
+      "itemId": 12,
+      "width": 2,
+      "height": 2,
+      "name": "Alchemical Aaltar Level 3",
+      "type": "INSTALLATION",
+      "installationType": 0,
+      "alchemicaType": 0,
+      "level": 3,
+      "craftTime": 160000,
+      "spillRadius": 1600,
+      "spillRate": 8000,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         600,
+         300,
+         150,
+         20
+      ]
+   },
+   "13": {
+      "itemId": 13,
+      "width": 2,
+      "height": 2,
+      "name": "Alchemical Aaltar Level 4",
+      "type": "INSTALLATION",
+      "installationType": 0,
+      "alchemicaType": 0,
+      "level": 4,
+      "craftTime": 320000,
+      "spillRadius": 1400,
+      "spillRate": 7000,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         1000,
+         750,
+         375,
+         100
+      ]
+   },
+   "14": {
+      "itemId": 14,
+      "width": 2,
+      "height": 2,
+      "name": "Alchemical Aaltar Level 5",
+      "type": "INSTALLATION",
+      "installationType": 0,
+      "alchemicaType": 0,
+      "level": 5,
+      "craftTime": 475000,
+      "spillRadius": 1200,
+      "spillRate": 6000,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         2000,
+         1500,
+         750,
+         200
+      ]
+   },
+   "15": {
+      "itemId": 15,
+      "width": 2,
+      "height": 2,
+      "name": "Alchemical Aaltar Level 6",
+      "type": "INSTALLATION",
+      "installationType": 0,
+      "alchemicaType": 0,
+      "level": 6,
+      "craftTime": 630000,
+      "spillRadius": 1000,
+      "spillRate": 5000,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         4000,
+         3000,
+         1500,
+         400
+      ]
+   },
+   "16": {
+      "itemId": 16,
+      "width": 2,
+      "height": 2,
+      "name": "Alchemical Aaltar Level 7",
+      "type": "INSTALLATION",
+      "installationType": 0,
+      "alchemicaType": 0,
+      "level": 7,
+      "craftTime": 1250000,
+      "spillRadius": 800,
+      "spillRate": 4000,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         5000,
+         7500,
+         3750,
+         1500
+      ]
+   },
+   "17": {
+      "itemId": 17,
+      "width": 2,
+      "height": 2,
+      "name": "Alchemical Aaltar Level 8",
+      "type": "INSTALLATION",
+      "installationType": 0,
+      "alchemicaType": 0,
+      "level": 8,
+      "craftTime": 1900000,
+      "spillRadius": 600,
+      "spillRate": 3000,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         10000,
+         15000,
+         7500,
+         3000
+      ]
+   },
+   "18": {
+      "itemId": 18,
+      "width": 2,
+      "height": 2,
+      "name": "Alchemical Aaltar Level 9",
+      "type": "INSTALLATION",
+      "installationType": 0,
+      "alchemicaType": 0,
+      "level": 9,
+      "craftTime": 3200000,
+      "spillRadius": 400,
+      "spillRate": 2000,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         20000,
+         30000,
+         15000,
+         6000
+      ]
+   },
+   "19": {
+      "itemId": 19,
+      "width": 1,
+      "height": 1,
+      "name": "Common Rofl Gnome",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "20": {
+      "itemId": 20,
+      "width": 1,
+      "height": 1,
+      "name": "Uncommon Rofl Gnome",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "21": {
+      "itemId": 21,
+      "width": 1,
+      "height": 1,
+      "name": "Rare Rofl Gnome",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "22": {
+      "itemId": 22,
+      "width": 1,
+      "height": 1,
+      "name": "Legendary Rofl Gnome",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "23": {
+      "itemId": 23,
+      "width": 1,
+      "height": 1,
+      "name": "Mythical Rofl Gnome",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "24": {
+      "itemId": 24,
+      "width": 1,
+      "height": 1,
+      "name": "Godlike Rofl Gnome",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "25": {
+      "itemId": 25,
+      "width": 1,
+      "height": 1,
+      "name": "Common REALM Globe",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "26": {
+      "itemId": 26,
+      "width": 1,
+      "height": 1,
+      "name": "Uncommon REALM Globe",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "27": {
+      "itemId": 27,
+      "width": 1,
+      "height": 1,
+      "name": "Rare REALM Globe",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "28": {
+      "itemId": 28,
+      "width": 1,
+      "height": 1,
+      "name": "Legendary REALM Globe",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "29": {
+      "itemId": 29,
+      "width": 1,
+      "height": 1,
+      "name": "Mythical REALM Globe",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "30": {
+      "itemId": 30,
+      "width": 1,
+      "height": 1,
+      "name": "Godlike REALM Globe",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "31": {
+      "itemId": 31,
+      "width": 1,
+      "height": 1,
+      "name": "Common Smol Flower",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "32": {
+      "itemId": 32,
+      "width": 1,
+      "height": 1,
+      "name": "Uncommon Smol Flower",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "33": {
+      "itemId": 33,
+      "width": 1,
+      "height": 1,
+      "name": "Rare Smol Flower",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "34": {
+      "itemId": 34,
+      "width": 1,
+      "height": 1,
+      "name": "Legendary Smol Flower",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "35": {
+      "itemId": 35,
+      "width": 1,
+      "height": 1,
+      "name": "Mythical Smol Flower",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "36": {
+      "itemId": 36,
+      "width": 1,
+      "height": 1,
+      "name": "Godlike Smol Flower",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "37": {
+      "itemId": 37,
+      "width": 1,
+      "height": 1,
+      "name": "Common Laava Lamp",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "38": {
+      "itemId": 38,
+      "width": 1,
+      "height": 1,
+      "name": "Uncommon Laava Lamp",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "39": {
+      "itemId": 39,
+      "width": 1,
+      "height": 1,
+      "name": "Rare Laava Lamp",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "40": {
+      "itemId": 40,
+      "width": 1,
+      "height": 1,
+      "name": "Legendary Laava Lamp",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "41": {
+      "itemId": 41,
+      "width": 1,
+      "height": 1,
+      "name": "Mythical Laava Lamp",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "42": {
+      "itemId": 42,
+      "width": 1,
+      "height": 1,
+      "name": "Godlike Laava Lamp",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "43": {
+      "itemId": 43,
+      "width": 1,
+      "height": 1,
+      "name": "Common GM Light",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "44": {
+      "itemId": 44,
+      "width": 1,
+      "height": 1,
+      "name": "Uncommon GM Light",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "45": {
+      "itemId": 45,
+      "width": 1,
+      "height": 1,
+      "name": "Rare GM Light",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "46": {
+      "itemId": 46,
+      "width": 1,
+      "height": 1,
+      "name": "Legendary GM Light",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "47": {
+      "itemId": 47,
+      "width": 1,
+      "height": 1,
+      "name": "Mythical GM Light",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "48": {
+      "itemId": 48,
+      "width": 1,
+      "height": 1,
+      "name": "Godlike GM Light",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "49": {
+      "itemId": 49,
+      "width": 1,
+      "height": 1,
+      "name": "Common Caamp Fire",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "50": {
+      "itemId": 50,
+      "width": 1,
+      "height": 1,
+      "name": "Uncommon Caamp Fire",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "51": {
+      "itemId": 51,
+      "width": 1,
+      "height": 1,
+      "name": "Rare Caamp Fire",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "52": {
+      "itemId": 52,
+      "width": 1,
+      "height": 1,
+      "name": "Legendary Caamp Fire",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "53": {
+      "itemId": 53,
+      "width": 1,
+      "height": 1,
+      "name": "Mythical Caamp Fire",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "54": {
+      "itemId": 54,
+      "width": 1,
+      "height": 1,
+      "name": "Godlike Caamp Fire",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "55": {
+      "itemId": 55,
+      "width": 4,
+      "height": 4,
+      "name": "Graand Fountain",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         10000,
+         0,
+         6008.2,
+         0
+      ]
+   },
+   "56": {
+      "itemId": 56,
+      "width": 2,
+      "height": 2,
+      "name": "FUD Harvester Level 1",
+      "type": "INSTALLATION",
+      "installationType": 1,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 4.2,
+      "alchemicaCost": [
+         125,
+         63,
+         0,
+         0
+      ]
+   },
+   "57": {
+      "itemId": 57,
+      "width": 2,
+      "height": 2,
+      "name": "FUD Harvester Level 2",
+      "type": "INSTALLATION",
+      "installationType": 1,
+      "alchemicaType": 0,
+      "level": 2,
+      "craftTime": 86400,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 10,
+      "alchemicaCost": [
+         178,
+         89,
+         0,
+         0
+      ]
+   },
+   "58": {
+      "itemId": 58,
+      "width": 2,
+      "height": 2,
+      "name": "FUD Harvester Level 3",
+      "type": "INSTALLATION",
+      "installationType": 1,
+      "alchemicaType": 0,
+      "level": 3,
+      "craftTime": 172800,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 18,
+      "alchemicaCost": [
+         227,
+         115,
+         0,
+         0
+      ]
+   },
+   "59": {
+      "itemId": 59,
+      "width": 2,
+      "height": 2,
+      "name": "FUD Harvester Level 4",
+      "type": "INSTALLATION",
+      "installationType": 1,
+      "alchemicaType": 0,
+      "level": 4,
+      "craftTime": 259200,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 30,
+      "alchemicaCost": [
+         255,
+         161,
+         0,
+         6.7
+      ]
+   },
+   "60": {
+      "itemId": 60,
+      "width": 2,
+      "height": 2,
+      "name": "FUD Harvester Level 5",
+      "type": "INSTALLATION",
+      "installationType": 1,
+      "alchemicaType": 0,
+      "level": 5,
+      "craftTime": 345600,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 50,
+      "alchemicaCost": [
+         385,
+         243,
+         0,
+         10
+      ]
+   },
+   "61": {
+      "itemId": 61,
+      "width": 2,
+      "height": 2,
+      "name": "FUD Harvester Level 6",
+      "type": "INSTALLATION",
+      "installationType": 1,
+      "alchemicaType": 0,
+      "level": 6,
+      "craftTime": 432000,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 85,
+      "alchemicaCost": [
+         592,
+         374,
+         0,
+         16
+      ]
+   },
+   "62": {
+      "itemId": 62,
+      "width": 2,
+      "height": 2,
+      "name": "FUD Harvester Level 7",
+      "type": "INSTALLATION",
+      "installationType": 1,
+      "alchemicaType": 0,
+      "level": 7,
+      "craftTime": 518400,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 150,
+      "alchemicaCost": [
+         665,
+         548,
+         0,
+         44
+      ]
+   },
+   "63": {
+      "itemId": 63,
+      "width": 2,
+      "height": 2,
+      "name": "FUD Harvester Level 8",
+      "type": "INSTALLATION",
+      "installationType": 1,
+      "alchemicaType": 0,
+      "level": 8,
+      "craftTime": 604800,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 277,
+      "alchemicaCost": [
+         892,
+         745,
+         0,
+         59
+      ]
+   },
+   "64": {
+      "itemId": 64,
+      "width": 2,
+      "height": 2,
+      "name": "FUD Harvester Level 9",
+      "type": "INSTALLATION",
+      "installationType": 1,
+      "alchemicaType": 0,
+      "level": 9,
+      "craftTime": 691200,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 527,
+      "alchemicaCost": [
+         729,
+         911,
+         0,
+         109
+      ]
+   },
+   "65": {
+      "itemId": 65,
+      "width": 2,
+      "height": 2,
+      "name": "FOMO Harvester Level 1",
+      "type": "INSTALLATION",
+      "installationType": 1,
+      "alchemicaType": 1,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 2.1,
+      "alchemicaCost": [
+         104,
+         83,
+         0,
+         0
+      ]
+   },
+   "66": {
+      "itemId": 66,
+      "width": 2,
+      "height": 2,
+      "name": "FOMO Harvester Level 2",
+      "type": "INSTALLATION",
+      "installationType": 1,
+      "alchemicaType": 1,
+      "level": 2,
+      "craftTime": 95616,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 4.6,
+      "alchemicaCost": [
+         156,
+         119,
+         0,
+         0
+      ]
+   },
+   "67": {
+      "itemId": 67,
+      "width": 2,
+      "height": 2,
+      "name": "FOMO Harvester Level 3",
+      "type": "INSTALLATION",
+      "installationType": 1,
+      "alchemicaType": 1,
+      "level": 3,
+      "craftTime": 190989,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 8.3,
+      "alchemicaCost": [
+         200,
+         153,
+         0,
+         0
+      ]
+   },
+   "68": {
+      "itemId": 68,
+      "width": 2,
+      "height": 2,
+      "name": "FOMO Harvester Level 4",
+      "type": "INSTALLATION",
+      "installationType": 1,
+      "alchemicaType": 1,
+      "level": 4,
+      "craftTime": 290304,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 14,
+      "alchemicaCost": [
+         212,
+         212,
+         0,
+         6.7
+      ]
+   },
+   "69": {
+      "itemId": 69,
+      "width": 2,
+      "height": 2,
+      "name": "FOMO Harvester Level 5",
+      "type": "INSTALLATION",
+      "installationType": 1,
+      "alchemicaType": 1,
+      "level": 5,
+      "craftTime": 392727,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 22,
+      "alchemicaCost": [
+         319,
+         319,
+         0,
+         10
+      ]
+   },
+   "70": {
+      "itemId": 70,
+      "width": 2,
+      "height": 2,
+      "name": "FOMO Harvester Level 6",
+      "type": "INSTALLATION",
+      "installationType": 1,
+      "alchemicaType": 1,
+      "level": 6,
+      "craftTime": 478080,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 38,
+      "alchemicaCost": [
+         491,
+         491,
+         0,
+         16
+      ]
+   },
+   "71": {
+      "itemId": 71,
+      "width": 2,
+      "height": 2,
+      "name": "FOMO Harvester Level 7",
+      "type": "INSTALLATION",
+      "installationType": 1,
+      "alchemicaType": 1,
+      "level": 7,
+      "craftTime": 570240,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 68,
+      "alchemicaCost": [
+         488,
+         734,
+         0,
+         49
+      ]
+   },
+   "72": {
+      "itemId": 72,
+      "width": 2,
+      "height": 2,
+      "name": "FOMO Harvester Level 8",
+      "type": "INSTALLATION",
+      "installationType": 1,
+      "alchemicaType": 1,
+      "level": 8,
+      "craftTime": 672000,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 125,
+      "alchemicaCost": [
+         657,
+         986,
+         0,
+         66
+      ]
+   },
+   "73": {
+      "itemId": 73,
+      "width": 2,
+      "height": 2,
+      "name": "FOMO Harvester Level 9",
+      "type": "INSTALLATION",
+      "installationType": 1,
+      "alchemicaType": 1,
+      "level": 9,
+      "craftTime": 774144,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 238,
+      "alchemicaCost": [
+         403,
+         1209,
+         0,
+         121
+      ]
+   },
+   "74": {
+      "itemId": 74,
+      "width": 2,
+      "height": 2,
+      "name": "ALPHA Harvester Level 1",
+      "type": "INSTALLATION",
+      "installationType": 1,
+      "alchemicaType": 2,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 1.5,
+      "alchemicaCost": [
+         94,
+         63,
+         5.2,
+         0
+      ]
+   },
+   "75": {
+      "itemId": 75,
+      "width": 2,
+      "height": 2,
+      "name": "ALPHA Harvester Level 2",
+      "type": "INSTALLATION",
+      "installationType": 1,
+      "alchemicaType": 2,
+      "level": 2,
+      "craftTime": 82944,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 2.8,
+      "alchemicaCost": [
+         133,
+         82,
+         7.4,
+         0
+      ]
+   },
+   "76": {
+      "itemId": 76,
+      "width": 2,
+      "height": 2,
+      "name": "ALPHA Harvester Level 3",
+      "type": "INSTALLATION",
+      "installationType": 1,
+      "alchemicaType": 2,
+      "level": 3,
+      "craftTime": 163705,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 4.8,
+      "alchemicaCost": [
+         172,
+         107,
+         12,
+         0
+      ]
+   },
+   "77": {
+      "itemId": 77,
+      "width": 2,
+      "height": 2,
+      "name": "ALPHA Harvester Level 4",
+      "type": "INSTALLATION",
+      "installationType": 1,
+      "alchemicaType": 2,
+      "level": 4,
+      "craftTime": 248832,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 7.8,
+      "alchemicaCost": [
+         181,
+         150,
+         16,
+         5.4
+      ]
+   },
+   "78": {
+      "itemId": 78,
+      "width": 2,
+      "height": 2,
+      "name": "ALPHA Harvester Level 5",
+      "type": "INSTALLATION",
+      "installationType": 1,
+      "alchemicaType": 2,
+      "level": 5,
+      "craftTime": 339316,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 13,
+      "alchemicaCost": [
+         274,
+         228,
+         22,
+         9.1
+      ]
+   },
+   "79": {
+      "itemId": 79,
+      "width": 2,
+      "height": 2,
+      "name": "ALPHA Harvester Level 6",
+      "type": "INSTALLATION",
+      "installationType": 1,
+      "alchemicaType": 2,
+      "level": 6,
+      "craftTime": 414720,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 22,
+      "alchemicaCost": [
+         421,
+         351,
+         35,
+         14
+      ]
+   },
+   "80": {
+      "itemId": 80,
+      "width": 2,
+      "height": 2,
+      "name": "ALPHA Harvester Level 7",
+      "type": "INSTALLATION",
+      "installationType": 1,
+      "alchemicaType": 2,
+      "level": 7,
+      "craftTime": 518400,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 39,
+      "alchemicaCost": [
+         418,
+         525,
+         51,
+         42
+      ]
+   },
+   "81": {
+      "itemId": 81,
+      "width": 2,
+      "height": 2,
+      "name": "ALPHA Harvester Level 8",
+      "type": "INSTALLATION",
+      "installationType": 1,
+      "alchemicaType": 2,
+      "level": 8,
+      "craftTime": 577920,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 73,
+      "alchemicaCost": [
+         563,
+         704,
+         69,
+         56
+      ]
+   },
+   "82": {
+      "itemId": 82,
+      "width": 2,
+      "height": 2,
+      "name": "ALPHA Harvester Level 9",
+      "type": "INSTALLATION",
+      "installationType": 1,
+      "alchemicaType": 2,
+      "level": 9,
+      "craftTime": 663552,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 138,
+      "alchemicaCost": [
+         691,
+         863,
+         86,
+         104
+      ]
+   },
+   "83": {
+      "itemId": 83,
+      "width": 2,
+      "height": 2,
+      "name": "KEK Harvester Level 1",
+      "type": "INSTALLATION",
+      "installationType": 1,
+      "alchemicaType": 3,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0.3,
+      "alchemicaCost": [
+         115,
+         73,
+         0,
+         3.1
+      ]
+   },
+   "84": {
+      "itemId": 84,
+      "width": 2,
+      "height": 2,
+      "name": "KEK Harvester Level 2",
+      "type": "INSTALLATION",
+      "installationType": 1,
+      "alchemicaType": 3,
+      "level": 2,
+      "craftTime": 101376,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0.71,
+      "alchemicaCost": [
+         163,
+         104,
+         0,
+         3.7
+      ]
+   },
+   "85": {
+      "itemId": 85,
+      "width": 2,
+      "height": 2,
+      "name": "KEK Harvester Level 3",
+      "type": "INSTALLATION",
+      "installationType": 1,
+      "alchemicaType": 3,
+      "level": 3,
+      "craftTime": 200084,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 1.6,
+      "alchemicaCost": [
+         210,
+         131,
+         0,
+         5.2
+      ]
+   },
+   "86": {
+      "itemId": 86,
+      "width": 2,
+      "height": 2,
+      "name": "KEK Harvester Level 4",
+      "type": "INSTALLATION",
+      "installationType": 1,
+      "alchemicaType": 3,
+      "level": 4,
+      "craftTime": 304128,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 2.7,
+      "alchemicaCost": [
+         221,
+         188,
+         0,
+         15
+      ]
+   },
+   "87": {
+      "itemId": 87,
+      "width": 2,
+      "height": 2,
+      "name": "KEK Harvester Level 5",
+      "type": "INSTALLATION",
+      "installationType": 1,
+      "alchemicaType": 3,
+      "level": 5,
+      "craftTime": 414720,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 4.1,
+      "alchemicaCost": [
+         335,
+         279,
+         0,
+         22
+      ]
+   },
+   "88": {
+      "itemId": 88,
+      "width": 2,
+      "height": 2,
+      "name": "KEK Harvester Level 6",
+      "type": "INSTALLATION",
+      "installationType": 1,
+      "alchemicaType": 3,
+      "level": 6,
+      "craftTime": 506880,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 7,
+      "alchemicaCost": [
+         514,
+         429,
+         0,
+         34
+      ]
+   },
+   "89": {
+      "itemId": 89,
+      "width": 2,
+      "height": 2,
+      "name": "KEK Harvester Level 7",
+      "type": "INSTALLATION",
+      "installationType": 1,
+      "alchemicaType": 3,
+      "level": 7,
+      "craftTime": 604800,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 13,
+      "alchemicaCost": [
+         511,
+         641,
+         0,
+         77
+      ]
+   },
+   "90": {
+      "itemId": 90,
+      "width": 2,
+      "height": 2,
+      "name": "KEK Harvester Level 8",
+      "type": "INSTALLATION",
+      "installationType": 1,
+      "alchemicaType": 3,
+      "level": 8,
+      "craftTime": 698880,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 24,
+      "alchemicaCost": [
+         688,
+         861,
+         0,
+         103
+      ]
+   },
+   "91": {
+      "itemId": 91,
+      "width": 2,
+      "height": 2,
+      "name": "KEK Harvester Level 9",
+      "type": "INSTALLATION",
+      "installationType": 1,
+      "alchemicaType": 3,
+      "level": 9,
+      "craftTime": 811008,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 45,
+      "alchemicaCost": [
+         422,
+         1055,
+         0,
+         169
+      ]
+   },
+   "92": {
+      "itemId": 92,
+      "width": 2,
+      "height": 2,
+      "name": "FUD Reservoir Level 1",
+      "type": "INSTALLATION",
+      "installationType": 2,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 810,
+      "spillRate": 6650,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         290,
+         100,
+         0,
+         0
+      ]
+   },
+   "93": {
+      "itemId": 93,
+      "width": 2,
+      "height": 2,
+      "name": "FUD Reservoir Level 2",
+      "type": "INSTALLATION",
+      "installationType": 2,
+      "alchemicaType": 0,
+      "level": 2,
+      "craftTime": 18677,
+      "spillRadius": 720,
+      "spillRate": 5700,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         342,
+         114,
+         0,
+         0
+      ]
+   },
+   "94": {
+      "itemId": 94,
+      "width": 2,
+      "height": 2,
+      "name": "FUD Reservoir Level 3",
+      "type": "INSTALLATION",
+      "installationType": 2,
+      "alchemicaType": 0,
+      "level": 3,
+      "craftTime": 30189,
+      "spillRadius": 630,
+      "spillRate": 4750,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         528,
+         176,
+         0,
+         0
+      ]
+   },
+   "95": {
+      "itemId": 95,
+      "width": 2,
+      "height": 2,
+      "name": "FUD Reservoir Level 4",
+      "type": "INSTALLATION",
+      "installationType": 2,
+      "alchemicaType": 0,
+      "level": 4,
+      "craftTime": 48762,
+      "spillRadius": 540,
+      "spillRate": 3800,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         824,
+         326,
+         0,
+         17
+      ]
+   },
+   "96": {
+      "itemId": 96,
+      "width": 2,
+      "height": 2,
+      "name": "FUD Reservoir Level 5",
+      "type": "INSTALLATION",
+      "installationType": 2,
+      "alchemicaType": 0,
+      "level": 5,
+      "craftTime": 77202,
+      "spillRadius": 450,
+      "spillRate": 2850,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         1348,
+         539,
+         0,
+         28
+      ]
+   },
+   "97": {
+      "itemId": 97,
+      "width": 2,
+      "height": 2,
+      "name": "FUD Reservoir Level 6",
+      "type": "INSTALLATION",
+      "installationType": 2,
+      "alchemicaType": 0,
+      "level": 6,
+      "craftTime": 124337,
+      "spillRadius": 360,
+      "spillRate": 2375,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         2332,
+         933,
+         0,
+         47
+      ]
+   },
+   "98": {
+      "itemId": 98,
+      "width": 2,
+      "height": 2,
+      "name": "FUD Reservoir Level 7",
+      "type": "INSTALLATION",
+      "installationType": 2,
+      "alchemicaType": 0,
+      "level": 7,
+      "craftTime": 197379,
+      "spillRadius": 270,
+      "spillRate": 1900,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         3420,
+         1710,
+         0,
+         171
+      ]
+   },
+   "99": {
+      "itemId": 99,
+      "width": 2,
+      "height": 2,
+      "name": "FUD Reservoir Level 8",
+      "type": "INSTALLATION",
+      "installationType": 2,
+      "alchemicaType": 0,
+      "level": 8,
+      "craftTime": 317050,
+      "spillRadius": 180,
+      "spillRate": 1425,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         4940,
+         2470,
+         0,
+         247
+      ]
+   },
+   "100": {
+      "itemId": 100,
+      "width": 2,
+      "height": 2,
+      "name": "FUD Reservoir Level 9",
+      "type": "INSTALLATION",
+      "installationType": 2,
+      "alchemicaType": 0,
+      "level": 9,
+      "craftTime": 503316,
+      "spillRadius": 90,
+      "spillRate": 950,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         3420,
+         2280,
+         0,
+         342
+      ]
+   },
+   "101": {
+      "itemId": 101,
+      "width": 2,
+      "height": 2,
+      "name": "FOMO Reservoir Level 1",
+      "type": "INSTALLATION",
+      "installationType": 2,
+      "alchemicaType": 1,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 990,
+      "spillRate": 7350,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         260,
+         130,
+         0,
+         0
+      ]
+   },
+   "102": {
+      "itemId": 102,
+      "width": 2,
+      "height": 2,
+      "name": "FOMO Reservoir Level 2",
+      "type": "INSTALLATION",
+      "installationType": 2,
+      "alchemicaType": 1,
+      "level": 2,
+      "craftTime": 20856,
+      "spillRadius": 880,
+      "spillRate": 6300,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         315,
+         156,
+         0,
+         0
+      ]
+   },
+   "103": {
+      "itemId": 103,
+      "width": 2,
+      "height": 2,
+      "name": "FOMO Reservoir Level 3",
+      "type": "INSTALLATION",
+      "installationType": 2,
+      "alchemicaType": 1,
+      "level": 3,
+      "craftTime": 33409,
+      "spillRadius": 770,
+      "spillRate": 5250,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         486,
+         243,
+         0,
+         0
+      ]
+   },
+   "104": {
+      "itemId": 104,
+      "width": 2,
+      "height": 2,
+      "name": "FOMO Reservoir Level 4",
+      "type": "INSTALLATION",
+      "installationType": 2,
+      "alchemicaType": 1,
+      "level": 4,
+      "craftTime": 53638,
+      "spillRadius": 660,
+      "spillRate": 4200,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         721,
+         446,
+         0,
+         17
+      ]
+   },
+   "105": {
+      "itemId": 105,
+      "width": 2,
+      "height": 2,
+      "name": "FOMO Reservoir Level 5",
+      "type": "INSTALLATION",
+      "installationType": 2,
+      "alchemicaType": 1,
+      "level": 5,
+      "craftTime": 85780,
+      "spillRadius": 550,
+      "spillRate": 3150,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         1192,
+         738,
+         0,
+         30
+      ]
+   },
+   "106": {
+      "itemId": 106,
+      "width": 2,
+      "height": 2,
+      "name": "FOMO Reservoir Level 6",
+      "type": "INSTALLATION",
+      "installationType": 2,
+      "alchemicaType": 1,
+      "level": 6,
+      "craftTime": 134698,
+      "spillRadius": 440,
+      "spillRate": 2625,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         2062,
+         1288,
+         0,
+         52
+      ]
+   },
+   "107": {
+      "itemId": 107,
+      "width": 2,
+      "height": 2,
+      "name": "FOMO Reservoir Level 7",
+      "type": "INSTALLATION",
+      "installationType": 2,
+      "alchemicaType": 1,
+      "level": 7,
+      "craftTime": 222051,
+      "spillRadius": 330,
+      "spillRate": 2100,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         2844,
+         2358,
+         0,
+         189
+      ]
+   },
+   "108": {
+      "itemId": 108,
+      "width": 2,
+      "height": 2,
+      "name": "FOMO Reservoir Level 8",
+      "type": "INSTALLATION",
+      "installationType": 2,
+      "alchemicaType": 1,
+      "level": 8,
+      "craftTime": 352278,
+      "spillRadius": 220,
+      "spillRate": 1575,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         4095,
+         3419,
+         0,
+         273
+      ]
+   },
+   "109": {
+      "itemId": 109,
+      "width": 2,
+      "height": 2,
+      "name": "FOMO Reservoir Level 9",
+      "type": "INSTALLATION",
+      "installationType": 2,
+      "alchemicaType": 1,
+      "level": 9,
+      "craftTime": 570425,
+      "spillRadius": 110,
+      "spillRate": 1050,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         2520,
+         3150,
+         0,
+         378
+      ]
+   },
+   "110": {
+      "itemId": 110,
+      "width": 2,
+      "height": 2,
+      "name": "ALPHA Reservoir Level 1",
+      "type": "INSTALLATION",
+      "installationType": 2,
+      "alchemicaType": 2,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 1170,
+      "spillRate": 7700,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         225,
+         90,
+         10,
+         0
+      ]
+   },
+   "111": {
+      "itemId": 111,
+      "width": 2,
+      "height": 2,
+      "name": "ALPHA Reservoir Level 2",
+      "type": "INSTALLATION",
+      "installationType": 2,
+      "alchemicaType": 2,
+      "level": 2,
+      "craftTime": 18054,
+      "spillRadius": 1040,
+      "spillRate": 6600,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         270,
+         108,
+         15,
+         0
+      ]
+   },
+   "112": {
+      "itemId": 112,
+      "width": 2,
+      "height": 2,
+      "name": "ALPHA Reservoir Level 3",
+      "type": "INSTALLATION",
+      "installationType": 2,
+      "alchemicaType": 2,
+      "level": 3,
+      "craftTime": 28981,
+      "spillRadius": 910,
+      "spillRate": 5500,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         417,
+         167,
+         23,
+         0
+      ]
+   },
+   "113": {
+      "itemId": 113,
+      "width": 2,
+      "height": 2,
+      "name": "ALPHA Reservoir Level 4",
+      "type": "INSTALLATION",
+      "installationType": 2,
+      "alchemicaType": 2,
+      "level": 4,
+      "craftTime": 45511,
+      "spillRadius": 780,
+      "spillRate": 4400,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         618,
+         309,
+         38,
+         15
+      ]
+   },
+   "114": {
+      "itemId": 114,
+      "width": 2,
+      "height": 2,
+      "name": "ALPHA Reservoir Level 5",
+      "type": "INSTALLATION",
+      "installationType": 2,
+      "alchemicaType": 2,
+      "level": 5,
+      "craftTime": 75486,
+      "spillRadius": 650,
+      "spillRate": 3300,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         1022,
+         511,
+         64,
+         26
+      ]
+   },
+   "115": {
+      "itemId": 115,
+      "width": 2,
+      "height": 2,
+      "name": "ALPHA Reservoir Level 6",
+      "type": "INSTALLATION",
+      "installationType": 2,
+      "alchemicaType": 2,
+      "level": 6,
+      "craftTime": 120193,
+      "spillRadius": 520,
+      "spillRate": 2750,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         1767,
+         884,
+         110,
+         44
+      ]
+   },
+   "116": {
+      "itemId": 116,
+      "width": 2,
+      "height": 2,
+      "name": "ALPHA Reservoir Level 7",
+      "type": "INSTALLATION",
+      "installationType": 2,
+      "alchemicaType": 2,
+      "level": 7,
+      "craftTime": 189155,
+      "spillRadius": 390,
+      "spillRate": 2200,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         2430,
+         1620,
+         198,
+         162
+      ]
+   },
+   "117": {
+      "itemId": 117,
+      "width": 2,
+      "height": 2,
+      "name": "ALPHA Reservoir Level 8",
+      "type": "INSTALLATION",
+      "installationType": 2,
+      "alchemicaType": 2,
+      "level": 8,
+      "craftTime": 302959,
+      "spillRadius": 260,
+      "spillRate": 1650,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         3510,
+         2340,
+         293,
+         234
+      ]
+   },
+   "118": {
+      "itemId": 118,
+      "width": 2,
+      "height": 2,
+      "name": "ALPHA Reservoir Level 9",
+      "type": "INSTALLATION",
+      "installationType": 2,
+      "alchemicaType": 2,
+      "level": 9,
+      "craftTime": 486539,
+      "spillRadius": 130,
+      "spillRate": 1100,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         2160,
+         2160,
+         270,
+         324
+      ]
+   },
+   "119": {
+      "itemId": 119,
+      "width": 2,
+      "height": 2,
+      "name": "KEK Reservoir Level 1",
+      "type": "INSTALLATION",
+      "installationType": 2,
+      "alchemicaType": 3,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 630,
+      "spillRate": 6300,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         275,
+         110,
+         0,
+         5
+      ]
+   },
+   "120": {
+      "itemId": 120,
+      "width": 2,
+      "height": 2,
+      "name": "KEK Reservoir Level 2",
+      "type": "INSTALLATION",
+      "installationType": 2,
+      "alchemicaType": 3,
+      "level": 2,
+      "craftTime": 22412,
+      "spillRadius": 560,
+      "spillRate": 5400,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         330,
+         132,
+         0,
+         6
+      ]
+   },
+   "121": {
+      "itemId": 121,
+      "width": 2,
+      "height": 2,
+      "name": "KEK Reservoir Level 3",
+      "type": "INSTALLATION",
+      "installationType": 2,
+      "alchemicaType": 3,
+      "level": 3,
+      "craftTime": 35421,
+      "spillRadius": 490,
+      "spillRate": 4500,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         509,
+         204,
+         0,
+         9
+      ]
+   },
+   "122": {
+      "itemId": 122,
+      "width": 2,
+      "height": 2,
+      "name": "KEK Reservoir Level 4",
+      "type": "INSTALLATION",
+      "installationType": 2,
+      "alchemicaType": 3,
+      "level": 4,
+      "craftTime": 56889,
+      "spillRadius": 420,
+      "spillRate": 3600,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         755,
+         378,
+         0,
+         38
+      ]
+   },
+   "123": {
+      "itemId": 123,
+      "width": 2,
+      "height": 2,
+      "name": "KEK Reservoir Level 5",
+      "type": "INSTALLATION",
+      "installationType": 2,
+      "alchemicaType": 3,
+      "level": 5,
+      "craftTime": 89211,
+      "spillRadius": 350,
+      "spillRate": 2700,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         1249,
+         624,
+         0,
+         62
+      ]
+   },
+   "124": {
+      "itemId": 124,
+      "width": 2,
+      "height": 2,
+      "name": "KEK Reservoir Level 6",
+      "type": "INSTALLATION",
+      "installationType": 2,
+      "alchemicaType": 3,
+      "level": 6,
+      "craftTime": 145060,
+      "spillRadius": 280,
+      "spillRate": 2250,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         2160,
+         1080,
+         0,
+         108
+      ]
+   },
+   "125": {
+      "itemId": 125,
+      "width": 2,
+      "height": 2,
+      "name": "KEK Reservoir Level 7",
+      "type": "INSTALLATION",
+      "installationType": 2,
+      "alchemicaType": 3,
+      "level": 7,
+      "craftTime": 230276,
+      "spillRadius": 210,
+      "spillRate": 1800,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         2970,
+         1980,
+         0,
+         297
+      ]
+   },
+   "126": {
+      "itemId": 126,
+      "width": 2,
+      "height": 2,
+      "name": "KEK Reservoir Level 8",
+      "type": "INSTALLATION",
+      "installationType": 2,
+      "alchemicaType": 3,
+      "level": 8,
+      "craftTime": 369891,
+      "spillRadius": 140,
+      "spillRate": 1350,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         4290,
+         2860,
+         0,
+         429
+      ]
+   },
+   "127": {
+      "itemId": 127,
+      "width": 2,
+      "height": 2,
+      "name": "KEK Reservoir Level 9",
+      "type": "INSTALLATION",
+      "installationType": 2,
+      "alchemicaType": 3,
+      "level": 9,
+      "craftTime": 587203,
+      "spillRadius": 70,
+      "spillRate": 900,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         3960,
+         2640,
+         0,
+         528
+      ]
+   },
+   "128": {
+      "itemId": 128,
+      "width": 2,
+      "height": 2,
+      "name": "Maaker Level 1",
+      "type": "INSTALLATION",
+      "installationType": 6,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         2500,
+         300,
+         500,
+         125
+      ]
+   },
+   "129": {
+      "itemId": 129,
+      "width": 2,
+      "height": 2,
+      "name": "Maaker Level 2",
+      "type": "INSTALLATION",
+      "installationType": 6,
+      "alchemicaType": 0,
+      "level": 2,
+      "craftTime": 4000,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         5000,
+         650,
+         950,
+         250
+      ]
+   },
+   "130": {
+      "itemId": 130,
+      "width": 2,
+      "height": 2,
+      "name": "Maaker Level 3",
+      "type": "INSTALLATION",
+      "installationType": 6,
+      "alchemicaType": 0,
+      "level": 3,
+      "craftTime": 10000,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         10000,
+         1250,
+         1900,
+         500
+      ]
+   },
+   "131": {
+      "itemId": 131,
+      "width": 2,
+      "height": 2,
+      "name": "Maaker Level 4",
+      "type": "INSTALLATION",
+      "installationType": 6,
+      "alchemicaType": 0,
+      "level": 4,
+      "craftTime": 20000,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         15000,
+         2500,
+         3750,
+         1500
+      ]
+   },
+   "132": {
+      "itemId": 132,
+      "width": 2,
+      "height": 2,
+      "name": "Maaker Level 5",
+      "type": "INSTALLATION",
+      "installationType": 6,
+      "alchemicaType": 0,
+      "level": 5,
+      "craftTime": 30000,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         22500,
+         3700,
+         5600,
+         2200
+      ]
+   },
+   "133": {
+      "itemId": 133,
+      "width": 2,
+      "height": 2,
+      "name": "Maaker Level 6",
+      "type": "INSTALLATION",
+      "installationType": 6,
+      "alchemicaType": 0,
+      "level": 6,
+      "craftTime": 40000,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         30000,
+         5000,
+         7500,
+         3000
+      ]
+   },
+   "134": {
+      "itemId": 134,
+      "width": 2,
+      "height": 2,
+      "name": "Maaker Level 7",
+      "type": "INSTALLATION",
+      "installationType": 6,
+      "alchemicaType": 0,
+      "level": 7,
+      "craftTime": 80000,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         27500,
+         6900,
+         10300,
+         5500
+      ]
+   },
+   "135": {
+      "itemId": 135,
+      "width": 2,
+      "height": 2,
+      "name": "Maaker Level 8",
+      "type": "INSTALLATION",
+      "installationType": 6,
+      "alchemicaType": 0,
+      "level": 8,
+      "craftTime": 120000,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         35000,
+         8750,
+         13100,
+         7000
+      ]
+   },
+   "136": {
+      "itemId": 136,
+      "width": 2,
+      "height": 2,
+      "name": "Maaker Level 9",
+      "type": "INSTALLATION",
+      "installationType": 6,
+      "alchemicaType": 0,
+      "level": 9,
+      "craftTime": 200000,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         42500,
+         10500,
+         16000,
+         8500
+      ]
+   },
+   "137": {
+      "itemId": 137,
+      "width": 4,
+      "height": 4,
+      "name": "NFT Display - 4x4",
+      "type": "INSTALLATION",
+      "installationType": 5,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         400,
+         0,
+         600,
+         100
+      ]
+   },
+   "138": {
+      "itemId": 138,
+      "width": 4,
+      "height": 6,
+      "name": "NFT Display - 4x6",
+      "type": "INSTALLATION",
+      "installationType": 5,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         600,
+         0,
+         800,
+         200
+      ]
+   },
+   "139": {
+      "itemId": 139,
+      "width": 6,
+      "height": 4,
+      "name": "NFT Display - 6x4",
+      "type": "INSTALLATION",
+      "installationType": 5,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         600,
+         0,
+         800,
+         200
+      ]
+   },
+   "140": {
+      "itemId": 140,
+      "width": 8,
+      "height": 8,
+      "name": "NFT Display - 8x8",
+      "type": "INSTALLATION",
+      "installationType": 5,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         1600,
+         0,
+         2000,
+         600
+      ]
+   },
+   "141": {
+      "itemId": 141,
+      "width": 4,
+      "height": 4,
+      "name": "LE Golden NFT Display - 4x4",
+      "type": "INSTALLATION",
+      "installationType": 5,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         4000,
+         0,
+         6000,
+         1000
+      ]
+   },
+   "142": {
+      "itemId": 142,
+      "width": 4,
+      "height": 6,
+      "name": "LE Golden NFT Display - 4x6",
+      "type": "INSTALLATION",
+      "installationType": 5,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         6000,
+         0,
+         8000,
+         2000
+      ]
+   },
+   "143": {
+      "itemId": 143,
+      "width": 6,
+      "height": 4,
+      "name": "LE Golden NFT Display - 6x4",
+      "type": "INSTALLATION",
+      "installationType": 5,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         6000,
+         0,
+         8000,
+         2000
+      ]
+   },
+   "144": {
+      "itemId": 144,
+      "width": 8,
+      "height": 8,
+      "name": "LE Golden NFT Display - 8x8",
+      "type": "INSTALLATION",
+      "installationType": 5,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         16000,
+         0,
+         20000,
+         6000
+      ]
+   },
+   "145": {
+      "itemId": 145,
+      "width": 2,
+      "height": 2,
+      "name": "Bounce Gate",
+      "type": "INSTALLATION",
+      "installationType": 8,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "146": {
+      "itemId": 146,
+      "width": 2,
+      "height": 1,
+      "name": "Paampkin Trio",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         600,
+         100,
+         250,
+         0
+      ]
+   },
+   "147": {
+      "itemId": 147,
+      "width": 1,
+      "height": 1,
+      "name": "Roflkin",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         500,
+         0,
+         300,
+         50
+      ]
+   },
+   "148": {
+      "itemId": 148,
+      "width": 1,
+      "height": 1,
+      "name": "Scareye Crow",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         700,
+         0,
+         500,
+         75
+      ]
+   },
+   "149": {
+      "itemId": 149,
+      "width": 1,
+      "height": 1,
+      "name": "Gotchi Caandle",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         1000,
+         300,
+         1000,
+         0
+      ]
+   },
+   "150": {
+      "itemId": 150,
+      "width": 1,
+      "height": 1,
+      "name": "Sus Baatterfly",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         3000,
+         0,
+         5000,
+         700
+      ]
+   },
+   "151": {
+      "itemId": 151,
+      "width": 2,
+      "height": 1,
+      "name": "Skeledator",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         6000,
+         0,
+         25000,
+         2500
+      ]
+   },
+   "152": {
+      "itemId": 152,
+      "width": 2,
+      "height": 2,
+      "name": "Feelin' Lit",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         150,
+         200,
+         100
+      ]
+   },
+   "153": {
+      "itemId": 153,
+      "width": 2,
+      "height": 2,
+      "name": "Bulby",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         200,
+         450,
+         150,
+         50
+      ]
+   },
+   "154": {
+      "itemId": 154,
+      "width": 1,
+      "height": 1,
+      "name": "Rednosed Rofl",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         2300,
+         0,
+         350,
+         100
+      ]
+   },
+   "155": {
+      "itemId": 155,
+      "width": 1,
+      "height": 1,
+      "name": "Brrrooorrr",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         800,
+         0,
+         650,
+         80
+      ]
+   },
+   "156": {
+      "itemId": 156,
+      "width": 2,
+      "height": 2,
+      "name": "Aangel Tree",
+      "type": "INSTALLATION",
+      "installationType": 7,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "157": {
+      "itemId": 157,
+      "width": 8,
+      "height": 12,
+      "name": "NFT Display - 8x12",
+      "type": "INSTALLATION",
+      "installationType": 5,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         2400,
+         0,
+         2800,
+         1000
+      ]
+   },
+   "158": {
+      "itemId": 158,
+      "width": 12,
+      "height": 8,
+      "name": "NFT Display - 12x8",
+      "type": "INSTALLATION",
+      "installationType": 5,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         2400,
+         0,
+         2800,
+         1000
+      ]
+   },
+   "159": {
+      "itemId": 159,
+      "width": 12,
+      "height": 12,
+      "name": "NFT Display - 12x12",
+      "type": "INSTALLATION",
+      "installationType": 5,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         3600,
+         0,
+         4000,
+         1600
+      ]
+   },
+   "160": {
+      "itemId": 160,
+      "width": 16,
+      "height": 16,
+      "name": "NFT Display - 16x16",
+      "type": "INSTALLATION",
+      "installationType": 5,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         6400,
+         0,
+         7000,
+         3000
+      ]
+   },
+   "161": {
+      "itemId": 161,
+      "width": 16,
+      "height": 16,
+      "name": "LE Golden NFT Display - 16x16",
+      "type": "INSTALLATION",
+      "installationType": 5,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         64000,
+         0,
+         70000,
+         30000
+      ]
+   },
+   "162": {
+      "itemId": 162,
+      "width": 1,
+      "height": 1,
+      "name": "Waall Level 1",
+      "type": "INSTALLATION",
+      "installationType": 3,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         8,
+         0.5,
+         0.25,
+         0
+      ]
+   },
+   "163": {
+      "itemId": 163,
+      "width": 1,
+      "height": 1,
+      "name": "Waall Level 2",
+      "type": "INSTALLATION",
+      "installationType": 3,
+      "alchemicaType": 0,
+      "level": 2,
+      "craftTime": 16000,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         16,
+         1,
+         0.5,
+         0
+      ]
+   },
+   "164": {
+      "itemId": 164,
+      "width": 1,
+      "height": 1,
+      "name": "Waall Level 3",
+      "type": "INSTALLATION",
+      "installationType": 3,
+      "alchemicaType": 0,
+      "level": 3,
+      "craftTime": 39500,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         32,
+         2,
+         1,
+         0
+      ]
+   },
+   "165": {
+      "itemId": 165,
+      "width": 1,
+      "height": 1,
+      "name": "Waall Level 4",
+      "type": "INSTALLATION",
+      "installationType": 3,
+      "alchemicaType": 0,
+      "level": 4,
+      "craftTime": 79000,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         70,
+         5,
+         2.5,
+         1
+      ]
+   },
+   "166": {
+      "itemId": 166,
+      "width": 1,
+      "height": 1,
+      "name": "Waall Level 5",
+      "type": "INSTALLATION",
+      "installationType": 3,
+      "alchemicaType": 0,
+      "level": 5,
+      "craftTime": 119000,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         140,
+         10,
+         5,
+         2
+      ]
+   },
+   "167": {
+      "itemId": 167,
+      "width": 1,
+      "height": 1,
+      "name": "Waall Level 6",
+      "type": "INSTALLATION",
+      "installationType": 3,
+      "alchemicaType": 0,
+      "level": 6,
+      "craftTime": 158000,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         280,
+         20,
+         10,
+         4
+      ]
+   },
+   "168": {
+      "itemId": 168,
+      "width": 1,
+      "height": 1,
+      "name": "Waall Level 7",
+      "type": "INSTALLATION",
+      "installationType": 3,
+      "alchemicaType": 0,
+      "level": 7,
+      "craftTime": 315000,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         600,
+         50,
+         25,
+         20
+      ]
+   },
+   "169": {
+      "itemId": 169,
+      "width": 1,
+      "height": 1,
+      "name": "Waall Level 8",
+      "type": "INSTALLATION",
+      "installationType": 3,
+      "alchemicaType": 0,
+      "level": 8,
+      "craftTime": 475000,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         1200,
+         100,
+         50,
+         40
+      ]
+   },
+   "170": {
+      "itemId": 170,
+      "width": 1,
+      "height": 1,
+      "name": "Waall Level 9",
+      "type": "INSTALLATION",
+      "installationType": 3,
+      "alchemicaType": 0,
+      "level": 9,
+      "craftTime": 790000,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         2000,
+         200,
+         100,
+         120
+      ]
+   },
+   "171": {
+      "itemId": 171,
+      "width": 5,
+      "height": 6,
+      "name": "Gotchi Lodge Level 1",
+      "type": "INSTALLATION",
+      "installationType": 4,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         750,
+         0,
+         310,
+         50
+      ]
+   },
+   "172": {
+      "itemId": 172,
+      "width": 5,
+      "height": 6,
+      "name": "Gotchi Lodge Level 2",
+      "type": "INSTALLATION",
+      "installationType": 4,
+      "alchemicaType": 0,
+      "level": 2,
+      "craftTime": 47000,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         1500,
+         0,
+         625,
+         100
+      ]
+   },
+   "173": {
+      "itemId": 173,
+      "width": 5,
+      "height": 6,
+      "name": "Gotchi Lodge Level 3",
+      "type": "INSTALLATION",
+      "installationType": 4,
+      "alchemicaType": 0,
+      "level": 3,
+      "craftTime": 119000,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         3000,
+         0,
+         1250,
+         200
+      ]
+   },
+   "174": {
+      "itemId": 174,
+      "width": 5,
+      "height": 6,
+      "name": "Gotchi Lodge Level 4",
+      "type": "INSTALLATION",
+      "installationType": 4,
+      "alchemicaType": 0,
+      "level": 4,
+      "craftTime": 240000,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         5000,
+         0,
+         3100,
+         750
+      ]
+   },
+   "175": {
+      "itemId": 175,
+      "width": 5,
+      "height": 6,
+      "name": "Gotchi Lodge Level 5",
+      "type": "INSTALLATION",
+      "installationType": 4,
+      "alchemicaType": 0,
+      "level": 5,
+      "craftTime": 355000,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         10000,
+         0,
+         6250,
+         1500
+      ]
+   },
+   "176": {
+      "itemId": 176,
+      "width": 5,
+      "height": 6,
+      "name": "Gotchi Lodge Level 6",
+      "type": "INSTALLATION",
+      "installationType": 4,
+      "alchemicaType": 0,
+      "level": 6,
+      "craftTime": 475000,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         20000,
+         0,
+         12500,
+         3000
+      ]
+   },
+   "177": {
+      "itemId": 177,
+      "width": 5,
+      "height": 6,
+      "name": "Gotchi Lodge Level 7",
+      "type": "INSTALLATION",
+      "installationType": 4,
+      "alchemicaType": 0,
+      "level": 7,
+      "craftTime": 950000,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         25000,
+         0,
+         31250,
+         10000
+      ]
+   },
+   "178": {
+      "itemId": 178,
+      "width": 5,
+      "height": 6,
+      "name": "Gotchi Lodge Level 8",
+      "type": "INSTALLATION",
+      "installationType": 4,
+      "alchemicaType": 0,
+      "level": 8,
+      "craftTime": 1400000,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         50000,
+         0,
+         62500,
+         20000
+      ]
+   },
+   "179": {
+      "itemId": 179,
+      "width": 5,
+      "height": 6,
+      "name": "Gotchi Lodge Level 9",
+      "type": "INSTALLATION",
+      "installationType": 4,
+      "alchemicaType": 0,
+      "level": 9,
+      "craftTime": 2400000,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         100000,
+         0,
+         125000,
+         40000
+      ]
+   }
+}

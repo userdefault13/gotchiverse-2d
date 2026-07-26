@@ -49,10 +49,19 @@ const GOTCHI = 64;
 const HOOD_SIZE = 1056;
 
 export const transformParcelFormat = (parcels: GotchiverseParcel[]): Parcel[] => {
-  return _.map(parcels, (parcel) => {
-    const parcelData: Parcel = getParcelDataById(parcel.parcelId);
-    return _.assign(parcel, parcelData);
-  });
+  return _.compact(
+    _.map(parcels, (parcel) => {
+      const tokenId = String(parcel.tokenId ?? parcel.id ?? '');
+      const meta = PARCELS_BY_TOKEN_ID[tokenId] || PARCELS_BY_TOKEN_ID[Number(tokenId)];
+      const parcelId =
+        parcel.parcelId && String(parcel.parcelId).charAt(0) === 'C'
+          ? String(parcel.parcelId)
+          : meta?.parcelId;
+      if (!parcelId) return null;
+      const parcelData: Parcel = getParcelDataById(parcelId);
+      return _.assign({}, parcel, { parcelId }, parcelData) as Parcel;
+    }),
+  );
 };
 
 export function getParcelDataById(id: string): Parcel {
@@ -159,8 +168,17 @@ interface FudResults {
 
 export function calculateChannellingResults({ altarId, playerId }: { altarId?: string; playerId?: string }): FudResults {
   const typeById = getInstallationTypeById(altarId);
-  const userAavegotchisById = _.keyBy(GlobalState.USER.state.userAavegotchis, 'id');
-  const { kinship } = userAavegotchisById[playerId];
+  if (!typeById) {
+    throw new Error('Aaltar type not found for channeling preview');
+  }
+
+  const gotchis = GlobalState.USER?.state?.userAavegotchis || [];
+  const byId = _.keyBy(gotchis, (g) => String(g.id));
+  const gotchi = byId[String(playerId)] || gotchis.find((g) => Number(g.id) === Number(playerId));
+  const kinship = Number(gotchi?.kinship ?? 0);
+  if (!Number.isFinite(kinship) || kinship < 0) {
+    throw new Error('Gotchi kinship unavailable — reselect your Aavegotchi and try again');
+  }
 
   // The formula is sqrt(kinship/50)*20 for the FUD amount
   // (ex: kin=50 => 20 FUD ; kin=450 => 60 FUD).
@@ -170,7 +188,7 @@ export function calculateChannellingResults({ altarId, playerId }: { altarId?: s
   const fomo = fud * 0.5;
   const alpha = fud * 0.25;
   const kek = fud * 0.1;
-  const spillover = typeById.spillRate * 0.0001;
+  const spillover = Number(typeById.spillRate || 0) * 0.0001;
 
   const fudSpill = fud * spillover;
   const fomoSpill = fomo * spillover;
@@ -202,7 +220,52 @@ export function getHoodPositionById(id: string): Vector2 {
   return { x: hoodX, y: hoodY };
 }
 
+const PARCEL_SUBGRAPH_NETWORKS: NetworkNames[] = ['matic', 'base'];
+
+const parcelOwnerAddress = (owner: GotchiverseParcel['owner'] | { id?: string } | undefined): string | undefined => {
+  if (!owner) return undefined;
+  if (typeof owner === 'string') return owner;
+  if (typeof owner === 'object' && 'id' in owner && typeof owner.id === 'string') return owner.id;
+  return undefined;
+};
+
+const normalizeParcels = (parcels: Array<Partial<GotchiverseParcel> & { tokenId?: string }> = []): GotchiverseParcel[] => {
+  const currentAccount = GlobalState.WEB3.state.currentAccount?.toLocaleLowerCase();
+  return _.map(parcels, (parcel) => {
+    const tokenId = String(parcel.tokenId ?? parcel.id ?? '');
+    const id = String(parcel.id ?? parcel.tokenId ?? '');
+    const meta = PARCELS_BY_TOKEN_ID[tokenId] || PARCELS_BY_TOKEN_ID[Number(tokenId)];
+    const rawParcelId = parcel.parcelId ? String(parcel.parcelId) : '';
+    const parcelId = rawParcelId.charAt(0) === 'C' ? rawParcelId : meta?.parcelId || rawParcelId;
+    const owner = parcelOwnerAddress(parcel.owner as GotchiverseParcel['owner'] | { id?: string });
+    return {
+      ...parcel,
+      id,
+      tokenId,
+      parcelId,
+      owner,
+      isLent: owner ? owner.toLocaleLowerCase() !== currentAccount : parcel.isLent,
+    } as GotchiverseParcel;
+  }).filter((parcel) => parcel.id || parcel.tokenId || parcel.parcelId);
+};
+
+/** Pixel center of a Citaadel parcel id (`C-x-y-T`), or null if invalid. */
+export function getParcelSpawnPixels(parcelId?: string): { x: number; y: number } | null {
+  if (!parcelId || parcelId.charAt(0) !== 'C') return null;
+  try {
+    const data = getParcelDataById(parcelId);
+    return {
+      x: Math.round(data.bounds.x + (data.size.width * GOTCHI) / 2),
+      y: Math.round(data.bounds.y + (data.size.height * GOTCHI) / 2),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export const fetchContractOwnedParcels = async (owner: string, provider: Provider, network: NetworkNames): Promise<ContractParcel[]> => {
+  // Robinhood Chain has no Realm diamond — skip Base contract calls (CALL_EXCEPTION).
+  if (network === 'robinhood') return [];
   const realmDiamond = getContract(network, provider);
   // console.log('realmDiamond', realmDiamond);
   try {
@@ -212,32 +275,35 @@ export const fetchContractOwnedParcels = async (owner: string, provider: Provide
     if (ownedParcelsIds?.length > 200) {
       ownedParcelsIds.length = 200;
     }
-    return ownedParcelsIds?.length ? getParcelMetadataByTokenIds(ownedParcelsIds) : [];
+    const parcels = ownedParcelsIds?.length ? getParcelMetadataByTokenIds(ownedParcelsIds) : [];
+    return _.map(parcels, (parcel) => ({
+      ...parcel,
+      id: parcel.tokenId,
+      owner,
+    }));
   } catch (error) {
     console.error('@fetchContractOwnedParcels', error);
+    return [];
   }
 };
 
 export const fetchSubgraphOwnedParcel = async (owner: string, provider: Provider, network: NetworkNames): Promise<GotchiverseParcel[]> => {
   let parcels: GotchiverseParcel[];
-  if (network === 'matic') {
+  if (PARCEL_SUBGRAPH_NETWORKS.includes(network)) {
     const query = getUsersParcels([owner]);
     try {
       const res = await useSubgraph<{ parcels: GotchiverseParcel[] }>(query, gotchiverseSubgraph);
-      parcels = res.parcels;
-      parcels = _.map(parcels, (parcel) => ({
-        ...parcel,
-        tokenId: parcel.id,
-        // isLent: parcel.owner?.toLocaleLowerCase() !== GlobalState.WEB3.state.currentAccount.toLocaleLowerCase(),
-      }));
+      parcels = normalizeParcels(res.parcels);
     } catch (error) {
       parcels = await fetchContractOwnedParcels(owner, provider, network);
+      parcels = await mapInGotchiverseParcelData(parcels || []);
     }
   } else {
     parcels = await fetchContractOwnedParcels(owner, provider, network);
+    parcels = await mapInGotchiverseParcelData(parcels || []);
   }
 
-  return parcels;
+  return normalizeParcels(parcels);
 };
 
 export const getParcelMetadataByTokenIds = (tokenIds): JsonParcel[] => {
@@ -271,22 +337,30 @@ export const fetchAndSetGlobalParcels = async (
   }
 
   if (!accounts) return;
-  if (GlobalState.WEB3.state.currentNetwork === 'matic' || (page && page !== 1)) {
-    const query = getUsersParcels(accounts, filter || {}, page || 1);
-    const res = await useSubgraph<{ parcels: GotchiverseParcel[] }>(query, gotchiverseSubgraph);
-    fetchedParcels = res?.parcels;
-    fetchedParcels = _.map(fetchedParcels, (parcel) => ({
-      ...parcel,
-      tokenId: parcel.id,
-      isLent: parcel.owner?.toLocaleLowerCase() !== GlobalState.WEB3.state.currentAccount.toLocaleLowerCase(),
-    }));
-  } else {
-    fetchedParcels = await fetchContractOwnedParcels(
+  const network = GlobalState.WEB3.state.currentNetwork;
+  const useSubgraphParcels = PARCEL_SUBGRAPH_NETWORKS.includes(network) || (page && page !== 1);
+
+  if (useSubgraphParcels) {
+    try {
+      const query = getUsersParcels(accounts, filter || {}, page || 1);
+      const res = await useSubgraph<{ parcels: GotchiverseParcel[] }>(query, gotchiverseSubgraph);
+      fetchedParcels = normalizeParcels(res?.parcels);
+    } catch (error) {
+      console.error('@fetchAndSetGlobalParcels subgraph', error);
+      fetchedParcels = undefined;
+    }
+  }
+
+  if (!fetchedParcels) {
+    const contractParcels = await fetchContractOwnedParcels(
       GlobalState.WEB3.state.currentAccount,
       GlobalState.WEB3.state.globalProvider,
-      GlobalState.WEB3.state.currentNetwork,
+      network,
     );
+    fetchedParcels = await mapInGotchiverseParcelData(contractParcels || []);
+    fetchedParcels = normalizeParcels(fetchedParcels);
   }
+
   GlobalState.USER.dispatch({
     type: 'UPDATE_OWNED_PARCELS',
     ownedParcels: fetchedParcels,
@@ -321,21 +395,93 @@ export const mapInGotchiverseParcelData = async (parcels: ContractParcel[]): Pro
     return [];
   }
   const query = getParcelLastChanneled(parcels.map((parcel) => Number(parcel.id || parcel.tokenId)));
-  const res = await useSubgraph<{
-    parcels: Array<{ lastChanneledAlchemica: string; id: string; equippedInstallations: Array<{ id: string }> }>;
-  }>(query, gotchiverseSubgraph);
+  let resParcels: Array<{ lastChanneledAlchemica: string; id: string; equippedInstallations: Array<{ id: string }>; owner?: string }> = [];
+  try {
+    const res = await useSubgraph<{
+      parcels: Array<{ lastChanneledAlchemica: string; id: string; equippedInstallations: Array<{ id: string }>; owner?: string }>;
+    }>(query, gotchiverseSubgraph);
+    resParcels = res?.parcels || [];
+  } catch (error) {
+    console.error('@mapInGotchiverseParcelData', error);
+  }
   const gotchiverseParcels: GotchiverseParcel[] = parcels.map((parcel) => {
-    if (parcel.tokenId) parcel.id = parcel.tokenId;
-    const gotchiverseData = res.parcels.find((item) => item.id === parcel.id || item.id === parcel.tokenId);
+    const tokenId = String(parcel.tokenId ?? parcel.id ?? '');
+    const id = String(parcel.id ?? parcel.tokenId ?? '');
+    const gotchiverseData = resParcels.find((item) => item.id === id || item.id === tokenId);
+    const owner = parcelOwnerAddress(parcel.owner) || parcelOwnerAddress(gotchiverseData?.owner);
     return {
       ...parcel,
-      isLent: parcel.owner?.toLocaleLowerCase() !== GlobalState.WEB3.state.currentAccount.toLocaleLowerCase(),
+      id,
+      tokenId,
+      owner,
+      isLent: owner ? owner.toLocaleLowerCase() !== GlobalState.WEB3.state.currentAccount?.toLocaleLowerCase() : false,
       lastChanneledAlchemica: gotchiverseData?.lastChanneledAlchemica,
       equippedInstallations: gotchiverseData?.equippedInstallations,
     };
   });
   return gotchiverseParcels;
 };
+
+/** Base migration recipes use empty `0x` signatures; Polygon still needs the REALM signer API. */
+const EMPTY_REALM_SIGNATURE = '0x';
+
+function usesEmptyRealmSignatures(network: NetworkNames): boolean {
+  return network === 'base';
+}
+
+/** @deprecated alias — equip/channel/claim all share the Base empty-sig path */
+function usesEmptyEquipSignatures(network: NetworkNames): boolean {
+  return usesEmptyRealmSignatures(network);
+}
+
+function isBytesLikeSignature(value: unknown): value is string | Uint8Array {
+  if (typeof value === 'string') return value.startsWith('0x');
+  return value instanceof Uint8Array;
+}
+
+/** Normalize legacy Object.values byte-maps without corrupting a hex string `'0x…'`. */
+function coerceRealmSignature(signature: unknown): string | Uint8Array | unknown[] | undefined {
+  if (isBytesLikeSignature(signature)) return signature;
+  if (signature && typeof signature === 'object') {
+    const values = Object.values(signature as Record<string, unknown>);
+    if (values.length === 1 && isBytesLikeSignature(values[0])) return values[0];
+    if (values.length > 1) return values;
+  }
+  return undefined;
+}
+
+async function resolveEquipSignature(
+  network: NetworkNames,
+  installation: { parcelId: number; gotchiId: number; itemId: number; x: number; y: number },
+): Promise<string | Uint8Array> {
+  if (usesEmptyRealmSignatures(network)) {
+    return EMPTY_REALM_SIGNATURE;
+  }
+  const signature = await fetchEquipSigniture(installation);
+  if (!isBytesLikeSignature(signature)) {
+    throw new Error(
+      'Equip signature unavailable. The REALM signature API did not return a valid signature for this action.',
+    );
+  }
+  return signature;
+}
+
+async function resolveChannelSignature(
+  network: NetworkNames,
+  params: { parcelId: number | string; gotchiId: number; lastChanneled: string },
+): Promise<string | Uint8Array | unknown[]> {
+  if (usesEmptyRealmSignatures(network)) {
+    return EMPTY_REALM_SIGNATURE;
+  }
+  const signatureJSON = await fetchChannelSigniture(params);
+  const signature = coerceRealmSignature(signatureJSON?.signature ?? signatureJSON);
+  if (!signature) {
+    throw new Error(
+      'Channel signature unavailable. The REALM signature API did not return a valid signature for this action.',
+    );
+  }
+  return signature;
+}
 
 export const equipUnequipOnParcel = async (
   signer: Signer,
@@ -352,14 +498,10 @@ export const equipUnequipOnParcel = async (
     y: position.y,
   };
   try {
-    const signature = await fetchEquipSigniture(installation);
-    // console.log('equip signature', installation, signature);
-
-    if (signature) {
-      const gasPrice = (await gasPriceDict(signer)).gasPrice;
-      const tx = await realmDiamond[method](realmId, gotchiId, itemId, position.x, position.y, signature, { gasPrice });
-      return tx;
-    }
+    const signature = await resolveEquipSignature(network, installation);
+    const gasPrice = (await gasPriceDict(signer)).gasPrice;
+    const tx = await realmDiamond[method](realmId, gotchiId, itemId, position.x, position.y, signature, { gasPrice });
+    return tx;
   } catch (error) {
     return error;
   }
@@ -371,34 +513,35 @@ export const batchEquipOnParcel = async (signer: Signer, network: NetworkNames, 
   // const fixGrid = getFixGridStartPositions();
   // console.log('fixGrid', fixGrid);
   try {
-    // get all sig
-    const signature = await getMultipleSig(realmId, gotchiId);
-
-    if (signature) {
-      // const gasPrice = (await gasPriceDict(signer)).gasPrice;
-      const tx = await realmDiamond.batchEquip(realmId, gotchiId, batchData, signature);
-      return tx;
+    if (!scene?.batchQueue?.length) {
+      throw new Error('Nothing queued to equip. Place or remove installations first.');
     }
+    const signature = await getMultipleSig(network, realmId, gotchiId);
+    // const gasPrice = (await gasPriceDict(signer)).gasPrice;
+    const tx = await realmDiamond.batchEquip(realmId, gotchiId, batchData, signature);
+    return tx;
   } catch (error) {
     return error;
   }
 };
 
-const getMultipleSig = async (realmId, gotchiId) => {
+const getMultipleSig = async (network: NetworkNames, realmId, gotchiId) => {
   const signature = [];
 
   for (let i = 0; i < scene.batchQueue.length; i++) {
     const item = scene.batchQueue[i];
     const data = getInstallationDataById(item.id);
+    if (!data?.itemId && data?.itemId !== 0) {
+      throw new Error(`Missing installation data for queued item ${item.id}`);
+    }
     const installation = {
       parcelId: realmId,
       gotchiId,
-      itemId: data?.itemId,
+      itemId: data.itemId,
       x: data.relativePosisiton.x,
       y: data.relativePosisiton.y,
     };
-    const installationSig = await fetchEquipSigniture(installation);
-    signature.push(installationSig);
+    signature.push(await resolveEquipSignature(network, installation));
   }
   return signature;
 };
@@ -471,33 +614,52 @@ export const speedupUpgrade = async (signer: Signer, network: NetworkNames, { up
 };
 
 export const channelAlchemica = async (signer: Signer, network: NetworkNames, { realmId, gotchiId }: ChannelData) => {
+  if (!signer) {
+    throw new Error('Wallet not connected. Connect on Base and try Channel again.');
+  }
+  if (realmId == null || gotchiId == null || Number.isNaN(Number(gotchiId))) {
+    throw new Error('Missing parcel or gotchi id for channeling.');
+  }
+
   const realmDiamond = getContract(network, signer, 'realmDiamond', true);
+  if (!realmDiamond) {
+    throw new Error('Realm diamond unavailable for this network.');
+  }
+
   try {
-    const lastChanneled = await realmDiamond.getLastChanneled(network === 'mumbai' ? 0 : gotchiId);
-    console.log('@channelAlchemica:lastChanneled', lastChanneled);
+    const channelGotchiId = network === 'mumbai' ? 0 : Number(gotchiId);
+    const lastChanneled = await realmDiamond.getLastChanneled(channelGotchiId);
+    console.log('@channelAlchemica:lastChanneled', lastChanneled?.toString?.() ?? lastChanneled);
 
-    const signatureJSON = await fetchChannelSigniture({ parcelId: realmId, gotchiId, lastChanneled: Number(lastChanneled).toString() });
-    if (signatureJSON) {
-      if (signatureJSON.signature) {
-        signatureJSON.signature = Object.values(signatureJSON.signature);
-        // const gasPrice = (await gasPriceDict(signer)).gasPrice;
-        const tx = await realmDiamond.channelAlchemica(realmId, network === 'mumbai' ? 0 : gotchiId, lastChanneled, signatureJSON.signature);
-        if (tx) {
-          SFXController.playFX('channeling_start');
-          console.log('channelAlchemicaTx', tx);
-        }
-        const res = await tx.wait();
-        // TODO: Apply calculation for alchemica based on aaltar level
+    const signature = await resolveChannelSignature(network, {
+      parcelId: realmId,
+      gotchiId: channelGotchiId,
+      lastChanneled: lastChanneled?.toString?.() ?? String(lastChanneled),
+    });
 
-        // console.log('channelAlchemica', res);
-        return res;
-      } else {
-        return signatureJSON;
-      }
-    } else return;
+    // Surface contract reverts before MetaMask (clearer toast than generic CALL_EXCEPTION).
+    try {
+      await realmDiamond.callStatic.channelAlchemica(realmId, channelGotchiId, lastChanneled, signature);
+    } catch (simErr: any) {
+      const reason =
+        simErr?.error?.message ||
+        simErr?.reason ||
+        simErr?.data?.message ||
+        simErr?.message ||
+        'Channel simulation failed';
+      throw new Error(reason);
+    }
+
+    const tx = await realmDiamond.channelAlchemica(realmId, channelGotchiId, lastChanneled, signature);
+    if (tx) {
+      SFXController.playFX('channeling_start');
+      console.log('channelAlchemicaTx', tx);
+    }
+    const res = await tx.wait();
+    return res;
   } catch (error) {
-    // console.log('@channelAlchemica:REVERTED', error);
-    return error;
+    console.warn('@channelAlchemica:REVERTED', error);
+    throw error;
   }
 };
 
@@ -507,26 +669,24 @@ export const emptyReservoirs = async (signer: Signer, network: NetworkNames, { r
     const lastClaimed = await realmDiamond.lastClaimedAlchemica(realmId);
     // console.log('lastClaimed', lastClaimed);
 
-    const signatureJSON = await fetchChannelSigniture({ parcelId: realmId, gotchiId, lastChanneled: Number(lastClaimed).toString() });
-    if (signatureJSON) {
-      if (signatureJSON.signature) {
-        signatureJSON.signature = Object.values(signatureJSON.signature);
-        // const gasPrice = (await gasPriceDict(signer)).gasPrice;
-        const tx = await realmDiamond.claimAvailableAlchemica(realmId.toString(), network === 'mumbai' ? 0 : gotchiId, signatureJSON.signature);
-        // {
-        //   gasPrice,
-        //   gasLimit: 210000,
-        // }
-        if (tx) {
-          console.log('emptyReservoirsTX', tx);
-        }
-        const res = await tx.wait();
-        console.log('emptyReservoirs', res);
-        return res;
-      } else {
-        return signatureJSON;
-      }
-    } else return;
+    // claimAvailableAlchemica shares the channel signature endpoint on legacy REALM.
+    const signature = await resolveChannelSignature(network, {
+      parcelId: realmId,
+      gotchiId,
+      lastChanneled: lastClaimed?.toString?.() ?? String(lastClaimed),
+    });
+
+    const tx = await realmDiamond.claimAvailableAlchemica(
+      realmId.toString(),
+      network === 'mumbai' ? 0 : gotchiId,
+      signature,
+    );
+    if (tx) {
+      console.log('emptyReservoirsTX', tx);
+    }
+    const res = await tx.wait();
+    console.log('emptyReservoirs', res);
+    return res;
   } catch (error) {
     return error;
   }
@@ -554,9 +714,11 @@ export const surveyParcel = async (signer: Signer, network: NetworkNames, { real
   }
 };
 
+type ReadProvider = Provider | Signer;
+
 // Total amount of alchemica your reservoirs hold now
-export const getClaimableAlchemica = async (signer: Signer, network: NetworkNames, realmId: number): Promise<number[]> => {
-  const realmDiamond = getContract(network, signer, 'realmDiamond', true);
+export const getClaimableAlchemica = async (provider: ReadProvider, network: NetworkNames, realmId: number): Promise<number[]> => {
+  const realmDiamond = getContract(network, provider as Provider, 'realmDiamond');
   // console.log('realmDiamond', realmDiamond);
   try {
     const res = await realmDiamond.getAvailableAlchemica(realmId);
@@ -567,8 +729,8 @@ export const getClaimableAlchemica = async (signer: Signer, network: NetworkName
 };
 
 // returns all alchemica you have left on your parcel to claim
-export const getRemainingAlchemica = async (signer: Signer, network: NetworkNames, realmId: number): Promise<number[]> => {
-  const realmDiamond = getContract(network, signer, 'realmDiamond', true);
+export const getRemainingAlchemica = async (provider: ReadProvider, network: NetworkNames, realmId: number): Promise<number[]> => {
+  const realmDiamond = getContract(network, provider as Provider, 'realmDiamond');
   // console.log('realmDiamond', realmDiamond);
   try {
     const res = await realmDiamond.getRealmAlchemica(realmId);
@@ -579,8 +741,8 @@ export const getRemainingAlchemica = async (signer: Signer, network: NetworkName
 };
 
 // returns all alchemica you had on your parcel after survey in this round
-export const getRoundAlchemica = async (signer: Signer, network: NetworkNames, realmId: number): Promise<number[]> => {
-  const realmDiamond = getContract(network, signer, 'realmDiamond', true);
+export const getRoundAlchemica = async (provider: ReadProvider, network: NetworkNames, realmId: number): Promise<number[]> => {
+  const realmDiamond = getContract(network, provider as Provider, 'realmDiamond');
   // console.log('realmDiamond', realmDiamond);
   try {
     const res = await realmDiamond.getRoundAlchemica(realmId, 0);
@@ -597,6 +759,22 @@ export const getContractParcelLastChannel = async (provider: Provider, network: 
     return parcelLastChanneled;
   } catch (error) {
     console.log('@getParcelLastChanneled: error', error);
+  }
+};
+
+/** Gotchi daily channel lock (resets at UTC midnight). */
+export const getContractGotchiLastChannel = async (
+  provider: Provider,
+  network: NetworkNames,
+  gotchiId: number | string,
+): Promise<string> => {
+  const realmDiamond = await getContract(network, provider);
+  try {
+    const gotchiLastChanneled = await realmDiamond.getLastChanneled(gotchiId);
+    return gotchiLastChanneled?.toString?.() ?? String(gotchiLastChanneled ?? '0');
+  } catch (error) {
+    console.log('@getLastChanneled: error', error);
+    return '0';
   }
 };
 
@@ -635,8 +813,8 @@ export const getParcelCurrentRound = async (provider: Provider, network: Network
 };
 
 // returns all equipped harvester rates
-export const getHarvestRates = async (signer: Signer, network: NetworkNames, realmId: number): Promise<number[]> => {
-  const realmDiamond = getContract(network, signer, 'realmDiamond', true);
+export const getHarvestRates = async (provider: ReadProvider, network: NetworkNames, realmId: number): Promise<number[]> => {
+  const realmDiamond = getContract(network, provider as Provider, 'realmDiamond');
   // console.log('realmDiamond', realmDiamond);
   try {
     const res = await realmDiamond.getHarvestRates(realmId);
@@ -647,9 +825,9 @@ export const getHarvestRates = async (signer: Signer, network: NetworkNames, rea
   }
 };
 
-// returns all equipped harvester capacities
-export const getCapacities = async (signer: Signer, network: NetworkNames, realmId: number): Promise<number[]> => {
-  const realmDiamond = getContract(network, signer, 'realmDiamond', true);
+// returns all equipped reservoir capacities
+export const getCapacities = async (provider: ReadProvider, network: NetworkNames, realmId: number): Promise<number[]> => {
+  const realmDiamond = getContract(network, provider as Provider, 'realmDiamond');
   // console.log('realmDiamond', realmDiamond);
   try {
     const res = await realmDiamond.getCapacities(realmId);
@@ -661,8 +839,8 @@ export const getCapacities = async (signer: Signer, network: NetworkNames, realm
 };
 
 // returns total claimed alchemica for this round
-export const getTotalClaimed = async (signer: Signer, network: NetworkNames, realmId: number): Promise<number[]> => {
-  const realmDiamond = getContract(network, signer, 'realmDiamond', true);
+export const getTotalClaimed = async (provider: ReadProvider, network: NetworkNames, realmId: number): Promise<number[]> => {
+  const realmDiamond = getContract(network, provider as Provider, 'realmDiamond');
   // console.log('realmDiamond', realmDiamond);
   try {
     const res = await realmDiamond.getTotalClaimed(realmId);

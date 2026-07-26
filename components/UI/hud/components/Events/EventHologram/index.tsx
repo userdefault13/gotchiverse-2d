@@ -54,24 +54,30 @@ export const EventHologram = (): JSX.Element => {
   const fetchEvent = async () => {
     InputController.updateDisableKeyboard(eventHologramState.open);
     if (eventHologramState?.open && eventHologramState.installationId) {
-      //  Update Alchemica
-      const isOwned = isOwnedById(eventHologramState.installationId);
-      setIsOwned(!!isOwned);
+      setLoading(true);
+      try {
+        const owned = isOwnedById(eventHologramState.installationId);
+        setIsOwned(!!owned);
 
-      // get parcelEvent;
-      const installationData = getInstallationIdDataById(eventHologramState.installationId);
-      const parcelEvent: JsonParcel = PARCELS_BY_ID[installationData.parcelId];
-      // console.log('parcelEvent', parcelEvent);
+        const installationData = getInstallationIdDataById(eventHologramState.installationId);
+        const parcelEvent: JsonParcel = installationData ? PARCELS_BY_ID[installationData.parcelId] : undefined;
 
-      if (parcelEvent) {
-        const events = await fetchEventsList(currentNetwork);
-        const myEvent = events.find((e: RealmEvent) => e.id === parcelEvent.tokenId);
-        setEvent(myEvent);
+        if (parcelEvent?.tokenId) {
+          const events = await fetchEventsList(currentNetwork);
+          const myEvent = (events || []).find((e: RealmEvent) => String(e.id) === String(parcelEvent.tokenId));
+          setEvent(myEvent);
+        } else {
+          setEvent(undefined);
+        }
+      } catch (err) {
+        console.warn('EventHologram: failed to load bounce gate event', err);
+        setEvent(undefined);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     } else {
       setEvent(undefined);
-      setLoading(true);
+      setLoading(false);
     }
   };
 
@@ -81,11 +87,55 @@ export const EventHologram = (): JSX.Element => {
       eventsModal: eventHologramState,
     });
   };
+
+  const openEventsList = (title?: string) => {
+    uiDispatch({
+      type: 'UPDATE_ACTIVE_EVENTS_MODAL',
+      activeEventsModal: {
+        open: true,
+        title,
+      },
+    });
+  };
+
+  const openTravelParcels = () => {
+    uiDispatch({
+      type: 'UPDATE_TRAVEL_PARCELS_MODAL',
+      travelParcelsModal: { open: true },
+    });
+    uiDispatch({
+      type: 'UPDATE_EVENT_HOLOGRAM',
+      eventHologramState: { open: false, installationId: undefined },
+    });
+  };
+
+  const actionButtons = (
+    <div className="btn-wrapper">
+      {isOwned && (
+        <div className="cta">
+          <Button size={1.6} color="secondary" onClick={handleCreate}>
+            Create Event
+          </Button>
+        </div>
+      )}
+      <div className="cta">
+        <Button size={1.6} onClick={() => openEventsList('Active Events')}>
+          More Events
+        </Button>
+      </div>
+      <div className="cta">
+        <Button size={1.6} color="info" onClick={openTravelParcels}>
+          Travel
+        </Button>
+      </div>
+    </div>
+  );
+
   const blockPropagation = (e) => e.stopPropagation();
 
   return (
     <>
-      {eventHologramState.open && !loading && (
+      {eventHologramState.open && (
         <div className="hologram-container absolute-centered" onMouseDown={blockPropagation}>
           <div className="event-container">
             <div className="event-image-container">
@@ -104,7 +154,7 @@ export const EventHologram = (): JSX.Element => {
                       <div className="toolbox-wrapper">
                         <Image alt="" src={ToolboxIcon} layout="fill" />
                       </div>
-                      <div className="text">No active event on this Bounce Gate</div>
+                      <div className="text">{loading ? 'Loading Bounce Gate…' : 'No active event on this Bounce Gate'}</div>
                     </div>
                   </div>
                 </>
@@ -146,58 +196,10 @@ export const EventHologram = (): JSX.Element => {
                           <p className="text">{event.count}</p>
                         </div>
                       </div>
-                      <div className="btn-wrapper">
-                        {isOwned && (
-                          <div className="cta">
-                            <Button size={1.8} color="secondary" onClick={handleCreate}>
-                              Create Event
-                            </Button>
-                          </div>
-                        )}
-                        <div className="cta">
-                          <Button
-                            size={1.8}
-                            onClick={() =>
-                              uiDispatch({
-                                type: 'UPDATE_ACTIVE_EVENTS_MODAL',
-                                activeEventsModal: {
-                                  open: true,
-                                },
-                              })
-                            }
-                          >
-                            More Events
-                          </Button>
-                        </div>
-                      </div>
+                      {actionButtons}
                     </>
                   ) : (
-                    <>
-                      <div className="btn-wrapper">
-                        {isOwned && (
-                          <div className="cta">
-                            <Button size={1.8} color="secondary" onClick={handleCreate} fullWidth>
-                              Create Event
-                            </Button>
-                          </div>
-                        )}
-                        <div className="cta">
-                          <Button
-                            size={1.8}
-                            onClick={() =>
-                              uiDispatch({
-                                type: 'UPDATE_ACTIVE_EVENTS_MODAL',
-                                activeEventsModal: {
-                                  open: true,
-                                },
-                              })
-                            }
-                          >
-                            More Events
-                          </Button>
-                        </div>
-                      </div>
-                    </>
+                    actionButtons
                   )}
                 </div>
               </div>

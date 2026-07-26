@@ -111,7 +111,16 @@ function isSelectedPlayer(id: string): boolean {
 async function addPlayers(players: Player[]): Promise<void> {
   await Promise.all(
     players.map(async (player) => {
-      if (isNaked(player.isSpectator)) displayPlayer(player);
+      const nakeyId = /^0x[a-fA-F0-9]{40}$/i.test(String(player.id || ''));
+      // Colyseus payloads historically omitted isSpectator — treat wallet-address ids as Nakey.
+      if (nakeyId && GlobalState.GAME.state.gameConfig.enableNakedGotchis) {
+        player = { ...player, isSpectator: true, name: player.name || 'Nakey Gotchi' };
+      }
+
+      if (isNaked(player.isSpectator)) {
+        displayPlayer(player);
+        return;
+      }
 
       if (scene.textures.exists(player.id) || scene.loadedPlayerIds.includes(player.id)) {
         // player is already loaded, just apply properties
@@ -250,6 +259,15 @@ const displayPlayer = (player: Player): void => {
     scene[`${id}_bottom`].setDepth(20);
   } else {
     updatePlayerPosition({ id, x, y, noTween: true });
+    // Repair Nakey sprites that were first added without isSpectator (missing 0x texture).
+    if (isNaked(isSpectator)) {
+      const spr = scene[id]?.getByName?.('gotchi_sprite');
+      if (spr && scene.textures.exists('defaultGotchi') && spr.texture?.key !== 'defaultGotchi') {
+        spr.setTexture('defaultGotchi', 0);
+        spr.setDisplaySize(64, 64);
+        spr.setVisible(true);
+      }
+    }
   }
   if (healthbarActive && !isTrueSpectator(isSpectator)) toggleHealthBar(id, true, health);
 
@@ -288,15 +306,20 @@ const displayPlayer = (player: Player): void => {
     }
   }
 
-  setDeadState(id, isDead);
+  setDeadState(id, Boolean(isDead));
 
   // Player was just created on server. Treat as a new spawn (player will have 50% opacity)
-  if (created && !isDead) handleRespawn(id);
+  if ((created || process.env.NEXT_PUBLIC_NETCODE === 'colyseus') && !isDead) handleRespawn(id);
   else updateFocusTransparency({ id, state: isFocused });
 };
 
 function handleGracePeriod(id: string) {
   if (!scene[id] || !scene[`${id}_top`]) return;
+  // Colyseus combat MVP has no damage yet — skip spawn lock so attacks work immediately.
+  if (process.env.NEXT_PUBLIC_NETCODE === 'colyseus') {
+    scene[id].isGracePeriod = false;
+    return;
+  }
   scene[id].isGracePeriod = !!GlobalState.GAME.state.gameConfig.fireDisabledDuration;
 
   if (scene[id].isGracePeriod) {
@@ -367,11 +390,13 @@ function gotchiSpawnAnim(id) {
 const toggleHealthBar = (id: string, state: boolean, health: number): void => {
   let healthBar = scene[`${id}_top`]?.getByName('health');
   if (state) {
+    const maxHealth = scene[id]?.maxHealth || 1000;
     if (!healthBar) {
-      healthBar = new HealthBar(-16, -45, isSelectedPlayer(id) ? 'player' : 'friends', scene[id].maxHealth).setName('health');
+      healthBar = new HealthBar(-16, -45, isSelectedPlayer(id) ? 'player' : 'friends', maxHealth).setName('health');
       scene[`${id}_top`].add(healthBar);
     }
-    updateHealth({ id, health });
+    const nextHealth = Number.isFinite(Number(health)) ? Number(health) : maxHealth;
+    updateHealth({ id, health: nextHealth, maxHealth } as Health);
   } else {
     if (healthBar) healthBar.destroy();
   }
@@ -490,7 +515,11 @@ async function onPlayerSocketInit(player: Player): Promise<void> {
     await MapController.initMap();
     Quests.toggleHint(GlobalState.GAME.state.gameConfig.enableQuestHint);
     cameraSettings = getDefaultCameraSettings();
-    scene.cameras.main.setZoom(cameraSettings.zoom).setBounds(cameraSettings.left, 0, cameraSettings.right, cameraSettings.height);
+    // Use map width/height — left/right were CAMERA_BOUNDS fields misused as setBounds width,
+    // which left empty purple letterboxing on wide viewports / after MetaMask sidebar resize.
+    scene.cameras.main
+      .setZoom(cameraSettings.zoom)
+      .setBounds(0, 0, cameraSettings.width, cameraSettings.height);
     if (!scene[player.id]) return;
     scene.cameras.main.startFollow(scene[player.id], true);
     SFXController.fadeIn('gotchi_spawn');
@@ -754,7 +783,9 @@ function updatePlayerPosition(playerPosition: PositionEvent): void {
 
 // Invisible Check, since no dead or invisible gotchi should be able to sprint or shoot we can check isDead or visibility here to see if it was invisible
 const checkInvisible = (id: string, source: 'sprint' | 'shoot'): void => {
-  if ((scene[id].isDead || !scene[id].visible) && scene[id].health) {
+  const sprite = scene?.[id];
+  if (!sprite) return;
+  if ((sprite.isDead || !sprite.visible) && sprite.health) {
     console.warn(`Invisible gotchi found on source ${source}: ${id}, reset visibility.`);
     setDeadState(id, false);
   }
@@ -1012,14 +1043,18 @@ const handleDamage = (data: Damage): void => {
 };
 
 const updateHealth = (data: Health): void => {
-  const { id, health } = data;
+  const { id, health, maxHealth } = data;
   const player = scene[id];
   if (!player) return;
-  player.health = health || 0;
-  const healthBar = scene[`${id}_top`].getByName('health');
-  if (healthBar) healthBar.getDamage(health);
+  const nextHealth = Number(health);
+  player.health = Number.isFinite(nextHealth) ? nextHealth : 0;
+  if (Number.isFinite(Number(maxHealth)) && Number(maxHealth) > 0) {
+    player.maxHealth = Number(maxHealth);
+  }
+  const healthBar = scene[`${id}_top`]?.getByName('health');
+  if (healthBar) healthBar.getDamage(player.health, player.maxHealth);
   // update UI for selected player in one place
-  if (Players.isSelectedPlayer(id)) GlobalState.REALM.dispatch({ type: 'UPDATE_PLAYERS_HEALTH', health });
+  if (Players.isSelectedPlayer(id)) GlobalState.REALM.dispatch({ type: 'UPDATE_PLAYERS_HEALTH', health: player.health });
 };
 
 const handlePlayerDeath = (id: string): void => {

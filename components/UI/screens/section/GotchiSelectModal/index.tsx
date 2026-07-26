@@ -5,14 +5,30 @@ import styles from './styles';
 import useAavegotchiSound from 'hooks/useAavegotchiSound';
 import { useWeb3 } from 'contexts/Web3Context';
 import { CloseIcon } from 'components/UI/elements';
-import { GotchiSelectPanel, GotchiDetailsPanel } from 'components/UI/screens/section';
+import {
+  GotchiSelectPanel,
+  GotchiDetailsPanel,
+  CartridgeMintPanel,
+  CollateralGotchiGallery,
+} from 'components/UI/screens/section';
 import { ContractParcel, GotchiverseAavegotchi, GotchiverseParcel, JsonParcel, Parcel, RealmEvent } from 'types';
 import { fetchAavegotchiURL, setAavegtochiToLocalStorage, getGotchiData, isTrueSpectator, brsToRarity } from 'helpers/gotchi.helper';
 import { useRealm } from 'contexts/RealmContext';
 import useResizeObserver from 'hooks/useResizeObserver';
 import router from 'next/router';
 import { toast } from 'react-toastify';
-import { collateralByAddress } from 'helpers/ethers.helper';
+import { collateralByAddress, getMintableCollaterals, type CollateralObject } from 'helpers/ethers.helper';
+import { fetchCartridgeHeroSideSVGs, fetchCollateralGotchiBlobUrl } from 'helpers/collateralPreview';
+import { convertInlineSVGToBlobURL } from 'helpers/aavegotchi';
+import { useUser } from 'contexts/UserContext';
+import { bindAarcadeStarter, ensureAarcadeCartridge, getAarcadeCartridgeStatus } from 'helpers/auth.helper';
+import {
+  collateralFromSimId,
+  heroesFromCartridgeSnapshot,
+  mapCartridgeHeroToGotchi,
+  type CartridgeHero,
+} from 'helpers/cartridgeHero.helper';
+import { GotchiverseBaseCartridge, GotchiverseRhCartridge } from 'assets';
 import {
   fetchContractOwnedParcels,
   getParcelAccessRights,
@@ -25,7 +41,7 @@ import GameController from 'components/controllers/GameController';
 import _ from 'lodash';
 import { GotchiSVG, MaticNeeded } from 'components/UI/widgets';
 import { PARCELS_BY_TOKEN_ID } from 'shared_code/models/model.realm';
-import { ClosedPortal, GotchiverseLogo, LastPositionNoBgIcon, PortalLightningBg } from 'assets';
+import { ClosedPortal, GotchiLoading, GotchiverseLogo, LastPositionNoBgIcon, PortalLightningBg } from 'assets';
 import { useGame } from 'contexts/GameContext';
 import { SpawnLocation } from 'components/UI/structures/SpawnLocation';
 import { SpawnSelector } from 'components/UI/sections';
@@ -45,6 +61,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
   const [{ currentAccount, currentNetwork, globalProvider, ethersSigner }] = useWeb3();
   const [{ eventsList }, realmDispatch] = useRealm();
   const [{ gameConfig }] = useGame();
+  const [{ hasCartridge }, userDispatch] = useUser();
 
   const { portalOpen, sending } = useAavegotchiSound();
 
@@ -56,6 +73,82 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
   const [entering, setEntering] = useState(false);
   const [spawnSelectorOpen, setSpawnSelectorOpen] = useState(false);
   const [isEvent, setIsEvent] = useState(false);
+  /** `cartridge` = details/price/mint CTA; `caavegotchi` = collateral gallery after mint */
+  const [mintStep, setMintStep] = useState<'cartridge' | 'caavegotchi' | null>(null);
+  const [selectedCollateral, setSelectedCollateral] = useState<CollateralObject | null>(null);
+  const [collateralPreviewUrl, setCollateralPreviewUrl] = useState<string | null>(null);
+  /** 4-side blob URLs for cAavegotchi enter anim (index 3 = back). */
+  const [cartridgeSideUrls, setCartridgeSideUrls] = useState<[string, string, string, string] | null>(null);
+  const [minting, setMinting] = useState(false);
+  const [mintError, setMintError] = useState<string | null>(null);
+  const mintMode = mintStep !== null;
+  const cartridgeArt = currentNetwork === 'robinhood' ? GotchiverseRhCartridge : GotchiverseBaseCartridge;
+  const selectedIsCartridgeHero = Boolean(selectedGotchi?.isCartridgeHero);
+
+  const previewCollateral = useMemo(() => {
+    if (mintStep === 'caavegotchi' && selectedCollateral) return selectedCollateral;
+    if (selectedIsCartridgeHero) return collateralFromSimId(selectedGotchi?.cartridgeCollateral);
+    return null;
+  }, [mintStep, selectedCollateral, selectedIsCartridgeHero, selectedGotchi?.cartridgeCollateral]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!previewCollateral) {
+      setCollateralPreviewUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return null;
+      });
+      setCartridgeSideUrls((prev) => {
+        if (prev) prev.forEach((u) => URL.revokeObjectURL(u));
+        return null;
+      });
+      return;
+    }
+    void fetchCollateralGotchiBlobUrl(previewCollateral, currentNetwork).then((url) => {
+      if (cancelled) {
+        URL.revokeObjectURL(url);
+        return;
+      }
+      setCollateralPreviewUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return url;
+      });
+    });
+    // Prefetch all sides so enter-portal can flip to back view immediately.
+    void fetchCartridgeHeroSideSVGs(previewCollateral, currentNetwork).then((sides) => {
+      if (cancelled) return;
+      const urls = sides.map((svg) => convertInlineSVGToBlobURL(svg)) as [string, string, string, string];
+      setCartridgeSideUrls((prev) => {
+        if (prev) prev.forEach((u) => URL.revokeObjectURL(u));
+        return urls;
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [previewCollateral, currentNetwork]);
+
+  const syncCartridgeFromResult = async (result: {
+    cartridgeId?: string;
+    heroes?: CartridgeHero[];
+    cartridge?: unknown;
+  }) => {
+    let heroes = result.heroes;
+    if ((!heroes || heroes.length === 0) && result.cartridge) {
+      heroes = heroesFromCartridgeSnapshot(result.cartridge);
+    }
+    if ((!heroes || heroes.length === 0) && currentAccount) {
+      const status = await getAarcadeCartridgeStatus(currentAccount, { fresh: true });
+      if (status?.heroes) heroes = status.heroes;
+    }
+    userDispatch({
+      type: 'UPDATE_USER_CARTRIDGE',
+      cartridgeId: result.cartridgeId,
+      hasCartridge: true,
+      cartridgeHeroes: heroes || [],
+    });
+    return heroes || [];
+  };
 
   const selectedGotchiRarity = useMemo(() => {
     if (!selectedGotchi) return 'disabled';
@@ -110,27 +203,74 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
     setParcel(parcelData);
   };
 
-  const getAndSignNonce = async function (signer, address) {
-    const nonceResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/nonce/get?address=${address}`);
+  const getAndSignNonce = async function (signer, address, gotchiId?: string) {
+    let apiUrl: string;
+    try {
+      const { resolveRealmBaseUrl } = await import('helpers/realm.url');
+      apiUrl = await resolveRealmBaseUrl(true);
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      toast.error(`REALM unreachable. ${detail}`, { theme: 'dark' });
+      throw err;
+    }
+    let nonceResponse: Response;
+    try {
+      const { realmFetchHeaders } = await import('helpers/realm.url');
+      nonceResponse = await fetch(`${apiUrl}/user/nonce/get?address=${address}`, {
+        headers: realmFetchHeaders(apiUrl),
+      });
+    } catch (err) {
+      toast.error(`REALM unreachable at ${apiUrl}. Tunnel/watchdog may be down — retry Enter shortly.`, {
+        theme: 'dark',
+      });
+      throw err;
+    }
     if (nonceResponse.status !== 200) {
-      toast.error('Error initiating wallet address validation', { theme: 'dark' });
+      toast.error(`REALM auth failed (${nonceResponse.status}). Is ${apiUrl}/health up?`, { theme: 'dark' });
       throw new Error(`An error occurred when fetching the nonce: ${nonceResponse.statusText}`);
     }
     const nonceData = await nonceResponse.json();
-    const signed = await signer.signMessage(nonceData.nonce);
+    const nonce = nonceData.nonce || nonceData.data?.nonce;
+    if (!nonce) {
+      toast.error('REALM returned no nonce', { theme: 'dark' });
+      throw new Error('Missing nonce from REALM');
+    }
+    const signed = await signer.signMessage(nonce);
 
-    const tokenResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/user/authtoken/get?address=${address}&signature=${signed}`);
+    const gotchiQuery = gotchiId ? `&gotchiId=${gotchiId}` : '';
+    const tokenResponse = await fetch(
+      `${apiUrl}/user/authtoken/get?address=${address}&signature=${signed}${gotchiQuery}`,
+      { headers: (await import('helpers/realm.url')).realmFetchHeaders(apiUrl) },
+    );
     if (tokenResponse.status !== 200) {
       toast.error('The signature of the message is invalid', { theme: 'dark' });
       throw new Error(`An error occurred when validating the signed nonce: ${tokenResponse.statusText}`);
     }
     const tokenData = await tokenResponse.json();
     console.log('tokenData', tokenData);
-    localStorage.setItem('authToken', tokenData.token);
+    const token = tokenData.token || tokenData.authToken || tokenData.data?.token || tokenData.data?.authToken;
+    if (!token) {
+      toast.error('REALM returned no auth token', { theme: 'dark' });
+      throw new Error('Missing auth token from REALM');
+    }
+    localStorage.setItem('authToken', token);
+  };
+
+  const resetMintFlow = () => {
+    setMintStep(null);
+    setSelectedCollateral(null);
+    setMintError(null);
+  };
+
+  const enterCaavegotchiStep = () => {
+    setMintError(null);
+    setMintStep('caavegotchi');
+    setSelectedCollateral((prev) => prev || getMintableCollaterals()[0] || null);
   };
 
   const handleGotchiSelect = (gotchi: GotchiverseAavegotchi) => {
     if (gotchi) {
+      resetMintFlow();
       void router.push(
         {
           pathname: '/',
@@ -139,6 +279,84 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
         undefined,
         { scroll: false },
       );
+    }
+  };
+
+  const handleMintCartridgeClick = () => {
+    if (entering || minting) return;
+    setMintError(null);
+    // Already minted → skip details and show cAavegotchi picker
+    if (hasCartridge) {
+      enterCaavegotchiStep();
+      return;
+    }
+    setSelectedCollateral(null);
+    setMintStep('cartridge');
+  };
+
+  const handleEnsureCartridge = async () => {
+    if (minting || !currentAccount) {
+      if (!currentAccount) {
+        setMintError('Connect a wallet to mint');
+        toast.error('Connect a wallet to mint', { theme: 'dark' });
+      }
+      return;
+    }
+    setMinting(true);
+    setMintError(null);
+    try {
+      const result = await ensureAarcadeCartridge(currentAccount);
+      if (!result.ok || !result.cartridgeId) {
+        const msg = result.error || 'Mint failed';
+        setMintError(msg);
+        toast.error(msg, { theme: 'dark' });
+        return;
+      }
+      await syncCartridgeFromResult(result);
+      toast.success(result.alreadyBound ? 'Cartridge ready' : 'Cartridge minted — pick a cAavegotchi', {
+        theme: 'dark',
+      });
+      enterCaavegotchiStep();
+    } finally {
+      setMinting(false);
+    }
+  };
+
+  const handleBindStarter = async () => {
+    if (minting || !selectedCollateral || !currentAccount) {
+      if (!currentAccount) {
+        setMintError('Connect a wallet to bind');
+        toast.error('Connect a wallet to bind', { theme: 'dark' });
+      }
+      return;
+    }
+    setMinting(true);
+    setMintError(null);
+    try {
+      const result = await bindAarcadeStarter(currentAccount, selectedCollateral.name);
+      if (!result.ok || !result.cartridgeId) {
+        const msg = result.error || 'Bind failed';
+        setMintError(msg);
+        toast.error(msg, { theme: 'dark' });
+        return;
+      }
+      const heroes = await syncCartridgeFromResult(result);
+      toast.success(
+        result.alreadyBound
+          ? 'cAavegotchi already bound'
+          : `Bound ${selectedCollateral.maticDisplay || selectedCollateral.name}`,
+        { theme: 'dark' },
+      );
+      resetMintFlow();
+      const bound =
+        heroes.find((h) => h.collateral === result.collateral) ||
+        heroes[heroes.length - 1] ||
+        null;
+      if (bound) {
+        handleGotchiSelect(mapCartridgeHeroToGotchi(bound, currentAccount));
+      }
+    } finally {
+      setMinting(false);
     }
   };
 
@@ -167,7 +385,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
       try {
         if (gameConfig.requireMetaMaskSign) {
           sending();
-          await getAndSignNonce(ethersSigner, currentAccount);
+          await getAndSignNonce(ethersSigner, currentAccount, selectedGotchi?.id);
         }
         await setGlobalSelectedPlayer(selectedGotchi);
         void enterRealm();
@@ -181,13 +399,15 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
   const setGlobalSelectedPlayer = async (gotchi) => {
     const playerObject = getGotchiData(gotchi, currentNetwork, currentAccount, gameConfig.demoGotchiMode);
     const urls = await fetchAavegotchiURL(playerObject);
-    const backgroundColor = collateralByAddress(currentNetwork, gotchi.collateral).secondaryColor;
+    const backgroundColor = gotchi.isCartridgeHero
+      ? collateralFromSimId(gotchi.cartridgeCollateral)?.secondaryColor || '#516C51'
+      : collateralByAddress(currentNetwork, gotchi.collateral)?.secondaryColor || '#516C51';
     const isAavegotchiLent = gotchi.isLent;
     let lenderParcels: ContractParcel[] = [];
     let ownedParcels = await fetchContractOwnedParcels(currentAccount, globalProvider, currentNetwork);
     _.map(ownedParcels, (parcel) => _.assign(parcel, { owner: currentAccount }));
 
-    if (isAavegotchiLent && currentNetwork === 'matic') {
+    if (isAavegotchiLent && (currentNetwork === 'matic' || currentNetwork === 'base')) {
       lenderParcels = await fetchContractOwnedParcels(gotchi.originalOwner.id, globalProvider, currentNetwork);
       playerObject.originalOwner = gotchi.originalOwner.id;
       // Get permissions for parcels of lended gotchi
@@ -197,7 +417,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
       if (selectedSpawn?.charAt(0) === 'C') {
         // convert selected parcel ID into it's tokenId equivalent
         const parcelData: JsonParcel = _.find(PARCELS_BY_TOKEN_ID, (val: JsonParcel) => val.parcelId === selectedSpawn);
-        if (parcelData && !parcelIds.includes(parcelData.parcelId)) {
+        if (parcelData && !parcelIds.includes(parcelData.tokenId)) {
           // and if it wasn't already in the list to look up access rights, add it
           parcelIds.push(parcelData.tokenId);
           // add it to lenderParcels as required below as well, convert to ContractParcel type
@@ -309,6 +529,8 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
                 }}
                 selectedId={selectedGotchi?.id}
                 storedId={storedId}
+                mintMode={mintMode}
+                onMintCartridgeClick={handleMintCartridgeClick}
               />
 
               {/* <div className="back_menu">
@@ -323,7 +545,57 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
                 </div>
               ) : null}
 
-              {selectedGotchi && currentNetwork && globalProvider && (
+              {mintStep === 'cartridge' && currentNetwork && globalProvider && (
+                <div className="selected-gotchi-container mint-preview">
+                  <div className="gotchi">
+                    <div
+                      className="cartridge-preview-img"
+                      style={{ width: `${selectedGotchiHeight}rem`, height: `${selectedGotchiHeight}rem`, position: 'relative' }}
+                    >
+                      <Image alt="Gotchiverse cartridge" src={cartridgeArt} layout="fill" objectFit="contain" />
+                    </div>
+                  </div>
+                  <div className="glow"></div>
+                  <div className="gotchi-name-container">
+                    <div className="gotchi-name">
+                      <h4>Gotchiverse Cartridge</h4>
+                    </div>
+                    <p className="gotchi-caption">Soft launch · Free mint</p>
+                  </div>
+                </div>
+              )}
+
+              {mintStep === 'caavegotchi' && currentNetwork && globalProvider && (
+                <div className="selected-gotchi-container mint-preview">
+                  <div className="gotchi">
+                    <div
+                      className="collateral-preview-svg"
+                      style={{ width: `${selectedGotchiHeight}rem`, height: `${selectedGotchiHeight}rem`, position: 'relative' }}
+                    >
+                      <Image
+                        alt=""
+                        src={collateralPreviewUrl || GotchiLoading}
+                        layout="fill"
+                        objectFit="contain"
+                        unoptimized={!!collateralPreviewUrl}
+                      />
+                    </div>
+                  </div>
+                  <div className="glow"></div>
+                  <div className="gotchi-name-container">
+                    <div className="gotchi-name">
+                      <h4>{selectedCollateral ? selectedCollateral.maticDisplay || selectedCollateral.name : 'cAavegotchi'}</h4>
+                    </div>
+                    <p className="gotchi-caption">
+                      {selectedCollateral
+                        ? 'Base traits 50 · ES 50 · EC 50'
+                        : 'Choose a collateral from the gallery →'}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {!mintMode && selectedGotchi && currentNetwork && globalProvider && (
                 <div
                   className={`selected-gotchi-container ${gameConfig.isLive ? 'clickable' : ''} ${enterPortal ? 'enter-anim' : ''} ${
                     selectedGotchi.isSpectator ? 'spectator' : ''
@@ -331,70 +603,130 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
                   onClick={async () => await handleGameStart()}
                 >
                   <div className="gotchi">
-                    <GotchiSVG
-                      tokenId={selectedGotchi.id}
-                      side={enterPortal ? 3 : 0}
-                      options={{ removeBg: true, animate: true }}
-                      height={selectedGotchiHeight}
-                      isSpectator={selectedGotchi.isSpectator}
-                    />
+                    {selectedIsCartridgeHero ? (
+                      <div
+                        className="collateral-preview-svg"
+                        style={{
+                          width: `${selectedGotchiHeight}rem`,
+                          height: `${selectedGotchiHeight}rem`,
+                          position: 'relative',
+                        }}
+                      >
+                        <Image
+                          key={enterPortal ? 'back' : 'front'}
+                          alt=""
+                          src={
+                            (enterPortal
+                              ? cartridgeSideUrls?.[3] || collateralPreviewUrl
+                              : cartridgeSideUrls?.[0] || collateralPreviewUrl) || GotchiLoading
+                          }
+                          layout="fill"
+                          objectFit="contain"
+                          unoptimized={
+                            !!(enterPortal
+                              ? cartridgeSideUrls?.[3] || collateralPreviewUrl
+                              : cartridgeSideUrls?.[0] || collateralPreviewUrl)
+                          }
+                        />
+                      </div>
+                    ) : (
+                      <GotchiSVG
+                        tokenId={selectedGotchi.id}
+                        side={enterPortal ? 3 : 0}
+                        options={{ removeBg: true, animate: !enterPortal }}
+                        height={selectedGotchiHeight}
+                        isSpectator={selectedGotchi.isSpectator}
+                      />
+                    )}
                   </div>
                   <div className="glow"></div>
                   <div className="gotchi-name-container">
                     <div className="gotchi-name">
-                      {selectedGotchi.isSpectator || !selectedGotchi.readyToChannel ? null : (
+                      {selectedGotchi.isSpectator || selectedIsCartridgeHero || !selectedGotchi.readyToChannel ? null : (
                         <ChannelReadyToggle
                           size="4rem"
                           active={selectedGotchi.readyToChannel}
                           backgroundColor={`var(--col-${selectedGotchiRarity}-card-label-bg)`}
                         />
                       )}
-                      <h4>{selectedGotchi.isSpectator ? 'Freebie' : selectedGotchi.name}</h4>
+                      <h4>
+                        {selectedGotchi.isSpectator
+                          ? 'Freebie'
+                          : selectedGotchi.name}
+                      </h4>
                     </div>
-                    <p className="gotchi-caption">{selectedGotchi.isSpectator ? "Hi Fren! I'm always here for you!" : null}</p>
+                    <p className="gotchi-caption">
+                      {selectedGotchi.isSpectator
+                        ? "Hi Fren! I'm always here for you!"
+                        : selectedIsCartridgeHero
+                        ? 'Cartridge cAavegotchi · Base traits 50'
+                        : null}
+                    </p>
                   </div>
                 </div>
               )}
 
-              <div className="gotchi-details">
-                {selectedGotchi && currentNetwork && globalProvider && (
-                  <>
-                    <GotchiDetailsPanel gotchi={selectedGotchi} />
+              <div className={`gotchi-details${mintMode ? ' mint-mode' : ''}`}>
+                {mintStep === 'cartridge' && currentNetwork && globalProvider ? (
+                  <CartridgeMintPanel
+                    network={currentNetwork}
+                    onMint={handleEnsureCartridge}
+                    minting={minting}
+                    mintError={mintError}
+                  />
+                ) : mintStep === 'caavegotchi' && currentNetwork && globalProvider ? (
+                  <CollateralGotchiGallery
+                    selectedCollateral={selectedCollateral}
+                    onSelect={(c) => {
+                      setMintError(null);
+                      setSelectedCollateral(c);
+                    }}
+                    onMint={handleBindStarter}
+                    minting={minting}
+                    mintError={mintError}
+                  />
+                ) : (
+                  selectedGotchi &&
+                  currentNetwork &&
+                  globalProvider && (
+                    <>
+                      <GotchiDetailsPanel gotchi={selectedGotchi} />
 
-                    {(isEvent && event) || (!isEvent && parcel) ? (
-                      <div className="spawn-location-container">
-                        <SpawnLocation
-                          gotchi={selectedGotchi}
-                          type={isEvent ? 'event' : 'parcel'}
-                          parcel={parcel}
-                          event={event}
-                          onClickChange={() => setSpawnSelectorOpen(true)}
-                          onClickEnter={async () => await handleGameStart()}
-                        />
-                        <button type="button" className="cta-last-position" onClick={async () => await handleGameStart(true)}>
-                          <div className="location-icon">
-                            <Image alt="" src={LastPositionNoBgIcon} width={20} height={20} />
-                          </div>
-                          <span>Use Last position</span>
-                        </button>
-
-                        {spawnSelectorOpen && (
-                          <SpawnSelector
-                            onClose={() => setSpawnSelectorOpen(false)}
-                            handleSelect={(id) => {
-                              handleSpawnSelect(id);
-                              setSpawnSelectorOpen(false);
-                            }}
-                            type={isEvent ? 'EVENTS' : 'PARCELS'}
-                            selectedSpawn={selectedSpawn}
-                            selectedGotchi={selectedGotchi}
+                      {(isEvent && event) || (!isEvent && parcel) ? (
+                        <div className="spawn-location-container">
+                          <SpawnLocation
+                            gotchi={selectedGotchi}
+                            type={isEvent ? 'event' : 'parcel'}
+                            parcel={parcel}
+                            event={event}
+                            onClickChange={() => setSpawnSelectorOpen(true)}
+                            onClickEnter={async () => await handleGameStart()}
                           />
-                        )}
-                      </div>
-                    ) : (
-                      <EnterButton label="Enter Aarena >" onClick={async () => await handleGameStart()} />
-                    )}
-                  </>
+                          <button type="button" className="cta-last-position" onClick={async () => await handleGameStart(true)}>
+                            <div className="location-icon">
+                              <Image alt="" src={LastPositionNoBgIcon} width={20} height={20} />
+                            </div>
+                            <span>Use Last position</span>
+                          </button>
+
+                          {spawnSelectorOpen && (
+                            <SpawnSelector
+                              onClose={() => setSpawnSelectorOpen(false)}
+                              handleSelect={(id) => {
+                                handleSpawnSelect(id);
+                                setSpawnSelectorOpen(false);
+                              }}
+                              type={isEvent ? 'EVENTS' : 'PARCELS'}
+                              selectedSpawn={selectedSpawn}
+                              selectedGotchi={selectedGotchi}
+                            />
+                          )}
+                        </div>
+                      ) : (
+                        <EnterButton label="Enter Aarena >" onClick={async () => await handleGameStart()} />
+                      )}
+                    </>
+                  )
                 )}
               </div>
             </div>
