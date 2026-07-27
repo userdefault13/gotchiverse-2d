@@ -6,6 +6,7 @@ import {
   MintHoverTip,
   PaarcelThumbnail,
   SoftCText,
+  formatParcelDisplayName,
   mintTipPosition,
   type MintHoverTipData,
 } from 'components/UI/widgets';
@@ -125,13 +126,15 @@ export const PaarcelMintGallery = ({
 
   const openParcelTip = (row: MintablePaarcelRow, el: HTMLElement, status: string) => {
     const pos = mintTipPosition(el.getBoundingClientRect());
+    const title = formatParcelDisplayName(row.name);
     setHoverTip({
       key: row.key,
-      name: row.parcelId,
+      name: title,
       lines: [
-        `#${row.realmTokenId} · ${row.size}${row.district != null ? ` · District ${row.district}` : ''}`,
+        `${row.size}${row.district != null ? ` · District ${row.district}` : ''} · #${row.realmTokenId}`,
+        row.parcelId && row.parcelId !== row.name ? row.parcelId : undefined,
         `${row.installations.length} nested installation${row.installations.length === 1 ? '' : 's'}`,
-      ],
+      ].filter(Boolean) as string[],
       price: status === 'Available to mint' ? 'FREE' : `FREE · ${status}`,
       priceFree: true,
       ...pos,
@@ -188,12 +191,12 @@ export const PaarcelMintGallery = ({
         onMouseLeave={() => setHoverTip((t) => (t?.key === row.key ? null : t))}
         onFocus={(e) => openParcelTip(row, e.currentTarget, status)}
         onBlur={() => setHoverTip((t) => (t?.key === row.key ? null : t))}
-        aria-label={`${row.parcelId} · #${row.realmTokenId} · ${row.size} · ${row.installations.length} installs · ${status}`}
+        aria-label={`${formatParcelDisplayName(row.name)} · #${row.realmTokenId} · ${row.size} · ${row.installations.length} installs · ${status}`}
       >
         <span className={`cpaarcel-grid-check${inCart ? ' on' : ''}`} aria-hidden />
         <PaarcelThumbnail
           realmTokenId={row.realmTokenId}
-          name={row.parcelId}
+          name={formatParcelDisplayName(row.name)}
           size={thumbSize}
           parcelSize={row.size}
         />

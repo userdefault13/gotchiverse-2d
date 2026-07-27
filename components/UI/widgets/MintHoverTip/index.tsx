@@ -12,94 +12,86 @@ export type MintHoverTipData = {
   priceFree?: boolean;
 };
 
+const TIP_WIDTH = 220;
+const TIP_GAP = 8;
+
 const tipShellStyle = (tip: MintHoverTipData): CSSProperties => ({
   position: 'fixed',
   top: tip.top,
   left: tip.left,
-  width: tip.width ?? 240,
+  width: tip.width ?? TIP_WIDTH,
   zIndex: 2147483000,
   pointerEvents: 'none',
   display: 'flex',
   flexDirection: 'column',
   alignItems: 'center',
-  gap: '0.15rem',
-  padding: '0.75rem 1rem 0.85rem',
-  borderRadius: '1.4rem',
-  border: '0.28rem solid #3b7ea3',
-  background:
-    'repeating-linear-gradient(180deg, #d7fbff 0, #d7fbff 0.2rem, #c6f3f8 0.2rem, #c6f3f8 0.4rem)',
-  boxShadow: '0.35rem 0.35rem 0 rgba(20, 40, 70, 0.28)',
-  color: '#2f3640',
-  fontFamily: "Pixelar, 'Courier New', monospace",
+  gap: '0.2rem',
+  padding: '0.75rem 1rem 0.8rem',
+  borderRadius: '0.45rem',
+  border: '0.18rem solid rgba(255, 122, 233, 0.75)',
+  background: 'rgba(18, 4, 32, 0.96)',
+  boxShadow: '0 0 16px rgba(0, 0, 0, 0.55), 0 0 10px rgba(255, 122, 233, 0.35)',
+  color: '#fff',
+  fontFamily: 'Pixelar, sans-serif',
   textAlign: 'center',
   boxSizing: 'border-box',
+  // Grow away from the tile so we only need the anchor edge + a small gap.
+  transform: tip.place === 'above' ? 'translateY(-100%)' : 'none',
 });
 
 const nameStyle: CSSProperties = {
-  fontSize: '1.7rem',
-  lineHeight: 1.15,
-  color: '#2a313a',
+  display: 'block',
+  fontFamily: 'Pixelar, sans-serif',
+  fontSize: '2.1rem',
+  lineHeight: 1.1,
+  background: 'linear-gradient(#ffa24d, #ffe600)',
+  WebkitBackgroundClip: 'text',
+  WebkitTextFillColor: 'transparent',
+  backgroundClip: 'text',
+  filter: 'drop-shadow(0px 0px 4px rgba(0, 0, 0, 0.6))',
+  marginBottom: '0.1rem',
+  textTransform: 'none',
 };
 
 const subStyle: CSSProperties = {
-  fontSize: '1.25rem',
+  fontSize: '1.3rem',
   lineHeight: 1.25,
-  color: '#3d4a57',
+  color: 'rgba(255, 255, 255, 0.9)',
   textTransform: 'capitalize',
 };
 
 const priceStyle = (free?: boolean): CSSProperties => ({
   fontSize: '1.35rem',
   lineHeight: 1.2,
-  color: free ? '#1a7a4a' : '#1f6f8c',
-  marginTop: '0.1rem',
+  color: free ? '#7dffc0' : '#ff9aef',
+  marginTop: '0.15rem',
+  fontWeight: 700,
 });
 
-/** Arrow via nested spans so we don't depend on styled-jsx for portaled tips. */
+/** Arrow matching site pink tip border. */
 function TipArrow({ place }: { place: 'above' | 'below' }): ReactNode {
-  const edge = place === 'above' ? { bottom: '-1.05rem' } : { top: '-1.05rem' };
-  const edgeInner = place === 'above' ? { bottom: '-0.7rem' } : { top: '-0.7rem' };
-  const outerBorder =
+  const edge = place === 'above' ? { bottom: '-0.7rem' } : { top: '-0.7rem' };
+  const border =
     place === 'above'
-      ? { borderTop: '1.05rem solid #3b7ea3' }
-      : { borderBottom: '1.05rem solid #3b7ea3' };
-  const innerBorder =
-    place === 'above'
-      ? { borderTop: '0.75rem solid #d7fbff' }
-      : { borderBottom: '0.75rem solid #d7fbff' };
+      ? { borderTop: '0.7rem solid rgba(255, 122, 233, 0.9)' }
+      : { borderBottom: '0.7rem solid rgba(255, 122, 233, 0.9)' };
 
   return (
-    <>
-      <span
-        aria-hidden
-        style={{
-          position: 'absolute',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: 0,
-          height: 0,
-          borderLeft: '0.85rem solid transparent',
-          borderRight: '0.85rem solid transparent',
-          ...edge,
-          ...outerBorder,
-        }}
-      />
-      <span
-        aria-hidden
-        style={{
-          position: 'absolute',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: 0,
-          height: 0,
-          borderLeft: '0.6rem solid transparent',
-          borderRight: '0.6rem solid transparent',
-          zIndex: 1,
-          ...edgeInner,
-          ...innerBorder,
-        }}
-      />
-    </>
+    <span
+      aria-hidden
+      style={{
+        position: 'absolute',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        width: 0,
+        height: 0,
+        borderLeft: '0.55rem solid transparent',
+        borderRight: '0.55rem solid transparent',
+        filter: 'drop-shadow(0 0 4px rgba(255, 122, 233, 0.45))',
+        ...edge,
+        ...border,
+      }}
+    />
   );
 }
 
@@ -126,26 +118,37 @@ export const MintHoverTip = ({ tip }: { tip: MintHoverTipData | null }): JSX.Ele
   );
 };
 
-const TIP_WIDTH = 240;
-const TIP_EST_HEIGHT = 130;
-
 export function mintTipPosition(rect: DOMRect): {
   top: number;
   left: number;
   place: 'above' | 'below';
   width: number;
 } {
-  const gap = 14;
+  // Anchor to the tile edge; tip uses translateY(-100%) when above so gap stays tight.
   let place: 'above' | 'below' = 'above';
-  let top = rect.top - gap - TIP_EST_HEIGHT;
-  if (top < 10) {
+  let top = rect.top - TIP_GAP;
+  if (top < 48) {
     place = 'below';
-    top = rect.bottom + gap;
+    top = rect.bottom + TIP_GAP;
   }
+
   let left = rect.left + rect.width / 2 - TIP_WIDTH / 2;
   if (rect.right > window.innerWidth * 0.62) {
     left = rect.right - TIP_WIDTH;
   }
   left = Math.min(window.innerWidth - TIP_WIDTH - 12, Math.max(12, left));
   return { top, left, place, width: TIP_WIDTH };
+}
+
+/** Title-case parcelHash words for tip / card labels. */
+export function formatParcelDisplayName(raw: string | undefined): string {
+  const s = String(raw || '').trim();
+  if (!s) return 'Parcel';
+  // Keep C-* ids as-is when hash missing.
+  if (/^C-\d+-\d+-[A-Z]$/i.test(s)) return s;
+  return s
+    .split(/[-_\s]+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ');
 }

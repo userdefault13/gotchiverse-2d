@@ -1,6 +1,7 @@
 import type { GotchiverseParcel, Installation } from 'types';
 import installationsDb from 'shared_code/data/installations.json';
 import { getInstallationDisplays, getTileDisplays } from 'assets/images/installations';
+import { PARCELS_BY_TOKEN_ID } from 'shared_code/models/model.realm';
 
 /** S3 citaadel art keyed by numeric Realm tokenId. */
 export function paarcelImageUrl(realmTokenId: string | number): string {
@@ -265,14 +266,18 @@ export function listMintablePaarcelsFromOwned(
       })
       .filter(Boolean) as MintablePaarcelRow['installations'];
 
-    const parcelId = String(parcel.parcelId || parcel.parcelHash || realmTokenId);
+    const meta =
+      PARCELS_BY_TOKEN_ID[realmTokenId] || PARCELS_BY_TOKEN_ID[Number(realmTokenId)] || undefined;
+    const parcelId = String(parcel.parcelId || meta?.parcelId || realmTokenId);
+    // parcelHash is the human name (e.g. "world-if-so"); parcelId is C-x-y-H.
+    const displayName = String(parcel.parcelHash || meta?.parcelHash || parcelId);
     rows.push({
       key: refId,
       realmTokenId,
       parcelId,
       size: sizeLabelFromParcel(parcel),
-      district: Number(parcel.district) || undefined,
-      name: parcelId,
+      district: Number(parcel.district) || Number(meta?.district) || undefined,
+      name: displayName,
       installations,
       alreadyMinted: mintedRefs.has(refId),
       importFeeUsd: 0,
