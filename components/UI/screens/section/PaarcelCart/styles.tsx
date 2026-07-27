@@ -78,11 +78,15 @@ export default css`
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.6rem;
+    gap: 0.65rem;
     border: 0.12rem solid rgba(94, 234, 212, 0.35);
     border-radius: 0.4rem;
     background: rgba(8, 24, 40, 0.8);
-    padding: 0.65rem 0.75rem;
+    padding: 0.55rem 0.7rem;
+  }
+
+  .cart-line .line-main {
+    flex: 1;
   }
 
   .cart-line.install {

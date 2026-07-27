@@ -130,18 +130,12 @@ export default css`
     background: rgba(8, 24, 40, 0.85);
   }
 
-  .parcel-detail-icon {
-    font-size: 2rem;
-    line-height: 1;
-    color: #c8fff5;
-    flex-shrink: 0;
-  }
-
   .parcel-detail-main {
     display: flex;
     flex-direction: column;
-    gap: 0.15rem;
+    gap: 0.2rem;
     min-width: 0;
+    flex: 1;
   }
 
   .parcel-detail-name {
@@ -153,6 +147,19 @@ export default css`
   .parcel-detail-meta {
     font-size: 1.15rem;
     color: rgba(200, 255, 245, 0.85);
+  }
+
+  .parcel-detail-installs {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.25rem;
+  }
+
+  .more-count {
+    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.7);
   }
 
   .parcel-list,

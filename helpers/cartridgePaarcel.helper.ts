@@ -1,5 +1,26 @@
 import type { GotchiverseParcel, Installation } from 'types';
 import installationsDb from 'shared_code/data/installations.json';
+import { getInstallationDisplays, getTileDisplays } from 'assets/images/installations';
+
+/** S3 citaadel art keyed by numeric Realm tokenId. */
+export function paarcelImageUrl(realmTokenId: string | number): string {
+  return `https://gotchiverse.s3.ap-northeast-1.amazonaws.com/${String(realmTokenId).trim()}.png`;
+}
+
+/** Local static PNG for installation / tile mint gallery thumbs. */
+export function installationImageSrc(
+  itemTypeId: number,
+  kind: 'installation' | 'tile' = 'installation',
+): string {
+  const id = Number(itemTypeId);
+  if (!Number.isFinite(id) || id <= 0) return '';
+  try {
+    if (kind === 'tile') return String(getTileDisplays(id).img || '');
+    return String(getInstallationDisplays(id).img || '');
+  } catch {
+    return '';
+  }
+}
 
 export type CInstallation = {
   id: string;

@@ -5,4 +5,6 @@ export * from './MaticNeeded';
 export * from './NewsList';
 export * from './Truncate';
 export * from './WearableThumbnail';
+export * from './PaarcelThumbnail';
+export * from './InstallationThumbnail';
 export * from './SoftCText';

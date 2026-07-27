@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import styles from './styles';
 import { Button } from 'components/UI/elements';
+import { InstallationThumbnail, PaarcelThumbnail } from 'components/UI/widgets';
 import useAavegotchiSound from 'hooks/useAavegotchiSound';
 import type { MintableInstallationRow, MintablePaarcelRow } from 'helpers/cartridgePaarcel.helper';
 
@@ -68,6 +69,7 @@ export const PaarcelCart = ({
         <div className="cart-list scrollable">
           {cartParcels.map((row) => (
             <div key={row.key} className="cart-line">
+              <PaarcelThumbnail realmTokenId={row.realmTokenId} name={row.parcelId} size={40} />
               <div className="line-main">
                 <span className="line-name">{row.parcelId}</span>
                 <span className="line-meta">
@@ -89,6 +91,7 @@ export const PaarcelCart = ({
           ))}
           {cartInstallations.map((row) => (
             <div key={row.key} className="cart-line install">
+              <InstallationThumbnail itemTypeId={row.itemTypeId} kind={row.kind} name={row.name} size={40} />
               <div className="line-main">
                 <span className="line-name">{row.name}</span>
                 <span className="line-meta">

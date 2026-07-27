@@ -297,7 +297,10 @@ export const GotchiSelectPanel = ({
               <div className="gotchi-card">
                 <ManagePaarcelsCard
                   isSelected={mintStep === 'paarcels'}
-                  onClick={onManagePaarcelsClick}
+                  manageCaavegotchis={paarcelsManageMode}
+                  onClick={
+                    paarcelsManageMode ? onManageCaavegotchisClick : onManagePaarcelsClick
+                  }
                 />
               </div>
             ) : null}

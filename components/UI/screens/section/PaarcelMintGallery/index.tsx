@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import styles from './styles';
 import { Button } from 'components/UI/elements';
-import { SoftCText } from 'components/UI/widgets';
+import { InstallationThumbnail, PaarcelThumbnail, SoftCText } from 'components/UI/widgets';
 import useAavegotchiSound from 'hooks/useAavegotchiSound';
 import { useUser } from 'contexts/UserContext';
 import {
@@ -120,9 +120,7 @@ export const PaarcelMintGallery = ({
           onMouseEnter={() => setSelectedParcel(row)}
           aria-label={`${row.parcelId} · #${row.realmTokenId}`}
         >
-          <span className="tile-icon" aria-hidden>
-            ▣
-          </span>
+          <PaarcelThumbnail realmTokenId={row.realmTokenId} name={row.parcelId} size={72} />
           <span className="tile-name">{row.parcelId}</span>
           <span className="tile-meta">
             {row.size}
@@ -142,6 +140,7 @@ export const PaarcelMintGallery = ({
         onClick={() => addParcel(row)}
         onMouseEnter={() => setSelectedParcel(row)}
       >
+        <PaarcelThumbnail realmTokenId={row.realmTokenId} name={row.parcelId} size={52} />
         <div className="parcel-main">
           <span className="parcel-name">{row.parcelId}</span>
           <span className="parcel-meta">
@@ -171,9 +170,7 @@ export const PaarcelMintGallery = ({
           onClick={() => addInstall(row)}
           aria-label={row.name}
         >
-          <span className="tile-icon install" aria-hidden>
-            ◇
-          </span>
+          <InstallationThumbnail itemTypeId={row.itemTypeId} kind={row.kind} name={row.name} size={64} />
           <span className="tile-name">{row.name}</span>
           <span className="price-tag free">{status}</span>
         </button>
@@ -187,6 +184,7 @@ export const PaarcelMintGallery = ({
         disabled={disabled}
         onClick={() => addInstall(row)}
       >
+        <InstallationThumbnail itemTypeId={row.itemTypeId} kind={row.kind} name={row.name} size={44} />
         <span className="install-name">{row.name}</span>
         <span className="price-tag free">{status}</span>
       </button>
@@ -261,9 +259,11 @@ export const PaarcelMintGallery = ({
         <div className="section-label">Owned parcels</div>
         {selectedParcel ? (
           <div className="parcel-detail">
-            <span className="parcel-detail-icon" aria-hidden>
-              ▣
-            </span>
+            <PaarcelThumbnail
+              realmTokenId={selectedParcel.realmTokenId}
+              name={selectedParcel.parcelId}
+              size={64}
+            />
             <div className="parcel-detail-main">
               <span className="parcel-detail-name">{selectedParcel.parcelId}</span>
               <span className="parcel-detail-meta">
@@ -273,6 +273,22 @@ export const PaarcelMintGallery = ({
                 {selectedParcel.installations.length} nested installation
                 {selectedParcel.installations.length === 1 ? '' : 's'}
               </span>
+              {selectedParcel.installations.length > 0 ? (
+                <div className="parcel-detail-installs">
+                  {selectedParcel.installations.slice(0, 8).map((inst, i) => (
+                    <InstallationThumbnail
+                      key={`${inst.itemTypeId}-${i}`}
+                      itemTypeId={inst.itemTypeId}
+                      kind={inst.kind}
+                      name={inst.name}
+                      size={28}
+                    />
+                  ))}
+                  {selectedParcel.installations.length > 8 ? (
+                    <span className="more-count">+{selectedParcel.installations.length - 8}</span>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           </div>
         ) : null}
