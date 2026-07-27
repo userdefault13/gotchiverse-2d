@@ -15,18 +15,27 @@ import {
   ManagePaarcelsCard,
   ManageWearablesCard,
   MintCartridgeCard,
+  ParcelCard,
   WearableStackCard,
 } from 'components/UI/component';
 
 import { fetchAndSetGlobalAavegotchis, getSpectator } from 'helpers/gotchi.helper';
 import { mapCartridgeHeroToGotchi } from 'helpers/cartridgeHero.helper';
 import { stackWearableInventory } from 'helpers/cartridgeWearable.helper';
-import { stackPaarcelInventory } from 'helpers/cartridgePaarcel.helper';
+import { cPaarcelsToGotchiverseParcels } from 'helpers/cartridgePaarcel.helper';
+import { getTypeByItemId } from 'helpers/installations.helper';
 import { useUser } from 'contexts/UserContext';
 import { useGame } from 'contexts/GameContext';
 import { ChannelReadyToggle } from 'components/UI/elements/buttons/channelReadyToggle';
-import { SoftCText } from 'components/UI/widgets';
-import type { GotchiverseAavegotchi } from 'types';
+import { SoftCText, formatParcelDisplayName } from 'components/UI/widgets';
+import type { GotchiverseAavegotchi, GotchiverseParcel } from 'types';
+
+const altarLevelFromParcel = (item: GotchiverseParcel): number | undefined => {
+  const altar = item.equippedInstallations?.find(
+    ({ id }) => getTypeByItemId(Number(id))?.installationType === 0,
+  );
+  return altar ? getTypeByItemId(Number(altar.id))?.level : undefined;
+};
 
 const sortOptions: SortOption[] = [
   { name: 'Token ID', value: 'tokenId', direction: 'asc' },
@@ -93,10 +102,13 @@ export const GotchiSelectPanel = ({
     () => (wearablesManageMode ? stackWearableInventory(wearableInventory) : []),
     [wearablesManageMode, wearableInventory],
   );
-  const paarcelStacks = useMemo(
-    () => (paarcelsManageMode ? stackPaarcelInventory(parcelInventory) : []),
-    [paarcelsManageMode, parcelInventory],
-  );
+  const mintedPaarcels = useMemo(() => {
+    if (!paarcelsManageMode) return [] as GotchiverseParcel[];
+    return cPaarcelsToGotchiverseParcels(parcelInventory, currentAccount).map((p) => ({
+      ...p,
+      parcelHash: formatParcelDisplayName(p.parcelHash),
+    }));
+  }, [paarcelsManageMode, parcelInventory, currentAccount]);
 
   // Legacy (matic / non–soft-launch): show L1 wallet gotchis in the left rail.
   const showWalletGotchis = !cartridgeSelectMode && !inventoryManageMode;
@@ -169,7 +181,7 @@ export const GotchiSelectPanel = ({
     (visibleWalletGotchis?.length || 0) +
     (visibleHeroes?.length || 0) +
     (wearableStacks?.length || 0) +
-    (paarcelStacks?.length || 0);
+    (mintedPaarcels?.length || 0);
 
   // Freebie + Manage/Mint (+ cWearables / cPaarcels while managing) + heroes/stacks + wallet.
   const placeholderAavegotchis = useMemo(() => {
@@ -266,7 +278,11 @@ export const GotchiSelectPanel = ({
           </div>
         )}
         <div className={`gotchi-list-container ${gridItemCount > 9 ? 'shade' : ''}`}>
-          <div className={`gotchi-list-inner scrollable ${gridItemCount > 12 ? 'info' : 'hidden'}`}>
+          <div
+            className={`gotchi-list-inner scrollable ${gridItemCount > 12 ? 'info' : 'hidden'}${
+              paarcelsManageMode ? ' paarcels-manage' : ''
+            }`}
+          >
             <div className="gotchi-card">
               <GotchiSelectCard
                 gotchi={getSpectator(currentAccount)}
@@ -312,16 +328,14 @@ export const GotchiSelectPanel = ({
                 ))
               : null}
             {paarcelsManageMode
-              ? paarcelStacks.map((stack) => (
-                  <div key={stack.size} className="gotchi-card">
-                    <div className="paarcel-stack-card">
-                      <div className="paarcel-stack-icon" aria-hidden>
-                        ▣
-                      </div>
-                      <p className="paarcel-stack-name">
-                        {stack.size} ×{stack.count}
-                      </p>
-                    </div>
+              ? mintedPaarcels.map((item) => (
+                  <div key={item.tokenId || item.id || item.parcelId} className="gotchi-card paarcel-card-row">
+                    <ParcelCard
+                      item={item}
+                      mode="narrow"
+                      secondsUntilChannel={0}
+                      altarLevel={altarLevelFromParcel(item)}
+                    />
                   </div>
                 ))
               : null}

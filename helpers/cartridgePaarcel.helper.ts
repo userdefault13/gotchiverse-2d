@@ -1,4 +1,4 @@
-import type { GotchiverseParcel, Installation } from 'types';
+import type { GotchiverseParcel, Installation, NetworkNames } from 'types';
 import installationsDb from 'shared_code/data/installations.json';
 import { getInstallationDisplays, getTileDisplays } from 'assets/images/installations';
 import { PARCELS_BY_TOKEN_ID } from 'shared_code/models/model.realm';
@@ -302,7 +302,7 @@ export function listMintablePaarcelsFromOwned(
 export async function fetchOnChainEquippedInstallations(opts: {
   parcelId: string;
   realmTokenId: string;
-  network: string;
+  network: NetworkNames;
   provider: unknown;
 }): Promise<MintablePaarcelRow['installations'] | null> {
   const parcelId = String(opts.parcelId || '').trim();
@@ -366,7 +366,7 @@ export async function fetchOnChainEquippedInstallations(opts: {
 /** Prefer on-chain grid equips; fall back to subgraph/list snapshot already on the row. */
 export async function enrichMintablePaarcelWithOnChainEquips(
   row: MintablePaarcelRow,
-  opts: { network: string; provider: unknown },
+  opts: { network: NetworkNames; provider: unknown },
 ): Promise<MintablePaarcelRow> {
   const onChain = await fetchOnChainEquippedInstallations({
     parcelId: row.parcelId,
@@ -380,7 +380,7 @@ export async function enrichMintablePaarcelWithOnChainEquips(
 
 export async function enrichMintablePaarcelsWithOnChainEquips(
   rows: MintablePaarcelRow[],
-  opts: { network: string; provider: unknown; concurrency?: number },
+  opts: { network: NetworkNames; provider: unknown; concurrency?: number },
 ): Promise<MintablePaarcelRow[]> {
   const concurrency = Math.max(1, Math.min(opts.concurrency || 4, 8));
   const out: MintablePaarcelRow[] = new Array(rows.length);
@@ -399,7 +399,7 @@ export async function enrichMintablePaarcelsWithOnChainEquips(
 export async function assertParcelOwnedByWallet(opts: {
   realmTokenId: string;
   wallet: string;
-  network: string;
+  network: NetworkNames;
   provider: unknown;
 }): Promise<boolean> {
   const tid = String(opts.realmTokenId || '').trim();
@@ -424,7 +424,7 @@ export async function assertParcelOwnedByWallet(opts: {
 /** Filter mint rows to parcels the wallet currently owns on-chain. */
 export async function filterMintablePaarcelsOwnedByWallet(
   rows: MintablePaarcelRow[],
-  opts: { wallet: string; network: string; provider: unknown },
+  opts: { wallet: string; network: NetworkNames; provider: unknown },
 ): Promise<{ owned: MintablePaarcelRow[]; skipped: MintablePaarcelRow[] }> {
   const owned: MintablePaarcelRow[] = [];
   const skipped: MintablePaarcelRow[] = [];

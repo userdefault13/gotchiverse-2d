@@ -142,7 +142,7 @@ export default css`
 
   .line-meta {
     font-size: 1.15rem;
-    color: rgba(255, 255, 255, 0.7);
+    color: rgba(255, 122, 233, 0.9);
   }
 
   .line-meta.soft {
