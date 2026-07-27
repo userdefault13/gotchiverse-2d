@@ -53,7 +53,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const url = `${verifyUrl}?wallet=${encodeURIComponent(wallet)}`;
+    const qs = new URLSearchParams({ wallet });
+    if (fresh) qs.set('force', '1');
+    const url = `${verifyUrl}?${qs.toString()}`;
     const upstream = await fetch(url, {
       method: 'GET',
       headers: {

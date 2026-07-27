@@ -174,10 +174,10 @@ export const SettingsModal = ({ open, onClose }: Props): JSX.Element => {
                 }
                 window.open(aarcadeConnectUrl, '_blank', 'noopener,noreferrer');
               }}
-              title={verifyDetail?.discordLinked ? 'Join Aavegotchi Discord' : 'Connect Discord on Aarcade'}
+              title={verifyDetail?.discordLinked ? 'Re-check Aavegotchi Discord' : 'Connect Discord on Aarcade'}
               message={
                 verifyDetail?.discordLinked && !verifyDetail?.inGuild
-                  ? 'Discord is linked on Aarcade, but you are not in the Aavegotchi server yet (or the verify bot is not invited). Join the server, then return here — Settings refreshes when this window is focused.'
+                  ? 'Discord is linked on Aarcade, but guild membership is not confirmed right now. Join https://discord.com/invite/aavegotchi if needed, then click here to re-authorize on Aarcade (Settings refreshes when this window is focused).'
                   : 'Opens Discord authorize. Scroll to the bottom → Authorize. Then return to this tab; Settings will refresh automatically.'
               }
               type="warning"
