@@ -378,6 +378,7 @@ export type AarcadePaarcelsResult = {
   installationInventory: import('helpers/cartridgePaarcel.helper').CInstallation[];
   imported?: number;
   alreadyMinted?: number;
+  failed?: Array<{ realmTokenId?: string; itemTypeId?: number; error: string; code?: string }>;
   error?: string;
   code?: string;
 };
@@ -630,6 +631,7 @@ export const importCartridgePaarcels = async (
         installationInventory,
         imported: Number(data?.imported) || 0,
         alreadyMinted: Number(data?.alreadyMinted) || 0,
+        failed: Array.isArray(data?.failed) ? data.failed : undefined,
         error: String(data?.error || 'Import failed'),
         code: data?.code ? String(data.code) : 'IMPORT_FAILED',
       };
@@ -642,6 +644,7 @@ export const importCartridgePaarcels = async (
       installationInventory,
       imported: Number(data?.imported) || 0,
       alreadyMinted: Number(data?.alreadyMinted) || 0,
+      failed: Array.isArray(data?.failed) ? data.failed : undefined,
     };
   } catch (err) {
     console.warn('importCartridgePaarcels failed', err);
@@ -725,6 +728,7 @@ export const importCartridgeInstallations = async (
         installationInventory,
         imported: Number(data?.imported) || 0,
         alreadyMinted: Number(data?.alreadyMinted) || 0,
+        failed: Array.isArray(data?.failed) ? data.failed : undefined,
         error: String(data?.error || 'Import failed'),
         code: data?.code ? String(data.code) : 'IMPORT_FAILED',
       };
@@ -737,6 +741,7 @@ export const importCartridgeInstallations = async (
       installationInventory,
       imported: Number(data?.imported) || 0,
       alreadyMinted: Number(data?.alreadyMinted) || 0,
+      failed: Array.isArray(data?.failed) ? data.failed : undefined,
     };
   } catch (err) {
     console.warn('importCartridgeInstallations failed', err);

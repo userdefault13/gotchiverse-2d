@@ -242,6 +242,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let alreadyMinted = 0;
 
     if (mode === 'parcels') {
+      const failed: Array<{ realmTokenId: string; error: string; code?: string }> = [];
       for (const parcel of parcels) {
         const upstream = await fetch(
           `${simBase()}/cartridges/${encodeURIComponent(cartridgeId)}/parcels/import`,
@@ -250,6 +251,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
             body: JSON.stringify({
               realmTokenId: parcel.realmTokenId,
+              // Nested equipped installs — Aarcade nestEquippedAll snapshots these onto the cPaarcel.
               installations: parcel.installations,
               sessionToken: session.sessionToken,
               simPay,
@@ -259,23 +261,49 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         );
         const payload = await readJson(upstream);
         if (!upstream.ok) {
-          return res.status(upstream.status).json({
-            error: payload?.error || `Failed importing parcel #${parcel.realmTokenId}`,
-            code: payload?.code || 'IMPORT_FAILED',
-            cartridgeId,
-            imported,
-            alreadyMinted,
-            parcelInventory: Array.isArray(lastCartridge?.parcelInventory) ? lastCartridge.parcelInventory : [],
-            installationInventory: Array.isArray(lastCartridge?.installationInventory)
-              ? lastCartridge.installationInventory
-              : [],
+          failed.push({
+            realmTokenId: parcel.realmTokenId,
+            error: String(payload?.error || `Failed importing parcel #${parcel.realmTokenId}`),
+            code: payload?.code ? String(payload.code) : 'IMPORT_FAILED',
           });
+          // Soft-launch: skip not-owned / already-bad rows so one rented parcel
+          // does not abort the rest of the cart.
+          continue;
         }
         lastCartridge = payload;
         if (payload?.alreadyMinted) alreadyMinted += 1;
         else imported += 1;
       }
+
+      if (imported === 0 && alreadyMinted === 0 && failed.length > 0) {
+        return res.status(failed[0]?.code === 'PARCEL_NOT_OWNED' ? 403 : 502).json({
+          error: failed[0]?.error || 'Failed importing parcels',
+          code: failed[0]?.code || 'IMPORT_FAILED',
+          cartridgeId,
+          imported: 0,
+          alreadyMinted: 0,
+          failed,
+          parcelInventory: Array.isArray(lastCartridge?.parcelInventory) ? lastCartridge.parcelInventory : [],
+          installationInventory: Array.isArray(lastCartridge?.installationInventory)
+            ? lastCartridge.installationInventory
+            : [],
+        });
+      }
+
+      return res.status(imported > 0 ? 201 : 200).json({
+        ok: true,
+        cartridgeId,
+        imported,
+        alreadyMinted,
+        failed: failed.length ? failed : undefined,
+        parcelInventory: Array.isArray(lastCartridge?.parcelInventory) ? lastCartridge.parcelInventory : [],
+        installationInventory: Array.isArray(lastCartridge?.installationInventory)
+          ? lastCartridge.installationInventory
+          : [],
+        cartridge: lastCartridge,
+      });
     } else {
+      const failed: Array<{ itemTypeId: number; error: string; code?: string }> = [];
       for (const inst of installations) {
         const upstream = await fetch(
           `${simBase()}/cartridges/${encodeURIComponent(cartridgeId)}/installations/import`,
@@ -292,35 +320,46 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         );
         const payload = await readJson(upstream);
         if (!upstream.ok) {
-          return res.status(upstream.status).json({
-            error: payload?.error || `Failed importing installation ${inst.itemTypeId}`,
-            code: payload?.code || 'IMPORT_FAILED',
-            cartridgeId,
-            imported,
-            alreadyMinted,
-            parcelInventory: Array.isArray(lastCartridge?.parcelInventory) ? lastCartridge.parcelInventory : [],
-            installationInventory: Array.isArray(lastCartridge?.installationInventory)
-              ? lastCartridge.installationInventory
-              : [],
+          failed.push({
+            itemTypeId: inst.itemTypeId,
+            error: String(payload?.error || `Failed importing installation ${inst.itemTypeId}`),
+            code: payload?.code ? String(payload.code) : 'IMPORT_FAILED',
           });
+          continue;
         }
         lastCartridge = payload;
         if (payload?.alreadyMinted) alreadyMinted += 1;
         else imported += 1;
       }
-    }
 
-    return res.status(imported > 0 ? 201 : 200).json({
-      ok: true,
-      cartridgeId,
-      imported,
-      alreadyMinted,
-      parcelInventory: Array.isArray(lastCartridge?.parcelInventory) ? lastCartridge.parcelInventory : [],
-      installationInventory: Array.isArray(lastCartridge?.installationInventory)
-        ? lastCartridge.installationInventory
-        : [],
-      cartridge: lastCartridge,
-    });
+      if (imported === 0 && alreadyMinted === 0 && failed.length > 0) {
+        return res.status(failed[0]?.code === 'INSTALLATION_NOT_OWNED' || failed[0]?.code === 'PARCEL_NOT_OWNED' ? 403 : 502).json({
+          error: failed[0]?.error || 'Failed importing installations',
+          code: failed[0]?.code || 'IMPORT_FAILED',
+          cartridgeId,
+          imported: 0,
+          alreadyMinted: 0,
+          failed,
+          parcelInventory: Array.isArray(lastCartridge?.parcelInventory) ? lastCartridge.parcelInventory : [],
+          installationInventory: Array.isArray(lastCartridge?.installationInventory)
+            ? lastCartridge.installationInventory
+            : [],
+        });
+      }
+
+      return res.status(imported > 0 ? 201 : 200).json({
+        ok: true,
+        cartridgeId,
+        imported,
+        alreadyMinted,
+        failed: failed.length ? failed : undefined,
+        parcelInventory: Array.isArray(lastCartridge?.parcelInventory) ? lastCartridge.parcelInventory : [],
+        installationInventory: Array.isArray(lastCartridge?.installationInventory)
+          ? lastCartridge.installationInventory
+          : [],
+        cartridge: lastCartridge,
+      });
+    }
   } catch (err) {
     console.warn('aarcade-cartridge-parcels POST failed', err);
     return res.status(502).json({ error: 'Parcels import failed' });

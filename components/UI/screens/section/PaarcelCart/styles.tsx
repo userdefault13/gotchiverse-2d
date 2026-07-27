@@ -85,6 +85,45 @@ export default css`
     padding: 0.55rem 0.7rem;
   }
 
+  .cart-line.parcel-block {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.45rem;
+  }
+
+  .cart-line-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.65rem;
+  }
+
+  .nested-equips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    padding-left: 0.2rem;
+  }
+
+  .nested-chip {
+    display: inline-flex;
+    border-radius: 0.25rem;
+    overflow: hidden;
+    border: 0.1rem solid rgba(255, 122, 233, 0.45);
+  }
+
+  .nested-more,
+  .nested-empty {
+    font-size: 1.1rem;
+    color: rgba(255, 255, 255, 0.55);
+    align-self: center;
+  }
+
+  .nested-empty {
+    margin: 0;
+    padding-left: 0.2rem;
+  }
+
   .cart-line .line-main {
     flex: 1;
   }

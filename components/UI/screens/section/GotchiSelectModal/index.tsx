@@ -62,6 +62,10 @@ import {
   type MintableWearableRow,
 } from 'helpers/cartridgeWearable.helper';
 import type { MintableInstallationRow, MintablePaarcelRow } from 'helpers/cartridgePaarcel.helper';
+import {
+  enrichMintablePaarcelWithOnChainEquips,
+  enrichMintablePaarcelsWithOnChainEquips,
+} from 'helpers/cartridgePaarcel.helper';
 
 import { GotchiverseBaseCartridge, GotchiverseRhCartridge } from 'assets';
 import {
@@ -98,7 +102,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
   const [{ currentAccount, currentNetwork, globalProvider, ethersSigner }] = useWeb3();
   const [{ eventsList }, realmDispatch] = useRealm();
   const [{ gameConfig }] = useGame();
-  const [{ hasCartridge, cartridgeId, cartridgeHeroes, userAavegotchis, wearableInventory }, userDispatch] =
+  const [{ hasCartridge, cartridgeId, cartridgeHeroes, userAavegotchis, wearableInventory, ownedParcels }, userDispatch] =
     useUser();
 
   const { portalOpen, sending } = useAavegotchiSound();
@@ -800,14 +804,26 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
 
   const handleManagePaarcelsClick = async () => {
     if (entering || minting) return;
-    if (currentNetwork !== 'base') {
-      toast.info('cPaarcels are Base-only', { theme: 'dark' });
-      return;
-    }
     setMintError(null);
     setMintStep('paarcels');
-    if (currentAccount && globalProvider && currentNetwork) {
-      void fetchAndSetGlobalParcels({ ownedStatus: 1 as OwnedStatus });
+    if (currentAccount && globalProvider && currentNetwork && currentNetwork !== 'robinhood') {
+      // On-chain tokenIdsOfOwner only — subgraph can list rented/access parcels and
+      // Aarcade ownerOf rejects those on checkout.
+      try {
+        const contractParcels = await fetchContractOwnedParcels(
+          currentAccount,
+          globalProvider,
+          currentNetwork,
+        );
+        const mapped = await mapInGotchiverseParcelData(contractParcels || []);
+        userDispatch({
+          type: 'UPDATE_OWNED_PARCELS',
+          ownedParcels: mapped,
+        });
+      } catch (e) {
+        console.warn('@handleManagePaarcelsClick owned parcels', e);
+        void fetchAndSetGlobalParcels({ ownedStatus: 1 as OwnedStatus });
+      }
       void updateInventory(
         { network: currentNetwork, provider: globalProvider, account: currentAccount },
         userDispatch,
@@ -824,9 +840,63 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
     }
   };
 
-  const addPaarcelToCart = (row: MintablePaarcelRow) => {
-    setPaarcelCartRows((prev) => (prev.some((r) => r.key === row.key) ? prev : [...prev, row]));
+  const addPaarcelToCart = async (row: MintablePaarcelRow) => {
+    if (!currentNetwork || !globalProvider || !currentAccount) return;
+    // Cart is owned-only: skip if not in on-chain owned set.
+    const ownedIds = new Set(
+      (ownedParcels || [])
+        .filter((p) => !p.isLent)
+        .filter((p) => {
+          const owner = String(p.owner || '').toLowerCase();
+          return !owner || owner === currentAccount.toLowerCase();
+        })
+        .map((p) => String(p.tokenId || p.id || '')),
+    );
+    if (!ownedIds.has(row.realmTokenId)) {
+      toast.info(`Parcel #${row.realmTokenId} is not owned by this wallet`, { theme: 'dark' });
+      return;
+    }
+    const enriched = await enrichMintablePaarcelWithOnChainEquips(row, {
+      network: currentNetwork,
+      provider: globalProvider,
+    });
+    setPaarcelCartRows((prev) => (prev.some((r) => r.key === enriched.key) ? prev : [...prev, enriched]));
   };
+
+  const addAllPaarcelsToCart = async (rows: MintablePaarcelRow[]) => {
+    if (!currentNetwork || !globalProvider || !currentAccount || rows.length === 0) return;
+    const ownedIds = new Set(
+      (ownedParcels || [])
+        .filter((p) => !p.isLent)
+        .filter((p) => {
+          const owner = String(p.owner || '').toLowerCase();
+          return !owner || owner === currentAccount.toLowerCase();
+        })
+        .map((p) => String(p.tokenId || p.id || '')),
+    );
+    const ownedRows = rows.filter((r) => ownedIds.has(r.realmTokenId));
+    const skipped = rows.length - ownedRows.length;
+    if (skipped > 0) {
+      toast.info(`Skipped ${skipped} non-owned parcel${skipped === 1 ? '' : 's'}`, { theme: 'dark' });
+    }
+    if (!ownedRows.length) return;
+    const enriched = await enrichMintablePaarcelsWithOnChainEquips(ownedRows, {
+      network: currentNetwork,
+      provider: globalProvider,
+    });
+    setPaarcelCartRows((prev) => {
+      const keys = new Set(prev.map((r) => r.key));
+      const next = [...prev];
+      for (const row of enriched) {
+        if (!keys.has(row.key)) {
+          keys.add(row.key);
+          next.push(row);
+        }
+      }
+      return next;
+    });
+  };
+
   const addPaarcelInstallToCart = (row: MintableInstallationRow) => {
     setPaarcelInstallCartRows((prev) => (prev.some((r) => r.key === row.key) ? prev : [...prev, row]));
   };
@@ -844,6 +914,24 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
     });
   };
 
+  // Keep cart aligned with on-chain ownership (drop rented / access-only if ownedParcels refreshes).
+  useEffect(() => {
+    if (!currentAccount) return;
+    const ownedIds = new Set(
+      (ownedParcels || [])
+        .filter((p) => !p.isLent)
+        .filter((p) => {
+          const owner = String(p.owner || '').toLowerCase();
+          return !owner || owner === currentAccount.toLowerCase();
+        })
+        .map((p) => String(p.tokenId || p.id || '')),
+    );
+    setPaarcelCartRows((prev) => {
+      const next = prev.filter((r) => ownedIds.has(r.realmTokenId));
+      return next.length === prev.length ? prev : next;
+    });
+  }, [ownedParcels, currentAccount]);
+
   const handleMintPaarcelCart = async () => {
     if (minting || !currentAccount) return;
     if (paarcelCartRows.length === 0 && paarcelInstallCartRows.length === 0) return;
@@ -851,17 +939,29 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
     setMintError(null);
     let imported = 0;
     let alreadyMinted = 0;
+    let failedCount = 0;
+    let nestedInstalls = 0;
     try {
       if (paarcelCartRows.length > 0) {
+        // Fresh on-chain equip snapshot right before mint (grid x/y like play mode).
+        const toMint =
+          currentNetwork && globalProvider
+            ? await enrichMintablePaarcelsWithOnChainEquips(paarcelCartRows, {
+                network: currentNetwork === 'robinhood' ? 'base' : currentNetwork,
+                provider: globalProvider,
+              })
+            : paarcelCartRows;
+        nestedInstalls = toMint.reduce((n, r) => n + (r.installations?.length || 0), 0);
+        // Parcel import auto-nests equipped installs on the cPaarcel (Aarcade nestEquippedAll).
         const result = await importCartridgePaarcels(currentAccount, {
-          parcels: paarcelCartRows.map((r) => ({
+          parcels: toMint.map((r) => ({
             realmTokenId: r.realmTokenId,
             installations: r.installations,
           })),
           cartridgeId,
-          network: currentNetwork,
+          network: currentNetwork === 'robinhood' ? 'base' : currentNetwork,
         });
-        if (!result.ok) {
+        if (!result.ok && !(Number(result.imported) > 0 || Number(result.alreadyMinted) > 0)) {
           const msg = result.error || 'Failed importing parcels';
           setMintError(msg);
           toast.error(msg, { theme: 'dark' });
@@ -869,6 +969,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
         }
         imported += Number(result.imported) || 0;
         alreadyMinted += Number(result.alreadyMinted) || 0;
+        failedCount += Array.isArray(result.failed) ? result.failed.length : 0;
         userDispatch({
           type: 'UPDATE_USER_CARTRIDGE',
           cartridgeId: result.cartridgeId || cartridgeId,
@@ -876,6 +977,25 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
           parcelInventory: result.parcelInventory,
           installationInventory: result.installationInventory,
         });
+        // Drop successfully imported / already-minted parcels from cart; keep failed for retry.
+        const failedIds = new Set(
+          (result.failed || []).map((f) => String(f.realmTokenId || '')).filter(Boolean),
+        );
+        const mintedRealmIds = new Set(
+          toMint.filter((r) => !failedIds.has(r.realmTokenId)).map((r) => r.realmTokenId),
+        );
+        if (result.ok || imported + alreadyMinted > 0) {
+          setPaarcelCartRows((prev) =>
+            failedIds.size ? prev.filter((r) => failedIds.has(r.realmTokenId)) : [],
+          );
+          // Nested on parcel — drop matching parcel-equip lines from the install cart.
+          setPaarcelInstallCartRows((prev) =>
+            prev.filter(
+              (r) =>
+                !(r.source === 'parcel-equip' && mintedRealmIds.has(String(r.sourceRealmTokenId || ''))),
+            ),
+          );
+        }
       }
       if (paarcelInstallCartRows.length > 0) {
         const result = await importCartridgeInstallations(currentAccount, {
@@ -890,9 +1010,9 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
             installationType: r.installationType,
           })),
           cartridgeId,
-          network: currentNetwork,
+          network: currentNetwork === 'robinhood' ? 'base' : currentNetwork,
         });
-        if (!result.ok) {
+        if (!result.ok && !(Number(result.imported) > 0 || Number(result.alreadyMinted) > 0)) {
           const msg = result.error || 'Failed importing installations';
           setMintError(msg);
           toast.error(msg, { theme: 'dark' });
@@ -900,6 +1020,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
         }
         imported += Number(result.imported) || 0;
         alreadyMinted += Number(result.alreadyMinted) || 0;
+        failedCount += Array.isArray(result.failed) ? result.failed.length : 0;
         userDispatch({
           type: 'UPDATE_USER_CARTRIDGE',
           cartridgeId: result.cartridgeId || cartridgeId,
@@ -907,16 +1028,23 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
           parcelInventory: result.parcelInventory,
           installationInventory: result.installationInventory,
         });
+        setPaarcelInstallCartRows([]);
       }
       if (imported + alreadyMinted > 0) {
+        const nestNote =
+          nestedInstalls > 0 ? ` · ${nestedInstalls} nested install${nestedInstalls === 1 ? '' : 's'}` : '';
+        const failNote = failedCount > 0 ? ` · ${failedCount} skipped (not owned)` : '';
         toast.success(
           `Minted ${imported} item${imported === 1 ? '' : 's'}${
             alreadyMinted ? ` · ${alreadyMinted} already owned` : ''
-          }`,
+          }${nestNote}${failNote}`,
           { theme: 'dark' },
         );
-        setPaarcelCartRows([]);
-        setPaarcelInstallCartRows([]);
+        if (failedCount > 0) {
+          setMintError(
+            `${failedCount} parcel${failedCount === 1 ? '' : 's'} skipped — not owned by wallet (rented cannot be minted).`,
+          );
+        }
       }
       if (cartridgeId) {
         const refreshed = await getCartridgePaarcels(currentAccount, cartridgeId);
@@ -1272,7 +1400,12 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
                   <PaarcelMintGallery
                     cartParcelKeys={paarcelCartKeys}
                     cartInstallKeys={paarcelInstallCartKeys}
-                    onAddParcel={addPaarcelToCart}
+                    onAddParcel={(row) => {
+                      void addPaarcelToCart(row);
+                    }}
+                    onAddAllParcels={(rows) => {
+                      void addAllPaarcelsToCart(rows);
+                    }}
                     onAddInstallation={addPaarcelInstallToCart}
                     onAddAllParcelInstalls={addAllPaarcelInstallsToCart}
                     onAddAllWalletInstalls={addAllPaarcelInstallsToCart}

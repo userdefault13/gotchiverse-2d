@@ -240,12 +240,21 @@ function allInstallationRefIds(parcels: CPaarcel[], installs: CInstallation[]): 
 export function listMintablePaarcelsFromOwned(
   ownedParcels: GotchiverseParcel[] | null | undefined,
   parcelInventory: CPaarcel[] | null | undefined,
+  opts?: { owner?: string | null },
 ): MintablePaarcelRow[] {
   const mintedRefs = new Set((parcelInventory || []).map((p) => String(p.refId || '')));
+  const ownerWanted = String(opts?.owner || '')
+    .trim()
+    .toLowerCase();
   const rows: MintablePaarcelRow[] = [];
   for (const parcel of ownedParcels || []) {
     if (!parcel) continue;
     if (parcel.isLent) continue;
+    const parcelOwner = String(parcel.owner || '')
+      .trim()
+      .toLowerCase();
+    // Proactive: never list rented / access-only rows for mint.
+    if (ownerWanted && parcelOwner && parcelOwner !== ownerWanted) continue;
     const realmTokenId = String(parcel.tokenId || parcel.id || '').trim();
     if (!/^\d+$/.test(realmTokenId)) continue;
     const refId = paarcelImportRefId(realmTokenId);
@@ -284,6 +293,106 @@ export function listMintablePaarcelsFromOwned(
     });
   }
   return rows.sort((a, b) => Number(a.realmTokenId) - Number(b.realmTokenId));
+}
+
+/**
+ * Pull equipped installs + tiles from on-chain realm grids (same source as play mode).
+ * Returns [] when grids are empty; null when the fetch fails.
+ */
+export async function fetchOnChainEquippedInstallations(opts: {
+  parcelId: string;
+  realmTokenId: string;
+  network: string;
+  provider: unknown;
+}): Promise<MintablePaarcelRow['installations'] | null> {
+  const parcelId = String(opts.parcelId || '').trim();
+  const realmTokenId = String(opts.realmTokenId || '').trim();
+  if (!parcelId || !/^\d+$/.test(realmTokenId) || !opts.network || !opts.provider) return null;
+
+  const meta =
+    PARCELS_BY_TOKEN_ID[realmTokenId] || PARCELS_BY_TOKEN_ID[Number(realmTokenId)] || undefined;
+  let type = String((meta as { type?: string } | undefined)?.type || '').trim();
+  if (!type && parcelId.charAt(0) === 'C') {
+    const parts = parcelId.split('-');
+    type = String(parts[3] || '').trim();
+  }
+  if (!type) return null;
+
+  try {
+    const { getContract } = await import('web3/contract');
+    const { fetchContractGrid, getInstallationIdsbyGrid } = await import(
+      'shared_code/utils/shared.utils.installations'
+    );
+    const realmDiamond = await getContract(opts.network, opts.provider as never);
+    if (!realmDiamond) return null;
+
+    const [installGrid, tileGrid] = await Promise.all([
+      fetchContractGrid(realmDiamond, { type, tokenId: realmTokenId }, 0),
+      fetchContractGrid(realmDiamond, { type, tokenId: realmTokenId }, 1),
+    ]);
+
+    const installIds = installGrid
+      ? (getInstallationIdsbyGrid(parcelId, installGrid, 0) as string[]) || []
+      : [];
+    const tileIds = tileGrid ? (getInstallationIdsbyGrid(parcelId, tileGrid, 1) as string[]) || [] : [];
+    const ids = [...installIds, ...tileIds];
+    const out: MintablePaarcelRow['installations'] = [];
+    for (const id of ids) {
+      const parts = String(id || '').split('_');
+      if (parts.length < 5) continue;
+      const itemTypeId = Number(parts[1]);
+      const x = Number(parts[2]);
+      const y = Number(parts[3]);
+      const isTile = Number(parts[4]) === 1;
+      if (!Number.isFinite(itemTypeId) || itemTypeId <= 0) continue;
+      const kind = isTile ? 'tile' : 'installation';
+      const display = installationDisplayMeta(itemTypeId);
+      out.push({
+        itemTypeId,
+        kind,
+        name: display.name,
+        x: Number.isFinite(x) ? x : 0,
+        y: Number.isFinite(y) ? y : 0,
+        installationType: display.installationType,
+      });
+    }
+    return out;
+  } catch (e) {
+    console.warn('@fetchOnChainEquippedInstallations', realmTokenId, e);
+    return null;
+  }
+}
+
+/** Prefer on-chain grid equips; fall back to subgraph/list snapshot already on the row. */
+export async function enrichMintablePaarcelWithOnChainEquips(
+  row: MintablePaarcelRow,
+  opts: { network: string; provider: unknown },
+): Promise<MintablePaarcelRow> {
+  const onChain = await fetchOnChainEquippedInstallations({
+    parcelId: row.parcelId,
+    realmTokenId: row.realmTokenId,
+    network: opts.network,
+    provider: opts.provider,
+  });
+  if (!onChain) return row;
+  return { ...row, installations: onChain };
+}
+
+export async function enrichMintablePaarcelsWithOnChainEquips(
+  rows: MintablePaarcelRow[],
+  opts: { network: string; provider: unknown; concurrency?: number },
+): Promise<MintablePaarcelRow[]> {
+  const concurrency = Math.max(1, Math.min(opts.concurrency || 4, 8));
+  const out: MintablePaarcelRow[] = new Array(rows.length);
+  let cursor = 0;
+  const workers = Array.from({ length: Math.min(concurrency, rows.length) }, async () => {
+    while (cursor < rows.length) {
+      const i = cursor++;
+      out[i] = await enrichMintablePaarcelWithOnChainEquips(rows[i], opts);
+    }
+  });
+  await Promise.all(workers);
+  return out;
 }
 
 /** Wallet installation balances not yet in installationInventory (or nested on parcels). */

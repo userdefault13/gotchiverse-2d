@@ -52,7 +52,7 @@ export const PaarcelCart = ({
       <div className="paarcel-cart">
         <h2 className="cart-title">Paarcel Cart</h2>
         <p className="cart-caption">
-          Parcels nest equipped installs · wallet installs separate{' '}
+          Owned parcels only · checkout nests on-chain equips{' '}
           <span className="price-note">(sim)</span>
         </p>
 
@@ -68,25 +68,51 @@ export const PaarcelCart = ({
 
         <div className="cart-list scrollable">
           {cartParcels.map((row) => (
-            <div key={row.key} className="cart-line">
-              <PaarcelThumbnail realmTokenId={row.realmTokenId} name={row.parcelId} size={40} />
-              <div className="line-main">
-                <span className="line-name">{row.parcelId}</span>
-                <span className="line-meta">
-                  Parcel #{row.realmTokenId} · {row.installations.length} installs
-                </span>
+            <div key={row.key} className="cart-line parcel-block">
+              <div className="cart-line-row">
+                <PaarcelThumbnail realmTokenId={row.realmTokenId} name={row.parcelId} size={40} />
+                <div className="line-main">
+                  <span className="line-name">{row.parcelId}</span>
+                  <span className="line-meta">
+                    Parcel #{row.realmTokenId} · {row.installations.length} on-chain equip
+                    {row.installations.length === 1 ? '' : 's'}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  className="remove"
+                  disabled={minting}
+                  onClick={() => {
+                    click();
+                    onRemoveParcel(row.key);
+                  }}
+                >
+                  ×
+                </button>
               </div>
-              <button
-                type="button"
-                className="remove"
-                disabled={minting}
-                onClick={() => {
-                  click();
-                  onRemoveParcel(row.key);
-                }}
-              >
-                ×
-              </button>
+              {row.installations.length > 0 ? (
+                <div className="nested-equips">
+                  {row.installations.slice(0, 12).map((inst, i) => (
+                    <span
+                      key={`${row.key}-${inst.itemTypeId}-${inst.x}-${inst.y}-${i}`}
+                      className="nested-chip"
+                      title={`${inst.name} @ ${inst.x},${inst.y}`}
+                    >
+                      <InstallationThumbnail
+                        itemTypeId={inst.itemTypeId}
+                        kind={inst.kind}
+                        name={inst.name}
+                        size={22}
+                      />
+                    </span>
+                  ))}
+                  {row.installations.length > 12 ? (
+                    <span className="nested-more">+{row.installations.length - 12}</span>
+                  ) : null}
+                </div>
+              ) : (
+                <p className="nested-empty">No equipped installs on-chain</p>
+              )}
             </div>
           ))}
           {cartInstallations.map((row) => (

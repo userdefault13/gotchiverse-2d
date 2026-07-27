@@ -12,6 +12,7 @@ import {
 } from 'components/UI/widgets';
 import useAavegotchiSound from 'hooks/useAavegotchiSound';
 import { useUser } from 'contexts/UserContext';
+import { useWeb3 } from 'contexts/Web3Context';
 import {
   installationCommonCssVars,
   listMintableInstallationsOnParcels,
@@ -33,6 +34,7 @@ interface Props {
   cartParcelKeys: Set<string>;
   cartInstallKeys: Set<string>;
   onAddParcel: (row: MintablePaarcelRow) => void;
+  onAddAllParcels?: (rows: MintablePaarcelRow[]) => void;
   onAddInstallation: (row: MintableInstallationRow) => void;
   onAddAllParcelInstalls: (rows: MintableInstallationRow[]) => void;
   onAddAllWalletInstalls: (rows: MintableInstallationRow[]) => void;
@@ -43,6 +45,7 @@ export const PaarcelMintGallery = ({
   cartParcelKeys,
   cartInstallKeys,
   onAddParcel,
+  onAddAllParcels,
   onAddInstallation,
   onAddAllParcelInstalls,
   onAddAllWalletInstalls,
@@ -50,13 +53,14 @@ export const PaarcelMintGallery = ({
 }: Props): JSX.Element => {
   const { click } = useAavegotchiSound();
   const [{ ownedParcels, inventory, parcelInventory, installationInventory }] = useUser();
+  const [{ currentAccount }] = useWeb3();
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [catalogTab, setCatalogTab] = useState<CatalogTab>('parcels');
   const [hoverTip, setHoverTip] = useState<HoverTip | null>(null);
 
   const parcelRows = useMemo(
-    () => listMintablePaarcelsFromOwned(ownedParcels, parcelInventory),
-    [ownedParcels, parcelInventory],
+    () => listMintablePaarcelsFromOwned(ownedParcels, parcelInventory, { owner: currentAccount }),
+    [ownedParcels, parcelInventory, currentAccount],
   );
   const unmintedParcels = useMemo(() => parcelRows.filter((r) => !r.alreadyMinted), [parcelRows]);
   const parcelInstallRows = useMemo(
@@ -247,7 +251,7 @@ export const PaarcelMintGallery = ({
           <span className="title-lead">Mint</span> <SoftCText>cPaarcels</SoftCText>
         </h2>
         <p className="gallery-caption">
-          Owned Base parcels only · nested installs snapshot ·{' '}
+          Owned on-chain parcels only · mint nests equipped installs/tiles{' '}
           <span className="price-tag free">FREE</span>{' '}
           <span className="price-note">(sim)</span>
         </p>
@@ -311,10 +315,11 @@ export const PaarcelMintGallery = ({
                   const toAdd = unmintedParcels.filter((r) => !cartParcelKeys.has(r.key));
                   if (minting || toAdd.length === 0) return;
                   click();
-                  for (const row of toAdd) onAddParcel(row);
+                  if (onAddAllParcels) onAddAllParcels(toAdd);
+                  else for (const row of toAdd) onAddParcel(row);
                 }}
               >
-                Add all parcels to cart (
+                Add all owned parcels to cart (
                 {unmintedParcels.filter((r) => !cartParcelKeys.has(r.key)).length})
               </Button>
             </div>
