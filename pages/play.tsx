@@ -13,7 +13,7 @@ import Installations from 'components/phaser/Installations';
 import { MoralisController } from 'components/controllers/moralisController';
 import { NFTDisplay } from 'components/phaser/NFTDisplay';
 import { fetchAavegotchiURL } from 'helpers/gotchi.helper';
-// import GameController from 'components/controllers/GameController';
+import GameController from 'components/controllers/GameController';
 
 const Play = () => {
   const [{ currentAccount, currentNetwork, globalProvider }] = useWeb3();
@@ -40,6 +40,8 @@ const Play = () => {
   // }, []);
 
   useEffect(() => {
+    // Ensure Colyseus joins citaadel (not a leftover aarena MAP from /combat).
+    GameController.updateMapType('citaadel');
     if (typeof window !== 'undefined' && typeof navigator !== 'undefined') {
       setWindowLoaded(true);
       document.body.classList.add('overflow-hidden');

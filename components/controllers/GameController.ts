@@ -396,6 +396,10 @@ async function socketConnect(
       });
       // Server spawn should be clear; still nudge if FE/server desync lands in a block.
       setTimeout(() => colyseusNudgeIfTrapped(), 100);
+    } else {
+      // Colyseus citaadel is walkable only — keep legacy mapConfig.SHOOT_MODE from arming clicks.
+      InputController.updateShootMode(undefined);
+      toggleShooting(false);
     }
 
     // Legacy zone sockets start music in onopen; Colyseus has no onopen — start BGM here.
@@ -1573,6 +1577,8 @@ function sendData(channel: string, action: string | null, data): void {
     }
     if (channel === 'combat') {
       if (action === 'melee' || action === 'fire') {
+        // Citaadel /play has no Colyseus combat — ignore quietly (legacy SHOOT_MODE still arms clicks).
+        if (GameController.MAP !== 'aarena') return;
         const ok = colyseusSendCombat(action, data);
         if (!ok) {
           console.warn('@sendData combat dropped — not on aarena Colyseus room', {

@@ -15,6 +15,14 @@ import { GOTCHI_SIZE, GAME_CONFIG } from 'shared_code/constants/const.game';
 import { isTrueSpectator } from 'helpers/gotchi.helper';
 import { getItemCooldownLeft, handleDrop, handleQuickslotAction } from 'helpers/items.helpers';
 import type { ShootMode } from 'types/phaser';
+import { isColyseusNetcode } from 'helpers/colyseus.client';
+import { isColyseusAarenaMap } from 'helpers/colyseus.map';
+
+/** Colyseus combat is aarena-only; citaadel /play keeps walk + foundry. */
+function isCombatInputEnabled(): boolean {
+  if (isColyseusNetcode()) return isColyseusAarenaMap();
+  return Boolean(scene?.mapConfig?.SHOOT_MODE || shootMode);
+}
 
 interface inputControllerInterface {
   init: () => void;
@@ -35,7 +43,7 @@ const blurAll = () => {
 let isAlternativeAttack = false;
 let keyPressCount = 0;
 let toggleDebug = false;
-let shootMode: ShootMode;
+let shootMode: ShootMode | undefined;
 let chargeTimer = null;
 let mouseCharging = false;
 let keyboardCharging = false;
@@ -63,7 +71,8 @@ const init = (): void => {
   handleToggleChat();
   handlePlayerKeys();
   registerAttackHandle();
-  shootMode = scene.mapConfig.SHOOT_MODE;
+  // Colyseus aarena sets this via updateShootMode after join; citaadel stays off.
+  shootMode = isColyseusNetcode() ? undefined : scene.mapConfig.SHOOT_MODE;
 };
 
 function createInputs() {
@@ -138,6 +147,7 @@ enum AttackType {
 
 function handleAttackKeyDown(side: Hand): void {
   if (!Players?.selectedPlayer || mouseCharging || scene.disableKeyboard || isTrueSpectator(Players.selectedPlayer.isSpectator)) return;
+  if (!isCombatInputEnabled()) return;
 
   const attackType = getAttackType(side);
   const chargeType = attackType === AttackType.Melee ? 'isMeleeCharging' : 'isMissileCharging';
@@ -453,11 +463,9 @@ function computeRangedChargeDuration(): number {
 }
 
 function handleClickAttack(pointer: Phaser.Input.Pointer, type: AttackType, hand: Hand): void {
-  // if (GameController.MAP !== 'aarena') return;
   const playerObject = scene[Players.selectedPlayer.id];
   if (!playerObject || isTrueSpectator(Players.selectedPlayer.isSpectator)) return;
-  // Prefer live mapConfig — module `shootMode` can stay stale across citaadel→aarena.
-  if (!scene?.mapConfig?.SHOOT_MODE && !shootMode) return;
+  if (!isCombatInputEnabled()) return;
 
   const pointerWorld = {
     x: pointer.worldX,
@@ -560,7 +568,7 @@ function toggleMouseMovement(active: boolean): void {
           );
         }
       } else if (!gameObjects.length && combatControls === 'arcade' && !Installations.buildModeState) {
-        if (!scene?.mapConfig?.SHOOT_MODE && !shootMode) return;
+        if (!isCombatInputEnabled()) return;
         const playerObject = scene[Players.selectedPlayer.id];
 
         const hand = scene.rightClicked ? Hand.Right : Hand.Left;
@@ -610,7 +618,7 @@ function toggleMouseMovement(active: boolean): void {
         }
         Players.handleClickToMove(pointer);
       } else if (combatControls === 'arcade' && !Installations.buildModeState) {
-        if (!scene?.mapConfig?.SHOOT_MODE && !shootMode) return;
+        if (!isCombatInputEnabled()) return;
         const hand = scene.rightClicked ? Hand.Right : Hand.Left;
         const attackType = getAttackType(hand);
         const chargeType = attackType === AttackType.Melee ? 'isMeleeCharging' : 'isMissileCharging';
@@ -820,8 +828,8 @@ function isSprinting(): boolean {
   return scene.isSprint;
 }
 
-function updateShootMode(scheme?: 'PVE' | 'PVP'): void {
-  shootMode = scheme;
+function updateShootMode(scheme?: 'PVE' | 'PVP' | ''): void {
+  shootMode = scheme || undefined;
 }
 
 const InputController: inputControllerInterface = {
