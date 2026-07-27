@@ -74,6 +74,8 @@ export const GotchiSelectPanel = ({
   // Soft-launch Base/RH: left rail is Freebie + Manage + bound cAavegotchis (wallet gotchis mint from right tab).
   const cartridgeSelectMode = currentNetwork === 'base' || currentNetwork === 'robinhood';
   const wearablesManageMode = mintStep === 'wearables';
+  /** After Manage: show cWearables entry + keep roster; default load hides cWearables. */
+  const manageRailActive = Boolean(mintMode && hasCartridge);
 
   const cartridgeGotchis = useMemo(() => {
     if (!currentAccount || !cartridgeHeroes?.length) return [] as GotchiverseAavegotchi[];
@@ -157,15 +159,16 @@ export const GotchiSelectPanel = ({
     (visibleHeroes?.length || 0) +
     (wearableStacks?.length || 0);
 
-  // Freebie + Manage/Mint Cartridge (+ Manage Wearables when cartridge) + heroes/stacks + wallet.
+  // Freebie + Manage/Mint (+ cWearables while managing) + heroes/stacks + wallet.
   const placeholderAavegotchis = useMemo(() => {
-    const fixed = 2 + (hasCartridge ? 1 : 0);
+    const fixed = 2 + (manageRailActive ? 1 : 0);
     const filled = gridItemCount + fixed;
     return Array.from({ length: Math.max((placeholderCount || 0) - filled, 0) }, (_, i) => i);
-  }, [gridItemCount, placeholderCount, hasCartridge]);
+  }, [gridItemCount, placeholderCount, manageRailActive]);
 
   const handleCartridgeGotchiClick = (gotchi: GotchiverseAavegotchi) => {
-    if (mintMode && onManageCaavegotchiClick) {
+    // Manage rail: keep mint open and sync selection; play select still works via Freebie / exit Manage.
+    if (manageRailActive && onManageCaavegotchiClick) {
       onManageCaavegotchiClick(gotchi);
       return;
     }
@@ -254,13 +257,13 @@ export const GotchiSelectPanel = ({
               <div className="gotchi-card">
                 <MintCartridgeCard
                   network={currentNetwork}
-                  isSelected={!!mintMode && mintStep !== 'wearables-import'}
+                  isSelected={!!mintMode && mintStep !== 'wearables' && mintStep !== 'wearables-import'}
                   hasCartridge={!!hasCartridge}
                   onClick={onMintCartridgeClick}
                 />
               </div>
             ) : null}
-            {hasCartridge ? (
+            {manageRailActive ? (
               <div className="gotchi-card">
                 <ManageWearablesCard
                   isSelected={mintStep === 'wearables'}
@@ -282,7 +285,7 @@ export const GotchiSelectPanel = ({
               <div key={gotchi.id} className="gotchi-card">
                 <GotchiSelectCard
                   gotchi={gotchi}
-                  isSelected={!mintMode && gotchi.id === selectedId}
+                  isSelected={gotchi.id === selectedId}
                   handleSelect={handleCartridgeGotchiClick}
                 />
               </div>

@@ -123,6 +123,25 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
     return null;
   }, [mintStep, selectedCollateral, selectedIsCartridgeHero, selectedGotchi?.cartridgeCollateral]);
 
+  /** Stable key so center Image remounts when the selected cAavegotchi / collateral changes. */
+  const previewArtKey = useMemo(() => {
+    if (mintStep === 'caavegotchi' && selectedWalletGotchi) return `wallet-${selectedWalletGotchi.id}`;
+    if (mintStep === 'caavegotchi' && selectedCollateral) {
+      return `coll-${selectedCollateral.name || selectedCollateral.svgId}`;
+    }
+    if (selectedIsCartridgeHero) {
+      return `hero-${selectedGotchi?.id}-${selectedGotchi?.cartridgeCollateral || ''}`;
+    }
+    return selectedGotchi?.id || 'none';
+  }, [
+    mintStep,
+    selectedWalletGotchi,
+    selectedCollateral,
+    selectedIsCartridgeHero,
+    selectedGotchi?.id,
+    selectedGotchi?.cartridgeCollateral,
+  ]);
+
   const boundWalletIds = useMemo(() => mintedSourceTokenIds(cartridgeHeroes), [cartridgeHeroes]);
   const mintableWearableRows = useMemo(
     () => listMintableWearablesFromBoundGotchis(userAavegotchis, boundWalletIds, wearableInventory),
@@ -146,35 +165,33 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
 
   useEffect(() => {
     let cancelled = false;
-    if (!previewCollateral) {
-      setCollateralPreviewUrl((prev) => {
-        if (prev) URL.revokeObjectURL(prev);
-        return null;
-      });
-      setCartridgeSideUrls((prev) => {
-        if (prev) prev.forEach((u) => URL.revokeObjectURL(u));
-        return null;
-      });
-      return;
-    }
+    // Drop prior art immediately so switching cAavegotchis never keeps the old collateral on screen.
+    setCollateralPreviewUrl((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+    setCartridgeSideUrls((prev) => {
+      if (prev) prev.forEach((u) => URL.revokeObjectURL(u));
+      return null;
+    });
+    if (!previewCollateral) return;
+
     void fetchCollateralGotchiBlobUrl(previewCollateral, currentNetwork).then((url) => {
       if (cancelled) {
         URL.revokeObjectURL(url);
         return;
       }
-      setCollateralPreviewUrl((prev) => {
-        if (prev) URL.revokeObjectURL(prev);
-        return url;
-      });
+      setCollateralPreviewUrl(url);
     });
     // Prefetch all sides so enter-portal can flip to back view immediately.
     void fetchCartridgeHeroSideSVGs(previewCollateral, currentNetwork).then((sides) => {
       if (cancelled) return;
       const urls = sides.map((svg) => convertInlineSVGToBlobURL(svg)) as [string, string, string, string];
-      setCartridgeSideUrls((prev) => {
-        if (prev) prev.forEach((u) => URL.revokeObjectURL(u));
-        return urls;
-      });
+      if (cancelled) {
+        urls.forEach((u) => URL.revokeObjectURL(u));
+        return;
+      }
+      setCartridgeSideUrls(urls);
     });
     return () => {
       cancelled = true;
@@ -411,7 +428,9 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
 
   const enterCaavegotchiStep = () => {
     setMintError(null);
+    setSelectedWalletGotchi(null);
     setMintStep('caavegotchi');
+    // Default collateral so center + tip match immediately in manage mint rail.
     setSelectedCollateral((prev) => prev || getMintableCollaterals()[0] || null);
   };
 
@@ -432,8 +451,12 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
   const handleMintCartridgeClick = () => {
     if (entering || minting) return;
     setMintError(null);
-    // Already minted → skip details and show cAavegotchi picker
+    // Already minted → Manage toggles collateral/wallet mint rail (shows cWearables entry).
     if (hasCartridge) {
+      if (mintStep === 'caavegotchi') {
+        resetMintFlow();
+        return;
+      }
       enterCaavegotchiStep();
       return;
     }
@@ -1010,7 +1033,18 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
                 }}
                 onManageCaavegotchiClick={(gotchi) => {
                   if (entering) return;
-                  setManageHero(gotchi);
+                  // Keep manage mint rail open; center follows this cAavegotchi's collateral.
+                  void router.push(
+                    {
+                      pathname: '/',
+                      query: { ...router.query, gotchi: gotchi.id },
+                    },
+                    undefined,
+                    { scroll: false },
+                  );
+                  const coll = collateralFromSimId(gotchi.cartridgeCollateral);
+                  setSelectedWalletGotchi(null);
+                  if (coll) setSelectedCollateral(coll);
                 }}
               />
 
@@ -1123,6 +1157,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
                   <div className="gotchi">
                     {selectedWalletGotchi ? (
                       <GotchiSVG
+                        key={previewArtKey}
                         tokenId={selectedWalletGotchi.id}
                         side={0}
                         options={{ removeBg: true, animate: true }}
@@ -1138,6 +1173,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
                         }}
                       >
                         <Image
+                          key={previewArtKey}
                           alt=""
                           src={collateralPreviewUrl || GotchiLoading}
                           layout="fill"
@@ -1189,7 +1225,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
                         }}
                       >
                         <Image
-                          key={enterPortal ? 'back' : 'front'}
+                          key={`${previewArtKey}-${enterPortal ? 'back' : 'front'}`}
                           alt=""
                           src={
                             (enterPortal
@@ -1207,6 +1243,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
                       </div>
                     ) : (
                       <GotchiSVG
+                        key={selectedGotchi.id}
                         tokenId={selectedGotchi.id}
                         side={enterPortal ? 3 : 0}
                         options={{ removeBg: true, animate: !enterPortal }}
