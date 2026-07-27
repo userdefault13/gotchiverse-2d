@@ -287,8 +287,31 @@ export const fetchContractOwnedParcels = async (owner: string, provider: Provide
   }
 };
 
-export const fetchSubgraphOwnedParcel = async (owner: string, provider: Provider, network: NetworkNames): Promise<GotchiverseParcel[]> => {
+/**
+ * Wallet-owned parcels for soft-launch mint/spawn.
+ * Prefers Realm `tokenIdsOfOwner` on Base until Aarcade production
+ * `/api/subgraph` is confirmed on the GraphQL **compat** proxy (The Graph owner
+ * filters). Note: compat `_meta.block` is a stub (often 0) — use Hasura
+ * `chain_metadata` for sync progress, not `_meta`.
+ */
+export const fetchSubgraphOwnedParcel = async (
+  owner: string,
+  provider: Provider,
+  network: NetworkNames,
+): Promise<GotchiverseParcel[]> => {
   let parcels: GotchiverseParcel[];
+
+  // Soft-launch Base: contract ownership until prod Aarcade serves Graph dialect.
+  if (network === 'base' || network === 'matic') {
+    try {
+      const contractParcels = await fetchContractOwnedParcels(owner, provider, network);
+      parcels = await mapInGotchiverseParcelData(contractParcels || []);
+      return normalizeParcels(parcels);
+    } catch (error) {
+      console.warn('@fetchSubgraphOwnedParcel contract path failed, trying subgraph', error);
+    }
+  }
+
   if (PARCEL_SUBGRAPH_NETWORKS.includes(network)) {
     const query = getUsersParcels([owner]);
     try {

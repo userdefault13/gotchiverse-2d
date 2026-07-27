@@ -395,50 +395,79 @@ export async function enrichMintablePaarcelsWithOnChainEquips(
   return out;
 }
 
-/** Confirm realmTokenId is owned by wallet via Base Realm ownerOf (FE provider). */
+/** cPaarcel ownership is always Base Realm — never the wallet's active chain. */
+export type ParcelOwnershipStatus = 'owned' | 'not_owned' | 'unverified';
+
+/**
+ * Confirm realmTokenId ownership on Base via a dedicated JSON-RPC provider.
+ * Does not use the wallet provider (wrong chain / MetaMask rate limits caused false "rented").
+ * Returns `unverified` on RPC failure — caller must not treat that as rental.
+ */
 export async function assertParcelOwnedByWallet(opts: {
   realmTokenId: string;
   wallet: string;
-  network: NetworkNames;
-  provider: unknown;
-}): Promise<boolean> {
+  /** Ignored for chain selection — cPaarcels are Base-only. Kept for call-site compat. */
+  network?: NetworkNames;
+  provider?: unknown;
+}): Promise<ParcelOwnershipStatus> {
   const tid = String(opts.realmTokenId || '').trim();
   const wallet = String(opts.wallet || '')
     .trim()
     .toLowerCase();
-  if (!/^\d+$/.test(tid) || !/^0x[a-f0-9]{40}$/.test(wallet) || !opts.network || !opts.provider) {
-    return false;
+  if (!/^\d+$/.test(tid) || !/^0x[a-f0-9]{40}$/.test(wallet)) {
+    return 'unverified';
   }
   try {
-    const { getContract } = await import('web3/contract');
-    const realm = await getContract(opts.network, opts.provider as never);
-    if (!realm?.ownerOf) return false;
+    const { ethers } = await import('ethers');
+    const { varsForNetwork } = await import('shared_code/web3/shared.const.web3');
+    const vars = varsForNetwork('base');
+    const diamond = String(vars.realmDiamond || '').trim();
+    const rpc = String(vars.jsonRPC || process.env.NEXT_PUBLIC_BASE_RPC || 'https://mainnet.base.org').trim();
+    if (!diamond || !rpc) return 'unverified';
+
+    const provider = new ethers.providers.JsonRpcProvider(rpc);
+    const realm = new ethers.Contract(
+      diamond,
+      ['function ownerOf(uint256 tokenId) view returns (address)'],
+      provider,
+    );
     const owner = String(await realm.ownerOf(tid)).toLowerCase();
-    return owner === wallet;
+    if (!/^0x[a-f0-9]{40}$/.test(owner)) return 'unverified';
+    return owner === wallet ? 'owned' : 'not_owned';
   } catch (e) {
     console.warn('@assertParcelOwnedByWallet', tid, e);
-    return false;
+    return 'unverified';
   }
 }
 
-/** Filter mint rows to parcels the wallet currently owns on-chain. */
+/**
+ * Filter mint rows by Base ownerOf.
+ * Only drops parcels whose on-chain owner is a different address (true rentals).
+ * RPC failures stay in `owned` so Aarcade can verify (avoids false "rented" skips).
+ */
 export async function filterMintablePaarcelsOwnedByWallet(
   rows: MintablePaarcelRow[],
-  opts: { wallet: string; network: NetworkNames; provider: unknown },
-): Promise<{ owned: MintablePaarcelRow[]; skipped: MintablePaarcelRow[] }> {
+  opts: { wallet: string; network?: NetworkNames; provider?: unknown },
+): Promise<{ owned: MintablePaarcelRow[]; skipped: MintablePaarcelRow[]; unverified: MintablePaarcelRow[] }> {
   const owned: MintablePaarcelRow[] = [];
   const skipped: MintablePaarcelRow[] = [];
+  const unverified: MintablePaarcelRow[] = [];
   for (const row of rows) {
-    const ok = await assertParcelOwnedByWallet({
+    const status = await assertParcelOwnedByWallet({
       realmTokenId: row.realmTokenId,
       wallet: opts.wallet,
       network: opts.network,
       provider: opts.provider,
     });
-    if (ok) owned.push(row);
-    else skipped.push(row);
+    if (status === 'not_owned') skipped.push(row);
+    else if (status === 'unverified') {
+      unverified.push(row);
+      owned.push(row);
+    } else {
+      owned.push(row);
+    }
   }
-  return { owned, skipped };
+  return { owned, skipped, unverified };
 }
 
 /** Wallet installation balances not yet in installationInventory (or nested on parcels). */
@@ -518,6 +547,42 @@ export function stackPaarcelInventory(inventory: CPaarcel[] | null | undefined):
   return Array.from(bySize.entries())
     .map(([size, items]) => ({ size, count: items.length, items }))
     .sort((a, b) => a.size.localeCompare(b.size));
+}
+
+/** Count minted cPaarcels by Humble / Reasonable / Spacious (H R S). */
+export function summarizePaarcelSizes(inventory: CPaarcel[] | null | undefined): {
+  total: number;
+  h: number;
+  r: number;
+  s: number;
+} {
+  let h = 0;
+  let r = 0;
+  let s = 0;
+  for (const p of inventory || []) {
+    if (!p) continue;
+    const label = String(p.size || '').trim().toLowerCase();
+    const code = String(p.parcelId || '')
+      .split('-')
+      .pop()
+      ?.toUpperCase();
+    if (label.startsWith('humble') || label === '0' || code === 'H') h += 1;
+    else if (label.startsWith('reasonable') || label === '1' || code === 'R') r += 1;
+    else if (
+      label.startsWith('spacious') ||
+      label.startsWith('partner') ||
+      label === '2' ||
+      label === '3' ||
+      code === 'S' ||
+      code === 'V' ||
+      code === 'U' ||
+      code === 'P'
+    ) {
+      s += 1;
+    }
+  }
+  const total = (inventory || []).filter(Boolean).length;
+  return { total, h, r, s };
 }
 
 export function normalizeCInstallations(raw: unknown): CInstallation[] {

@@ -1,6 +1,6 @@
 /* eslint-disable multiline-ternary */
 import { Input, SearchInput, SortSelect, StyledTitle, Toggle } from 'components/UI/elements';
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { sortParcels } from 'helpers/parcels.helper';
 import { cPaarcelsToGotchiverseParcels } from 'helpers/cartridgePaarcel.helper';
 import { HOOD_COL_COUNT, HOOD_ROW_COUNT } from 'shared_code/constants/const.game';
@@ -72,7 +72,7 @@ function filterParcelsLocally(
       });
     }
   }
-  // cPaarcels are always wallet-owned; borrowed filter → empty.
+  // Borrowed filter → empty on soft-launch spawn (owned / cPaarcel only).
   if (opts.ownedStatus === (2 as OwnedStatus)) return [];
   if (opts.ownedStatus === (1 as OwnedStatus) && opts.currentAccount) {
     const me = opts.currentAccount.toLowerCase();
@@ -83,8 +83,8 @@ function filterParcelsLocally(
 
 export const SpawnOnParcel = ({ spawnParcelId, handleSpawnSelect }: Props): JSX.Element => {
   const filters = ['all parcels', 'owned', 'borrowed'];
-  const [{ parcelInventory }] = useUser();
-  const [{ currentAccount }] = useWeb3();
+  const [{ parcelInventory, ownedParcels, cartridgeId }, userDispatch] = useUser();
+  const [{ currentAccount, currentNetwork, globalProvider }] = useWeb3();
   const [searchInput, setSearchInput] = useState<string | undefined>();
   const [districtInput, setDistrictInput] = useState<number>(0);
   const [filter, setFilter] = useState<number>(0);
@@ -92,21 +92,85 @@ export const SpawnOnParcel = ({ spawnParcelId, handleSpawnSelect }: Props): JSX.
   const [filterChanneled, setFilterChanneled] = useState<boolean>(false);
   const [isLoading, setLoading] = useState(false);
 
-  /** Soft-launch: spawn list = minted cPaarcels (Base cartridge inventory) on all citaadel nets. */
+  /** Soft-launch: prefer minted cPaarcels; fall back to on-chain owned Base parcels so spawn isn't blank. */
   const cPaarcelParcels = useMemo(
     () => cPaarcelsToGotchiverseParcels(parcelInventory, currentAccount || undefined),
     [parcelInventory, currentAccount],
   );
 
+  const fallbackOwnedParcels = useMemo(() => {
+    if (cPaarcelParcels.length > 0) return [] as GotchiverseParcel[];
+    return (ownedParcels || [])
+      .filter((p) => !p?.isLent)
+      .filter((p) => {
+        if (!currentAccount) return true;
+        const owner = String(p.owner || '').toLowerCase();
+        return !owner || owner === currentAccount.toLowerCase();
+      })
+      .map((p) => ({
+        ...p,
+        owner: p.owner || currentAccount || undefined,
+        isLent: false,
+      }));
+  }, [cPaarcelParcels.length, ownedParcels, currentAccount]);
+
+  const spawnParcels = cPaarcelParcels.length > 0 ? cPaarcelParcels : fallbackOwnedParcels;
+  const showingCPaarcels = cPaarcelParcels.length > 0;
+
+  const loadOwnedFallback = useCallback(async () => {
+    if (!currentAccount || !globalProvider || !currentNetwork) return;
+    if (currentNetwork === 'robinhood') return;
+    if ((parcelInventory || []).length > 0) return;
+    if ((ownedParcels || []).length > 0) return;
+    setLoading(true);
+    try {
+      const { fetchSubgraphOwnedParcel } = await import('helpers/parcels.helper');
+      const mapped = await fetchSubgraphOwnedParcel(currentAccount, globalProvider, currentNetwork);
+      userDispatch({
+        type: 'UPDATE_OWNED_PARCELS',
+        ownedParcels: (mapped || []).map((p) => ({ ...p, owner: currentAccount, isLent: false })),
+      });
+    } catch (e) {
+      console.warn('@SpawnOnParcel loadOwnedFallback', e);
+    } finally {
+      setLoading(false);
+    }
+  }, [
+    currentAccount,
+    globalProvider,
+    currentNetwork,
+    parcelInventory,
+    ownedParcels,
+    userDispatch,
+  ]);
+
+  /** Refresh cartridge cPaarcels when opening spawn (inventory may be stale after mint). */
+  const refreshCPaarcels = useCallback(async () => {
+    if (!currentAccount || !cartridgeId || currentNetwork === 'robinhood') return;
+    try {
+      const { getCartridgePaarcels } = await import('helpers/auth.helper');
+      const result = await getCartridgePaarcels(currentAccount, cartridgeId);
+      if (result.ok) {
+        userDispatch({
+          type: 'UPDATE_USER_CARTRIDGE',
+          parcelInventory: result.parcelInventory,
+          installationInventory: result.installationInventory,
+        });
+      }
+    } catch (e) {
+      console.warn('@SpawnOnParcel refreshCPaarcels', e);
+    }
+  }, [currentAccount, cartridgeId, currentNetwork, userDispatch]);
+
   const sortedParcels = useMemo(() => {
-    const filtered = filterParcelsLocally(cPaarcelParcels, {
+    const filtered = filterParcelsLocally(spawnParcels, {
       district: districtInput,
       search: searchInput,
       ownedStatus: filter as OwnedStatus,
       currentAccount: currentAccount || undefined,
     });
     return sortParcels(sort, filtered);
-  }, [cPaarcelParcels, sort, districtInput, searchInput, filter, currentAccount]);
+  }, [spawnParcels, sort, districtInput, searchInput, filter, currentAccount]);
 
   const rowCount = 3;
   const parcelPlaceholderCount = useMemo(() => {
@@ -120,14 +184,19 @@ export const SpawnOnParcel = ({ spawnParcelId, handleSpawnSelect }: Props): JSX.
   const handleOpenBaazaar = () => window.open(gotchiverseLinks.aavegotchi.marketplace, '_blank');
 
   useEffect(() => {
-    setLoading(false);
-  }, []);
+    void refreshCPaarcels().then(() => loadOwnedFallback());
+  }, [refreshCPaarcels, loadOwnedFallback]);
 
   useEffect(() => {
-    const data = JSON.parse(localStorage.getItem('parcelFilter'));
-    setFilterChanneled(data?.filterChanneled);
-    setSort(data?.sort || sortOptions[0]);
-    setDistrictInput(data?.district || 0);
+    try {
+      const raw = localStorage.getItem('parcelFilter');
+      const data = raw ? JSON.parse(raw) : null;
+      setFilterChanneled(Boolean(data?.filterChanneled));
+      setSort(data?.sort || sortOptions[0]);
+      setDistrictInput(data?.district || 0);
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   useEffect(() => {
@@ -145,7 +214,11 @@ export const SpawnOnParcel = ({ spawnParcelId, handleSpawnSelect }: Props): JSX.
   return (
     <>
       <div className="title-container">
-        <StyledTitle style="bottom-line-two-side" text="spawn on a cpaarcel" color="info" />
+        <StyledTitle
+          style="bottom-line-two-side"
+          text={showingCPaarcels ? 'spawn on a cpaarcel' : 'spawn on a parcel'}
+          color="info"
+        />
       </div>
       <div className={`content ${isLoading ? 'loading' : ''}`}>
         <div className="filter-buttons">
@@ -228,19 +301,23 @@ export const SpawnOnParcel = ({ spawnParcelId, handleSpawnSelect }: Props): JSX.
             <BuyCTACard
               type="card-baazaar"
               title={
-                sortedParcels.length === 0
-                  ? 'Mint your cPaarcels'
-                  : sortedParcels.length > 0 && sortedParcels.length < 10
+                showingCPaarcels
+                  ? sortedParcels.length > 0 && sortedParcels.length < 10
                     ? 'Mint more cPaarcels'
                     : null
+                  : sortedParcels.length === 0
+                    ? 'Mint your cPaarcels'
+                    : 'Mint these as cPaarcels'
               }
               titleColor="info"
               description={
-                sortedParcels.length === 0
-                  ? "You don't have any cPaarcels yet. Open Manage → cPaarcels to mint from your Base parcels."
-                  : sortedParcels.length > 0 && sortedParcels.length < 10
+                showingCPaarcels
+                  ? sortedParcels.length > 0 && sortedParcels.length < 10
                     ? 'Mint more Base parcels into your cartridge from Manage → cPaarcels.'
                     : null
+                  : sortedParcels.length === 0
+                    ? "You don't have any parcels yet. Open Manage → cPaarcels after buying on Baazaar."
+                    : 'Showing wallet-owned Base parcels. Open Manage → cPaarcels to mint them into your cartridge.'
               }
               ctaTitle="Open Baazaar"
               outlineColor="info"

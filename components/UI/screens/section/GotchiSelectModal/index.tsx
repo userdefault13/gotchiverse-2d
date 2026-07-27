@@ -72,6 +72,7 @@ import { GotchiverseBaseCartridge, GotchiverseRhCartridge } from 'assets';
 import {
   fetchAndSetGlobalParcels,
   fetchContractOwnedParcels,
+  fetchSubgraphOwnedParcel,
   getParcelAccessRights,
   getParcelsAccessRightsWhitelistIds,
   mapInGotchiverseParcelData,
@@ -808,19 +809,17 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
     setMintError(null);
     setMintStep('paarcels');
     if (currentAccount && globalProvider && currentNetwork && currentNetwork !== 'robinhood') {
-      // On-chain tokenIdsOfOwner only — never fall back to subgraph (rented/access noise).
+      // Owned list: Base Realm tokenIdsOfOwner (Aarcade subgraph owner filters not healthy yet).
+      // Subgraph URLs still point at Aarcade for other reads once compat proxy is fixed.
       try {
-        const contractParcels = await fetchContractOwnedParcels(
+        const subgraphParcels = await fetchSubgraphOwnedParcel(
           currentAccount,
           globalProvider,
           currentNetwork,
         );
-        const mapped = await mapInGotchiverseParcelData(
-          (contractParcels || []).map((p) => ({ ...p, owner: currentAccount })),
-        );
         userDispatch({
           type: 'UPDATE_OWNED_PARCELS',
-          ownedParcels: mapped.map((p) => ({
+          ownedParcels: (subgraphParcels || []).map((p) => ({
             ...p,
             owner: currentAccount,
             isLent: false,
@@ -830,7 +829,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
         setMintError(null);
       } catch (e) {
         console.warn('@handleManagePaarcelsClick owned parcels', e);
-        toast.error('Could not load on-chain owned parcels', { theme: 'dark' });
+        toast.error('Could not load owned parcels', { theme: 'dark' });
       }
       void updateInventory(
         { network: currentNetwork, provider: globalProvider, account: currentAccount },
@@ -857,7 +856,9 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
       provider: globalProvider,
     });
     if (skipped.length || !owned.length) {
-      toast.info(`Parcel #${row.realmTokenId} is not owned by this wallet on-chain`, { theme: 'dark' });
+      toast.info(`Parcel #${row.realmTokenId} is owned by another wallet (rentals cannot be minted)`, {
+        theme: 'dark',
+      });
       return;
     }
     const enriched = await enrichMintablePaarcelWithOnChainEquips(owned[0], {
@@ -876,9 +877,10 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
       provider: globalProvider,
     });
     if (skipped.length > 0) {
-      toast.info(`Skipped ${skipped.length} parcel${skipped.length === 1 ? '' : 's'} not owned on-chain`, {
-        theme: 'dark',
-      });
+      toast.info(
+        `Skipped ${skipped.length} parcel${skipped.length === 1 ? '' : 's'} owned by another wallet`,
+        { theme: 'dark' },
+      );
     }
     if (!owned.length) return;
     const enriched = await enrichMintablePaarcelsWithOnChainEquips(owned, {
@@ -945,10 +947,11 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
     try {
       if (paarcelCartRows.length > 0) {
         const net = currentNetwork === 'robinhood' ? 'base' : currentNetwork;
-        // Prove ownership with wallet provider ownerOf before calling Aarcade.
+        // Only drop parcels whose Base ownerOf is a different address (true rentals).
+        // RPC failures stay in cart and are verified by Aarcade.
         const { owned: ownedRows, skipped } = await filterMintablePaarcelsOwnedByWallet(paarcelCartRows, {
           wallet: currentAccount,
-          network: net || 'base',
+          network: 'base',
           provider: globalProvider,
         });
         if (skipped.length) {
@@ -956,7 +959,8 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
           failedCount += skipped.length;
         }
         if (!ownedRows.length) {
-          const msg = 'No cart parcels are owned by this wallet on-chain';
+          const msg =
+            'No cart parcels are owned by this wallet on Base (rentals / other owners cannot be minted)';
           setMintError(msg);
           toast.error(msg, { theme: 'dark' });
           return;
@@ -986,7 +990,9 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
         }
         imported += Number(result.imported) || 0;
         alreadyMinted += Number(result.alreadyMinted) || 0;
-        failedCount += Array.isArray(result.failed) ? result.failed.length : 0;
+        const apiFailed = Array.isArray(result.failed) ? result.failed : [];
+        failedCount += apiFailed.length;
+        const apiFailNote = apiFailed[0]?.error ? String(apiFailed[0].error) : '';
         userDispatch({
           type: 'UPDATE_USER_CARTRIDGE',
           cartridgeId: result.cartridgeId || cartridgeId,
@@ -996,7 +1002,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
         });
         // Drop successfully imported / already-minted parcels from cart; keep failed for retry.
         const failedIds = new Set(
-          (result.failed || []).map((f) => String(f.realmTokenId || '')).filter(Boolean),
+          apiFailed.map((f) => String(f.realmTokenId || '')).filter(Boolean),
         );
         const mintedRealmIds = new Set(
           toMint.filter((r) => !failedIds.has(r.realmTokenId)).map((r) => r.realmTokenId),
@@ -1011,6 +1017,19 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
               (r) =>
                 !(r.source === 'parcel-equip' && mintedRealmIds.has(String(r.sourceRealmTokenId || ''))),
             ),
+          );
+        }
+        if (apiFailed.length && imported + alreadyMinted === 0) {
+          setMintError(apiFailNote || 'Failed importing parcels');
+        } else if (apiFailed.length) {
+          setMintError(
+            `${apiFailed.length} parcel${apiFailed.length === 1 ? '' : 's'} failed: ${
+              apiFailNote || 'import error'
+            }`,
+          );
+        } else if (skipped.length && imported + alreadyMinted > 0) {
+          setMintError(
+            `${skipped.length} parcel${skipped.length === 1 ? '' : 's'} skipped — owned by another wallet.`,
           );
         }
       }
@@ -1050,18 +1069,13 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
       if (imported + alreadyMinted > 0) {
         const nestNote =
           nestedInstalls > 0 ? ` · ${nestedInstalls} nested install${nestedInstalls === 1 ? '' : 's'}` : '';
-        const failNote = failedCount > 0 ? ` · ${failedCount} skipped (not owned)` : '';
+        const failNote = failedCount > 0 ? ` · ${failedCount} skipped` : '';
         toast.success(
           `Minted ${imported} item${imported === 1 ? '' : 's'}${
             alreadyMinted ? ` · ${alreadyMinted} already owned` : ''
           }${nestNote}${failNote}`,
           { theme: 'dark' },
         );
-        if (failedCount > 0) {
-          setMintError(
-            `${failedCount} parcel${failedCount === 1 ? '' : 's'} skipped — not owned by wallet (rented cannot be minted).`,
-          );
-        }
       }
       if (cartridgeId) {
         const refreshed = await getCartridgePaarcels(currentAccount, cartridgeId);

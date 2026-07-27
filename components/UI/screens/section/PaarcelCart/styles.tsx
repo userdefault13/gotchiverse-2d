@@ -154,9 +154,9 @@ export default css`
     font-family: Pixelar, sans-serif;
     font-size: 1.85rem;
     line-height: 1.1;
-    background: -webkit-linear-gradient(#ffa24d, #ffe600);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    color: #fff;
+    -webkit-text-fill-color: #fff;
+    background: none;
     filter: drop-shadow(0px 0px 3px rgba(0, 0, 0, 0.55));
   }
 

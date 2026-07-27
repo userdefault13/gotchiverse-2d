@@ -22,7 +22,7 @@ import {
 import { fetchAndSetGlobalAavegotchis, getSpectator } from 'helpers/gotchi.helper';
 import { mapCartridgeHeroToGotchi } from 'helpers/cartridgeHero.helper';
 import { stackWearableInventory } from 'helpers/cartridgeWearable.helper';
-import { cPaarcelsToGotchiverseParcels } from 'helpers/cartridgePaarcel.helper';
+import { cPaarcelsToGotchiverseParcels, summarizePaarcelSizes } from 'helpers/cartridgePaarcel.helper';
 import { getTypeByItemId } from 'helpers/installations.helper';
 import { useUser } from 'contexts/UserContext';
 import { useGame } from 'contexts/GameContext';
@@ -109,6 +109,11 @@ export const GotchiSelectPanel = ({
       parcelHash: formatParcelDisplayName(p.parcelHash),
     }));
   }, [paarcelsManageMode, parcelInventory, currentAccount]);
+
+  const paarcelSizeStats = useMemo(
+    () => (paarcelsManageMode ? summarizePaarcelSizes(parcelInventory) : null),
+    [paarcelsManageMode, parcelInventory],
+  );
 
   // Legacy (matic / non–soft-launch): show L1 wallet gotchis in the left rail.
   const showWalletGotchis = !cartridgeSelectMode && !inventoryManageMode;
@@ -318,6 +323,25 @@ export const GotchiSelectPanel = ({
                     paarcelsManageMode ? onManageCaavegotchisClick : onManagePaarcelsClick
                   }
                 />
+              </div>
+            ) : null}
+            {paarcelsManageMode && paarcelSizeStats ? (
+              <div className="gotchi-card paarcel-stats-card" aria-label="cPaarcel size breakdown">
+                <div className="paarcel-stats-inner">
+                  <p className="paarcel-stats-total-label">Total</p>
+                  <p className="paarcel-stats-total">{paarcelSizeStats.total}</p>
+                  <div className="paarcel-stats-breakdown">
+                    <span className="stat h">
+                      <em>H</em> {paarcelSizeStats.h}
+                    </span>
+                    <span className="stat r">
+                      <em>R</em> {paarcelSizeStats.r}
+                    </span>
+                    <span className="stat s">
+                      <em>S</em> {paarcelSizeStats.s}
+                    </span>
+                  </div>
+                </div>
               </div>
             ) : null}
             {wearablesManageMode

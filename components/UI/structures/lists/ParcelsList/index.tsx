@@ -89,7 +89,7 @@ export const ParcelsList = ({
           );
           const altar = item.equippedInstallations?.find(({ id }) => getTypeByItemId(Number(id)).installationType === 0);
 
-          return !filterChanneled || secondsUntilChannel === 0 ? (
+          return !filterChanneled || secondsUntilChannel == null || secondsUntilChannel === 0 ? (
             <div
               key={i}
               className="parcel-card-item"

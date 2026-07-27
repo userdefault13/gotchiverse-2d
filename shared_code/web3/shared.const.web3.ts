@@ -144,12 +144,17 @@ export function varsForNetwork(currentNetwork): WEB_3_VARS {
 const DEFAULT_CORE_URI = 'https://subgraph.satsuma-prod.com/tWYl5n5y04oz/aavegotchi/aavegotchi-core-matic/api';
 const DEFAULT_GOTCHIVERSE_URI = 'https://subgraph.satsuma-prod.com/tWYl5n5y04oz/aavegotchi/gotchiverse-matic/api';
 const DEFAULT_SVG_URI = 'https://subgraph.satsuma-prod.com/tWYl5n5y04oz/aavegotchi/aavegotchi-svg-matic/api';
-const DEFAULT_BASE_CORE =
-  'https://api.goldsky.com/api/public/project_cmh3flagm0001r4p25foufjtt/subgraphs/aavegotchi-core-base/prod/gn';
-const DEFAULT_BASE_GOTCHIVERSE =
-  'https://api.goldsky.com/api/public/project_cmh3flagm0001r4p25foufjtt/subgraphs/gotchiverse-base/prod/gn';
-const DEFAULT_BASE_SVG =
-  'https://api.goldsky.com/api/public/project_cmh3flagm0001r4p25foufjtt/subgraphs/aavegotchi-svg-base/prod/gn';
+
+/** Aarcade Envio/Flux GraphQL proxy (replaces sunset Goldsky Base endpoints). */
+const AARCADE_SUBGRAPH_HOME = (
+  process.env.NEXT_PUBLIC_AARCADE_HOME ||
+  process.env.AARCADE_HOME ||
+  'https://aarcadeghst.com'
+).replace(/\/$/, '');
+
+const DEFAULT_BASE_CORE = `${AARCADE_SUBGRAPH_HOME}/api/subgraph/aavegotchi-core-base`;
+const DEFAULT_BASE_GOTCHIVERSE = `${AARCADE_SUBGRAPH_HOME}/api/subgraph/gotchiverse-base`;
+const DEFAULT_BASE_SVG = `${AARCADE_SUBGRAPH_HOME}/api/subgraph/aavegotchi-svg-base`;
 
 function defaultCoreUri(): string {
   if (process.env.REALM_NETWORK === 'base' || process.env.NETWORK === 'base') return DEFAULT_BASE_CORE;
@@ -166,7 +171,7 @@ function defaultSvgUri(): string {
   return DEFAULT_SVG_URI;
 }
 
-// Subgraph (env-overridable for Envio / self-hosted proxy cutover)
+// Subgraph (env-overridable — Base defaults to Aarcade /api/subgraph/*, not Goldsky)
 export const coreURI = process.env.NEXT_PUBLIC_CORE_SUBGRAPH_URL || defaultCoreUri();
 
 export const aavegotchiRealm =
@@ -178,3 +183,15 @@ export const gbmSubgraphUser =
 export const aavegotchiSvgSubgraph = process.env.NEXT_PUBLIC_SVG_SUBGRAPH_URL || defaultSvgUri();
 
 export const gotchiverseSubgraph = process.env.NEXT_PUBLIC_GOTCHIVERSE_SUBGRAPH_URL || defaultGotchiverseUri();
+
+/** Build an Aarcade subgraph URL for a named Base indexer. */
+export function aarcadeSubgraphUrl(
+  name:
+    | 'aavegotchi-core-base'
+    | 'gotchiverse-base'
+    | 'aavegotchi-svg-base'
+    | 'aavegotchi-gbm-baazaar-base'
+    | string,
+): string {
+  return `${AARCADE_SUBGRAPH_HOME}/api/subgraph/${name}`;
+}

@@ -19,11 +19,9 @@ export const env = {
   jwtTtlSeconds: Number(process.env.JWT_TTL_SECONDS || 86400),
   publicUrl: (process.env.PUBLIC_URL || 'http://localhost:2567').replace(/\/$/, ''),
   coreSubgraphUrl:
-    process.env.CORE_SUBGRAPH_URL ||
-    'https://api.goldsky.com/api/public/project_cmh3flagm0001r4p25foufjtt/subgraphs/aavegotchi-core-base/prod/gn',
+    process.env.CORE_SUBGRAPH_URL || 'https://aarcadeghst.com/api/subgraph/aavegotchi-core-base',
   gotchiverseSubgraphUrl:
-    process.env.GOTCHIVERSE_SUBGRAPH_URL ||
-    'https://api.goldsky.com/api/public/project_cmh3flagm0001r4p25foufjtt/subgraphs/gotchiverse-base/prod/gn',
+    process.env.GOTCHIVERSE_SUBGRAPH_URL || 'https://aarcadeghst.com/api/subgraph/gotchiverse-base',
   skipOwnershipCheck: String(process.env.SKIP_OWNERSHIP_CHECK || 'true').toLowerCase() === 'true',
   /** Flip via COMBAT_IS_LIVE=true after AarenaRoom join is verified in prod. */
   combatIsLive: String(process.env.COMBAT_IS_LIVE || 'false').toLowerCase() === 'true',
