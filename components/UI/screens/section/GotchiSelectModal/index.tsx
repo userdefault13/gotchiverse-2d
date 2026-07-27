@@ -65,6 +65,7 @@ import type { MintableInstallationRow, MintablePaarcelRow } from 'helpers/cartri
 import {
   enrichMintablePaarcelWithOnChainEquips,
   enrichMintablePaarcelsWithOnChainEquips,
+  filterMintablePaarcelsOwnedByWallet,
 } from 'helpers/cartridgePaarcel.helper';
 
 import { GotchiverseBaseCartridge, GotchiverseRhCartridge } from 'assets';
@@ -807,22 +808,29 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
     setMintError(null);
     setMintStep('paarcels');
     if (currentAccount && globalProvider && currentNetwork && currentNetwork !== 'robinhood') {
-      // On-chain tokenIdsOfOwner only — subgraph can list rented/access parcels and
-      // Aarcade ownerOf rejects those on checkout.
+      // On-chain tokenIdsOfOwner only — never fall back to subgraph (rented/access noise).
       try {
         const contractParcels = await fetchContractOwnedParcels(
           currentAccount,
           globalProvider,
           currentNetwork,
         );
-        const mapped = await mapInGotchiverseParcelData(contractParcels || []);
+        const mapped = await mapInGotchiverseParcelData(
+          (contractParcels || []).map((p) => ({ ...p, owner: currentAccount })),
+        );
         userDispatch({
           type: 'UPDATE_OWNED_PARCELS',
-          ownedParcels: mapped,
+          ownedParcels: mapped.map((p) => ({
+            ...p,
+            owner: currentAccount,
+            isLent: false,
+          })),
         });
+        setPaarcelCartRows([]);
+        setMintError(null);
       } catch (e) {
         console.warn('@handleManagePaarcelsClick owned parcels', e);
-        void fetchAndSetGlobalParcels({ ownedStatus: 1 as OwnedStatus });
+        toast.error('Could not load on-chain owned parcels', { theme: 'dark' });
       }
       void updateInventory(
         { network: currentNetwork, provider: globalProvider, account: currentAccount },
@@ -842,22 +850,18 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
 
   const addPaarcelToCart = async (row: MintablePaarcelRow) => {
     if (!currentNetwork || !globalProvider || !currentAccount) return;
-    // Cart is owned-only: skip if not in on-chain owned set.
-    const ownedIds = new Set(
-      (ownedParcels || [])
-        .filter((p) => !p.isLent)
-        .filter((p) => {
-          const owner = String(p.owner || '').toLowerCase();
-          return !owner || owner === currentAccount.toLowerCase();
-        })
-        .map((p) => String(p.tokenId || p.id || '')),
-    );
-    if (!ownedIds.has(row.realmTokenId)) {
-      toast.info(`Parcel #${row.realmTokenId} is not owned by this wallet`, { theme: 'dark' });
+    const net = currentNetwork === 'robinhood' ? 'base' : currentNetwork;
+    const { owned, skipped } = await filterMintablePaarcelsOwnedByWallet([row], {
+      wallet: currentAccount,
+      network: net,
+      provider: globalProvider,
+    });
+    if (skipped.length || !owned.length) {
+      toast.info(`Parcel #${row.realmTokenId} is not owned by this wallet on-chain`, { theme: 'dark' });
       return;
     }
-    const enriched = await enrichMintablePaarcelWithOnChainEquips(row, {
-      network: currentNetwork,
+    const enriched = await enrichMintablePaarcelWithOnChainEquips(owned[0], {
+      network: net,
       provider: globalProvider,
     });
     setPaarcelCartRows((prev) => (prev.some((r) => r.key === enriched.key) ? prev : [...prev, enriched]));
@@ -865,23 +869,20 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
 
   const addAllPaarcelsToCart = async (rows: MintablePaarcelRow[]) => {
     if (!currentNetwork || !globalProvider || !currentAccount || rows.length === 0) return;
-    const ownedIds = new Set(
-      (ownedParcels || [])
-        .filter((p) => !p.isLent)
-        .filter((p) => {
-          const owner = String(p.owner || '').toLowerCase();
-          return !owner || owner === currentAccount.toLowerCase();
-        })
-        .map((p) => String(p.tokenId || p.id || '')),
-    );
-    const ownedRows = rows.filter((r) => ownedIds.has(r.realmTokenId));
-    const skipped = rows.length - ownedRows.length;
-    if (skipped > 0) {
-      toast.info(`Skipped ${skipped} non-owned parcel${skipped === 1 ? '' : 's'}`, { theme: 'dark' });
+    const net = currentNetwork === 'robinhood' ? 'base' : currentNetwork;
+    const { owned, skipped } = await filterMintablePaarcelsOwnedByWallet(rows, {
+      wallet: currentAccount,
+      network: net,
+      provider: globalProvider,
+    });
+    if (skipped.length > 0) {
+      toast.info(`Skipped ${skipped.length} parcel${skipped.length === 1 ? '' : 's'} not owned on-chain`, {
+        theme: 'dark',
+      });
     }
-    if (!ownedRows.length) return;
-    const enriched = await enrichMintablePaarcelsWithOnChainEquips(ownedRows, {
-      network: currentNetwork,
+    if (!owned.length) return;
+    const enriched = await enrichMintablePaarcelsWithOnChainEquips(owned, {
+      network: net,
       provider: globalProvider,
     });
     setPaarcelCartRows((prev) => {
@@ -943,14 +944,30 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
     let nestedInstalls = 0;
     try {
       if (paarcelCartRows.length > 0) {
+        const net = currentNetwork === 'robinhood' ? 'base' : currentNetwork;
+        // Prove ownership with wallet provider ownerOf before calling Aarcade.
+        const { owned: ownedRows, skipped } = await filterMintablePaarcelsOwnedByWallet(paarcelCartRows, {
+          wallet: currentAccount,
+          network: net || 'base',
+          provider: globalProvider,
+        });
+        if (skipped.length) {
+          setPaarcelCartRows(ownedRows);
+          failedCount += skipped.length;
+        }
+        if (!ownedRows.length) {
+          const msg = 'No cart parcels are owned by this wallet on-chain';
+          setMintError(msg);
+          toast.error(msg, { theme: 'dark' });
+          return;
+        }
         // Fresh on-chain equip snapshot right before mint (grid x/y like play mode).
-        const toMint =
-          currentNetwork && globalProvider
-            ? await enrichMintablePaarcelsWithOnChainEquips(paarcelCartRows, {
-                network: currentNetwork === 'robinhood' ? 'base' : currentNetwork,
-                provider: globalProvider,
-              })
-            : paarcelCartRows;
+        const toMint = globalProvider
+          ? await enrichMintablePaarcelsWithOnChainEquips(ownedRows, {
+              network: net || 'base',
+              provider: globalProvider,
+            })
+          : ownedRows;
         nestedInstalls = toMint.reduce((n, r) => n + (r.installations?.length || 0), 0);
         // Parcel import auto-nests equipped installs on the cPaarcel (Aarcade nestEquippedAll).
         const result = await importCartridgePaarcels(currentAccount, {
@@ -959,7 +976,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
             installations: r.installations,
           })),
           cartridgeId,
-          network: currentNetwork === 'robinhood' ? 'base' : currentNetwork,
+          network: net,
         });
         if (!result.ok && !(Number(result.imported) > 0 || Number(result.alreadyMinted) > 0)) {
           const msg = result.error || 'Failed importing parcels';

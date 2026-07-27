@@ -140,14 +140,24 @@ export default css`
     min-width: 0;
   }
 
-  .line-name {
-    font-family: 'Kimberley Rg', sans-serif;
-    font-size: 1.3rem;
-  }
-
   .line-meta {
     font-size: 1.15rem;
     color: rgba(255, 255, 255, 0.7);
+  }
+
+  .line-meta.soft {
+    color: rgba(200, 255, 245, 0.65);
+    font-size: 1.1rem;
+  }
+
+  .line-name {
+    font-family: Pixelar, sans-serif;
+    font-size: 1.85rem;
+    line-height: 1.1;
+    background: -webkit-linear-gradient(#ffa24d, #ffe600);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0px 0px 3px rgba(0, 0, 0, 0.55));
   }
 
   .remove {

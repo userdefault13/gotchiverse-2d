@@ -395,6 +395,52 @@ export async function enrichMintablePaarcelsWithOnChainEquips(
   return out;
 }
 
+/** Confirm realmTokenId is owned by wallet via Base Realm ownerOf (FE provider). */
+export async function assertParcelOwnedByWallet(opts: {
+  realmTokenId: string;
+  wallet: string;
+  network: string;
+  provider: unknown;
+}): Promise<boolean> {
+  const tid = String(opts.realmTokenId || '').trim();
+  const wallet = String(opts.wallet || '')
+    .trim()
+    .toLowerCase();
+  if (!/^\d+$/.test(tid) || !/^0x[a-f0-9]{40}$/.test(wallet) || !opts.network || !opts.provider) {
+    return false;
+  }
+  try {
+    const { getContract } = await import('web3/contract');
+    const realm = await getContract(opts.network, opts.provider as never);
+    if (!realm?.ownerOf) return false;
+    const owner = String(await realm.ownerOf(tid)).toLowerCase();
+    return owner === wallet;
+  } catch (e) {
+    console.warn('@assertParcelOwnedByWallet', tid, e);
+    return false;
+  }
+}
+
+/** Filter mint rows to parcels the wallet currently owns on-chain. */
+export async function filterMintablePaarcelsOwnedByWallet(
+  rows: MintablePaarcelRow[],
+  opts: { wallet: string; network: string; provider: unknown },
+): Promise<{ owned: MintablePaarcelRow[]; skipped: MintablePaarcelRow[] }> {
+  const owned: MintablePaarcelRow[] = [];
+  const skipped: MintablePaarcelRow[] = [];
+  for (const row of rows) {
+    const ok = await assertParcelOwnedByWallet({
+      realmTokenId: row.realmTokenId,
+      wallet: opts.wallet,
+      network: opts.network,
+      provider: opts.provider,
+    });
+    if (ok) owned.push(row);
+    else skipped.push(row);
+  }
+  return { owned, skipped };
+}
+
 /** Wallet installation balances not yet in installationInventory (or nested on parcels). */
 export function listMintableWalletInstallations(
   inventory: Installation[] | null | undefined,

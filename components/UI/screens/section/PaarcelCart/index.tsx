@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import styles from './styles';
 import { Button } from 'components/UI/elements';
 import { InstallationThumbnail, PaarcelThumbnail } from 'components/UI/widgets';
+import { formatParcelDisplayName } from 'components/UI/widgets/MintHoverTip';
 import useAavegotchiSound from 'hooks/useAavegotchiSound';
 import type { MintableInstallationRow, MintablePaarcelRow } from 'helpers/cartridgePaarcel.helper';
 
@@ -67,54 +68,60 @@ export const PaarcelCart = ({
         </div>
 
         <div className="cart-list scrollable">
-          {cartParcels.map((row) => (
-            <div key={row.key} className="cart-line parcel-block">
-              <div className="cart-line-row">
-                <PaarcelThumbnail realmTokenId={row.realmTokenId} name={row.parcelId} size={40} />
-                <div className="line-main">
-                  <span className="line-name">{row.parcelId}</span>
-                  <span className="line-meta">
-                    Parcel #{row.realmTokenId} · {row.installations.length} on-chain equip
-                    {row.installations.length === 1 ? '' : 's'}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  className="remove"
-                  disabled={minting}
-                  onClick={() => {
-                    click();
-                    onRemoveParcel(row.key);
-                  }}
-                >
-                  ×
-                </button>
-              </div>
-              {row.installations.length > 0 ? (
-                <div className="nested-equips">
-                  {row.installations.slice(0, 12).map((inst, i) => (
-                    <span
-                      key={`${row.key}-${inst.itemTypeId}-${inst.x}-${inst.y}-${i}`}
-                      className="nested-chip"
-                      title={`${inst.name} @ ${inst.x},${inst.y}`}
-                    >
-                      <InstallationThumbnail
-                        itemTypeId={inst.itemTypeId}
-                        kind={inst.kind}
-                        name={inst.name}
-                        size={22}
-                      />
+          {cartParcels.map((row) => {
+            const displayName = formatParcelDisplayName(row.name || row.parcelId);
+            const districtLine =
+              row.district != null
+                ? `District ${row.district} ID: ${row.realmTokenId}`
+                : `ID: ${row.realmTokenId}`;
+            return (
+              <div key={row.key} className="cart-line parcel-block">
+                <div className="cart-line-row">
+                  <PaarcelThumbnail realmTokenId={row.realmTokenId} name={displayName} size={40} />
+                  <div className="line-main">
+                    <span className="line-name">{displayName}</span>
+                    <span className="line-meta">{districtLine}</span>
+                    <span className="line-meta soft">
+                      {row.installations.length} equip{row.installations.length === 1 ? '' : 's'}
+                      {row.parcelId && row.parcelId !== displayName ? ` · ${row.parcelId}` : ''}
                     </span>
-                  ))}
-                  {row.installations.length > 12 ? (
-                    <span className="nested-more">+{row.installations.length - 12}</span>
-                  ) : null}
+                  </div>
+                  <button
+                    type="button"
+                    className="remove"
+                    disabled={minting}
+                    onClick={() => {
+                      click();
+                      onRemoveParcel(row.key);
+                    }}
+                  >
+                    ×
+                  </button>
                 </div>
-              ) : (
-                <p className="nested-empty">No equipped installs on-chain</p>
-              )}
-            </div>
-          ))}
+                {row.installations.length > 0 ? (
+                  <div className="nested-equips">
+                    {row.installations.slice(0, 12).map((inst, i) => (
+                      <span
+                        key={`${row.key}-${inst.itemTypeId}-${inst.x}-${inst.y}-${i}`}
+                        className="nested-chip"
+                        title={`${inst.name} @ ${inst.x},${inst.y}`}
+                      >
+                        <InstallationThumbnail
+                          itemTypeId={inst.itemTypeId}
+                          kind={inst.kind}
+                          name={inst.name}
+                          size={22}
+                        />
+                      </span>
+                    ))}
+                    {row.installations.length > 12 ? (
+                      <span className="nested-more">+{row.installations.length - 12}</span>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
           {cartInstallations.map((row) => (
             <div key={row.key} className="cart-line install">
               <InstallationThumbnail itemTypeId={row.itemTypeId} kind={row.kind} name={row.name} size={40} />
