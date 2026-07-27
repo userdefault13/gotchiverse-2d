@@ -326,10 +326,13 @@ export const GotchiSelectPanel = ({
               </div>
             ) : null}
             {paarcelsManageMode && paarcelSizeStats ? (
-              <div className="gotchi-card paarcel-stats-card" aria-label="cPaarcel size breakdown">
+              <div className="paarcel-stats-bar" aria-label="cPaarcel size breakdown">
                 <div className="paarcel-stats-inner">
-                  <p className="paarcel-stats-total-label">Total</p>
-                  <p className="paarcel-stats-total">{paarcelSizeStats.total}</p>
+                  <span className="paarcel-stats-total-wrap">
+                    <span className="paarcel-stats-total-label">Total</span>
+                    <span className="paarcel-stats-total">{paarcelSizeStats.total}</span>
+                  </span>
+                  <span className="paarcel-stats-divider" aria-hidden />
                   <div className="paarcel-stats-breakdown">
                     <span className="stat h">
                       <em>H</em> {paarcelSizeStats.h}

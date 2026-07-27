@@ -49,29 +49,36 @@ export default css`
     font-size: 0.9rem;
   }
 
-  .paarcel-stats-card {
-    min-height: 13rem;
+  .gotchi-list-inner.paarcels-manage .paarcel-stats-bar {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-height: 0;
   }
 
   .paarcel-stats-inner {
-    height: 100%;
-    min-height: 13rem;
+    width: 100%;
     border-radius: 0.4rem;
-    border: 0.3rem solid #5eead4;
+    border: 0.25rem solid #5eead4;
     background: rgba(8, 40, 50, 0.88);
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
-    justify-content: center;
-    gap: 0.35rem;
-    padding: 0.8rem 0.6rem;
+    justify-content: flex-start;
+    gap: 1.2rem;
+    padding: 0.55rem 1rem;
     box-shadow: 0 0 0.6rem rgba(94, 234, 212, 0.25);
+  }
+
+  .paarcel-stats-total-wrap {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.55rem;
   }
 
   .paarcel-stats-total-label {
     margin: 0;
     font-family: Pixelar, sans-serif;
-    font-size: 1.6rem;
+    font-size: 1.5rem;
     line-height: 1;
     letter-spacing: 0.08em;
     text-transform: uppercase;
@@ -81,27 +88,35 @@ export default css`
   .paarcel-stats-total {
     margin: 0;
     font-family: Pixelar, sans-serif;
-    font-size: 4.2rem;
-    line-height: 0.9;
+    font-size: 2.4rem;
+    line-height: 1;
     color: #fff;
     text-shadow: 0 0 6px rgba(0, 0, 0, 0.55);
+  }
+
+  .paarcel-stats-divider {
+    width: 0.15rem;
+    align-self: stretch;
+    min-height: 1.6rem;
+    background: rgba(94, 234, 212, 0.45);
+    flex: 0 0 auto;
   }
 
   .paarcel-stats-breakdown {
     display: flex;
     flex-wrap: wrap;
-    justify-content: center;
-    gap: 0.55rem 0.75rem;
-    margin-top: 0.45rem;
+    align-items: center;
+    gap: 0.85rem 1.2rem;
+    margin: 0;
   }
 
   .paarcel-stats-breakdown .stat {
     font-family: 'Kimberley Rg', sans-serif;
-    font-size: 1.15rem;
+    font-size: 1.35rem;
     color: #fff;
     display: inline-flex;
     align-items: baseline;
-    gap: 0.25rem;
+    gap: 0.3rem;
   }
 
   .paarcel-stats-breakdown .stat em {
