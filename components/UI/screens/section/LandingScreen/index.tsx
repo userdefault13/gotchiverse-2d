@@ -416,30 +416,36 @@ export const LandingScreen = (): JSX.Element => {
             </div>
           )}
         </main>
-        <div className="base-switch-notice" aria-label="Network notice">
-          <p className="base-switch-notice-text">Gotchiverse and Aarena switch to Base</p>
-        </div>
-        <div className="cartridge-manage-section" aria-label="Manage cartridge on Aarcade">
-          <div className="cartridge-manage-art">
-            <Image
-              alt={currentNetwork === 'robinhood' ? 'Gotchiverse RH cartridge' : 'Gotchiverse Base cartridge'}
-              src={currentNetwork === 'robinhood' ? GotchiverseRhCartridge : GotchiverseBaseCartridge}
-              layout="fill"
-              objectFit="contain"
-              priority={false}
-            />
+        <div className="cartridge-promo-bg" aria-label="Base network and cartridge notice">
+          <div className="cartridge-promo news gap-40 w-full flex">
+            <div className="cartridge-promo-copy">
+              {currentNetwork !== 'base' ? (
+                <h2 className="cartridge-promo-title">Gotchiverse and Aarena switch to Base</h2>
+              ) : null}
+              <p className="cartridge-promo-caption">
+                Manage your cartridge, cAavegotchis, and soft-launch inventory on Aarcade.
+              </p>
+              <Button
+                size={2.4}
+                fullWidth
+                secondary
+                onClick={() => window.open(gotchiverseLinks.aarcade.home, '_blank', 'noopener,noreferrer')}
+              >
+                MANAGE ON AARCADEGHST.COM
+              </Button>
+            </div>
+            <div className="cartridge-promo-art-wrap">
+              <div className="cartridge-promo-art">
+                <Image
+                  alt={currentNetwork === 'robinhood' ? 'Gotchiverse RH cartridge' : 'Gotchiverse Base cartridge'}
+                  src={currentNetwork === 'robinhood' ? GotchiverseRhCartridge : GotchiverseBaseCartridge}
+                  layout="fill"
+                  objectFit="contain"
+                  priority={false}
+                />
+              </div>
+            </div>
           </div>
-          <p className="cartridge-manage-text">
-            Manage your cartridge on{' '}
-            <a
-              className="cartridge-manage-link"
-              href={gotchiverseLinks.aarcade.home}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              aarcadeghst.com
-            </a>
-          </p>
         </div>
         <div className="footer-container">
           <Footer />

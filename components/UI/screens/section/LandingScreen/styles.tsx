@@ -107,89 +107,94 @@ export default css`
     z-index: 2;
   }
 
-  .base-switch-notice {
+  .cartridge-promo-bg {
     position: relative;
     z-index: 2;
-    display: flex;
+    background: linear-gradient(0deg, #110f86 -5.21%, #2586bc 71.44%);
+    padding: 8rem 0 7rem;
+  }
+
+  .cartridge-promo {
     align-items: center;
-    justify-content: center;
-    padding: 6rem 2rem 5rem;
-    background: #f4f6ff;
+    justify-content: space-between;
+    flex-wrap: wrap;
   }
 
-  .base-switch-notice-text {
-    margin: 0;
-    font-family: Pixelar, sans-serif;
-    font-size: 3.2rem;
-    line-height: 1.15;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    text-align: center;
-    color: #1a1464;
-    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
-  }
-
-  @media screen and (max-width: 767px) {
-    .base-switch-notice {
-      padding: 4rem 1.5rem 3.5rem;
-    }
-    .base-switch-notice-text {
-      font-size: 2.4rem;
-    }
-  }
-
-  .cartridge-manage-section {
-    position: relative;
-    z-index: 2;
+  .cartridge-promo-copy {
+    flex: 1 1 32rem;
+    max-width: 52rem;
     display: flex;
     flex-direction: column;
+    align-items: stretch;
+    gap: 2rem;
+    color: #fff;
+  }
+
+  .cartridge-promo-title {
+    margin: 0;
+    font-family: Pixelar, sans-serif;
+    font-size: 5.2rem;
+    line-height: 0.95;
+    text-transform: uppercase;
+    color: #fff;
+    text-shadow: 0 0 20px rgba(17, 0, 38, 0.5);
+    border-top: 0.4rem solid #fff;
+    padding-top: 1.4rem;
+  }
+
+  .cartridge-promo-caption {
+    margin: 0;
+    font-family: Pixelar, sans-serif;
+    font-size: 2.4rem;
+    line-height: 1.25;
+    color: rgba(255, 255, 255, 0.92);
+    max-width: 42rem;
+  }
+
+  .cartridge-promo-art-wrap {
+    flex: 1 1 28rem;
+    display: flex;
     align-items: center;
     justify-content: center;
-    gap: 2.4rem;
-    padding: 2rem 2rem 7rem;
-    background: #f4f6ff;
+    margin-top: 0;
   }
 
-  .cartridge-manage-art {
+  .cartridge-promo-art {
     position: relative;
-    width: min(42rem, 78vw);
-    height: min(42rem, 78vw);
-    filter: drop-shadow(0 12px 28px rgba(26, 20, 100, 0.28));
+    width: min(38rem, 70vw);
+    height: min(38rem, 70vw);
+    filter: drop-shadow(0 14px 30px rgba(0, 0, 0, 0.45));
   }
 
-  .cartridge-manage-text {
-    margin: 0;
-    max-width: 48rem;
-    font-family: Pixelar, sans-serif;
-    font-size: 2.8rem;
-    line-height: 1.2;
-    letter-spacing: 0.03em;
-    text-align: center;
-    text-transform: uppercase;
-    color: #1a1464;
-  }
-
-  .cartridge-manage-link {
-    color: #0057d9;
-    text-decoration: underline;
-    text-underline-offset: 0.2em;
-  }
-
-  .cartridge-manage-link:hover {
-    color: #c82ac2;
+  @media screen and (max-width: 1023px) {
+    .cartridge-promo {
+      flex-direction: column-reverse;
+      gap: 3rem;
+    }
+    .cartridge-promo-copy {
+      max-width: 100%;
+      align-items: center;
+      text-align: center;
+    }
+    .cartridge-promo-title {
+      font-size: 4rem;
+      width: 100%;
+    }
+    .cartridge-promo-caption {
+      font-size: 2.1rem;
+    }
   }
 
   @media screen and (max-width: 767px) {
-    .cartridge-manage-section {
-      padding: 1rem 1.5rem 5rem;
-      gap: 1.6rem;
+    .cartridge-promo-bg {
+      padding: 5rem 0 5rem;
     }
-    .cartridge-manage-art {
+    .cartridge-promo-title {
+      font-size: 3.2rem;
+    }
+    .cartridge-promo-art {
       width: min(28rem, 82vw);
       height: min(28rem, 82vw);
-    }
-    .cartridge-manage-text {
-      font-size: 2.2rem;
     }
   }
 
