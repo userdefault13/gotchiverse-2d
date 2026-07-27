@@ -1,5 +1,6 @@
 import styles from './styles';
 import useAavegotchiSound from 'hooks/useAavegotchiSound';
+import { SoftCText } from 'components/UI/widgets';
 
 interface Props {
   isSelected?: boolean;
@@ -14,8 +15,6 @@ export const ManageWearablesCard = ({
   onClick,
 }: Props): JSX.Element => {
   const { click } = useAavegotchiSound();
-  const label = manageCaavegotchis ? 'Manage cAavegotchis' : 'cWearables';
-
   const handleClick = () => {
     click();
     onClick?.();
@@ -36,7 +35,15 @@ export const ManageWearablesCard = ({
             </div>
           </div>
         </div>
-        <p className="gotchi-name">{label}</p>
+        <p className="gotchi-name">
+          {manageCaavegotchis ? (
+            <>
+              Manage <SoftCText>cAavegotchis</SoftCText>
+            </>
+          ) : (
+            <SoftCText>cWearables</SoftCText>
+          )}
+        </p>
       </div>
       <style jsx>{styles}</style>
     </>

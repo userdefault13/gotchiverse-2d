@@ -23,6 +23,7 @@ import { stackWearableInventory } from 'helpers/cartridgeWearable.helper';
 import { useUser } from 'contexts/UserContext';
 import { useGame } from 'contexts/GameContext';
 import { ChannelReadyToggle } from 'components/UI/elements/buttons/channelReadyToggle';
+import { SoftCText } from 'components/UI/widgets';
 import type { GotchiverseAavegotchi } from 'types';
 
 const sortOptions: SortOption[] = [
@@ -175,7 +176,13 @@ export const GotchiSelectPanel = ({
     <>
       <div className="details-container">
         <h1 className="select-panel-title">
-          {wearablesManageMode ? 'Your cWearables' : 'Select your Gotchi'}
+          {wearablesManageMode ? (
+            <>
+              Your <SoftCText>cWearables</SoftCText>
+            </>
+          ) : (
+            'Select your Gotchi'
+          )}
         </h1>
         {!wearablesManageMode ? (
           <div className="filter-section">

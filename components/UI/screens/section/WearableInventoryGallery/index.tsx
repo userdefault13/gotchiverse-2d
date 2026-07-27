@@ -1,7 +1,7 @@
 import styles from './styles';
 import { useUser } from 'contexts/UserContext';
 import { slotLabel } from 'helpers/cartridgeWearable.helper';
-import { WearableThumbnail } from 'components/UI/widgets';
+import { SoftCText, WearableThumbnail } from 'components/UI/widgets';
 
 export const WearableInventoryGallery = (): JSX.Element => {
   const [{ wearableInventory, cartridgeHeroes }] = useUser();
@@ -16,7 +16,9 @@ export const WearableInventoryGallery = (): JSX.Element => {
   return (
     <>
       <div className="wearable-gallery">
-        <h2 className="gallery-title">cWearables</h2>
+        <h2 className="gallery-title">
+          <SoftCText>cWearables</SoftCText>
+        </h2>
         <p className="gallery-caption">
           Cartridge inventory (mint &amp; view). Equip and manage on Aarcade.
         </p>

@@ -1,7 +1,7 @@
 import styles from './styles';
 import { CollateralGotchiCard, GotchiSelectCard } from 'components/UI/component';
 import { Button } from 'components/UI/elements';
-import { WearableThumbnail } from 'components/UI/widgets';
+import { SoftCText, WearableThumbnail } from 'components/UI/widgets';
 import { getMintableCollaterals, type CollateralObject } from 'helpers/ethers.helper';
 import useAavegotchiSound from 'hooks/useAavegotchiSound';
 import { useEffect, useMemo, useState } from 'react';
@@ -109,7 +109,9 @@ export const CollateralGotchiGallery = ({
   return (
     <>
       <div className="collateral-gallery">
-        <h2 className="gallery-title">Mint cAavegotchi</h2>
+        <h2 className="gallery-title">
+          Mint <SoftCText>cAavegotchi</SoftCText>
+        </h2>
         <div className="mint-tabs" role="tablist">
           <button
             type="button"

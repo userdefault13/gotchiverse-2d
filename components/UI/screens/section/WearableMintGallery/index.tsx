@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import styles from './styles';
 import { Button } from 'components/UI/elements';
-import { WearableThumbnail } from 'components/UI/widgets';
+import { SoftCText, WearableThumbnail } from 'components/UI/widgets';
 import useAavegotchiSound from 'hooks/useAavegotchiSound';
 import { useUser } from 'contexts/UserContext';
 import { mintedSourceTokenIds } from 'helpers/cartridgeHero.helper';
@@ -14,14 +14,18 @@ import {
 
 type ViewMode = 'list' | 'grid';
 const VIEW_STORAGE_KEY = 'cwearablesMintView';
-const TIP_WIDTH = 240;
+const TIP_WIDTH = 260;
 
 type GridTip = {
   key: string;
   name: string;
-  sub: string;
+  from: string;
+  slot: string;
+  rarity: string;
+  ownership: string;
   price: string;
   priceFree: boolean;
+  status: string;
   top: number;
   left: number;
 };
@@ -37,8 +41,8 @@ function tipPosition(rect: DOMRect): { top: number; left: number } {
   const gap = 8;
   // Prefer anchoring under the tile; flip above if near the bottom.
   let top = rect.bottom + gap;
-  if (top + 96 > window.innerHeight - 12) {
-    top = Math.max(12, rect.top - gap - 88);
+  if (top + 140 > window.innerHeight - 12) {
+    top = Math.max(12, rect.top - gap - 130);
   }
 
   // Keep tip out of the right-rail cart: if tile is on the right half, grow left.
@@ -126,12 +130,17 @@ export const WearableMintGallery = ({
   const openTip = (row: MintableWearableRow, el: HTMLElement, priceLabel: string, ownership: string) => {
     const rect = el.getBoundingClientRect();
     const pos = tipPosition(rect);
+    const inCart = cartKeys.has(row.key);
     setGridTip({
       key: row.key,
       name: row.name,
-      sub: `#${row.sourceTokenId} · ${slotLabel(row.slotIndex)} · ${row.rarity} · ${ownership}`,
+      from: `${row.gotchiName} · #${row.sourceTokenId}`,
+      slot: slotLabel(row.slotIndex),
+      rarity: row.rarity,
+      ownership,
       price: priceLabel,
-      priceFree: row.alreadyMinted || row.importFeeUsd <= 0 || cartKeys.has(row.key),
+      priceFree: row.alreadyMinted || row.importFeeUsd <= 0 || inCart,
+      status: row.alreadyMinted ? 'Already minted' : inCart ? 'In cart' : 'Available to mint',
       top: pos.top,
       left: pos.left,
     });
@@ -195,7 +204,9 @@ export const WearableMintGallery = ({
   return (
     <>
       <div className="wearable-mint-gallery">
-        <h2 className="gallery-title">Mint cWearables</h2>
+        <h2 className="gallery-title">
+          Mint <SoftCText>cWearables</SoftCText>
+        </h2>
         <p className="gallery-caption">
           Tap to add to cart. Owned = <span className="price-tag free">FREE</span>
           {' · '}
@@ -257,15 +268,28 @@ export const WearableMintGallery = ({
             role="tooltip"
             style={{ top: gridTip.top, left: gridTip.left, width: TIP_WIDTH }}
           >
+            <span className="tip-label">Detail</span>
             <span className="tip-name">{gridTip.name}</span>
-            <span className="tip-sub">{gridTip.sub}</span>
+            <span className="tip-sub">From {gridTip.from}</span>
+            <span className="tip-sub">
+              {gridTip.slot} · {gridTip.rarity} · {gridTip.ownership}
+            </span>
             <span className={`tip-price ${gridTip.priceFree ? 'free' : ''}`}>{gridTip.price}</span>
+            <span className="tip-status">{gridTip.status}</span>
           </div>,
           document.body,
         )}
 
       <style jsx>{styles}</style>
       <style jsx global>{`
+        .wearable-mint-gallery .wearable-items.grid {
+          display: grid !important;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          column-gap: 1.2rem;
+          row-gap: 1.6rem !important;
+          align-content: start;
+          gap: 1.6rem 1.2rem;
+        }
         .cwear-grid-tile {
           appearance: none;
           -webkit-appearance: none;
@@ -274,7 +298,8 @@ export const WearableMintGallery = ({
           align-items: center;
           justify-content: center;
           width: 100%;
-          aspect-ratio: 1;
+          aspect-ratio: 1 / 1;
+          min-height: 9rem;
           margin: 0;
           padding: 0.9rem;
           border: 0.25rem solid #ff7ae9;
@@ -285,6 +310,7 @@ export const WearableMintGallery = ({
           cursor: pointer;
           overflow: hidden;
           font: inherit;
+          box-sizing: border-box;
         }
         .cwear-grid-tile:hover,
         .cwear-grid-tile.checked {
@@ -331,24 +357,38 @@ export const WearableMintGallery = ({
           color: #fff;
           font-family: Pixelar, sans-serif;
         }
+        .cwearable-grid-tip .tip-label {
+          font-family: 'Kimberley Rg', sans-serif;
+          font-size: 1.05rem;
+          letter-spacing: 0.04em;
+          text-transform: uppercase;
+          color: rgba(255, 214, 247, 0.7);
+          margin-bottom: 0.15rem;
+        }
         .cwearable-grid-tip .tip-name {
           font-family: 'Kimberley Rg', sans-serif;
-          font-size: 1.35rem;
+          font-size: 1.45rem;
           line-height: 1.2;
         }
         .cwearable-grid-tip .tip-sub {
-          font-size: 1.15rem;
-          line-height: 1.3;
-          color: rgba(255, 214, 247, 0.85);
+          font-size: 1.2rem;
+          line-height: 1.35;
+          color: rgba(255, 214, 247, 0.9);
           text-transform: capitalize;
         }
         .cwearable-grid-tip .tip-price {
           font-family: 'Kimberley Rg', sans-serif;
-          font-size: 1.3rem;
+          font-size: 1.35rem;
           color: #ff7ae9;
+          margin-top: 0.15rem;
         }
         .cwearable-grid-tip .tip-price.free {
           color: #6dffb0;
+        }
+        .cwearable-grid-tip .tip-status {
+          font-size: 1.1rem;
+          color: rgba(255, 255, 255, 0.75);
+          margin-top: 0.1rem;
         }
       `}</style>
     </>

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import styles from './styles';
 import { Button } from 'components/UI/elements';
-import { WearableThumbnail } from 'components/UI/widgets';
+import { SoftCText, WearableThumbnail } from 'components/UI/widgets';
 import useAavegotchiSound from 'hooks/useAavegotchiSound';
 import type { GotchiverseAavegotchi } from 'types';
 import {
@@ -72,7 +72,9 @@ export const WearableImportPanel = ({
   return (
     <>
       <div className="wearable-import-panel">
-        <h2 className="panel-title">Mint cWearables</h2>
+        <h2 className="panel-title">
+          Mint <SoftCText>cWearables</SoftCText>
+        </h2>
         <p className="panel-caption">
           From #{sourceGotchi.id}
           {bindKind === 'owned' ? (

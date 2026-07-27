@@ -25,21 +25,26 @@ export default css`
   .gallery-caption {
     margin: 0 0 1rem;
     font-size: 1.5rem;
-    line-height: 1.3;
-    color: var(--col-info-200);
+    line-height: 1.35;
+    color: #fff;
+    background: rgba(8, 2, 18, 0.82);
+    border: 0.12rem solid rgba(255, 122, 233, 0.35);
+    border-radius: 0.45rem;
+    padding: 0.7rem 0.9rem;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
   }
 
   .price-tag {
-    color: #ff7ae9;
+    color: #ff9aef;
     font-weight: 700;
   }
 
   .price-tag.free {
-    color: #6dffb0;
+    color: #7dffc0;
   }
 
   .price-note {
-    color: rgba(255, 255, 255, 0.65);
+    color: rgba(255, 230, 255, 0.85);
     font-size: 1.3rem;
   }
 
@@ -62,9 +67,14 @@ export default css`
 
   .mint-hint {
     margin: 0;
-    font-size: 1.3rem;
-    line-height: 1.3;
-    color: rgba(255, 255, 255, 0.7);
+    font-size: 1.35rem;
+    line-height: 1.35;
+    color: #f5e9ff;
+    background: rgba(8, 2, 18, 0.82);
+    border: 0.12rem solid rgba(255, 122, 233, 0.3);
+    border-radius: 0.45rem;
+    padding: 0.55rem 0.8rem;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
   }
 
   .mint-error {
@@ -79,8 +89,12 @@ export default css`
     align-items: center;
     justify-content: space-between;
     gap: 0.8rem;
-    margin-bottom: 0.8rem;
+    margin-bottom: 1rem;
     flex-wrap: wrap;
+    background: rgba(8, 2, 18, 0.75);
+    border: 0.12rem solid rgba(255, 122, 233, 0.3);
+    border-radius: 0.45rem;
+    padding: 0.55rem 0.75rem;
   }
 
   .toolbar-right {
@@ -102,8 +116,9 @@ export default css`
   }
 
   .count {
-    font-size: 1.3rem;
-    color: rgba(255, 255, 255, 0.75);
+    font-size: 1.35rem;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.9);
   }
 
   .view-toggle {
@@ -148,10 +163,10 @@ export default css`
   .wearable-items.grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 0.8rem;
+    column-gap: 1.2rem;
+    row-gap: 1.4rem;
     align-content: start;
-    /* Room so in-card tips aren't clipped by scroll edges. */
-    padding: 0.2rem 0.2rem 1.2rem;
+    padding: 0.4rem 0.2rem 1.4rem;
     overflow-x: hidden;
   }
 

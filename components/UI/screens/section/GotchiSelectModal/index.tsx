@@ -61,7 +61,7 @@ import {
 import Image from 'next/image';
 import GameController from 'components/controllers/GameController';
 import _ from 'lodash';
-import { GotchiSVG, MaticNeeded } from 'components/UI/widgets';
+import { GotchiSVG, MaticNeeded, SoftCText } from 'components/UI/widgets';
 import { PARCELS_BY_TOKEN_ID } from 'shared_code/models/model.realm';
 import { ClosedPortal, GotchiLoading, GotchiverseLogo, LastPositionNoBgIcon, PortalLightningBg } from 'assets';
 import { useGame } from 'contexts/GameContext';
@@ -1039,14 +1039,22 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
                   <div className="glow"></div>
                   <div className="gotchi-name-container">
                     <div className="gotchi-name">
-                      <h4>{mintPreviewTip?.title}</h4>
+                      <h4>
+                        {mintPreviewTip?.title ? <SoftCText>{mintPreviewTip.title}</SoftCText> : null}
+                      </h4>
                     </div>
-                    <p className="gotchi-caption">{mintPreviewTip?.caption}</p>
+                    <p className="gotchi-caption">
+                      {mintPreviewTip?.caption ? <SoftCText>{mintPreviewTip.caption}</SoftCText> : null}
+                    </p>
                   </div>
                   {mintPreviewTip ? (
                     <div className="mint-preview-tip" role="tooltip">
-                      <span className="tip-title">{mintPreviewTip.title}</span>
-                      <span className="tip-caption">{mintPreviewTip.caption}</span>
+                      <span className="tip-title">
+                        <SoftCText>{mintPreviewTip.title}</SoftCText>
+                      </span>
+                      <span className="tip-caption">
+                        <SoftCText>{mintPreviewTip.caption}</SoftCText>
+                      </span>
                     </div>
                   ) : null}
                 </div>
@@ -1089,14 +1097,22 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
                   <div className="glow"></div>
                   <div className="gotchi-name-container">
                     <div className="gotchi-name">
-                      <h4>{mintPreviewTip?.title}</h4>
+                      <h4>
+                        {mintPreviewTip?.title ? <SoftCText>{mintPreviewTip.title}</SoftCText> : null}
+                      </h4>
                     </div>
-                    <p className="gotchi-caption">{mintPreviewTip?.caption}</p>
+                    <p className="gotchi-caption">
+                      {mintPreviewTip?.caption ? <SoftCText>{mintPreviewTip.caption}</SoftCText> : null}
+                    </p>
                   </div>
                   {mintPreviewTip ? (
                     <div className="mint-preview-tip" role="tooltip">
-                      <span className="tip-title">{mintPreviewTip.title}</span>
-                      <span className="tip-caption">{mintPreviewTip.caption}</span>
+                      <span className="tip-title">
+                        <SoftCText>{mintPreviewTip.title}</SoftCText>
+                      </span>
+                      <span className="tip-caption">
+                        <SoftCText>{mintPreviewTip.caption}</SoftCText>
+                      </span>
                     </div>
                   ) : null}
                 </div>
@@ -1134,14 +1150,22 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
                   <div className="glow"></div>
                   <div className="gotchi-name-container">
                     <div className="gotchi-name">
-                      <h4>{mintPreviewTip?.title}</h4>
+                      <h4>
+                        {mintPreviewTip?.title ? <SoftCText>{mintPreviewTip.title}</SoftCText> : null}
+                      </h4>
                     </div>
-                    <p className="gotchi-caption">{mintPreviewTip?.caption}</p>
+                    <p className="gotchi-caption">
+                      {mintPreviewTip?.caption ? <SoftCText>{mintPreviewTip.caption}</SoftCText> : null}
+                    </p>
                   </div>
                   {mintPreviewTip ? (
                     <div className="mint-preview-tip" role="tooltip">
-                      <span className="tip-title">{mintPreviewTip.title}</span>
-                      <span className="tip-caption">{mintPreviewTip.caption}</span>
+                      <span className="tip-title">
+                        <SoftCText>{mintPreviewTip.title}</SoftCText>
+                      </span>
+                      <span className="tip-caption">
+                        <SoftCText>{mintPreviewTip.caption}</SoftCText>
+                      </span>
                     </div>
                   ) : null}
                 </div>
@@ -1338,8 +1362,16 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
             <button type="button" className="manage-hero-close" onClick={() => setManageHero(null)}>
               ×
             </button>
-            <h3 className="manage-hero-title">Manage cAavegotchi</h3>
-            <p className="manage-hero-name">{manageHero.name || `cAavegotchi #${manageHero.id}`}</p>
+            <h3 className="manage-hero-title">
+              Manage <SoftCText>cAavegotchi</SoftCText>
+            </h3>
+            <p className="manage-hero-name">
+              {manageHero.name || (
+                <>
+                  <SoftCText>cAavegotchi</SoftCText> #{manageHero.id}
+                </>
+              )}
+            </p>
             <p className="manage-hero-body">
               Manage tools for this cartridge spirit are coming soon. You can still select it from the
               list (outside Manage) to enter the Gotchiverse.
