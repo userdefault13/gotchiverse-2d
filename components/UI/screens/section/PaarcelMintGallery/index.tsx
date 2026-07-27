@@ -1,14 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import styles from './styles';
 import { Button } from 'components/UI/elements';
 import { InstallationThumbnail, PaarcelThumbnail, SoftCText } from 'components/UI/widgets';
+import { Portal } from 'components/utility/Portal';
 import useAavegotchiSound from 'hooks/useAavegotchiSound';
 import { useUser } from 'contexts/UserContext';
 import {
+  installationCommonCssVars,
   listMintableInstallationsOnParcels,
   listMintablePaarcelsFromOwned,
   listMintableWalletInstallations,
+  paarcelSizeCssVars,
   type MintableInstallationRow,
   type MintablePaarcelRow,
 } from 'helpers/cartridgePaarcel.helper';
@@ -20,14 +22,12 @@ const TAB_STORAGE_KEY = 'cpaarcelsMintTab';
 const TIP_WIDTH = 240;
 const TIP_EST_HEIGHT = 130;
 
-type ParcelTip = {
+type HoverTip = {
   key: string;
-  parcelId: string;
-  realmTokenId: string;
-  size: string;
-  district?: number;
-  installs: number;
-  status: string;
+  name: string;
+  sub: string;
+  extra?: string;
+  price: string;
   priceFree: boolean;
   top: number;
   left: number;
@@ -73,9 +73,7 @@ export const PaarcelMintGallery = ({
   const [{ ownedParcels, inventory, parcelInventory, installationInventory }] = useUser();
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [catalogTab, setCatalogTab] = useState<CatalogTab>('parcels');
-  const [selectedParcelKey, setSelectedParcelKey] = useState<string | null>(null);
-  const [parcelTip, setParcelTip] = useState<ParcelTip | null>(null);
-  const [portalReady, setPortalReady] = useState(false);
+  const [hoverTip, setHoverTip] = useState<HoverTip | null>(null);
 
   const parcelRows = useMemo(
     () => listMintablePaarcelsFromOwned(ownedParcels, parcelInventory),
@@ -99,9 +97,7 @@ export const PaarcelMintGallery = ({
     [walletInstallRows, cartInstallKeys],
   );
 
-  useEffect(() => {
-    setPortalReady(true);
-  }, []);
+  const installTone = useMemo(() => installationCommonCssVars() as CSSProperties, []);
 
   useEffect(() => {
     try {
@@ -115,35 +111,22 @@ export const PaarcelMintGallery = ({
   }, []);
 
   useEffect(() => {
-    if (catalogTab !== 'parcels') setParcelTip(null);
-  }, [catalogTab]);
+    setHoverTip(null);
+  }, [catalogTab, viewMode]);
 
   useEffect(() => {
-    if (!parcelTip) return;
-    const hide = () => setParcelTip(null);
-    window.addEventListener('scroll', hide, true);
+    if (!hoverTip) return;
+    // Only clear on window resize — capture-phase scroll listeners fire on
+    // overflow containers during layout and kill the tip immediately.
+    const hide = () => setHoverTip(null);
     window.addEventListener('resize', hide);
-    return () => {
-      window.removeEventListener('scroll', hide, true);
-      window.removeEventListener('resize', hide);
-    };
-  }, [parcelTip]);
-
-  useEffect(() => {
-    if (unmintedParcels.length === 0) {
-      setSelectedParcelKey(null);
-      return;
-    }
-    if (!selectedParcelKey || !unmintedParcels.some((r) => r.key === selectedParcelKey)) {
-      setSelectedParcelKey(unmintedParcels[0].key);
-    }
-  }, [unmintedParcels, selectedParcelKey]);
+    return () => window.removeEventListener('resize', hide);
+  }, [hoverTip]);
 
   const setView = (mode: ViewMode) => {
     if (mode === viewMode) return;
     click();
     setViewMode(mode);
-    setParcelTip(null);
     try {
       localStorage.setItem(VIEW_STORAGE_KEY, mode);
     } catch {
@@ -155,7 +138,6 @@ export const PaarcelMintGallery = ({
     if (tab === catalogTab) return;
     click();
     setCatalogTab(tab);
-    setParcelTip(null);
     try {
       localStorage.setItem(TAB_STORAGE_KEY, tab);
     } catch {
@@ -163,19 +145,31 @@ export const PaarcelMintGallery = ({
     }
   };
 
-  const openParcelTip = (row: MintablePaarcelRow, el: HTMLElement) => {
-    const inCart = cartParcelKeys.has(row.key);
+  const openParcelTip = (row: MintablePaarcelRow, el: HTMLElement, status: string) => {
     const pos = tipPosition(el.getBoundingClientRect());
-    setSelectedParcelKey(row.key);
-    setParcelTip({
+    setHoverTip({
       key: row.key,
-      parcelId: row.parcelId,
-      realmTokenId: row.realmTokenId,
-      size: row.size,
-      district: row.district,
-      installs: row.installations.length,
-      status: inCart ? 'In cart' : 'Available to mint',
+      name: row.parcelId,
+      sub: `#${row.realmTokenId} · ${row.size}${row.district != null ? ` · District ${row.district}` : ''}`,
+      extra: `${row.installations.length} nested installation${row.installations.length === 1 ? '' : 's'}`,
+      price: status === 'Available to mint' ? 'FREE' : `FREE · ${status}`,
       priceFree: true,
+      ...pos,
+    });
+  };
+
+  const openInstallTip = (row: MintableInstallationRow, el: HTMLElement, status: string) => {
+    const pos = tipPosition(el.getBoundingClientRect());
+    const source =
+      row.source === 'parcel-equip' && row.sourceRealmTokenId
+        ? `On parcel #${row.sourceRealmTokenId}`
+        : 'Wallet inventory';
+    setHoverTip({
+      key: row.key,
+      name: row.name,
+      sub: `#${row.itemTypeId} · ${row.kind} · ${source}`,
+      price: status,
+      priceFree: status === 'FREE' || status.startsWith('FREE'),
       ...pos,
     });
   };
@@ -183,7 +177,6 @@ export const PaarcelMintGallery = ({
   const addParcel = (row: MintablePaarcelRow) => {
     if (minting || row.alreadyMinted || cartParcelKeys.has(row.key)) return;
     click();
-    setSelectedParcelKey(row.key);
     onAddParcel(row);
   };
 
@@ -195,24 +188,36 @@ export const PaarcelMintGallery = ({
 
   const renderParcel = (row: MintablePaarcelRow) => {
     const inCart = cartParcelKeys.has(row.key);
-    const selected = selectedParcelKey === row.key;
     const disabled = minting || inCart;
-    const thumbSize = viewMode === 'grid' ? 88 : 64;
+    const status = inCart ? 'In cart' : 'Available to mint';
+    const toneStyle = paarcelSizeCssVars(row.size) as CSSProperties;
+    const thumbSize = viewMode === 'grid' ? 72 : 56;
+    const sizeClass = String(row.size || 'humble').toLowerCase().replace(/\s+/g, '-');
     return (
       <button
         key={row.key}
         type="button"
-        className={`parcel-card ${viewMode}${inCart ? ' in-cart' : ''}${selected ? ' selected' : ''}`}
-        disabled={disabled}
-        onClick={() => addParcel(row)}
-        onMouseEnter={(e) => openParcelTip(row, e.currentTarget)}
-        onMouseLeave={() => setParcelTip((t) => (t?.key === row.key ? null : t))}
-        onFocus={(e) => openParcelTip(row, e.currentTarget)}
-        onBlur={() => setParcelTip((t) => (t?.key === row.key ? null : t))}
-        aria-label={`${row.parcelId} · #${row.realmTokenId} · ${row.installations.length} installs`}
+        className={`cpaarcel-grid-tile size-${sizeClass}${inCart ? ' checked' : ''}`}
+        style={toneStyle}
+        aria-disabled={disabled || undefined}
+        onClick={() => {
+          if (disabled) return;
+          addParcel(row);
+        }}
+        onPointerEnter={(e) => openParcelTip(row, e.currentTarget, status)}
+        onPointerLeave={() => setHoverTip((t) => (t?.key === row.key ? null : t))}
+        onFocus={(e) => openParcelTip(row, e.currentTarget, status)}
+        onBlur={() => setHoverTip((t) => (t?.key === row.key ? null : t))}
+        aria-label={`${row.parcelId} · #${row.realmTokenId} · ${row.size} · ${row.installations.length} installs · ${status}`}
+        title=""
       >
-        <PaarcelThumbnail realmTokenId={row.realmTokenId} name={row.parcelId} size={thumbSize} />
-        {inCart ? <span className="card-check" aria-hidden /> : null}
+        <span className={`cpaarcel-grid-check${inCart ? ' on' : ''}`} aria-hidden />
+        <PaarcelThumbnail
+          realmTokenId={row.realmTokenId}
+          name={row.parcelId}
+          size={thumbSize}
+          parcelSize={row.size}
+        />
       </button>
     );
   };
@@ -221,34 +226,35 @@ export const PaarcelMintGallery = ({
     const inCart = cartInstallKeys.has(row.key);
     const disabled = minting || inCart || row.alreadyMinted;
     const status = row.alreadyMinted ? 'Minted' : inCart ? 'In cart' : 'FREE';
-    if (viewMode === 'grid') {
-      return (
-        <button
-          key={row.key}
-          type="button"
-          className={`install-tile${inCart || row.alreadyMinted ? ' in-cart' : ''}`}
-          disabled={disabled}
-          onClick={() => addInstall(row)}
-          aria-label={`${row.name} · ${status}`}
-          title={`${row.name} · ${status}`}
-        >
-          <InstallationThumbnail itemTypeId={row.itemTypeId} kind={row.kind} name={row.name} size={64} />
-          <span className="tile-name">{row.name}</span>
-          <span className="price-tag free">{status}</span>
-        </button>
-      );
-    }
+    const thumbSize = viewMode === 'grid' ? 72 : 56;
     return (
       <button
         key={row.key}
         type="button"
-        className={`install-row${inCart || row.alreadyMinted ? ' in-cart' : ''}`}
-        disabled={disabled}
-        onClick={() => addInstall(row)}
+        className={`cpaarcel-grid-tile install${inCart ? ' checked' : ''}${
+          row.alreadyMinted ? ' minted' : ''
+        }`}
+        style={installTone}
+        aria-disabled={disabled || undefined}
+        onClick={() => {
+          if (disabled) return;
+          addInstall(row);
+        }}
+        onPointerEnter={(e) => openInstallTip(row, e.currentTarget, status)}
+        onPointerLeave={() => setHoverTip((t) => (t?.key === row.key ? null : t))}
+        onFocus={(e) => openInstallTip(row, e.currentTarget, status)}
+        onBlur={() => setHoverTip((t) => (t?.key === row.key ? null : t))}
+        aria-label={`${row.name} · #${row.itemTypeId} · ${status}`}
+        title=""
       >
-        <InstallationThumbnail itemTypeId={row.itemTypeId} kind={row.kind} name={row.name} size={44} />
-        <span className="install-name">{row.name}</span>
-        <span className="price-tag free">{status}</span>
+        <span className={`cpaarcel-grid-check${inCart ? ' on' : ''}`} aria-hidden />
+        <InstallationThumbnail
+          itemTypeId={row.itemTypeId}
+          kind={row.kind}
+          name={row.name}
+          size={thumbSize}
+          tinted
+        />
       </button>
     );
   };
@@ -332,7 +338,7 @@ export const PaarcelMintGallery = ({
               </Button>
             </div>
             <div className="section-label">Owned parcels</div>
-            <div className={`parcel-list scrollable ${viewMode}`}>
+            <div className={`tile-list scrollable ${viewMode}`}>
               {unmintedParcels.length === 0 ? (
                 <p className="empty">No owned Base parcels left to mint.</p>
               ) : (
@@ -370,7 +376,7 @@ export const PaarcelMintGallery = ({
               </Button>
             </div>
             <div className="section-label">Wallet installations</div>
-            <div className={`install-list scrollable ${viewMode}`}>
+            <div className={`tile-list scrollable ${viewMode}`}>
               {walletInstallRows.length === 0 ? (
                 <p className="empty">No wallet installations to mint.</p>
               ) : (
@@ -380,7 +386,7 @@ export const PaarcelMintGallery = ({
             {unmintedParcelInstalls.length > 0 ? (
               <>
                 <div className="section-label">On parcels</div>
-                <div className={`install-list scrollable ${viewMode}`}>
+                <div className={`tile-list scrollable ${viewMode}`}>
                   {unmintedParcelInstalls.map(renderInstall)}
                 </div>
               </>
@@ -389,56 +395,114 @@ export const PaarcelMintGallery = ({
         )}
       </div>
 
-      {portalReady &&
-        parcelTip &&
-        createPortal(
+      {hoverTip ? (
+        <Portal target="#portal-tooltip">
           <div
-            className={`cpaarcel-tip place-${parcelTip.place}`}
+            className={`cpaarcel-tip place-${hoverTip.place}`}
             role="tooltip"
-            style={{ top: parcelTip.top, left: parcelTip.left, width: TIP_WIDTH }}
+            style={{
+              position: 'fixed',
+              top: hoverTip.top,
+              left: hoverTip.left,
+              width: TIP_WIDTH,
+              zIndex: 50000,
+              pointerEvents: 'none',
+            }}
           >
-            <span className="tip-name">{parcelTip.parcelId}</span>
-            <span className="tip-sub">
-              #{parcelTip.realmTokenId} · {parcelTip.size}
-              {parcelTip.district != null ? ` · District ${parcelTip.district}` : ''}
-            </span>
-            <span className="tip-sub">
-              {parcelTip.installs} nested installation{parcelTip.installs === 1 ? '' : 's'}
-            </span>
-            <span className={`tip-price ${parcelTip.priceFree ? 'free' : ''}`}>
-              FREE
-              {parcelTip.status !== 'Available to mint' ? ` · ${parcelTip.status}` : ''}
-            </span>
-          </div>,
-          document.body,
-        )}
+            <span className="tip-name">{hoverTip.name}</span>
+            <span className="tip-sub">{hoverTip.sub}</span>
+            {hoverTip.extra ? <span className="tip-sub">{hoverTip.extra}</span> : null}
+            <span className={`tip-price ${hoverTip.priceFree ? 'free' : ''}`}>{hoverTip.price}</span>
+          </div>
+        </Portal>
+      ) : null}
 
       <style jsx>{styles}</style>
       <style jsx global>{`
-        .cpaarcel-tip {
-          position: fixed;
-          z-index: 10050;
-          pointer-events: none;
+        .cpaarcel-grid-tile {
+          appearance: none;
+          -webkit-appearance: none;
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+          aspect-ratio: 1 / 1;
+          min-height: 9.5rem;
+          margin: 0;
+          padding: 1rem;
+          border: 0.25rem solid var(--rarity-border, #3b9eff);
+          border-radius: 0.55rem;
+          background: linear-gradient(
+            160deg,
+            color-mix(in srgb, var(--rarity-glow, #3b9eff) 28%, transparent),
+            rgba(20, 8, 40, 0.95)
+          );
+          box-shadow: inset 0 0 14px 2px color-mix(in srgb, var(--rarity-border, #3b9eff) 40%, transparent);
+          color: #fff;
+          cursor: pointer;
+          overflow: hidden;
+          font: inherit;
+          box-sizing: border-box;
+        }
+        .cpaarcel-grid-tile:hover,
+        .cpaarcel-grid-tile.checked {
+          box-shadow:
+            0 0 10px var(--rarity-glow, #ffe600),
+            0 0 6px var(--rarity-border, #3b9eff),
+            inset 0 0 14px 2px color-mix(in srgb, var(--rarity-border, #3b9eff) 45%, transparent);
+          z-index: 2;
+        }
+        .cpaarcel-grid-tile.checked {
+          border-color: var(--rarity-glow, #ffd6f7);
+          background: linear-gradient(
+            160deg,
+            color-mix(in srgb, var(--rarity-border, #3b9eff) 40%, transparent),
+            color-mix(in srgb, var(--rarity-bg, #1a4a80) 55%, #140828)
+          );
+        }
+        .cpaarcel-grid-tile.minted,
+        .cpaarcel-grid-tile[aria-disabled='true'] {
+          opacity: 0.55;
+          cursor: default;
+        }
+        .cpaarcel-grid-check {
+          position: absolute;
+          top: 0.45rem;
+          left: 0.45rem;
+          z-index: 2;
+          width: 1.2rem;
+          height: 1.2rem;
+          border-radius: 0.3rem;
+          border: 0.18rem solid color-mix(in srgb, var(--rarity-border, #ffd6f7) 80%, #fff);
+          background: rgba(0, 0, 0, 0.45);
+        }
+        .cpaarcel-grid-check.on {
+          background: var(--rarity-border, #5c25bf);
+          border-color: var(--rarity-glow, #ffd6f7);
+          box-shadow: 0 0 6px var(--rarity-glow, #5c25bf);
+        }
+        #portal-tooltip .cpaarcel-tip {
           display: flex;
           flex-direction: column;
           align-items: center;
           gap: 0.15rem;
           padding: 0.75rem 1rem 0.85rem;
           border-radius: 1.4rem;
-          border: 0.28rem solid #2f8f82;
+          border: 0.28rem solid #3b7ea3;
           background: repeating-linear-gradient(
             180deg,
-            #d7fff6 0,
-            #d7fff6 0.2rem,
-            #c4f5ea 0.2rem,
-            #c4f5ea 0.4rem
+            #d7fbff 0,
+            #d7fbff 0.2rem,
+            #c6f3f8 0.2rem,
+            #c6f3f8 0.4rem
           );
           box-shadow: 0.35rem 0.35rem 0 rgba(20, 40, 70, 0.28);
           color: #2f3640;
           font-family: Pixelar, 'Courier New', monospace;
           text-align: center;
         }
-        .cpaarcel-tip::after {
+        #portal-tooltip .cpaarcel-tip::after {
           content: '';
           position: absolute;
           left: 50%;
@@ -448,7 +512,7 @@ export const PaarcelMintGallery = ({
           border-left: 0.85rem solid transparent;
           border-right: 0.85rem solid transparent;
         }
-        .cpaarcel-tip::before {
+        #portal-tooltip .cpaarcel-tip::before {
           content: '';
           position: absolute;
           left: 50%;
@@ -459,40 +523,40 @@ export const PaarcelMintGallery = ({
           border-right: 0.6rem solid transparent;
           z-index: 1;
         }
-        .cpaarcel-tip.place-above::after {
+        #portal-tooltip .cpaarcel-tip.place-above::after {
           bottom: -1.05rem;
-          border-top: 1.05rem solid #2f8f82;
+          border-top: 1.05rem solid #3b7ea3;
         }
-        .cpaarcel-tip.place-above::before {
+        #portal-tooltip .cpaarcel-tip.place-above::before {
           bottom: -0.7rem;
-          border-top: 0.75rem solid #d7fff6;
+          border-top: 0.75rem solid #d7fbff;
         }
-        .cpaarcel-tip.place-below::after {
+        #portal-tooltip .cpaarcel-tip.place-below::after {
           top: -1.05rem;
-          border-bottom: 1.05rem solid #2f8f82;
+          border-bottom: 1.05rem solid #3b7ea3;
         }
-        .cpaarcel-tip.place-below::before {
+        #portal-tooltip .cpaarcel-tip.place-below::before {
           top: -0.7rem;
-          border-bottom: 0.75rem solid #d7fff6;
+          border-bottom: 0.75rem solid #d7fbff;
         }
-        .cpaarcel-tip .tip-name {
+        #portal-tooltip .cpaarcel-tip .tip-name {
           font-size: 1.7rem;
           line-height: 1.15;
           color: #2a313a;
         }
-        .cpaarcel-tip .tip-sub {
+        #portal-tooltip .cpaarcel-tip .tip-sub {
           font-size: 1.25rem;
           line-height: 1.25;
           color: #3d4a57;
           text-transform: capitalize;
         }
-        .cpaarcel-tip .tip-price {
+        #portal-tooltip .cpaarcel-tip .tip-price {
           font-size: 1.35rem;
           line-height: 1.2;
           color: #1f6f8c;
           margin-top: 0.1rem;
         }
-        .cpaarcel-tip .tip-price.free {
+        #portal-tooltip .cpaarcel-tip .tip-price.free {
           color: #1a7a4a;
         }
       `}</style>

@@ -142,8 +142,7 @@ export default css`
     flex: 0 0 auto;
   }
 
-  .parcel-list,
-  .install-list {
+  .tile-list {
     overflow: auto;
     min-height: 0;
     flex: 1;
@@ -151,135 +150,22 @@ export default css`
     margin-bottom: 0.8rem;
   }
 
-  .parcel-list.list {
+  .tile-list.list {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 0.65rem;
+    column-gap: 1rem;
+    row-gap: 1.4rem;
     align-content: start;
+    padding: 0.4rem 0.1rem 1.2rem;
   }
 
-  .parcel-list.grid {
+  .tile-list.grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    column-gap: 0.8rem;
-    row-gap: 0.8rem;
+    column-gap: 1.4rem;
+    row-gap: 2.2rem;
     align-content: start;
-    padding: 0.2rem 0 0.6rem;
-  }
-
-  .install-list.list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.55rem;
-  }
-
-  .install-list.grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    column-gap: 0.8rem;
-    row-gap: 0.8rem;
-    align-content: start;
-    padding: 0.2rem 0 0.6rem;
-  }
-
-  .install-list {
-    flex: 1;
-    max-height: none;
-  }
-
-  .parcel-card {
-    appearance: none;
-    position: relative;
-    border: 0.15rem solid rgba(94, 234, 212, 0.45);
-    background: rgba(8, 24, 40, 0.85);
-    border-radius: 0.45rem;
-    padding: 0.4rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    aspect-ratio: 1;
-    min-height: 0;
-  }
-
-  .parcel-card.list {
-    aspect-ratio: 1;
-  }
-
-  .install-row {
-    appearance: none;
-    border: 0.15rem solid rgba(255, 122, 233, 0.45);
-    background: rgba(28, 8, 40, 0.88);
-    border-radius: 0.45rem;
-    color: #fff;
-    padding: 0.7rem 0.85rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.8rem;
-    cursor: pointer;
-    text-align: left;
-  }
-
-  .install-tile {
-    appearance: none;
-    border: 0.15rem solid rgba(255, 122, 233, 0.45);
-    background: rgba(28, 8, 40, 0.88);
-    border-radius: 0.45rem;
-    color: #fff;
-    padding: 0.7rem 0.55rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    gap: 0.35rem;
-    cursor: pointer;
-    text-align: center;
-    min-height: 11rem;
-  }
-
-  .parcel-card:hover,
-  .install-row:hover,
-  .install-tile:hover,
-  .parcel-card.selected {
-    border-color: #ffe600;
-    box-shadow: 0 0 8px rgba(255, 230, 0, 0.35);
-  }
-
-  .parcel-card.in-cart,
-  .install-row.in-cart,
-  .install-tile.in-cart,
-  .parcel-card:disabled,
-  .install-row:disabled,
-  .install-tile:disabled {
-    opacity: 0.55;
-    cursor: default;
-  }
-
-  .card-check {
-    position: absolute;
-    top: 0.4rem;
-    right: 0.4rem;
-    width: 1.1rem;
-    height: 1.1rem;
-    border-radius: 0.25rem;
-    border: 0.15rem solid #7dffc0;
-    background: #1a7a4a;
-    box-shadow: 0 0 6px rgba(125, 255, 192, 0.7);
-  }
-
-  .tile-name {
-    font-family: 'Kimberley Rg', sans-serif;
-    font-size: 1.15rem;
-    color: #fff;
-    word-break: break-word;
-  }
-
-  .install-name {
-    font-family: 'Kimberley Rg', sans-serif;
-    font-size: 1.35rem;
-    color: #fff;
-    flex: 1;
+    padding: 0.6rem 0.2rem 2rem;
   }
 
   .empty {
@@ -287,5 +173,97 @@ export default css`
     font-size: 1.4rem;
     color: rgba(255, 255, 255, 0.7);
     grid-column: 1 / -1;
+  }
+
+  /* Portaled tip — scoped so styled-jsx hash applies on #portal-tooltip */
+  .cpaarcel-tip {
+    position: fixed;
+    z-index: 50000;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.15rem;
+    padding: 0.75rem 1rem 0.85rem;
+    border-radius: 1.4rem;
+    border: 0.28rem solid #3b7ea3;
+    background: repeating-linear-gradient(
+      180deg,
+      #d7fbff 0,
+      #d7fbff 0.2rem,
+      #c6f3f8 0.2rem,
+      #c6f3f8 0.4rem
+    );
+    box-shadow: 0.35rem 0.35rem 0 rgba(20, 40, 70, 0.28);
+    color: #2f3640;
+    font-family: Pixelar, 'Courier New', monospace;
+    text-align: center;
+  }
+
+  .cpaarcel-tip::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 0.85rem solid transparent;
+    border-right: 0.85rem solid transparent;
+  }
+
+  .cpaarcel-tip::before {
+    content: '';
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 0.6rem solid transparent;
+    border-right: 0.6rem solid transparent;
+    z-index: 1;
+  }
+
+  .cpaarcel-tip.place-above::after {
+    bottom: -1.05rem;
+    border-top: 1.05rem solid #3b7ea3;
+  }
+
+  .cpaarcel-tip.place-above::before {
+    bottom: -0.7rem;
+    border-top: 0.75rem solid #d7fbff;
+  }
+
+  .cpaarcel-tip.place-below::after {
+    top: -1.05rem;
+    border-bottom: 1.05rem solid #3b7ea3;
+  }
+
+  .cpaarcel-tip.place-below::before {
+    top: -0.7rem;
+    border-bottom: 0.75rem solid #d7fbff;
+  }
+
+  .cpaarcel-tip .tip-name {
+    font-size: 1.7rem;
+    line-height: 1.15;
+    color: #2a313a;
+  }
+
+  .cpaarcel-tip .tip-sub {
+    font-size: 1.25rem;
+    line-height: 1.25;
+    color: #3d4a57;
+    text-transform: capitalize;
+  }
+
+  .cpaarcel-tip .tip-price {
+    font-size: 1.35rem;
+    line-height: 1.2;
+    color: #1f6f8c;
+    margin-top: 0.1rem;
+  }
+
+  .cpaarcel-tip .tip-price.free {
+    color: #1a7a4a;
   }
 `;

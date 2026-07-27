@@ -180,6 +180,47 @@ export function sizeLabelFromParcel(parcel: GotchiverseParcel | { size?: string 
   return s || 'humble';
 }
 
+function shadeHex(hex: string, factor: number): string {
+  const n = parseInt(hex.replace('#', ''), 16);
+  if (!Number.isFinite(n)) return hex;
+  const clamp = (v: number) => Math.max(0, Math.min(255, Math.round(v)));
+  const r = clamp(((n >> 16) & 255) * factor);
+  const g = clamp(((n >> 8) & 255) * factor);
+  const b = clamp((n & 255) * factor);
+  return `#${[r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+}
+
+/** Parcel size → neon tile colors (humble blue, reasonable green, spacious pink). */
+const PARCEL_SIZE_BORDER: Record<string, string> = {
+  humble: '#3b9eff',
+  reasonable: '#3dd68c',
+  spacious: '#ff7ae9',
+  partner: '#f0c040',
+};
+
+/** Common purple — same band as wearable common (#5c25bf). */
+const INSTALL_COMMON_BORDER = '#5c25bf';
+
+function toneCssVars(border: string): Record<string, string> {
+  return {
+    '--rarity-border': border,
+    '--rarity-bg': shadeHex(border, 0.72),
+    '--rarity-label': shadeHex(border, 0.55),
+    '--rarity-glow': shadeHex(border, 1.12),
+  };
+}
+
+/** CSS custom props for size-colored parcel mint tiles. */
+export function paarcelSizeCssVars(size: string | undefined): Record<string, string> {
+  const key = String(size || 'humble').trim().toLowerCase();
+  return toneCssVars(PARCEL_SIZE_BORDER[key] || PARCEL_SIZE_BORDER.humble);
+}
+
+/** CSS custom props for installation mint tiles (common purple). */
+export function installationCommonCssVars(): Record<string, string> {
+  return toneCssVars(INSTALL_COMMON_BORDER);
+}
+
 function allInstallationRefIds(parcels: CPaarcel[], installs: CInstallation[]): Set<string> {
   const set = new Set<string>();
   for (const p of parcels || []) {

@@ -1,7 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import Image from 'next/image';
 import styles from './styles';
-import { installationImageCandidates } from 'helpers/cartridgePaarcel.helper';
+import {
+  installationCommonCssVars,
+  installationImageCandidates,
+} from 'helpers/cartridgePaarcel.helper';
 
 interface Props {
   itemTypeId: number;
@@ -9,6 +12,8 @@ interface Props {
   name?: string;
   size?: number;
   className?: string;
+  /** When true, apply common-purple rarity tint (mint gallery tiles). */
+  tinted?: boolean;
 }
 
 export const InstallationThumbnail = ({
@@ -17,6 +22,7 @@ export const InstallationThumbnail = ({
   name,
   size = 48,
   className = '',
+  tinted = false,
 }: Props): JSX.Element => {
   const candidates = useMemo(
     () => installationImageCandidates(itemTypeId, kind),
@@ -30,11 +36,12 @@ export const InstallationThumbnail = ({
 
   const src = candidates[candidateIdx] || '';
   const failed = !src || candidateIdx >= candidates.length;
+  const toneStyle = tinted ? (installationCommonCssVars() as CSSProperties) : undefined;
 
   return (
     <div
-      className={`install-thumb ${failed ? 'fallback' : ''} ${className}`}
-      style={{ width: size, height: size }}
+      className={`install-thumb ${tinted ? 'rarity-tinted' : ''} ${failed ? 'fallback' : ''} ${className}`}
+      style={{ width: size, height: size, ...(toneStyle || {}) }}
     >
       {failed ? (
         <span className="glyph" aria-hidden>

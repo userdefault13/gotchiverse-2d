@@ -15,5 +15,7 @@ export const Portal = ({ target = '#portal', children }: Props): ReactPortal | n
     return () => setMounted(false);
   }, []);
 
-  return mounted ? createPortal(children, document.querySelector(target)) : null;
+  if (!mounted || typeof document === 'undefined') return null;
+  const el = document.querySelector(target) || document.body;
+  return createPortal(children, el);
 };

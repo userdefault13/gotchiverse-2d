@@ -1,13 +1,14 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import Image from 'next/image';
 import styles from './styles';
-import { paarcelImageUrl } from 'helpers/cartridgePaarcel.helper';
+import { paarcelImageUrl, paarcelSizeCssVars } from 'helpers/cartridgePaarcel.helper';
 
 interface Props {
   realmTokenId: string | number;
   name?: string;
   size?: number;
   className?: string;
+  parcelSize?: string;
 }
 
 export const PaarcelThumbnail = ({
@@ -15,13 +16,18 @@ export const PaarcelThumbnail = ({
   name,
   size = 48,
   className = '',
+  parcelSize,
 }: Props): JSX.Element => {
   const [failed, setFailed] = useState(false);
   const tid = String(realmTokenId || '').trim();
   const src = /^\d+$/.test(tid) ? paarcelImageUrl(tid) : '';
+  const toneStyle = parcelSize ? (paarcelSizeCssVars(parcelSize) as CSSProperties) : undefined;
 
   return (
-    <div className={`paarcel-thumb ${failed || !src ? 'fallback' : ''} ${className}`} style={{ width: size, height: size }}>
+    <div
+      className={`paarcel-thumb ${parcelSize ? 'size-tinted' : ''} ${failed || !src ? 'fallback' : ''} ${className}`}
+      style={{ width: size, height: size, ...(toneStyle || {}) }}
+    >
       {failed || !src ? (
         <span className="glyph" aria-hidden>
           ▣

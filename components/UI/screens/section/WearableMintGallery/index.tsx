@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
-import { createPortal } from 'react-dom';
 import styles from './styles';
 import { Button } from 'components/UI/elements';
 import { SoftCText, WearableThumbnail } from 'components/UI/widgets';
+import { Portal } from 'components/utility/Portal';
 import useAavegotchiSound from 'hooks/useAavegotchiSound';
 import { useUser } from 'contexts/UserContext';
 import { mintedSourceTokenIds } from 'helpers/cartridgeHero.helper';
@@ -81,11 +81,6 @@ export const WearableMintGallery = ({
 
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [gridTip, setGridTip] = useState<GridTip | null>(null);
-  const [portalReady, setPortalReady] = useState(false);
-
-  useEffect(() => {
-    setPortalReady(true);
-  }, []);
 
   useEffect(() => {
     try {
@@ -102,13 +97,11 @@ export const WearableMintGallery = ({
 
   useEffect(() => {
     if (!gridTip) return;
+    // Only clear on window resize — capture-phase scroll listeners fire on
+    // overflow containers during layout and kill the tip immediately.
     const hide = () => setGridTip(null);
-    window.addEventListener('scroll', hide, true);
     window.addEventListener('resize', hide);
-    return () => {
-      window.removeEventListener('scroll', hide, true);
-      window.removeEventListener('resize', hide);
-    };
+    return () => window.removeEventListener('resize', hide);
   }, [gridTip]);
 
   const setView = (mode: ViewMode) => {
@@ -179,12 +172,15 @@ export const WearableMintGallery = ({
             row.alreadyMinted ? 'minted' : ''
           }`}
           style={rarityStyle}
-          disabled={disabled}
-          onClick={() => addOne(row)}
+          aria-disabled={disabled || undefined}
+          onClick={() => {
+            if (disabled) return;
+            addOne(row);
+          }}
           aria-label={label}
           title=""
-          onMouseEnter={(e) => openTip(row, e.currentTarget, priceLabel, ownership)}
-          onMouseLeave={() => setGridTip((t) => (t?.key === row.key ? null : t))}
+          onPointerEnter={(e) => openTip(row, e.currentTarget, priceLabel, ownership)}
+          onPointerLeave={() => setGridTip((t) => (t?.key === row.key ? null : t))}
           onFocus={(e) => openTip(row, e.currentTarget, priceLabel, ownership)}
           onBlur={() => setGridTip((t) => (t?.key === row.key ? null : t))}
         >
@@ -290,13 +286,19 @@ export const WearableMintGallery = ({
         </div>
       </div>
 
-      {portalReady &&
-        gridTip &&
-        createPortal(
+      {gridTip ? (
+        <Portal target="#portal-tooltip">
           <div
             className={`cwearable-grid-tip place-${gridTip.place}`}
             role="tooltip"
-            style={{ top: gridTip.top, left: gridTip.left, width: TIP_WIDTH }}
+            style={{
+              position: 'fixed',
+              top: gridTip.top,
+              left: gridTip.left,
+              width: TIP_WIDTH,
+              zIndex: 50000,
+              pointerEvents: 'none',
+            }}
           >
             <span className="tip-name">{gridTip.name}</span>
             <span className="tip-sub">
@@ -307,9 +309,9 @@ export const WearableMintGallery = ({
               {gridTip.price}
               {gridTip.status !== 'Available to mint' ? ` · ${gridTip.status}` : ''}
             </span>
-          </div>,
-          document.body,
-        )}
+          </div>
+        </Portal>
+      ) : null}
 
       <style jsx>{styles}</style>
       <style jsx global>{`
@@ -356,7 +358,7 @@ export const WearableMintGallery = ({
           );
         }
         .cwear-grid-tile.minted,
-        .cwear-grid-tile:disabled {
+        .cwear-grid-tile[aria-disabled='true'] {
           opacity: 0.55;
           cursor: default;
         }
@@ -376,11 +378,7 @@ export const WearableMintGallery = ({
           border-color: var(--rarity-glow, #ffd6f7);
           box-shadow: 0 0 6px var(--rarity-glow, #ff7ae9);
         }
-        /* Aavegotchi-style cyan tip */
-        .cwearable-grid-tip {
-          position: fixed;
-          z-index: 10050;
-          pointer-events: none;
+        #portal-tooltip .cwearable-grid-tip {
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -400,7 +398,7 @@ export const WearableMintGallery = ({
           font-family: Pixelar, 'Courier New', monospace;
           text-align: center;
         }
-        .cwearable-grid-tip::after {
+        #portal-tooltip .cwearable-grid-tip::after {
           content: '';
           position: absolute;
           left: 50%;
@@ -410,7 +408,7 @@ export const WearableMintGallery = ({
           border-left: 0.85rem solid transparent;
           border-right: 0.85rem solid transparent;
         }
-        .cwearable-grid-tip::before {
+        #portal-tooltip .cwearable-grid-tip::before {
           content: '';
           position: absolute;
           left: 50%;
@@ -421,40 +419,40 @@ export const WearableMintGallery = ({
           border-right: 0.6rem solid transparent;
           z-index: 1;
         }
-        .cwearable-grid-tip.place-above::after {
+        #portal-tooltip .cwearable-grid-tip.place-above::after {
           bottom: -1.05rem;
           border-top: 1.05rem solid #3b7ea3;
         }
-        .cwearable-grid-tip.place-above::before {
+        #portal-tooltip .cwearable-grid-tip.place-above::before {
           bottom: -0.7rem;
           border-top: 0.75rem solid #d7fbff;
         }
-        .cwearable-grid-tip.place-below::after {
+        #portal-tooltip .cwearable-grid-tip.place-below::after {
           top: -1.05rem;
           border-bottom: 1.05rem solid #3b7ea3;
         }
-        .cwearable-grid-tip.place-below::before {
+        #portal-tooltip .cwearable-grid-tip.place-below::before {
           top: -0.7rem;
           border-bottom: 0.75rem solid #d7fbff;
         }
-        .cwearable-grid-tip .tip-name {
+        #portal-tooltip .cwearable-grid-tip .tip-name {
           font-size: 1.7rem;
           line-height: 1.15;
           color: #2a313a;
         }
-        .cwearable-grid-tip .tip-sub {
+        #portal-tooltip .cwearable-grid-tip .tip-sub {
           font-size: 1.25rem;
           line-height: 1.25;
           color: #3d4a57;
           text-transform: capitalize;
         }
-        .cwearable-grid-tip .tip-price {
+        #portal-tooltip .cwearable-grid-tip .tip-price {
           font-size: 1.35rem;
           line-height: 1.2;
           color: #1f6f8c;
           margin-top: 0.1rem;
         }
-        .cwearable-grid-tip .tip-price.free {
+        #portal-tooltip .cwearable-grid-tip .tip-price.free {
           color: #1a7a4a;
         }
       `}</style>

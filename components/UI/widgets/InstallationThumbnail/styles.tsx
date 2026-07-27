@@ -7,12 +7,22 @@ export default css`
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 0.55rem;
+    border-radius: 0.7rem;
     background: linear-gradient(160deg, rgba(255, 122, 233, 0.18), rgba(20, 8, 40, 0.95));
-    border: 0.18rem solid rgba(255, 122, 233, 0.5);
+    border: 0.2rem solid rgba(255, 122, 233, 0.5);
     box-shadow: inset 0 0 10px rgba(255, 122, 233, 0.18);
     overflow: hidden;
     image-rendering: pixelated;
+  }
+
+  .install-thumb.rarity-tinted {
+    border-color: var(--rarity-border, rgba(92, 37, 191, 0.7));
+    background: linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--rarity-glow, #5c25bf) 35%, transparent),
+      rgba(12, 4, 28, 0.95)
+    );
+    box-shadow: inset 0 0 12px color-mix(in srgb, var(--rarity-border, #5c25bf) 45%, transparent);
   }
 
   .install-thumb :global(img) {
@@ -25,7 +35,7 @@ export default css`
   .install-thumb.fallback .glyph {
     font-size: 1.8rem;
     line-height: 1;
-    color: #ffd6f7;
-    text-shadow: 0 0 8px rgba(255, 122, 233, 0.75);
+    color: #e0d0ff;
+    text-shadow: 0 0 8px rgba(92, 37, 191, 0.75);
   }
 `;
