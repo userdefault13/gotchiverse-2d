@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import styles from './styles';
-import { installationImageSrc } from 'helpers/cartridgePaarcel.helper';
+import { installationImageCandidates } from 'helpers/cartridgePaarcel.helper';
 
 interface Props {
   itemTypeId: number;
@@ -18,26 +18,37 @@ export const InstallationThumbnail = ({
   size = 48,
   className = '',
 }: Props): JSX.Element => {
-  const [failed, setFailed] = useState(false);
-  const src = useMemo(() => installationImageSrc(itemTypeId, kind), [itemTypeId, kind]);
+  const candidates = useMemo(
+    () => installationImageCandidates(itemTypeId, kind),
+    [itemTypeId, kind],
+  );
+  const [candidateIdx, setCandidateIdx] = useState(0);
+
+  useEffect(() => {
+    setCandidateIdx(0);
+  }, [itemTypeId, kind]);
+
+  const src = candidates[candidateIdx] || '';
+  const failed = !src || candidateIdx >= candidates.length;
 
   return (
     <div
-      className={`install-thumb ${failed || !src ? 'fallback' : ''} ${className}`}
+      className={`install-thumb ${failed ? 'fallback' : ''} ${className}`}
       style={{ width: size, height: size }}
     >
-      {failed || !src ? (
+      {failed ? (
         <span className="glyph" aria-hidden>
           ◇
         </span>
       ) : (
         <Image
+          key={`${itemTypeId}-${candidateIdx}-${src}`}
           alt={name || `Installation #${itemTypeId}`}
           src={src}
           width={size}
           height={size}
           unoptimized
-          onError={() => setFailed(true)}
+          onError={() => setCandidateIdx((i) => i + 1)}
         />
       )}
       <style jsx>{styles}</style>

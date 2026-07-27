@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import styles from './styles';
 import { Button } from 'components/UI/elements';
 import { InstallationThumbnail, PaarcelThumbnail, SoftCText } from 'components/UI/widgets';
@@ -13,7 +14,25 @@ import {
 } from 'helpers/cartridgePaarcel.helper';
 
 type ViewMode = 'list' | 'grid';
+type CatalogTab = 'parcels' | 'installations';
 const VIEW_STORAGE_KEY = 'cpaarcelsMintView';
+const TAB_STORAGE_KEY = 'cpaarcelsMintTab';
+const TIP_WIDTH = 240;
+const TIP_EST_HEIGHT = 130;
+
+type ParcelTip = {
+  key: string;
+  parcelId: string;
+  realmTokenId: string;
+  size: string;
+  district?: number;
+  installs: number;
+  status: string;
+  priceFree: boolean;
+  top: number;
+  left: number;
+  place: 'above' | 'below';
+};
 
 interface Props {
   cartParcelKeys: Set<string>;
@@ -23,6 +42,22 @@ interface Props {
   onAddAllParcelInstalls: (rows: MintableInstallationRow[]) => void;
   onAddAllWalletInstalls: (rows: MintableInstallationRow[]) => void;
   minting?: boolean;
+}
+
+function tipPosition(rect: DOMRect): { top: number; left: number; place: 'above' | 'below' } {
+  const gap = 14;
+  let place: 'above' | 'below' = 'above';
+  let top = rect.top - gap - TIP_EST_HEIGHT;
+  if (top < 10) {
+    place = 'below';
+    top = rect.bottom + gap;
+  }
+  let left = rect.left + rect.width / 2 - TIP_WIDTH / 2;
+  if (rect.right > window.innerWidth * 0.62) {
+    left = rect.right - TIP_WIDTH;
+  }
+  left = Math.min(window.innerWidth - TIP_WIDTH - 12, Math.max(12, left));
+  return { top, left, place };
 }
 
 export const PaarcelMintGallery = ({
@@ -36,8 +71,11 @@ export const PaarcelMintGallery = ({
 }: Props): JSX.Element => {
   const { click } = useAavegotchiSound();
   const [{ ownedParcels, inventory, parcelInventory, installationInventory }] = useUser();
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
-  const [selectedParcel, setSelectedParcel] = useState<MintablePaarcelRow | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
+  const [catalogTab, setCatalogTab] = useState<CatalogTab>('parcels');
+  const [selectedParcelKey, setSelectedParcelKey] = useState<string | null>(null);
+  const [parcelTip, setParcelTip] = useState<ParcelTip | null>(null);
+  const [portalReady, setPortalReady] = useState(false);
 
   const parcelRows = useMemo(
     () => listMintablePaarcelsFromOwned(ownedParcels, parcelInventory),
@@ -62,29 +100,50 @@ export const PaarcelMintGallery = ({
   );
 
   useEffect(() => {
+    setPortalReady(true);
+  }, []);
+
+  useEffect(() => {
     try {
-      const saved = localStorage.getItem(VIEW_STORAGE_KEY);
-      if (saved === 'list' || saved === 'grid') setViewMode(saved);
+      const savedView = localStorage.getItem(VIEW_STORAGE_KEY);
+      if (savedView === 'list' || savedView === 'grid') setViewMode(savedView);
+      const savedTab = localStorage.getItem(TAB_STORAGE_KEY);
+      if (savedTab === 'parcels' || savedTab === 'installations') setCatalogTab(savedTab);
     } catch {
       /* ignore */
     }
   }, []);
 
-  // Keep selection in sync with mintable list (drop if already minted / gone).
+  useEffect(() => {
+    if (catalogTab !== 'parcels') setParcelTip(null);
+  }, [catalogTab]);
+
+  useEffect(() => {
+    if (!parcelTip) return;
+    const hide = () => setParcelTip(null);
+    window.addEventListener('scroll', hide, true);
+    window.addEventListener('resize', hide);
+    return () => {
+      window.removeEventListener('scroll', hide, true);
+      window.removeEventListener('resize', hide);
+    };
+  }, [parcelTip]);
+
   useEffect(() => {
     if (unmintedParcels.length === 0) {
-      if (selectedParcel) setSelectedParcel(null);
+      setSelectedParcelKey(null);
       return;
     }
-    const key = selectedParcel?.key;
-    const still = key ? unmintedParcels.find((r) => r.key === key) : null;
-    if (!still) setSelectedParcel(unmintedParcels[0]);
-  }, [unmintedParcels, selectedParcel?.key]);
+    if (!selectedParcelKey || !unmintedParcels.some((r) => r.key === selectedParcelKey)) {
+      setSelectedParcelKey(unmintedParcels[0].key);
+    }
+  }, [unmintedParcels, selectedParcelKey]);
 
   const setView = (mode: ViewMode) => {
     if (mode === viewMode) return;
     click();
     setViewMode(mode);
+    setParcelTip(null);
     try {
       localStorage.setItem(VIEW_STORAGE_KEY, mode);
     } catch {
@@ -92,10 +151,39 @@ export const PaarcelMintGallery = ({
     }
   };
 
+  const setTab = (tab: CatalogTab) => {
+    if (tab === catalogTab) return;
+    click();
+    setCatalogTab(tab);
+    setParcelTip(null);
+    try {
+      localStorage.setItem(TAB_STORAGE_KEY, tab);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  const openParcelTip = (row: MintablePaarcelRow, el: HTMLElement) => {
+    const inCart = cartParcelKeys.has(row.key);
+    const pos = tipPosition(el.getBoundingClientRect());
+    setSelectedParcelKey(row.key);
+    setParcelTip({
+      key: row.key,
+      parcelId: row.parcelId,
+      realmTokenId: row.realmTokenId,
+      size: row.size,
+      district: row.district,
+      installs: row.installations.length,
+      status: inCart ? 'In cart' : 'Available to mint',
+      priceFree: true,
+      ...pos,
+    });
+  };
+
   const addParcel = (row: MintablePaarcelRow) => {
     if (minting || row.alreadyMinted || cartParcelKeys.has(row.key)) return;
     click();
-    setSelectedParcel(row);
+    setSelectedParcelKey(row.key);
     onAddParcel(row);
   };
 
@@ -107,51 +195,24 @@ export const PaarcelMintGallery = ({
 
   const renderParcel = (row: MintablePaarcelRow) => {
     const inCart = cartParcelKeys.has(row.key);
-    const selected = selectedParcel?.key === row.key;
+    const selected = selectedParcelKey === row.key;
     const disabled = minting || inCart;
-    if (viewMode === 'grid') {
-      return (
-        <button
-          key={row.key}
-          type="button"
-          className={`parcel-tile${inCart ? ' in-cart' : ''}${selected ? ' selected' : ''}`}
-          disabled={disabled}
-          onClick={() => addParcel(row)}
-          onMouseEnter={() => setSelectedParcel(row)}
-          aria-label={`${row.parcelId} · #${row.realmTokenId}`}
-        >
-          <PaarcelThumbnail realmTokenId={row.realmTokenId} name={row.parcelId} size={72} />
-          <span className="tile-name">{row.parcelId}</span>
-          <span className="tile-meta">
-            {row.size}
-            {row.district != null ? ` · D${row.district}` : ''}
-          </span>
-          <span className="tile-count">{row.installations.length} installs</span>
-          <span className="price-tag free">{inCart ? 'In cart' : 'FREE'}</span>
-        </button>
-      );
-    }
+    const thumbSize = viewMode === 'grid' ? 88 : 64;
     return (
       <button
         key={row.key}
         type="button"
-        className={`parcel-row${inCart ? ' in-cart' : ''}${selected ? ' selected' : ''}`}
+        className={`parcel-card ${viewMode}${inCart ? ' in-cart' : ''}${selected ? ' selected' : ''}`}
         disabled={disabled}
         onClick={() => addParcel(row)}
-        onMouseEnter={() => setSelectedParcel(row)}
+        onMouseEnter={(e) => openParcelTip(row, e.currentTarget)}
+        onMouseLeave={() => setParcelTip((t) => (t?.key === row.key ? null : t))}
+        onFocus={(e) => openParcelTip(row, e.currentTarget)}
+        onBlur={() => setParcelTip((t) => (t?.key === row.key ? null : t))}
+        aria-label={`${row.parcelId} · #${row.realmTokenId} · ${row.installations.length} installs`}
       >
-        <PaarcelThumbnail realmTokenId={row.realmTokenId} name={row.parcelId} size={52} />
-        <div className="parcel-main">
-          <span className="parcel-name">{row.parcelId}</span>
-          <span className="parcel-meta">
-            #{row.realmTokenId} · {row.size}
-            {row.district != null ? ` · D${row.district}` : ''}
-          </span>
-        </div>
-        <div className="parcel-side">
-          <span className="install-count">{row.installations.length} installs</span>
-          <span className="price-tag free">{inCart ? 'In cart' : 'FREE'}</span>
-        </div>
+        <PaarcelThumbnail realmTokenId={row.realmTokenId} name={row.parcelId} size={thumbSize} />
+        {inCart ? <span className="card-check" aria-hidden /> : null}
       </button>
     );
   };
@@ -168,7 +229,8 @@ export const PaarcelMintGallery = ({
           className={`install-tile${inCart || row.alreadyMinted ? ' in-cart' : ''}`}
           disabled={disabled}
           onClick={() => addInstall(row)}
-          aria-label={row.name}
+          aria-label={`${row.name} · ${status}`}
+          title={`${row.name} · ${status}`}
         >
           <InstallationThumbnail itemTypeId={row.itemTypeId} kind={row.kind} name={row.name} size={64} />
           <span className="tile-name">{row.name}</span>
@@ -203,38 +265,33 @@ export const PaarcelMintGallery = ({
           <span className="price-note">(sim)</span>
         </p>
 
-        <div className="mint-cta">
-          <Button
-            size={2}
-            fullWidth
-            disabled={minting || unmintedParcelInstalls.length === 0}
-            onClick={() => {
-              if (minting || unmintedParcelInstalls.length === 0) return;
-              click();
-              onAddAllParcelInstalls(unmintedParcelInstalls);
-            }}
+        <div className="toolbar catalog-tabs" role="tablist" aria-label="Catalog">
+          <button
+            type="button"
+            role="tab"
+            className={`tab-btn ${catalogTab === 'parcels' ? 'active' : ''}`}
+            aria-selected={catalogTab === 'parcels'}
+            onClick={() => setTab('parcels')}
           >
-            Mint all installations on parcels ({unmintedParcelInstalls.length})
-          </Button>
-          <Button
-            size={2}
-            fullWidth
-            secondary
-            disabled={minting || unmintedWalletInstalls.length === 0}
-            onClick={() => {
-              if (minting || unmintedWalletInstalls.length === 0) return;
-              click();
-              onAddAllWalletInstalls(unmintedWalletInstalls);
-            }}
+            Parcels ({unmintedParcels.length})
+          </button>
+          <button
+            type="button"
+            role="tab"
+            className={`tab-btn ${catalogTab === 'installations' ? 'active' : ''}`}
+            aria-selected={catalogTab === 'installations'}
+            onClick={() => setTab('installations')}
           >
-            Mint wallet installations ({unmintedWalletInstalls.length})
-          </Button>
+            Installations ({unmintedWalletInstalls.length + unmintedParcelInstalls.length})
+          </button>
         </div>
 
         <div className="toolbar">
           <span className="count">
-            {cartParcelKeys.size + cartInstallKeys.size} in cart · {unmintedParcels.length} parcels ·{' '}
-            {unmintedWalletInstalls.length} wallet installs
+            {cartParcelKeys.size + cartInstallKeys.size} in cart
+            {catalogTab === 'parcels'
+              ? ` · ${unmintedParcels.length} parcels`
+              : ` · ${unmintedWalletInstalls.length} wallet · ${unmintedParcelInstalls.length} on parcels`}
           </span>
           <div className="view-toggle" role="group" aria-label="View mode">
             <button
@@ -256,60 +313,189 @@ export const PaarcelMintGallery = ({
           </div>
         </div>
 
-        <div className="section-label">Owned parcels</div>
-        {selectedParcel ? (
-          <div className="parcel-detail">
-            <PaarcelThumbnail
-              realmTokenId={selectedParcel.realmTokenId}
-              name={selectedParcel.parcelId}
-              size={64}
-            />
-            <div className="parcel-detail-main">
-              <span className="parcel-detail-name">{selectedParcel.parcelId}</span>
-              <span className="parcel-detail-meta">
-                #{selectedParcel.realmTokenId} · {selectedParcel.size}
-                {selectedParcel.district != null ? ` · District ${selectedParcel.district}` : ''}
-                {' · '}
-                {selectedParcel.installations.length} nested installation
-                {selectedParcel.installations.length === 1 ? '' : 's'}
-              </span>
-              {selectedParcel.installations.length > 0 ? (
-                <div className="parcel-detail-installs">
-                  {selectedParcel.installations.slice(0, 8).map((inst, i) => (
-                    <InstallationThumbnail
-                      key={`${inst.itemTypeId}-${i}`}
-                      itemTypeId={inst.itemTypeId}
-                      kind={inst.kind}
-                      name={inst.name}
-                      size={28}
-                    />
-                  ))}
-                  {selectedParcel.installations.length > 8 ? (
-                    <span className="more-count">+{selectedParcel.installations.length - 8}</span>
-                  ) : null}
-                </div>
-              ) : null}
-            </div>
-          </div>
-        ) : null}
-        <div className={`parcel-list scrollable ${viewMode}`}>
-          {unmintedParcels.length === 0 ? (
-            <p className="empty">No owned Base parcels left to mint.</p>
-          ) : (
-            unmintedParcels.map(renderParcel)
-          )}
-        </div>
-
-        {walletInstallRows.length > 0 ? (
+        {catalogTab === 'parcels' ? (
           <>
-            <div className="section-label">Wallet installations</div>
-            <div className={`install-list scrollable ${viewMode}`}>
-              {walletInstallRows.slice(0, 40).map(renderInstall)}
+            <div className="mint-cta">
+              <Button
+                size={2}
+                fullWidth
+                disabled={minting || unmintedParcels.filter((r) => !cartParcelKeys.has(r.key)).length === 0}
+                onClick={() => {
+                  const toAdd = unmintedParcels.filter((r) => !cartParcelKeys.has(r.key));
+                  if (minting || toAdd.length === 0) return;
+                  click();
+                  for (const row of toAdd) onAddParcel(row);
+                }}
+              >
+                Add all parcels to cart (
+                {unmintedParcels.filter((r) => !cartParcelKeys.has(r.key)).length})
+              </Button>
+            </div>
+            <div className="section-label">Owned parcels</div>
+            <div className={`parcel-list scrollable ${viewMode}`}>
+              {unmintedParcels.length === 0 ? (
+                <p className="empty">No owned Base parcels left to mint.</p>
+              ) : (
+                unmintedParcels.map(renderParcel)
+              )}
             </div>
           </>
-        ) : null}
+        ) : (
+          <>
+            <div className="mint-cta">
+              <Button
+                size={2}
+                fullWidth
+                disabled={minting || unmintedParcelInstalls.length === 0}
+                onClick={() => {
+                  if (minting || unmintedParcelInstalls.length === 0) return;
+                  click();
+                  onAddAllParcelInstalls(unmintedParcelInstalls);
+                }}
+              >
+                Mint all installations on parcels ({unmintedParcelInstalls.length})
+              </Button>
+              <Button
+                size={2}
+                fullWidth
+                secondary
+                disabled={minting || unmintedWalletInstalls.length === 0}
+                onClick={() => {
+                  if (minting || unmintedWalletInstalls.length === 0) return;
+                  click();
+                  onAddAllWalletInstalls(unmintedWalletInstalls);
+                }}
+              >
+                Mint wallet installations ({unmintedWalletInstalls.length})
+              </Button>
+            </div>
+            <div className="section-label">Wallet installations</div>
+            <div className={`install-list scrollable ${viewMode}`}>
+              {walletInstallRows.length === 0 ? (
+                <p className="empty">No wallet installations to mint.</p>
+              ) : (
+                walletInstallRows.map(renderInstall)
+              )}
+            </div>
+            {unmintedParcelInstalls.length > 0 ? (
+              <>
+                <div className="section-label">On parcels</div>
+                <div className={`install-list scrollable ${viewMode}`}>
+                  {unmintedParcelInstalls.map(renderInstall)}
+                </div>
+              </>
+            ) : null}
+          </>
+        )}
       </div>
+
+      {portalReady &&
+        parcelTip &&
+        createPortal(
+          <div
+            className={`cpaarcel-tip place-${parcelTip.place}`}
+            role="tooltip"
+            style={{ top: parcelTip.top, left: parcelTip.left, width: TIP_WIDTH }}
+          >
+            <span className="tip-name">{parcelTip.parcelId}</span>
+            <span className="tip-sub">
+              #{parcelTip.realmTokenId} · {parcelTip.size}
+              {parcelTip.district != null ? ` · District ${parcelTip.district}` : ''}
+            </span>
+            <span className="tip-sub">
+              {parcelTip.installs} nested installation{parcelTip.installs === 1 ? '' : 's'}
+            </span>
+            <span className={`tip-price ${parcelTip.priceFree ? 'free' : ''}`}>
+              FREE
+              {parcelTip.status !== 'Available to mint' ? ` · ${parcelTip.status}` : ''}
+            </span>
+          </div>,
+          document.body,
+        )}
+
       <style jsx>{styles}</style>
+      <style jsx global>{`
+        .cpaarcel-tip {
+          position: fixed;
+          z-index: 10050;
+          pointer-events: none;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 0.15rem;
+          padding: 0.75rem 1rem 0.85rem;
+          border-radius: 1.4rem;
+          border: 0.28rem solid #2f8f82;
+          background: repeating-linear-gradient(
+            180deg,
+            #d7fff6 0,
+            #d7fff6 0.2rem,
+            #c4f5ea 0.2rem,
+            #c4f5ea 0.4rem
+          );
+          box-shadow: 0.35rem 0.35rem 0 rgba(20, 40, 70, 0.28);
+          color: #2f3640;
+          font-family: Pixelar, 'Courier New', monospace;
+          text-align: center;
+        }
+        .cpaarcel-tip::after {
+          content: '';
+          position: absolute;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 0;
+          height: 0;
+          border-left: 0.85rem solid transparent;
+          border-right: 0.85rem solid transparent;
+        }
+        .cpaarcel-tip::before {
+          content: '';
+          position: absolute;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 0;
+          height: 0;
+          border-left: 0.6rem solid transparent;
+          border-right: 0.6rem solid transparent;
+          z-index: 1;
+        }
+        .cpaarcel-tip.place-above::after {
+          bottom: -1.05rem;
+          border-top: 1.05rem solid #2f8f82;
+        }
+        .cpaarcel-tip.place-above::before {
+          bottom: -0.7rem;
+          border-top: 0.75rem solid #d7fff6;
+        }
+        .cpaarcel-tip.place-below::after {
+          top: -1.05rem;
+          border-bottom: 1.05rem solid #2f8f82;
+        }
+        .cpaarcel-tip.place-below::before {
+          top: -0.7rem;
+          border-bottom: 0.75rem solid #d7fff6;
+        }
+        .cpaarcel-tip .tip-name {
+          font-size: 1.7rem;
+          line-height: 1.15;
+          color: #2a313a;
+        }
+        .cpaarcel-tip .tip-sub {
+          font-size: 1.25rem;
+          line-height: 1.25;
+          color: #3d4a57;
+          text-transform: capitalize;
+        }
+        .cpaarcel-tip .tip-price {
+          font-size: 1.35rem;
+          line-height: 1.2;
+          color: #1f6f8c;
+          margin-top: 0.1rem;
+        }
+        .cpaarcel-tip .tip-price.free {
+          color: #1a7a4a;
+        }
+      `}</style>
     </>
   );
 };

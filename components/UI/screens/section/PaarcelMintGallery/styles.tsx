@@ -78,6 +78,30 @@ export default css`
     flex: 0 0 auto;
   }
 
+  .toolbar.catalog-tabs {
+    padding: 0.35rem;
+    gap: 0.35rem;
+  }
+
+  .tab-btn {
+    appearance: none;
+    flex: 1;
+    border: none;
+    border-radius: 0.4rem;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.7);
+    font-family: 'Kimberley Rg', sans-serif;
+    font-size: 1.25rem;
+    text-transform: uppercase;
+    padding: 0.55rem 0.7rem;
+    cursor: pointer;
+  }
+
+  .tab-btn.active {
+    background: rgba(20, 120, 110, 0.7);
+    color: #fff;
+  }
+
   .count {
     font-size: 1.35rem;
     color: #fff;
@@ -118,50 +142,6 @@ export default css`
     flex: 0 0 auto;
   }
 
-  .parcel-detail {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    flex: 0 0 auto;
-    margin: 0 0 0.65rem;
-    padding: 0.65rem 0.8rem;
-    border-radius: 0.45rem;
-    border: 0.12rem solid rgba(94, 234, 212, 0.4);
-    background: rgba(8, 24, 40, 0.85);
-  }
-
-  .parcel-detail-main {
-    display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
-    min-width: 0;
-    flex: 1;
-  }
-
-  .parcel-detail-name {
-    font-family: 'Kimberley Rg', sans-serif;
-    font-size: 1.35rem;
-    color: #fff;
-  }
-
-  .parcel-detail-meta {
-    font-size: 1.15rem;
-    color: rgba(200, 255, 245, 0.85);
-  }
-
-  .parcel-detail-installs {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.35rem;
-    margin-top: 0.25rem;
-  }
-
-  .more-count {
-    font-size: 1.1rem;
-    color: rgba(255, 255, 255, 0.7);
-  }
-
   .parcel-list,
   .install-list {
     overflow: auto;
@@ -171,14 +151,28 @@ export default css`
     margin-bottom: 0.8rem;
   }
 
-  .parcel-list.list,
+  .parcel-list.list {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.65rem;
+    align-content: start;
+  }
+
+  .parcel-list.grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: 0.8rem;
+    row-gap: 0.8rem;
+    align-content: start;
+    padding: 0.2rem 0 0.6rem;
+  }
+
   .install-list.list {
     display: flex;
     flex-direction: column;
     gap: 0.55rem;
   }
 
-  .parcel-list.grid,
   .install-list.grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -189,15 +183,33 @@ export default css`
   }
 
   .install-list {
-    flex: 0 1 30%;
-    max-height: 18rem;
+    flex: 1;
+    max-height: none;
   }
 
-  .parcel-row,
-  .install-row {
+  .parcel-card {
     appearance: none;
+    position: relative;
     border: 0.15rem solid rgba(94, 234, 212, 0.45);
     background: rgba(8, 24, 40, 0.85);
+    border-radius: 0.45rem;
+    padding: 0.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    aspect-ratio: 1;
+    min-height: 0;
+  }
+
+  .parcel-card.list {
+    aspect-ratio: 1;
+  }
+
+  .install-row {
+    appearance: none;
+    border: 0.15rem solid rgba(255, 122, 233, 0.45);
+    background: rgba(28, 8, 40, 0.88);
     border-radius: 0.45rem;
     color: #fff;
     padding: 0.7rem 0.85rem;
@@ -209,54 +221,51 @@ export default css`
     text-align: left;
   }
 
-  .parcel-tile,
   .install-tile {
     appearance: none;
-    border: 0.15rem solid rgba(94, 234, 212, 0.45);
-    background: rgba(8, 24, 40, 0.85);
+    border: 0.15rem solid rgba(255, 122, 233, 0.45);
+    background: rgba(28, 8, 40, 0.88);
     border-radius: 0.45rem;
     color: #fff;
     padding: 0.7rem 0.55rem;
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    gap: 0.25rem;
+    justify-content: flex-start;
+    gap: 0.35rem;
     cursor: pointer;
     text-align: center;
-    min-height: 9.5rem;
+    min-height: 11rem;
   }
 
-  .parcel-row:hover,
+  .parcel-card:hover,
   .install-row:hover,
-  .parcel-tile:hover,
   .install-tile:hover,
-  .parcel-row.selected,
-  .parcel-tile.selected {
+  .parcel-card.selected {
     border-color: #ffe600;
     box-shadow: 0 0 8px rgba(255, 230, 0, 0.35);
   }
 
-  .parcel-row.in-cart,
+  .parcel-card.in-cart,
   .install-row.in-cart,
-  .parcel-tile.in-cart,
   .install-tile.in-cart,
-  .parcel-row:disabled,
+  .parcel-card:disabled,
   .install-row:disabled,
-  .parcel-tile:disabled,
   .install-tile:disabled {
     opacity: 0.55;
     cursor: default;
   }
 
-  .tile-icon {
-    font-size: 2.4rem;
-    line-height: 1;
-    color: #c8fff5;
-  }
-
-  .tile-icon.install {
-    color: #ff9aef;
+  .card-check {
+    position: absolute;
+    top: 0.4rem;
+    right: 0.4rem;
+    width: 1.1rem;
+    height: 1.1rem;
+    border-radius: 0.25rem;
+    border: 0.15rem solid #7dffc0;
+    background: #1a7a4a;
+    box-shadow: 0 0 6px rgba(125, 255, 192, 0.7);
   }
 
   .tile-name {
@@ -266,42 +275,11 @@ export default css`
     word-break: break-word;
   }
 
-  .tile-meta,
-  .tile-count {
-    font-size: 1.05rem;
-    color: rgba(200, 255, 245, 0.8);
-  }
-
-  .parcel-main {
-    display: flex;
-    flex-direction: column;
-    gap: 0.2rem;
-    min-width: 0;
-  }
-
-  .parcel-name,
   .install-name {
     font-family: 'Kimberley Rg', sans-serif;
     font-size: 1.35rem;
     color: #fff;
-  }
-
-  .parcel-meta {
-    font-size: 1.2rem;
-    color: rgba(200, 255, 245, 0.8);
-  }
-
-  .parcel-side {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 0.2rem;
-    flex-shrink: 0;
-  }
-
-  .install-count {
-    font-size: 1.15rem;
-    color: rgba(255, 255, 255, 0.7);
+    flex: 1;
   }
 
   .empty {

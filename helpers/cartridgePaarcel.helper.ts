@@ -7,19 +7,51 @@ export function paarcelImageUrl(realmTokenId: string | number): string {
   return `https://gotchiverse.s3.ap-northeast-1.amazonaws.com/${String(realmTokenId).trim()}.png`;
 }
 
-/** Local static PNG for installation / tile mint gallery thumbs. */
+function staticAssetSrc(img: unknown): string {
+  if (!img) return '';
+  if (typeof img === 'string') return img;
+  if (typeof img === 'object' && img !== null && 'src' in img) {
+    const src = (img as { src?: unknown }).src;
+    return typeof src === 'string' ? src : '';
+  }
+  return '';
+}
+
+/**
+ * Candidate URLs for installation/tile thumbs (first that loads wins).
+ * Prefer public paths — webpack `require()` returns StaticImageData, not a string.
+ */
+export function installationImageCandidates(
+  itemTypeId: number,
+  kind: 'installation' | 'tile' = 'installation',
+): string[] {
+  const id = Number(itemTypeId);
+  if (!Number.isFinite(id) || id <= 0) return [];
+  if (kind === 'tile') {
+    const fromRequire = staticAssetSrc(getTileDisplays(id).img);
+    return [`/images/tiles/Tile_LE_${id}.png`, fromRequire].filter(Boolean);
+  }
+  let fromRequire = '';
+  try {
+    fromRequire = staticAssetSrc(getInstallationDisplays(id).img);
+  } catch {
+    /* ignore */
+  }
+  return [
+    `/images/installations/png/${id}.png`,
+    `/images/installations/png/${id}.gif`,
+    fromRequire,
+    `https://app.aavegotchi.com/images/installations/${id}.gif`,
+    `https://app.aavegotchi.com/images/installations/${id}.png`,
+  ].filter((u, i, arr) => Boolean(u) && arr.indexOf(u) === i);
+}
+
+/** Primary installation / tile thumb URL. */
 export function installationImageSrc(
   itemTypeId: number,
   kind: 'installation' | 'tile' = 'installation',
 ): string {
-  const id = Number(itemTypeId);
-  if (!Number.isFinite(id) || id <= 0) return '';
-  try {
-    if (kind === 'tile') return String(getTileDisplays(id).img || '');
-    return String(getInstallationDisplays(id).img || '');
-  } catch {
-    return '';
-  }
+  return installationImageCandidates(itemTypeId, kind)[0] || '';
 }
 
 export type CInstallation = {
