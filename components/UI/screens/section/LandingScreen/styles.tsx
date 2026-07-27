@@ -107,6 +107,92 @@ export default css`
     z-index: 2;
   }
 
+  .base-switch-notice {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6rem 2rem 5rem;
+    background: #f4f6ff;
+  }
+
+  .base-switch-notice-text {
+    margin: 0;
+    font-family: Pixelar, sans-serif;
+    font-size: 3.2rem;
+    line-height: 1.15;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    text-align: center;
+    color: #1a1464;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.6);
+  }
+
+  @media screen and (max-width: 767px) {
+    .base-switch-notice {
+      padding: 4rem 1.5rem 3.5rem;
+    }
+    .base-switch-notice-text {
+      font-size: 2.4rem;
+    }
+  }
+
+  .cartridge-manage-section {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2.4rem;
+    padding: 2rem 2rem 7rem;
+    background: #f4f6ff;
+  }
+
+  .cartridge-manage-art {
+    position: relative;
+    width: min(42rem, 78vw);
+    height: min(42rem, 78vw);
+    filter: drop-shadow(0 12px 28px rgba(26, 20, 100, 0.28));
+  }
+
+  .cartridge-manage-text {
+    margin: 0;
+    max-width: 48rem;
+    font-family: Pixelar, sans-serif;
+    font-size: 2.8rem;
+    line-height: 1.2;
+    letter-spacing: 0.03em;
+    text-align: center;
+    text-transform: uppercase;
+    color: #1a1464;
+  }
+
+  .cartridge-manage-link {
+    color: #0057d9;
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  .cartridge-manage-link:hover {
+    color: #c82ac2;
+  }
+
+  @media screen and (max-width: 767px) {
+    .cartridge-manage-section {
+      padding: 1rem 1.5rem 5rem;
+      gap: 1.6rem;
+    }
+    .cartridge-manage-art {
+      width: min(28rem, 82vw);
+      height: min(28rem, 82vw);
+    }
+    .cartridge-manage-text {
+      font-size: 2.2rem;
+    }
+  }
+
   .parallax-layer.main-bg {
     background: url(images/tex_star_field.png);
     background-repeat: repeat;
