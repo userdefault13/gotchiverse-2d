@@ -38,7 +38,8 @@ export const ManageWearablesCard = ({
         <p className="gotchi-name">
           {manageCaavegotchis ? (
             <>
-              Manage <SoftCText>cAavegotchis</SoftCText>
+              <span className="title-lead">Manage</span>{' '}
+              <SoftCText>cAavegotchis</SoftCText>
             </>
           ) : (
             <SoftCText>cWearables</SoftCText>

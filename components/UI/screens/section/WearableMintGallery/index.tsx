@@ -221,7 +221,8 @@ export const WearableMintGallery = ({
     <>
       <div className="wearable-mint-gallery">
         <h2 className="gallery-title">
-          Mint <SoftCText>cWearables</SoftCText>
+          <span className="title-lead">Mint</span>{' '}
+          <SoftCText>cWearables</SoftCText>
         </h2>
         <p className="gallery-caption">
           Tap to add to cart. Owned = <span className="price-tag free">FREE</span>

@@ -1363,7 +1363,8 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
               ×
             </button>
             <h3 className="manage-hero-title">
-              Manage <SoftCText>cAavegotchi</SoftCText>
+              <span className="title-lead">Manage</span>{' '}
+              <SoftCText>cAavegotchi</SoftCText>
             </h3>
             <p className="manage-hero-name">
               {manageHero.name || (

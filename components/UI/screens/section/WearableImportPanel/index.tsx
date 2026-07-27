@@ -73,7 +73,8 @@ export const WearableImportPanel = ({
     <>
       <div className="wearable-import-panel">
         <h2 className="panel-title">
-          Mint <SoftCText>cWearables</SoftCText>
+          <span className="title-lead">Mint</span>{' '}
+          <SoftCText>cWearables</SoftCText>
         </h2>
         <p className="panel-caption">
           From #{sourceGotchi.id}

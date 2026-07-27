@@ -178,7 +178,8 @@ export const GotchiSelectPanel = ({
         <h1 className="select-panel-title">
           {wearablesManageMode ? (
             <>
-              Your <SoftCText>cWearables</SoftCText>
+              <span className="title-lead">Your</span>{' '}
+              <SoftCText>cWearables</SoftCText>
             </>
           ) : (
             'Select your Gotchi'

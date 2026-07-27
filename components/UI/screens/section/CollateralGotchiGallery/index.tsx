@@ -110,7 +110,8 @@ export const CollateralGotchiGallery = ({
     <>
       <div className="collateral-gallery">
         <h2 className="gallery-title">
-          Mint <SoftCText>cAavegotchi</SoftCText>
+          <span className="title-lead">Mint</span>{' '}
+          <SoftCText>cAavegotchi</SoftCText>
         </h2>
         <div className="mint-tabs" role="tablist">
           <button
