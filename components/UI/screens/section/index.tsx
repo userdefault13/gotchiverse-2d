@@ -8,6 +8,7 @@ export * from './WearableInventoryGallery';
 export * from './WearableMintGallery';
 export * from './WearableCart';
 export * from './PaarcelMintGallery';
+export * from './PaarcelDetailPanel';
 export * from './PaarcelCart';
 
 export * from './SettingsModal';

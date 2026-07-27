@@ -15,6 +15,9 @@ interface Props {
   secondsUntilChannel?: number;
   altarLevel?: number;
   active?: boolean;
+  /** Soft-launch: show View CTA on the right (narrow left-rail cards). */
+  showView?: boolean;
+  onView?: () => void;
 }
 
 const formatTimeLeft = (seconds: number) => {
@@ -41,7 +44,16 @@ const resolveParcelTokenId = (item?: GotchiverseParcel): string | undefined => {
   return undefined;
 };
 
-export const ParcelCard = ({ item, altarLevel, secondsUntilChannel, isBorrowed, mode, active }: Props): JSX.Element => {
+export const ParcelCard = ({
+  item,
+  altarLevel,
+  secondsUntilChannel,
+  isBorrowed,
+  mode,
+  active,
+  showView,
+  onView,
+}: Props): JSX.Element => {
   const parcelTokenId = resolveParcelTokenId(item);
 
   return (
@@ -59,7 +71,7 @@ export const ParcelCard = ({ item, altarLevel, secondsUntilChannel, isBorrowed, 
             <div className="detail-wrapper">
               <div className="parcel-loc-info">
                 <div className="name">
-                  <Truncate chars={38}>{item.parcelHash}</Truncate>
+                  <Truncate chars={showView ? 28 : 38}>{item.parcelHash}</Truncate>
                   {isBorrowed && (
                     <div className="borrowed-icon">
                       <Image alt="" src={BorrowedIcon} layout="fill" />
@@ -88,6 +100,20 @@ export const ParcelCard = ({ item, altarLevel, secondsUntilChannel, isBorrowed, 
                   </div>
                 ) : null}
               </div>
+            </div>
+          ) : null}
+          {item && showView && mode === 'narrow' ? (
+            <div className="parcel-card-actions">
+              <button
+                type="button"
+                className="view-btn"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onView?.();
+                }}
+              >
+                View
+              </button>
             </div>
           ) : null}
         </div>

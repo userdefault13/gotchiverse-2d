@@ -13,6 +13,7 @@ import { GotchiverseLoading } from 'assets';
 import Image from 'next/image';
 import { BuyCTACard } from 'components/UI/component';
 import { gotchiverseLinks } from 'data/links';
+import { SoftCText, formatParcelDisplayName } from 'components/UI/widgets';
 
 interface Props {
   spawnParcelId: string;
@@ -94,7 +95,11 @@ export const SpawnOnParcel = ({ spawnParcelId, handleSpawnSelect }: Props): JSX.
 
   /** Soft-launch: prefer minted cPaarcels; fall back to on-chain owned Base parcels so spawn isn't blank. */
   const cPaarcelParcels = useMemo(
-    () => cPaarcelsToGotchiverseParcels(parcelInventory, currentAccount || undefined),
+    () =>
+      cPaarcelsToGotchiverseParcels(parcelInventory, currentAccount || undefined).map((p) => ({
+        ...p,
+        parcelHash: formatParcelDisplayName(p.parcelHash),
+      })),
     [parcelInventory, currentAccount],
   );
 
@@ -216,7 +221,15 @@ export const SpawnOnParcel = ({ spawnParcelId, handleSpawnSelect }: Props): JSX.
       <div className="title-container">
         <StyledTitle
           style="bottom-line-two-side"
-          text={showingCPaarcels ? 'spawn on a cpaarcel' : 'spawn on a parcel'}
+          text={
+            showingCPaarcels ? (
+              <>
+                spawn on a <SoftCText>cPaarcel</SoftCText>
+              </>
+            ) : (
+              'spawn on a parcel'
+            )
+          }
           color="info"
         />
       </div>
@@ -290,7 +303,7 @@ export const SpawnOnParcel = ({ spawnParcelId, handleSpawnSelect }: Props): JSX.
             placeholderCount={parcelPlaceholderCount}
             spawnParcelId={spawnParcelId}
             filterChanneled={filterChanneled}
-            scrollContainer=".scrollable.parcels"
+            scrollContainer=".parcel-list.scrollable"
             onSelect={handleSpawnSelect}
             useLoadMore={false}
             loading={isLoading}

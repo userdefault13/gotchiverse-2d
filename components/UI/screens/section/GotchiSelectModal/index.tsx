@@ -14,6 +14,7 @@ import {
   WearableMintGallery,
   WearableCart,
   PaarcelMintGallery,
+  PaarcelDetailPanel,
   PaarcelCart,
 } from 'components/UI/screens/section';
 import {
@@ -104,7 +105,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
   const [{ currentAccount, currentNetwork, globalProvider, ethersSigner }] = useWeb3();
   const [{ eventsList }, realmDispatch] = useRealm();
   const [{ gameConfig }] = useGame();
-  const [{ hasCartridge, cartridgeId, cartridgeHeroes, userAavegotchis, wearableInventory, ownedParcels }, userDispatch] =
+  const [{ hasCartridge, cartridgeId, cartridgeHeroes, userAavegotchis, wearableInventory, ownedParcels, parcelInventory }, userDispatch] =
     useUser();
 
   const { portalOpen, sending } = useAavegotchiSound();
@@ -137,7 +138,20 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
   /** cPaarcels manage cart. */
   const [paarcelCartRows, setPaarcelCartRows] = useState<MintablePaarcelRow[]>([]);
   const [paarcelInstallCartRows, setPaarcelInstallCartRows] = useState<MintableInstallationRow[]>([]);
+  /** When set, center rail shows PaarcelDetailPanel instead of mint gallery. */
+  const [selectedPaarcelId, setSelectedPaarcelId] = useState<string | null>(null);
   const mintMode = mintStep !== null;
+
+  const selectedPaarcel = useMemo(() => {
+    if (!selectedPaarcelId) return null;
+    return (
+      (parcelInventory || []).find((p) => String(p.realmTokenId) === String(selectedPaarcelId)) || null
+    );
+  }, [selectedPaarcelId, parcelInventory]);
+
+  useEffect(() => {
+    if (mintStep !== 'paarcels') setSelectedPaarcelId(null);
+  }, [mintStep]);
   const cartridgeArt = currentNetwork === 'robinhood' ? GotchiverseRhCartridge : GotchiverseBaseCartridge;
   const selectedIsCartridgeHero = Boolean(selectedGotchi?.isCartridgeHero);
 
@@ -807,6 +821,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
   const handleManagePaarcelsClick = async () => {
     if (entering || minting) return;
     setMintError(null);
+    setSelectedPaarcelId(null);
     setMintStep('paarcels');
     if (currentAccount && globalProvider && currentNetwork && currentNetwork !== 'robinhood') {
       // Owned list: Base Realm tokenIdsOfOwner (Aarcade subgraph owner filters not healthy yet).
@@ -1339,6 +1354,11 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
                 storedId={storedId}
                 mintMode={mintMode}
                 mintStep={mintStep}
+                selectedPaarcelId={selectedPaarcelId}
+                onViewPaarcel={(realmTokenId) => {
+                  if (entering || minting) return;
+                  setSelectedPaarcelId(realmTokenId);
+                }}
                 onMintCartridgeClick={handleMintCartridgeClick}
                 onManageWearablesClick={() => {
                   if (entering) return;
@@ -1428,20 +1448,27 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
 
               {mintStep === 'paarcels' && currentNetwork && globalProvider && (
                 <div className="selected-gotchi-container mint-catalog">
-                  <PaarcelMintGallery
-                    cartParcelKeys={paarcelCartKeys}
-                    cartInstallKeys={paarcelInstallCartKeys}
-                    onAddParcel={(row) => {
-                      void addPaarcelToCart(row);
-                    }}
-                    onAddAllParcels={(rows) => {
-                      void addAllPaarcelsToCart(rows);
-                    }}
-                    onAddInstallation={addPaarcelInstallToCart}
-                    onAddAllParcelInstalls={addAllPaarcelInstallsToCart}
-                    onAddAllWalletInstalls={addAllPaarcelInstallsToCart}
-                    minting={minting}
-                  />
+                  {selectedPaarcel ? (
+                    <PaarcelDetailPanel
+                      parcel={selectedPaarcel}
+                      onBack={() => setSelectedPaarcelId(null)}
+                    />
+                  ) : (
+                    <PaarcelMintGallery
+                      cartParcelKeys={paarcelCartKeys}
+                      cartInstallKeys={paarcelInstallCartKeys}
+                      onAddParcel={(row) => {
+                        void addPaarcelToCart(row);
+                      }}
+                      onAddAllParcels={(rows) => {
+                        void addAllPaarcelsToCart(rows);
+                      }}
+                      onAddInstallation={addPaarcelInstallToCart}
+                      onAddAllParcelInstalls={addAllPaarcelInstallsToCart}
+                      onAddAllWalletInstalls={addAllPaarcelInstallsToCart}
+                      minting={minting}
+                    />
+                  )}
                 </div>
               )}
 

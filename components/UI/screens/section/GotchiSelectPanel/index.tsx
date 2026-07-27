@@ -59,6 +59,9 @@ interface Props {
   onManageCaavegotchisClick?: () => void;
   /** Manage mode: bound cAavegotchis open a stub manage modal instead of selecting for play. */
   onManageCaavegotchiClick?: (gotchi: GotchiverseAavegotchi) => void;
+  /** Selected minted cPaarcel (realm token id) when viewing details in center. */
+  selectedPaarcelId?: string | null;
+  onViewPaarcel?: (realmTokenId: string) => void;
 }
 
 export const GotchiSelectPanel = ({
@@ -72,6 +75,8 @@ export const GotchiSelectPanel = ({
   onManagePaarcelsClick,
   onManageCaavegotchisClick,
   onManageCaavegotchiClick,
+  selectedPaarcelId,
+  onViewPaarcel,
 }: Props): JSX.Element => {
   const [{ currentAccount, currentNetwork }] = useWeb3();
   const { click } = useAavegotchiSound();
@@ -362,6 +367,14 @@ export const GotchiSelectPanel = ({
                       mode="narrow"
                       secondsUntilChannel={0}
                       altarLevel={altarLevelFromParcel(item)}
+                      showView
+                      active={Boolean(selectedPaarcelId && String(item.tokenId) === String(selectedPaarcelId))}
+                      onView={() => {
+                        const tid = String(item.tokenId || item.id || '').trim();
+                        if (!tid) return;
+                        click();
+                        onViewPaarcel?.(tid);
+                      }}
                     />
                   </div>
                 ))

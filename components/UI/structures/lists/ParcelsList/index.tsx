@@ -91,15 +91,41 @@ export const ParcelsList = ({
 
           return !filterChanneled || secondsUntilChannel == null || secondsUntilChannel === 0 ? (
             <div
-              key={i}
+              key={item.tokenId || item.parcelId || i}
               className="parcel-card-item"
               ref={(el) => {
                 if (item.parcelId === spawnParcelId) lastParcelRef.current = el;
               }}
             >
-              <LazyLoad style={{ width: '100%' }} once scrollContainer={scrollContainer} overflow>
+              {useLoadMore ? (
+                <LazyLoad style={{ width: '100%' }} once scrollContainer={scrollContainer} overflow>
+                  <div
+                    ref={isLast ? handleLastItem : undefined}
+                    className={`clickable ${item.parcelId === spawnParcelId && 'active'} ${isBorrowed ? 'borrowed' : ''} ${
+                      gameConfig.gotchiverseTheme
+                    }`}
+                    onClick={() => {
+                      if (isBorrowed) {
+                        userDispatch({
+                          type: 'UPDATE_PARCELS_ACCESS_OWNERS',
+                          parcelAccessOwners: [item?.owner?.toLocaleLowerCase(), currentAccount.toLocaleLowerCase()],
+                        });
+                      }
+                      onSelect(item.parcelId, true);
+                    }}
+                  >
+                    <ParcelCard
+                      isBorrowed={isBorrowed}
+                      item={item}
+                      mode={mode}
+                      secondsUntilChannel={secondsUntilChannel}
+                      altarLevel={getTypeByItemId(Number(altar?.id))?.level}
+                      active={item.parcelId === spawnParcelId}
+                    />
+                  </div>
+                </LazyLoad>
+              ) : (
                 <div
-                  ref={isLast ? handleLastItem : undefined}
                   className={`clickable ${item.parcelId === spawnParcelId && 'active'} ${isBorrowed ? 'borrowed' : ''} ${
                     gameConfig.gotchiverseTheme
                   }`}
@@ -122,7 +148,7 @@ export const ParcelsList = ({
                     active={item.parcelId === spawnParcelId}
                   />
                 </div>
-              </LazyLoad>
+              )}
             </div>
           ) : null;
         })}

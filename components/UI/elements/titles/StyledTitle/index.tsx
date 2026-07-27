@@ -1,7 +1,8 @@
 import styles from './styles';
+import type { ReactNode } from 'react';
 
 interface Props {
-  text: string;
+  text: ReactNode;
   secondaryText?: string;
   style: 'left' | 'centered' | 'right' | 'simple-right-line' | 'bottom-line-two-side';
   color?: string;

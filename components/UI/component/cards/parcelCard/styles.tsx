@@ -97,8 +97,46 @@ export default css`
     display: flex;
     flex-direction: column;
     width: 100%;
+    min-width: 0;
     padding: 0.4rem 0 0.4rem 1em;
     flex: 1;
+  }
+
+  .parcel-card-actions {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 0 0.35em 0 0.2em;
+  }
+
+  .view-btn {
+    appearance: none;
+    cursor: pointer;
+    font-family: Kimberley Rg, sans-serif;
+    font-size: 1.55em;
+    line-height: 1;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #e8fbff;
+    background: rgba(0, 40, 90, 0.85);
+    border: 2px solid rgba(74, 219, 251, 0.95);
+    border-radius: 3px;
+    padding: 0.55em 0.75em;
+    box-shadow: 0 0 8px rgba(0, 185, 225, 0.25);
+    transition: border-color 0.12s ease, background 0.12s ease, color 0.12s ease;
+  }
+
+  .view-btn:hover {
+    border-color: var(--col-pink-400);
+    background: rgba(207, 0, 199, 0.35);
+    color: #fff;
+  }
+
+  .parcel-card.active .view-btn {
+    border-color: var(--col-pink-400);
+    background: rgba(207, 0, 199, 0.45);
+    color: #fff;
   }
 
   .wide .detail-wrapper {
