@@ -82,7 +82,7 @@ export const GotchiSelectPanel = ({
   const inventoryManageMode = wearablesManageMode || paarcelsManageMode;
   /** After Manage: show cWearables (+ Base cPaarcels) entry + keep roster. */
   const manageRailActive = Boolean(mintMode && hasCartridge);
-  const showPaarcelsCard = manageRailActive && currentNetwork === 'base';
+  const showPaarcelsCard = manageRailActive && currentNetwork !== 'robinhood';
 
   const cartridgeGotchis = useMemo(() => {
     if (!currentAccount || !cartridgeHeroes?.length) return [] as GotchiverseAavegotchi[];

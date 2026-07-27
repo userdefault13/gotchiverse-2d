@@ -1,7 +1,7 @@
 /* eslint-disable multiline-ternary */
 import { Input, SearchInput, SortSelect, StyledTitle, Toggle } from 'components/UI/elements';
 import { useEffect, useMemo, useState } from 'react';
-import { fetchAndSetGlobalParcels, sortParcels } from 'helpers/parcels.helper';
+import { sortParcels } from 'helpers/parcels.helper';
 import { cPaarcelsToGotchiverseParcels } from 'helpers/cartridgePaarcel.helper';
 import { HOOD_COL_COUNT, HOOD_ROW_COUNT } from 'shared_code/constants/const.game';
 import { GotchiverseParcel, OwnedStatus, SortOption } from 'types';
@@ -83,45 +83,30 @@ function filterParcelsLocally(
 
 export const SpawnOnParcel = ({ spawnParcelId, handleSpawnSelect }: Props): JSX.Element => {
   const filters = ['all parcels', 'owned', 'borrowed'];
-  const [{ ownedParcels, addresses, parcelInventory }] = useUser();
-  const [{ currentNetwork, currentAccount }] = useWeb3();
+  const [{ parcelInventory }] = useUser();
+  const [{ currentAccount }] = useWeb3();
   const [searchInput, setSearchInput] = useState<string | undefined>();
   const [districtInput, setDistrictInput] = useState<number>(0);
   const [filter, setFilter] = useState<number>(0);
   const [sort, setSort] = useState<SortOption>(sortOptions[0]);
   const [filterChanneled, setFilterChanneled] = useState<boolean>(false);
-  const [page, setPage] = useState(1);
   const [isLoading, setLoading] = useState(false);
 
-  /** Base soft-launch: spawn list = minted cPaarcels from cartridge inventory. */
-  const useCPaarcels = currentNetwork === 'base';
-
-  const cPaarcelParcels = useMemo(() => {
-    if (!useCPaarcels) return [];
-    return cPaarcelsToGotchiverseParcels(parcelInventory, currentAccount || undefined);
-  }, [useCPaarcels, parcelInventory, currentAccount]);
+  /** Soft-launch: spawn list = minted cPaarcels (Base cartridge inventory) on all citaadel nets. */
+  const cPaarcelParcels = useMemo(
+    () => cPaarcelsToGotchiverseParcels(parcelInventory, currentAccount || undefined),
+    [parcelInventory, currentAccount],
+  );
 
   const sortedParcels = useMemo(() => {
-    const source = useCPaarcels ? cPaarcelParcels : ownedParcels || [];
-    const filtered = useCPaarcels
-      ? filterParcelsLocally(source, {
-          district: districtInput,
-          search: searchInput,
-          ownedStatus: filter as OwnedStatus,
-          currentAccount: currentAccount || undefined,
-        })
-      : source;
+    const filtered = filterParcelsLocally(cPaarcelParcels, {
+      district: districtInput,
+      search: searchInput,
+      ownedStatus: filter as OwnedStatus,
+      currentAccount: currentAccount || undefined,
+    });
     return sortParcels(sort, filtered);
-  }, [
-    useCPaarcels,
-    cPaarcelParcels,
-    ownedParcels,
-    sort,
-    districtInput,
-    searchInput,
-    filter,
-    currentAccount,
-  ]);
+  }, [cPaarcelParcels, sort, districtInput, searchInput, filter, currentAccount]);
 
   const rowCount = 3;
   const parcelPlaceholderCount = useMemo(() => {
@@ -131,23 +116,12 @@ export const SpawnOnParcel = ({ spawnParcelId, handleSpawnSelect }: Props): JSX.
     return result;
   }, [sortedParcels]);
 
-  const fetchParcels = async () => {
-    setLoading(true);
-    await fetchAndSetGlobalParcels({ district: districtInput, search: searchInput, ownedStatus: filter as OwnedStatus }, page);
-    setLoading(false);
-  };
-
   const toggleFilterChanneled = () => setFilterChanneled(!filterChanneled);
   const handleOpenBaazaar = () => window.open(gotchiverseLinks.aavegotchi.marketplace, '_blank');
-  const handleOpenLending = () => window.open(gotchiverseLinks.aavegotchi.lending, '_blank');
 
   useEffect(() => {
-    if (useCPaarcels) {
-      setLoading(false);
-      return;
-    }
-    void fetchParcels();
-  }, [districtInput, searchInput, filter, page, addresses, useCPaarcels]);
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
     const data = JSON.parse(localStorage.getItem('parcelFilter'));
@@ -171,27 +145,25 @@ export const SpawnOnParcel = ({ spawnParcelId, handleSpawnSelect }: Props): JSX.
   return (
     <>
       <div className="title-container">
-        <StyledTitle
-          style="bottom-line-two-side"
-          text={useCPaarcels ? 'spawn on a cpaarcel' : 'spawn on a parcel'}
-          color="info"
-        />
+        <StyledTitle style="bottom-line-two-side" text="spawn on a cpaarcel" color="info" />
       </div>
       <div className={`content ${isLoading ? 'loading' : ''}`}>
         <div className="filter-buttons">
-          {(useCPaarcels ? filters.filter((f) => f !== 'borrowed') : filters).map((_filter, index) => {
-            // Keep ownedStatus indices stable when borrowed is hidden on Base.
-            const filterIndex = useCPaarcels && _filter === 'owned' ? 1 : filters.indexOf(_filter);
-            return (
-              <div
-                className={`filter-button ${filter === filterIndex ? 'active' : ''}`}
-                key={_filter}
-                onClick={() => setFilter(filterIndex)}
-              >
-                {_filter}
-              </div>
-            );
-          })}
+          {filters
+            .filter((f) => f !== 'borrowed')
+            .map((_filter) => {
+              // Keep ownedStatus indices stable (all=0, owned=1).
+              const filterIndex = filters.indexOf(_filter);
+              return (
+                <div
+                  className={`filter-button ${filter === filterIndex ? 'active' : ''}`}
+                  key={_filter}
+                  onClick={() => setFilter(filterIndex)}
+                >
+                  {_filter}
+                </div>
+              );
+            })}
         </div>
         <div className="filter-container">
           <div className="filters-wrapper">
@@ -247,62 +219,36 @@ export const SpawnOnParcel = ({ spawnParcelId, handleSpawnSelect }: Props): JSX.
             filterChanneled={filterChanneled}
             scrollContainer=".scrollable.parcels"
             onSelect={handleSpawnSelect}
-            useLoadMore={!useCPaarcels}
+            useLoadMore={false}
             loading={isLoading}
-            onLoadMore={() => setPage(page + 1)}
           />
         )}
         <div className="cta-baazaar-container">
           {!isLoading && parcelPlaceholderCount > 0 && (
-            <>
-              {filters.indexOf('borrowed') === filter ? (
-                <BuyCTACard
-                  type="card-lending"
-                  title="Borrow Aavegotchis"
-                  titleColor="pink"
-                  description="You can borrow more Aavegotchis to channel on their parcels!"
-                  ctaTitle="Open Lending"
-                  outlineColor="info"
-                  showCard={parcelPlaceholderCount > 0}
-                  showGradient={true}
-                  clipPath={bottomClipPath}
-                  onClick={handleOpenLending}
-                />
-              ) : (
-                <BuyCTACard
-                  type="card-baazaar"
-                  title={
-                    sortedParcels.length === 0
-                      ? useCPaarcels
-                        ? 'Mint your cPaarcels'
-                        : 'Buy your parcels'
-                      : sortedParcels.length > 0 && sortedParcels.length < 10
-                        ? useCPaarcels
-                          ? 'Mint more cPaarcels'
-                          : 'Buy more parcels'
-                        : null
-                  }
-                  titleColor="info"
-                  description={
-                    sortedParcels.length === 0
-                      ? useCPaarcels
-                        ? "You don't have any cPaarcels yet. Open Manage → cPaarcels to mint from your Base parcels."
-                        : "You don't own any parcels yet. You can buy parcels in the Baazaar."
-                      : sortedParcels.length > 0 && sortedParcels.length < 10
-                        ? useCPaarcels
-                          ? 'Mint more Base parcels into your cartridge from Manage → cPaarcels.'
-                          : 'You can own more Gotchiverse lands. Buy  parcels in the Baazaar!'
-                        : null
-                  }
-                  ctaTitle={useCPaarcels ? 'Open Baazaar' : 'Open Baazaar'}
-                  outlineColor="info"
-                  showCard={parcelPlaceholderCount > 0}
-                  showGradient={true}
-                  clipPath={bottomClipPath}
-                  onClick={handleOpenBaazaar}
-                />
-              )}
-            </>
+            <BuyCTACard
+              type="card-baazaar"
+              title={
+                sortedParcels.length === 0
+                  ? 'Mint your cPaarcels'
+                  : sortedParcels.length > 0 && sortedParcels.length < 10
+                    ? 'Mint more cPaarcels'
+                    : null
+              }
+              titleColor="info"
+              description={
+                sortedParcels.length === 0
+                  ? "You don't have any cPaarcels yet. Open Manage → cPaarcels to mint from your Base parcels."
+                  : sortedParcels.length > 0 && sortedParcels.length < 10
+                    ? 'Mint more Base parcels into your cartridge from Manage → cPaarcels.'
+                    : null
+              }
+              ctaTitle="Open Baazaar"
+              outlineColor="info"
+              showCard={parcelPlaceholderCount > 0}
+              showGradient={true}
+              clipPath={bottomClipPath}
+              onClick={handleOpenBaazaar}
+            />
           )}
           <div className="bottom-outline">
             <div className="left"></div>

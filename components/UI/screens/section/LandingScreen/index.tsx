@@ -296,7 +296,8 @@ export const LandingScreen = (): JSX.Element => {
     if (status.hasCartridge && status.cartridgeId) {
       const wearables = await getCartridgeWearables(address, status.cartridgeId);
       if (wearables.ok) wearableInventory = wearables.wearableInventory;
-      if (net === 'base') {
+      // cPaarcels are Base soft-launch inventory; load for all citaadel nets (not RH-only aarena).
+      if (net !== 'robinhood') {
         const { getCartridgePaarcels } = await import('helpers/auth.helper');
         const paarcels = await getCartridgePaarcels(address, status.cartridgeId);
         if (paarcels.ok) {
