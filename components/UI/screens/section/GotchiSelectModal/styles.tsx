@@ -316,7 +316,12 @@ export default css`
       justify-content: flex-start;
       align-items: stretch;
       align-self: stretch;
+      overflow: visible;
+    }
+
+    .selected-gotchi-container.mint-catalog .wearable-mint-gallery {
       overflow: hidden;
+      min-height: 0;
     }
 
     /* Wearable cart — right rail checkout. */

@@ -163,10 +163,10 @@ export default css`
   .wearable-items.grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    column-gap: 1.2rem;
-    row-gap: 1.4rem;
+    column-gap: 1.6rem;
+    row-gap: 2.8rem;
     align-content: start;
-    padding: 0.4rem 0.2rem 1.4rem;
+    padding: 0.6rem 0.2rem 2rem;
     overflow-x: hidden;
   }
 
@@ -185,9 +185,9 @@ export default css`
     align-items: center;
     padding: 0.9rem 1rem;
     border-radius: 0.4rem;
-    border: 0.25rem solid rgba(255, 122, 233, 0.55);
-    background: rgba(80, 12, 70, 0.55);
-    box-shadow: inset 0 0 14px 2px rgba(255, 122, 233, 0.18);
+    border: 0.25rem solid var(--rarity-border, rgba(255, 122, 233, 0.55));
+    background: color-mix(in srgb, var(--rarity-label, #6b1a62) 45%, rgba(20, 8, 40, 0.85));
+    box-shadow: inset 0 0 14px 2px color-mix(in srgb, var(--rarity-border, #ff7ae9) 35%, transparent);
     cursor: pointer;
     color: #fff;
     width: 100%;
@@ -195,9 +195,11 @@ export default css`
   }
 
   .wearable-row.checked {
-    border-color: #ff7ae9;
-    background: rgba(200, 42, 194, 0.35);
-    box-shadow: 0 0 8px rgba(255, 230, 0, 0.35), inset 0 0 14px 2px rgba(255, 122, 233, 0.28);
+    border-color: var(--rarity-glow, #ff7ae9);
+    background: color-mix(in srgb, var(--rarity-bg, #c82ac2) 40%, rgba(20, 8, 40, 0.75));
+    box-shadow:
+      0 0 8px var(--rarity-glow, #ffe600),
+      inset 0 0 14px 2px color-mix(in srgb, var(--rarity-border, #ff7ae9) 40%, transparent);
   }
 
   .wearable-row.minted {

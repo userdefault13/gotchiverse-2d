@@ -93,6 +93,29 @@ export function slotLabel(slotIndex: number): string {
   return SLOT_LABELS[slotIndex] || `Slot ${slotIndex}`;
 }
 
+const GOTCHI_CARD_RARITIES = new Set(['common', 'uncommon', 'rare', 'legendary']);
+
+/** CSS custom props for rarity-colored wearable tiles (border / glow / fill). */
+export function wearableRarityCssVars(rarity: string | undefined): Record<string, string> {
+  const r = String(rarity || 'common').toLowerCase();
+  if (GOTCHI_CARD_RARITIES.has(r)) {
+    return {
+      '--rarity-border': `var(--col-gotchi-${r}-card-border)`,
+      '--rarity-bg': `var(--col-gotchi-${r}-card-bg)`,
+      '--rarity-label': `var(--col-gotchi-${r}-card-label-bg)`,
+      '--rarity-glow': `var(--col-gotchi-${r}-card-border)`,
+    };
+  }
+  // mythical / godlike (and fallbacks) use the shared rarity scale
+  const tone = ['mythical', 'godlike'].includes(r) ? r : 'common';
+  return {
+    '--rarity-border': `var(--col-${tone}-400)`,
+    '--rarity-bg': `var(--col-${tone}-500)`,
+    '--rarity-label': `var(--col-${tone}-500)`,
+    '--rarity-glow': `var(--col-${tone}-300)`,
+  };
+}
+
 export function importFeeUsdForModifier(mod: number, bindKind: 'owned' | 'rental'): number {
   if (bindKind === 'owned') return 0;
   return RARITY_IMPORT_FEE_USD[mod] ?? 1;

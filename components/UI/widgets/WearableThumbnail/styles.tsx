@@ -15,6 +15,16 @@ export default css`
     image-rendering: pixelated;
   }
 
+  .wearable-thumb.rarity-tinted {
+    border-color: var(--rarity-border, rgba(255, 122, 233, 0.55));
+    background: linear-gradient(
+      160deg,
+      color-mix(in srgb, var(--rarity-glow, #ff7ae9) 35%, transparent),
+      rgba(12, 4, 28, 0.95)
+    );
+    box-shadow: inset 0 0 12px color-mix(in srgb, var(--rarity-border, #ff7ae9) 45%, transparent);
+  }
+
   .wearable-thumb :global(img) {
     width: 88% !important;
     height: 88% !important;
