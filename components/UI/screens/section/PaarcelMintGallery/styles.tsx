@@ -23,7 +23,7 @@ export default css`
   }
 
   .gallery-caption {
-    margin: 0 0 1rem;
+    margin: 0 0 1.2rem;
     font-size: 1.5rem;
     line-height: 1.35;
     color: #fff;
@@ -69,10 +69,10 @@ export default css`
     align-items: center;
     justify-content: space-between;
     gap: 0.8rem;
-    margin-bottom: 0.8rem;
+    margin-bottom: 1.2rem;
     flex-wrap: wrap;
     background: rgba(8, 2, 18, 0.75);
-    border: 0.12rem solid rgba(94, 234, 212, 0.3);
+    border: 0.12rem solid rgba(94, 234, 212, 0.45);
     border-radius: 0.45rem;
     padding: 0.55rem 0.75rem;
     flex: 0 0 auto;
@@ -81,6 +81,7 @@ export default css`
   .toolbar.catalog-tabs {
     padding: 0.35rem;
     gap: 0.35rem;
+    border-color: rgba(94, 234, 212, 0.55);
   }
 
   .tab-btn {
@@ -98,8 +99,10 @@ export default css`
   }
 
   .tab-btn.active {
-    background: rgba(20, 120, 110, 0.7);
-    color: #fff;
+    background: rgba(94, 234, 212, 0.35);
+    color: #eafffa;
+    box-shadow: inset 0 0 0 0.12rem rgba(94, 234, 212, 0.85);
+    text-shadow: 0 0 8px rgba(94, 234, 212, 0.55);
   }
 
   .count {
@@ -110,10 +113,11 @@ export default css`
 
   .view-toggle {
     display: flex;
-    border: 0.15rem solid rgba(94, 234, 212, 0.45);
+    border: 0.15rem solid rgba(94, 234, 212, 0.7);
     border-radius: 0.6rem;
     overflow: hidden;
     background: rgba(0, 0, 0, 0.35);
+    box-shadow: 0 0 8px rgba(94, 234, 212, 0.25);
   }
 
   .view-btn {
@@ -129,8 +133,9 @@ export default css`
   }
 
   .view-btn.active {
-    background: rgba(20, 120, 110, 0.65);
-    color: #fff;
+    background: rgba(94, 234, 212, 0.4);
+    color: #eafffa;
+    text-shadow: 0 0 8px rgba(94, 234, 212, 0.55);
   }
 
   .section-label {
@@ -153,19 +158,19 @@ export default css`
   .tile-list.list {
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
-    column-gap: 1rem;
-    row-gap: 1.4rem;
+    column-gap: 1.2rem;
+    row-gap: 2.8rem;
     align-content: start;
-    padding: 0.4rem 0.1rem 1.2rem;
+    padding: 0.6rem 0.1rem 1.6rem;
   }
 
   .tile-list.grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    column-gap: 1.4rem;
-    row-gap: 2.2rem;
+    column-gap: 1.6rem;
+    row-gap: 3.6rem;
     align-content: start;
-    padding: 0.6rem 0.2rem 2rem;
+    padding: 0.8rem 0.2rem 2.4rem;
   }
 
   .empty {
