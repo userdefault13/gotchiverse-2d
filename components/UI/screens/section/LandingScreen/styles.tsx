@@ -116,13 +116,16 @@ export default css`
 
   .cartridge-promo {
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     flex-wrap: wrap;
+    gap: 5rem 6rem;
+    margin-left: auto;
+    margin-right: auto;
   }
 
   .cartridge-promo-copy {
-    flex: 1 1 32rem;
-    max-width: 52rem;
+    flex: 0 1 42rem;
+    max-width: 42rem;
     display: flex;
     flex-direction: column;
     align-items: stretch;
@@ -152,7 +155,7 @@ export default css`
   }
 
   .cartridge-promo-art-wrap {
-    flex: 1 1 28rem;
+    flex: 0 0 auto;
     display: flex;
     align-items: center;
     justify-content: center;
