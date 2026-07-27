@@ -156,19 +156,18 @@ export const WearableMintGallery = ({
         <button
           key={row.key}
           type="button"
-          className={`wearable-card icon-only ${inCart ? 'checked' : ''} ${row.alreadyMinted ? 'minted' : ''}`}
+          className={`cwear-grid-tile ${inCart ? 'checked' : ''} ${row.alreadyMinted ? 'minted' : ''}`}
           disabled={disabled}
           onClick={() => addOne(row)}
           aria-label={label}
+          title=""
           onMouseEnter={(e) => openTip(row, e.currentTarget, priceLabel, ownership)}
           onMouseLeave={() => setGridTip((t) => (t?.key === row.key ? null : t))}
           onFocus={(e) => openTip(row, e.currentTarget, priceLabel, ownership)}
           onBlur={() => setGridTip((t) => (t?.key === row.key ? null : t))}
         >
-          <span className={`check-dot ${inCart ? 'on' : ''}`} aria-hidden />
-          <div className="card-art">
-            <WearableThumbnail itemTypeId={row.itemTypeId} name={row.name} size={64} />
-          </div>
+          <span className={`cwear-grid-check ${inCart ? 'on' : ''}`} aria-hidden />
+          <WearableThumbnail itemTypeId={row.itemTypeId} name={row.name} size={72} />
         </button>
       );
     }
@@ -261,47 +260,97 @@ export const WearableMintGallery = ({
             <span className="tip-name">{gridTip.name}</span>
             <span className="tip-sub">{gridTip.sub}</span>
             <span className={`tip-price ${gridTip.priceFree ? 'free' : ''}`}>{gridTip.price}</span>
-            <style jsx global>{`
-              .cwearable-grid-tip {
-                position: fixed;
-                z-index: 10050;
-                pointer-events: none;
-                display: flex;
-                flex-direction: column;
-                gap: 0.2rem;
-                padding: 0.7rem 0.8rem;
-                border-radius: 0.45rem;
-                border: 0.18rem solid rgba(255, 122, 233, 0.75);
-                background: rgba(18, 4, 32, 0.96);
-                box-shadow: 0 0 16px rgba(0, 0, 0, 0.55), 0 0 10px rgba(255, 122, 233, 0.35);
-                color: #fff;
-                font-family: Pixelar, sans-serif;
-              }
-              .cwearable-grid-tip .tip-name {
-                font-family: 'Kimberley Rg', sans-serif;
-                font-size: 1.35rem;
-                line-height: 1.2;
-              }
-              .cwearable-grid-tip .tip-sub {
-                font-size: 1.15rem;
-                line-height: 1.3;
-                color: rgba(255, 214, 247, 0.85);
-                text-transform: capitalize;
-              }
-              .cwearable-grid-tip .tip-price {
-                font-family: 'Kimberley Rg', sans-serif;
-                font-size: 1.3rem;
-                color: #ff7ae9;
-              }
-              .cwearable-grid-tip .tip-price.free {
-                color: #6dffb0;
-              }
-            `}</style>
           </div>,
           document.body,
         )}
 
       <style jsx>{styles}</style>
+      <style jsx global>{`
+        .cwear-grid-tile {
+          appearance: none;
+          -webkit-appearance: none;
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 100%;
+          aspect-ratio: 1;
+          margin: 0;
+          padding: 0.9rem;
+          border: 0.25rem solid #ff7ae9;
+          border-radius: 0.4rem;
+          background: linear-gradient(160deg, rgba(255, 122, 233, 0.18), rgba(20, 8, 40, 0.95));
+          box-shadow: inset 0 0 14px 2px rgba(255, 122, 233, 0.28);
+          color: #fff;
+          cursor: pointer;
+          overflow: hidden;
+          font: inherit;
+        }
+        .cwear-grid-tile:hover,
+        .cwear-grid-tile.checked {
+          box-shadow: 0 0 8px #ffe600, inset 0 0 14px 2px rgba(255, 122, 233, 0.35);
+          z-index: 2;
+        }
+        .cwear-grid-tile.checked {
+          border-color: #ffd6f7;
+          background: linear-gradient(160deg, rgba(255, 122, 233, 0.28), rgba(60, 12, 55, 0.95));
+        }
+        .cwear-grid-tile.minted,
+        .cwear-grid-tile:disabled {
+          opacity: 0.55;
+          cursor: default;
+        }
+        .cwear-grid-check {
+          position: absolute;
+          top: 0.4rem;
+          left: 0.4rem;
+          z-index: 2;
+          width: 1.2rem;
+          height: 1.2rem;
+          border-radius: 0.3rem;
+          border: 0.18rem solid rgba(255, 214, 247, 0.75);
+          background: rgba(0, 0, 0, 0.45);
+        }
+        .cwear-grid-check.on {
+          background: #ff7ae9;
+          border-color: #ffd6f7;
+          box-shadow: 0 0 6px rgba(255, 122, 233, 0.8);
+        }
+        .cwearable-grid-tip {
+          position: fixed;
+          z-index: 10050;
+          pointer-events: none;
+          display: flex;
+          flex-direction: column;
+          gap: 0.2rem;
+          padding: 0.7rem 0.8rem;
+          border-radius: 0.45rem;
+          border: 0.18rem solid rgba(255, 122, 233, 0.75);
+          background: rgba(18, 4, 32, 0.96);
+          box-shadow: 0 0 16px rgba(0, 0, 0, 0.55), 0 0 10px rgba(255, 122, 233, 0.35);
+          color: #fff;
+          font-family: Pixelar, sans-serif;
+        }
+        .cwearable-grid-tip .tip-name {
+          font-family: 'Kimberley Rg', sans-serif;
+          font-size: 1.35rem;
+          line-height: 1.2;
+        }
+        .cwearable-grid-tip .tip-sub {
+          font-size: 1.15rem;
+          line-height: 1.3;
+          color: rgba(255, 214, 247, 0.85);
+          text-transform: capitalize;
+        }
+        .cwearable-grid-tip .tip-price {
+          font-family: 'Kimberley Rg', sans-serif;
+          font-size: 1.3rem;
+          color: #ff7ae9;
+        }
+        .cwearable-grid-tip .tip-price.free {
+          color: #6dffb0;
+        }
+      `}</style>
     </>
   );
 };

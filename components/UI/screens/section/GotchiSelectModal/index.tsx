@@ -241,12 +241,42 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
 
   const isDesktop = useMediaQuery('(min-width: 1200px), (min-height: 750px)');
   const selectedGotchiHeight = useMemo(() => {
-    // Mint/manage modes: compact center preview so left + right rails keep room.
-    if (mintMode) return isDesktop ? 14 : 12;
+    // Mint preview uses the same scale as the normal select hero.
+    if (mintMode) return isDesktop ? 42 : 36;
     if (!selectedGotchi) return 0;
     if (isTrueSpectator(selectedGotchi.isSpectator)) return 30;
     return isDesktop ? 42 : 36;
   }, [isDesktop, selectedGotchi, mintMode]);
+
+  const mintPreviewTip = useMemo(() => {
+    if (mintStep === 'cartridge') {
+      return { title: 'Gotchiverse Cartridge', caption: 'Soft launch · Free mint' };
+    }
+    if (mintStep === 'wearables-import') {
+      return {
+        title: importSourceGotchi?.name || `#${importSourceGotchi?.id || ''}`,
+        caption: 'Choose equipped wearables to mint as cWearables',
+      };
+    }
+    if (mintStep === 'caavegotchi') {
+      if (selectedWalletGotchi) {
+        return {
+          title: selectedWalletGotchi.name || `#${selectedWalletGotchi.id}`,
+          caption: selectedWalletGotchi.isLent
+            ? 'Wallet gotchi · Free mint (borrower)'
+            : 'Wallet gotchi · Free mint (owner)',
+        };
+      }
+      if (selectedCollateral) {
+        return {
+          title: selectedCollateral.maticDisplay || selectedCollateral.name,
+          caption: 'Base traits 50 · ES 50 · EC 50 · $5 USDC (sim)',
+        };
+      }
+      return { title: 'cAavegotchi', caption: 'Choose collateral or a wallet gotchi →' };
+    }
+    return null;
+  }, [mintStep, importSourceGotchi, selectedWalletGotchi, selectedCollateral]);
 
   const checkIsEvent = (spawnId: string): boolean => {
     return spawnId && spawnId[0] !== 'C' && spawnId !== 'aarena';
@@ -997,7 +1027,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
               ) : null}
 
               {mintStep === 'cartridge' && currentNetwork && globalProvider && (
-                <div className="selected-gotchi-container mint-preview">
+                <div className="selected-gotchi-container mint-preview" tabIndex={0}>
                   <div className="gotchi">
                     <div
                       className="cartridge-preview-img"
@@ -1009,10 +1039,16 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
                   <div className="glow"></div>
                   <div className="gotchi-name-container">
                     <div className="gotchi-name">
-                      <h4>Gotchiverse Cartridge</h4>
+                      <h4>{mintPreviewTip?.title}</h4>
                     </div>
-                    <p className="gotchi-caption">Soft launch · Free mint</p>
+                    <p className="gotchi-caption">{mintPreviewTip?.caption}</p>
                   </div>
+                  {mintPreviewTip ? (
+                    <div className="mint-preview-tip" role="tooltip">
+                      <span className="tip-title">{mintPreviewTip.title}</span>
+                      <span className="tip-caption">{mintPreviewTip.caption}</span>
+                    </div>
+                  ) : null}
                 </div>
               )}
 
@@ -1028,7 +1064,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
               )}
 
               {mintStep === 'wearables-import' && currentNetwork && globalProvider && (
-                <div className="selected-gotchi-container mint-preview">
+                <div className="selected-gotchi-container mint-preview" tabIndex={0}>
                   <div className="gotchi">
                     {importSourceGotchi || selectedWalletGotchi ? (
                       <GotchiSVG
@@ -1053,15 +1089,21 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
                   <div className="glow"></div>
                   <div className="gotchi-name-container">
                     <div className="gotchi-name">
-                      <h4>{importSourceGotchi?.name || `#${importSourceGotchi?.id || ''}`}</h4>
+                      <h4>{mintPreviewTip?.title}</h4>
                     </div>
-                    <p className="gotchi-caption">Choose equipped wearables to mint as cWearables</p>
+                    <p className="gotchi-caption">{mintPreviewTip?.caption}</p>
                   </div>
+                  {mintPreviewTip ? (
+                    <div className="mint-preview-tip" role="tooltip">
+                      <span className="tip-title">{mintPreviewTip.title}</span>
+                      <span className="tip-caption">{mintPreviewTip.caption}</span>
+                    </div>
+                  ) : null}
                 </div>
               )}
 
               {mintStep === 'caavegotchi' && currentNetwork && globalProvider && (
-                <div className="selected-gotchi-container mint-preview">
+                <div className="selected-gotchi-container mint-preview" tabIndex={0}>
                   <div className="gotchi">
                     {selectedWalletGotchi ? (
                       <GotchiSVG
@@ -1092,24 +1134,16 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
                   <div className="glow"></div>
                   <div className="gotchi-name-container">
                     <div className="gotchi-name">
-                      <h4>
-                        {selectedWalletGotchi
-                          ? selectedWalletGotchi.name || `#${selectedWalletGotchi.id}`
-                          : selectedCollateral
-                            ? selectedCollateral.maticDisplay || selectedCollateral.name
-                            : 'cAavegotchi'}
-                      </h4>
+                      <h4>{mintPreviewTip?.title}</h4>
                     </div>
-                    <p className="gotchi-caption">
-                      {selectedWalletGotchi
-                        ? selectedWalletGotchi.isLent
-                          ? 'Wallet gotchi · Free mint (borrower)'
-                          : 'Wallet gotchi · Free mint (owner)'
-                        : selectedCollateral
-                          ? 'Base traits 50 · ES 50 · EC 50 · $5 USDC (sim)'
-                          : 'Choose collateral or a wallet gotchi →'}
-                    </p>
+                    <p className="gotchi-caption">{mintPreviewTip?.caption}</p>
                   </div>
+                  {mintPreviewTip ? (
+                    <div className="mint-preview-tip" role="tooltip">
+                      <span className="tip-title">{mintPreviewTip.title}</span>
+                      <span className="tip-caption">{mintPreviewTip.caption}</span>
+                    </div>
+                  ) : null}
                 </div>
               )}
 

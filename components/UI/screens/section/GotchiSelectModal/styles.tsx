@@ -237,12 +237,69 @@ export default css`
     }
 
     .selected-gotchi-container.mint-preview {
+      pointer-events: auto;
+      flex: 1 1 auto;
+      width: auto;
+      max-width: none;
+      padding-bottom: 8rem;
+      justify-content: flex-end;
+      cursor: default;
+    }
+
+    /* Label lives in hover tip — keep layout space free for the hero art. */
+    .selected-gotchi-container.mint-preview .gotchi-name-container {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .selected-gotchi-container.mint-preview .mint-preview-tip {
+      position: absolute;
+      left: 50%;
+      bottom: 4rem;
+      transform: translateX(-50%);
+      z-index: 5;
+      min-width: 18rem;
+      max-width: min(36rem, 70vw);
+      padding: 0.8rem 1.1rem;
+      border-radius: 0.45rem;
+      border: 0.18rem solid rgba(255, 122, 233, 0.75);
+      background: rgba(18, 4, 32, 0.96);
+      box-shadow: 0 0 16px rgba(0, 0, 0, 0.55), 0 0 10px rgba(255, 122, 233, 0.35);
+      opacity: 0;
       pointer-events: none;
-      flex: 0 0 16rem;
-      width: 16rem;
-      max-width: 16rem;
-      padding-bottom: 1.5rem;
-      justify-content: center;
+      transition: opacity 0.12s ease-in-out;
+      text-align: center;
+    }
+
+    .selected-gotchi-container.mint-preview:hover .mint-preview-tip,
+    .selected-gotchi-container.mint-preview:focus-within .mint-preview-tip {
+      opacity: 1;
+    }
+
+    .selected-gotchi-container.mint-preview .mint-preview-tip .tip-title {
+      display: block;
+      font-family: Pixelar, sans-serif;
+      font-size: 2.4rem;
+      line-height: 1.1;
+      background: -webkit-linear-gradient(#ffa24d, #ffe600);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0px 0px 4px rgba(0, 0, 0, 0.6));
+      margin-bottom: 0.3rem;
+    }
+
+    .selected-gotchi-container.mint-preview .mint-preview-tip .tip-caption {
+      display: block;
+      font-size: 1.35rem;
+      line-height: 1.3;
+      color: rgba(255, 255, 255, 0.9);
     }
 
     /* Wearable mint catalog — middle column (browse / add to cart). */
@@ -276,25 +333,6 @@ export default css`
       overflow: hidden;
     }
 
-    .selected-gotchi-container.mint-preview .glow {
-      width: 18rem;
-      height: 7rem;
-      bottom: 22%;
-    }
-
-    .selected-gotchi-container.mint-preview .gotchi-name-container {
-      margin-top: 0.8rem;
-    }
-
-    .selected-gotchi-container.mint-preview .gotchi-name h4 {
-      font-size: 1.8em;
-    }
-
-    .selected-gotchi-container.mint-preview .gotchi-caption {
-      font-size: 1.15em;
-      line-height: 1.3em;
-      max-width: 16rem;
-    }
 
     .cartridge-preview-img,
     .collateral-preview-svg {
