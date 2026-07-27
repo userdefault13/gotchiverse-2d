@@ -2,12 +2,13 @@
 import { Input, SearchInput, SortSelect, StyledTitle, Toggle } from 'components/UI/elements';
 import { useEffect, useMemo, useState } from 'react';
 import { fetchAndSetGlobalParcels, sortParcels } from 'helpers/parcels.helper';
+import { cPaarcelsToGotchiverseParcels } from 'helpers/cartridgePaarcel.helper';
 import { HOOD_COL_COUNT, HOOD_ROW_COUNT } from 'shared_code/constants/const.game';
-import { OwnedStatus, SortOption } from 'types';
-import _ from 'lodash';
+import { GotchiverseParcel, OwnedStatus, SortOption } from 'types';
 import styles from './styles';
 import { ParcelsList } from 'components/UI/structures';
 import { useUser } from 'contexts/UserContext';
+import { useWeb3 } from 'contexts/Web3Context';
 import { GotchiverseLoading } from 'assets';
 import Image from 'next/image';
 import { BuyCTACard } from 'components/UI/component';
@@ -52,9 +53,38 @@ const bottomClipPath = `polygon(
   0 calc(100% - 3.5rem)
 )`;
 
+function filterParcelsLocally(
+  parcels: GotchiverseParcel[],
+  opts: { district?: number; search?: string; ownedStatus?: OwnedStatus; currentAccount?: string },
+): GotchiverseParcel[] {
+  let out = parcels || [];
+  if (opts.district) {
+    out = out.filter((p) => Number(p.district) === Number(opts.district));
+  }
+  if (opts.search) {
+    const q = opts.search.trim().toLowerCase();
+    if (q) {
+      out = out.filter((p) => {
+        const hash = String(p.parcelHash || '').toLowerCase();
+        const pid = String(p.parcelId || '').toLowerCase();
+        const tid = String(p.tokenId || p.id || '');
+        return hash.includes(q) || pid.includes(q) || tid.includes(q);
+      });
+    }
+  }
+  // cPaarcels are always wallet-owned; borrowed filter → empty.
+  if (opts.ownedStatus === (2 as OwnedStatus)) return [];
+  if (opts.ownedStatus === (1 as OwnedStatus) && opts.currentAccount) {
+    const me = opts.currentAccount.toLowerCase();
+    out = out.filter((p) => !p.owner || p.owner.toLowerCase() === me);
+  }
+  return out;
+}
+
 export const SpawnOnParcel = ({ spawnParcelId, handleSpawnSelect }: Props): JSX.Element => {
   const filters = ['all parcels', 'owned', 'borrowed'];
-  const [{ ownedParcels, addresses }] = useUser();
+  const [{ ownedParcels, addresses, parcelInventory }] = useUser();
+  const [{ currentNetwork, currentAccount }] = useWeb3();
   const [searchInput, setSearchInput] = useState<string | undefined>();
   const [districtInput, setDistrictInput] = useState<number>(0);
   const [filter, setFilter] = useState<number>(0);
@@ -63,10 +93,35 @@ export const SpawnOnParcel = ({ spawnParcelId, handleSpawnSelect }: Props): JSX.
   const [page, setPage] = useState(1);
   const [isLoading, setLoading] = useState(false);
 
+  /** Base soft-launch: spawn list = minted cPaarcels from cartridge inventory. */
+  const useCPaarcels = currentNetwork === 'base';
+
+  const cPaarcelParcels = useMemo(() => {
+    if (!useCPaarcels) return [];
+    return cPaarcelsToGotchiverseParcels(parcelInventory, currentAccount || undefined);
+  }, [useCPaarcels, parcelInventory, currentAccount]);
+
   const sortedParcels = useMemo(() => {
-    if (!ownedParcels) return [];
-    return sortParcels(sort, ownedParcels);
-  }, [ownedParcels, sort]);
+    const source = useCPaarcels ? cPaarcelParcels : ownedParcels || [];
+    const filtered = useCPaarcels
+      ? filterParcelsLocally(source, {
+          district: districtInput,
+          search: searchInput,
+          ownedStatus: filter as OwnedStatus,
+          currentAccount: currentAccount || undefined,
+        })
+      : source;
+    return sortParcels(sort, filtered);
+  }, [
+    useCPaarcels,
+    cPaarcelParcels,
+    ownedParcels,
+    sort,
+    districtInput,
+    searchInput,
+    filter,
+    currentAccount,
+  ]);
 
   const rowCount = 3;
   const parcelPlaceholderCount = useMemo(() => {
@@ -87,8 +142,12 @@ export const SpawnOnParcel = ({ spawnParcelId, handleSpawnSelect }: Props): JSX.
   const handleOpenLending = () => window.open(gotchiverseLinks.aavegotchi.lending, '_blank');
 
   useEffect(() => {
+    if (useCPaarcels) {
+      setLoading(false);
+      return;
+    }
     void fetchParcels();
-  }, [districtInput, searchInput, filter, page, addresses]);
+  }, [districtInput, searchInput, filter, page, addresses, useCPaarcels]);
 
   useEffect(() => {
     const data = JSON.parse(localStorage.getItem('parcelFilter'));
@@ -112,15 +171,27 @@ export const SpawnOnParcel = ({ spawnParcelId, handleSpawnSelect }: Props): JSX.
   return (
     <>
       <div className="title-container">
-        <StyledTitle style="bottom-line-two-side" text="spawn on a parcel" color="info" />
+        <StyledTitle
+          style="bottom-line-two-side"
+          text={useCPaarcels ? 'spawn on a cpaarcel' : 'spawn on a parcel'}
+          color="info"
+        />
       </div>
       <div className={`content ${isLoading ? 'loading' : ''}`}>
         <div className="filter-buttons">
-          {filters.map((_filter, index) => (
-            <div className={`filter-button ${filter === index ? 'active' : ''}`} key={index} onClick={() => setFilter(index)}>
-              {_filter}
-            </div>
-          ))}
+          {(useCPaarcels ? filters.filter((f) => f !== 'borrowed') : filters).map((_filter, index) => {
+            // Keep ownedStatus indices stable when borrowed is hidden on Base.
+            const filterIndex = useCPaarcels && _filter === 'owned' ? 1 : filters.indexOf(_filter);
+            return (
+              <div
+                className={`filter-button ${filter === filterIndex ? 'active' : ''}`}
+                key={_filter}
+                onClick={() => setFilter(filterIndex)}
+              >
+                {_filter}
+              </div>
+            );
+          })}
         </div>
         <div className="filter-container">
           <div className="filters-wrapper">
@@ -176,7 +247,7 @@ export const SpawnOnParcel = ({ spawnParcelId, handleSpawnSelect }: Props): JSX.
             filterChanneled={filterChanneled}
             scrollContainer=".scrollable.parcels"
             onSelect={handleSpawnSelect}
-            useLoadMore
+            useLoadMore={!useCPaarcels}
             loading={isLoading}
             onLoadMore={() => setPage(page + 1)}
           />
@@ -202,20 +273,28 @@ export const SpawnOnParcel = ({ spawnParcelId, handleSpawnSelect }: Props): JSX.
                   type="card-baazaar"
                   title={
                     sortedParcels.length === 0
-                      ? 'Buy your parcels'
+                      ? useCPaarcels
+                        ? 'Mint your cPaarcels'
+                        : 'Buy your parcels'
                       : sortedParcels.length > 0 && sortedParcels.length < 10
-                        ? 'Buy more parcels'
+                        ? useCPaarcels
+                          ? 'Mint more cPaarcels'
+                          : 'Buy more parcels'
                         : null
                   }
                   titleColor="info"
                   description={
                     sortedParcels.length === 0
-                      ? "You don't own any parcels yet. You can buy parcels in the Baazaar."
+                      ? useCPaarcels
+                        ? "You don't have any cPaarcels yet. Open Manage → cPaarcels to mint from your Base parcels."
+                        : "You don't own any parcels yet. You can buy parcels in the Baazaar."
                       : sortedParcels.length > 0 && sortedParcels.length < 10
-                        ? 'You can own more Gotchiverse lands. Buy  parcels in the Baazaar!'
+                        ? useCPaarcels
+                          ? 'Mint more Base parcels into your cartridge from Manage → cPaarcels.'
+                          : 'You can own more Gotchiverse lands. Buy  parcels in the Baazaar!'
                         : null
                   }
-                  ctaTitle="Open Baazaar"
+                  ctaTitle={useCPaarcels ? 'Open Baazaar' : 'Open Baazaar'}
                   outlineColor="info"
                   showCard={parcelPlaceholderCount > 0}
                   showGradient={true}

@@ -415,6 +415,43 @@ export function normalizeCPaarcels(raw: unknown): CPaarcel[] {
     .filter(Boolean) as CPaarcel[];
 }
 
+/** Map soft-launch cPaarcels into the spawn-list / ParcelCard shape. */
+export function cPaarcelToGotchiverseParcel(c: CPaarcel, owner?: string): GotchiverseParcel | null {
+  const realmTokenId = String(c?.realmTokenId || '').trim();
+  if (!/^\d+$/.test(realmTokenId)) return null;
+  const meta =
+    PARCELS_BY_TOKEN_ID[realmTokenId] || PARCELS_BY_TOKEN_ID[Number(realmTokenId)] || undefined;
+  const rawParcelId = String(c.parcelId || meta?.parcelId || '').trim();
+  const parcelId =
+    rawParcelId.charAt(0) === 'C' ? rawParcelId : String(meta?.parcelId || rawParcelId || realmTokenId);
+  const parcelHash = String(meta?.parcelHash || c.parcelId || parcelId || realmTokenId);
+  return {
+    id: realmTokenId,
+    tokenId: realmTokenId,
+    parcelId,
+    parcelHash,
+    district: Number(c.district ?? meta?.district) || 0,
+    owner: owner || undefined,
+    isLent: false,
+    equippedInstallations: (c.installations || [])
+      .map((inst) => {
+        const id = Number(inst?.itemTypeId);
+        if (!Number.isFinite(id) || id <= 0) return null;
+        return { id: String(id) };
+      })
+      .filter(Boolean) as Array<{ id: string }>,
+  };
+}
+
+export function cPaarcelsToGotchiverseParcels(
+  inventory: CPaarcel[] | null | undefined,
+  owner?: string,
+): GotchiverseParcel[] {
+  return (inventory || [])
+    .map((c) => cPaarcelToGotchiverseParcel(c, owner))
+    .filter(Boolean) as GotchiverseParcel[];
+}
+
 export function paarcelsFromCartridgeSnapshot(snapshot: unknown): {
   parcelInventory: CPaarcel[];
   installationInventory: CInstallation[];
