@@ -31,7 +31,7 @@ export default css`
   .label {
     display: inline-block;
     color: var(--color, var(--col-info-400));
-    font-family: 'Kimberley Bl';
+    font-family: Pixelar, sans-serif;
     font-size: 1rem;
     line-height: 1;
     max-width: 5.5rem;

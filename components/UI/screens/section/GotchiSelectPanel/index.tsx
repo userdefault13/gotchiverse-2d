@@ -237,7 +237,7 @@ export const GotchiSelectPanel = ({
                 value={searchInput || ''}
                 onChange={setSearchInput}
                 placeholder="Token ID, Name"
-                fontFamily="Kimberley Rg"
+                fontFamily="Pixelar"
                 fontSize="1.2rem"
                 shadow={false}
               />
@@ -253,7 +253,7 @@ export const GotchiSelectPanel = ({
                 color="info"
                 width="13.5rem"
                 useTheme={true}
-                fontFamily="Kimberley Rg"
+                fontFamily="Pixelar"
                 fontSize="1.2rem"
                 shadow={false}
               />

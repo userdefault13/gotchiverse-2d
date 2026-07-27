@@ -143,7 +143,7 @@ export default css`
     align-items: center;
     justify-content: center;
     gap: 1em;
-    font-family: 'Kimberley Rg';
+    font-family: Pixelar, sans-serif;
     font-size: 1.2rem;
     line-height: 1;
   }
@@ -501,7 +501,7 @@ export default css`
     display: inline-block;
     text-align: left;
     text-transform: uppercase;
-    font-family: 'Kimberley Rg';
+    font-family: Pixelar, sans-serif;
     font-size: 1.6rem;
     line-height: 1.2rem;
     margin: 0 0.25rem;
@@ -545,7 +545,7 @@ export default css`
 
   .manage-hero-title {
     margin: 0 0 0.6rem;
-    font-family: 'Kimberley Bl', sans-serif;
+    font-family: Pixelar, sans-serif;
     font-size: 2.4rem;
     text-transform: uppercase;
     background: -webkit-linear-gradient(#ffa24d, #ffe600);
@@ -572,7 +572,7 @@ export default css`
     border: none;
     border-radius: 0.8rem;
     padding: 1rem 1.2rem;
-    font-family: 'Kimberley Rg', sans-serif;
+    font-family: Pixelar, sans-serif;
     font-size: 1.6rem;
     text-transform: uppercase;
     color: #fff;

@@ -25,7 +25,7 @@ export default css`
     border-radius: 2px;
     color: var(--col-white);
     font-size: 1.2rem;
-    font-family: 'Kimberley Rg';
+    font-family: Pixelar, sans-serif;
     line-height: 1.2;
     padding: 0.8rem 0.8rem 0.8rem 1.6rem;
     z-index: 1;

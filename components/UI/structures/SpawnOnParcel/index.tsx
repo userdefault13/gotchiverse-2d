@@ -240,13 +240,17 @@ export const SpawnOnParcel = ({ spawnParcelId, handleSpawnSelect }: Props): JSX.
             .map((_filter) => {
               // Keep ownedStatus indices stable (all=0, owned=1).
               const filterIndex = filters.indexOf(_filter);
+              const label =
+                _filter === 'all parcels'
+                  ? `all parcels (${spawnParcels.length})`
+                  : _filter;
               return (
                 <div
                   className={`filter-button ${filter === filterIndex ? 'active' : ''}`}
                   key={_filter}
                   onClick={() => setFilter(filterIndex)}
                 >
-                  {_filter}
+                  {label}
                 </div>
               );
             })}

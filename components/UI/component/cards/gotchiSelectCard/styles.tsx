@@ -56,7 +56,7 @@ export default css`
   }
 
   .gotchi-name {
-    font-family: 'Kimberley Rg';
+    font-family: Pixelar, sans-serif;
     font-size: 1.2rem;
     line-height: 1.4;
     background: var(--label-bg-color);

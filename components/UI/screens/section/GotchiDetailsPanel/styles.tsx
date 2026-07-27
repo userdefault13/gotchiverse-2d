@@ -22,7 +22,7 @@ export default css`
     justify-content: space-between;
   }
   .level-info h4 {
-    font-family: 'Kimberley Bl';
+    font-family: Pixelar, sans-serif;
     margin: 0;
     padding: 0;
     color: var(--col-pink-200);
@@ -41,7 +41,7 @@ export default css`
     height: 100%;
   }
   .level-info .info {
-    font-family: 'Kimberley Rg';
+    font-family: Pixelar, sans-serif;
     color: var(--col-info-200);
     font-size: 1.5rem;
     line-height: 1.2;
@@ -94,7 +94,7 @@ export default css`
     line-height: 1.2rem;
     color: var(--col-info-800);
     text-align: center;
-    font-family: 'Kimberley Rg';
+    font-family: Pixelar, sans-serif;
   }
   .trait .icon {
     font-size: 3rem;
@@ -121,7 +121,7 @@ export default css`
     font-size: 1.2rem;
     padding: 0.4rem 0.8rem;
     text-align: center;
-    font-family: 'Kimberley Rg';
+    font-family: Pixelar, sans-serif;
   }
 
   .row {
@@ -141,13 +141,13 @@ export default css`
 
   .fade-container h5 {
     margin: 0;
-    font-family: 'Kimberley Bl';
+    font-family: Pixelar, sans-serif;
     font-size: 1.2rem;
     line-height: 1.2;
   }
   .fade-container p {
     margin: 0;
-    font-family: 'Kimberley Rg';
+    font-family: Pixelar, sans-serif;
     font-size: 1.6rem;
     line-height: 1.6;
   }
@@ -296,7 +296,7 @@ export default css`
     font-size: 1.6rem;
     color: var(--col-white);
     line-height: 1.2;
-    font-family: 'Kimberley Rg';
+    font-family: Pixelar, sans-serif;
   }
 
   .description p.info {

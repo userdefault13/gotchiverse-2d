@@ -111,7 +111,7 @@ export default css`
   }
 
   .paarcel-stats-breakdown .stat {
-    font-family: 'Kimberley Rg', sans-serif;
+    font-family: Pixelar, sans-serif;
     font-size: 1.35rem;
     color: #fff;
     display: inline-flex;

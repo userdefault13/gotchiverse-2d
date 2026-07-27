@@ -68,7 +68,7 @@ export default css`
   .enter-button-text span {
     font-size: 3.6rem;
     line-height: 1;
-    font-family: 'Alien Encounters Solid';
+    font-family: Pixelar, sans-serif;
     color: var(--col-white);
     text-transform: uppercase;
     transform: translateY(0.2rem);
