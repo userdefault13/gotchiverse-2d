@@ -43,17 +43,21 @@ export const SoftCText = ({ children, className }: Props): JSX.Element => {
     <>
       <span className={className || undefined}>{nodes.length > 0 ? nodes : children}</span>
       <style jsx global>{`
+        .soft-brand {
+          display: inline-flex;
+          align-items: flex-end;
+          text-transform: inherit;
+        }
         .soft-c {
-          font-size: 0.68em;
-          line-height: 1;
+          font-size: 0.84em;
+          line-height: 0.85;
           text-transform: none !important;
-          vertical-align: 0.16em;
           color: inherit;
           -webkit-text-fill-color: currentColor;
         }
-        .soft-brand,
         .soft-rest {
           text-transform: inherit;
+          line-height: 1;
         }
         /* Match Pixelar gold gradient titles (parent uses transparent fill). */
         .select-panel-title .soft-c,

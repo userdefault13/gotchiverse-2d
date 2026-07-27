@@ -1,5 +1,7 @@
 import type { GotchiverseAavegotchi } from 'types';
 import Items from 'data/items.json';
+import rarityDb from 'data/aavegotchi/aavegotchi_db_rarity.json';
+import wearableRarityIndex from 'data/aavegotchi/wearable_rarity_index.json';
 
 export type CWearable = {
   id: string;
@@ -33,6 +35,75 @@ const RARITY_BY_MODIFIER: Record<number, string> = {
   20: 'mythical',
   50: 'godlike',
 };
+
+const MODIFIER_BY_RARITY: Record<string, number> = {
+  common: 1,
+  uncommon: 2,
+  rare: 5,
+  legendary: 10,
+  mythical: 20,
+  godlike: 50,
+};
+
+type WearableRarityIndexRow = {
+  name?: string;
+  rarity?: string;
+  rarityScoreModifier?: number;
+};
+
+const WEARABLE_RARITY_BY_ID = wearableRarityIndex as Record<string, WearableRarityIndexRow>;
+
+/** Hex from Paarcel `aavegotchi_db_rarity.json` trait-band ranges. */
+function rarityBandHex(rangeKey: string, fallback: string): string {
+  const ranges = (rarityDb as { rarityColors?: { ranges?: Record<string, { hex?: string }> } })
+    ?.rarityColors?.ranges;
+  const hex = ranges?.[rangeKey]?.hex;
+  return typeof hex === 'string' && hex.startsWith('#') ? hex : fallback;
+}
+
+function shadeHex(hex: string, factor: number): string {
+  const raw = hex.replace('#', '');
+  if (raw.length !== 6) return hex;
+  const n = parseInt(raw, 16);
+  if (Number.isNaN(n)) return hex;
+  const clamp = (v: number) => Math.max(0, Math.min(255, Math.round(v)));
+  const r = clamp(((n >> 16) & 255) * factor);
+  const g = clamp(((n >> 8) & 255) * factor);
+  const b = clamp((n & 255) * factor);
+  return `#${[r, g, b].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
+}
+
+/**
+ * Wearable tile colors from Paarcel `Assets/Resources/Aavegotchi/JSONs/aavegotchi_db_rarity.json`.
+ * Trait-band hexes mapped onto wearable tiers (high-band for mid/high, low-band for mythical).
+ */
+function buildWearableRarityColors(): Record<
+  string,
+  { border: string; bg: string; label: string; glow: string }
+> {
+  const uncommon = rarityBandHex('75-90', '#37828e');
+  const rare = rarityBandHex('91-97', '#ea8d27');
+  const mythicalHigh = rarityBandHex('98-99', '#4fffa9'); // mint — legendary / godlike
+  const mythicalLow = rarityBandHex('0-1', '#fe01ff');
+  // Common band has no single hex in the JSON; use Uncommon-low purple (#5c25bf).
+  const commonPurple = rarityBandHex('10-24', '#5c25bf');
+  const mk = (border: string, bgFactor = 0.72, labelFactor = 0.55, glowFactor = 1.12) => ({
+    border,
+    bg: shadeHex(border, bgFactor),
+    label: shadeHex(border, labelFactor),
+    glow: shadeHex(border, glowFactor),
+  });
+  return {
+    common: mk(commonPurple),
+    uncommon: mk(uncommon),
+    rare: mk(rare),
+    legendary: mk(mythicalHigh),
+    mythical: mk(mythicalLow),
+    godlike: mk(mythicalHigh, 0.55, 0.4, 1.05),
+  };
+}
+
+const WEARABLE_RARITY_COLORS = buildWearableRarityColors();
 
 /** Reduced rental/borrow import fees (matches Aarcade). */
 const RARITY_IMPORT_FEE_USD: Record<number, number> = {
@@ -68,6 +139,7 @@ type ItemRow = {
   name?: string;
   rarityScoreModifier?: number | string;
   maxQuantity?: number | string;
+  rarityLevel?: string;
 };
 
 function itemByTypeId(itemTypeId: number): ItemRow | undefined {
@@ -79,40 +151,42 @@ function rarityFromModifier(mod: number): string {
   return RARITY_BY_MODIFIER[mod] || 'common';
 }
 
+function normalizeRarityLevel(raw: string | undefined): string | null {
+  const r = String(raw || '')
+    .trim()
+    .toLowerCase();
+  return MODIFIER_BY_RARITY[r] ? r : null;
+}
+
+/**
+ * Wiki quantity → BRS bonus mapping
+ * https://wiki.aavegotchi.com/en/wearables
+ * Common 1000 (+1), Uncommon 500 (+2), Rare 250–308 (+5),
+ * Legendary 100–150 (+10), Mythical 10–50 (+20), Godlike 5 (+50).
+ */
 function modifierFromMaxQuantity(maxQuantity: number): number {
-  // Rough fallback when rarityScoreModifier missing from items.json
+  if (!Number.isFinite(maxQuantity) || maxQuantity <= 0) return 1; // unknown → common, never godlike
   if (maxQuantity >= 1000) return 1;
   if (maxQuantity >= 500) return 2;
   if (maxQuantity >= 250) return 5;
   if (maxQuantity >= 100) return 10;
   if (maxQuantity >= 10) return 20;
-  return 50;
+  return 50; // typically 5
 }
 
 export function slotLabel(slotIndex: number): string {
   return SLOT_LABELS[slotIndex] || `Slot ${slotIndex}`;
 }
 
-const GOTCHI_CARD_RARITIES = new Set(['common', 'uncommon', 'rare', 'legendary']);
-
-/** CSS custom props for rarity-colored wearable tiles (border / glow / fill). */
+/** CSS custom props for rarity-colored wearable tiles (Paarcel rarity JSON hexes). */
 export function wearableRarityCssVars(rarity: string | undefined): Record<string, string> {
   const r = String(rarity || 'common').toLowerCase();
-  if (GOTCHI_CARD_RARITIES.has(r)) {
-    return {
-      '--rarity-border': `var(--col-gotchi-${r}-card-border)`,
-      '--rarity-bg': `var(--col-gotchi-${r}-card-bg)`,
-      '--rarity-label': `var(--col-gotchi-${r}-card-label-bg)`,
-      '--rarity-glow': `var(--col-gotchi-${r}-card-border)`,
-    };
-  }
-  // mythical / godlike (and fallbacks) use the shared rarity scale
-  const tone = ['mythical', 'godlike'].includes(r) ? r : 'common';
+  const colors = WEARABLE_RARITY_COLORS[r] || WEARABLE_RARITY_COLORS.common;
   return {
-    '--rarity-border': `var(--col-${tone}-400)`,
-    '--rarity-bg': `var(--col-${tone}-500)`,
-    '--rarity-label': `var(--col-${tone}-500)`,
-    '--rarity-glow': `var(--col-${tone}-300)`,
+    '--rarity-border': colors.border,
+    '--rarity-bg': colors.bg,
+    '--rarity-label': colors.label,
+    '--rarity-glow': colors.glow,
   };
 }
 
@@ -131,14 +205,37 @@ export function wearableDisplayMeta(itemTypeId: number): {
   rarity: string;
   rarityScoreModifier: number;
 } {
-  const item = itemByTypeId(itemTypeId);
+  const id = Number(itemTypeId) || 0;
+  const fromPaarcel = WEARABLE_RARITY_BY_ID[String(id)];
+  const paarcelRarity = normalizeRarityLevel(fromPaarcel?.rarity);
+  const item = itemByTypeId(id);
+  const fromLevel = normalizeRarityLevel(item?.rarityLevel);
   const modRaw = Number(item?.rarityScoreModifier);
-  const mod = Number.isFinite(modRaw) && modRaw > 0
-    ? modRaw
-    : modifierFromMaxQuantity(Number(item?.maxQuantity) || 0);
+  let mod: number;
+  let rarity: string;
+
+  if (paarcelRarity) {
+    // Paarcel `aavegotchi_db_wearables.json` rarity (via wearable_rarity_index).
+    rarity = paarcelRarity;
+    mod =
+      Number(fromPaarcel?.rarityScoreModifier) > 0
+        ? Number(fromPaarcel?.rarityScoreModifier)
+        : MODIFIER_BY_RARITY[paarcelRarity];
+  } else if (fromLevel) {
+    // Prefer explicit rarityLevel (e.g. Haunt 2 rows with qty 0 but level set).
+    rarity = fromLevel;
+    mod = MODIFIER_BY_RARITY[fromLevel];
+  } else if (Number.isFinite(modRaw) && modRaw > 0) {
+    mod = modRaw;
+    rarity = rarityFromModifier(mod);
+  } else {
+    mod = modifierFromMaxQuantity(Number(item?.maxQuantity));
+    rarity = rarityFromModifier(mod);
+  }
+
   return {
-    name: String(item?.name || `Wearable #${itemTypeId}`),
-    rarity: rarityFromModifier(mod),
+    name: String(fromPaarcel?.name || item?.name || `Wearable #${id}`),
+    rarity,
     rarityScoreModifier: mod,
   };
 }
@@ -237,11 +334,13 @@ export function stackWearableInventory(inventory: CWearable[] | null | undefined
       existing.count += 1;
       existing.items.push(item);
     } else {
+      // Re-resolve rarity from items.json / wiki qty so stacks aren't stuck on bad server labels.
+      const meta = wearableDisplayMeta(id);
       map.set(id, {
         itemTypeId: id,
-        name: item.name,
-        rarity: item.rarity,
-        rarityScoreModifier: item.rarityScoreModifier,
+        name: item.name || meta.name,
+        rarity: meta.rarity,
+        rarityScoreModifier: meta.rarityScoreModifier,
         count: 1,
         slotIndex: item.slotIndex,
         items: [item],

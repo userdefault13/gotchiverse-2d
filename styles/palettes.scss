@@ -133,9 +133,10 @@
   --col-legendary-450: #ffd28d;
   --col-legendary-500: #c6792e;
 
-  --col-mythical-300: #f643f0;
-  --col-mythical-400: #c82ac2;
-  --col-mythical-500: #a712a1;
+  /* Paarcel aavegotchi_db_rarity.json — Mythical low band 0-1 */
+  --col-mythical-300: #ff66ff;
+  --col-mythical-400: #fe01ff;
+  --col-mythical-500: #c000c0;
 
   --col-godlike-300: #51b92d;
   --col-godlike-400: #3a931b;
@@ -161,13 +162,14 @@
   --col-gotchi-common-card-bg: #7075F4;
   --col-gotchi-common-card-inner-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25), inset 0px 0px 14px 3px #5E1FE4;
 
-  --col-gotchi-uncommon-300: #7aafbf;
-  --col-gotchi-uncommon-400: #528395;
-  --col-gotchi-uncommon-500: #3d6575;
-  --col-gotchi-uncommon-card-border: #528395;
-  --col-gotchi-uncommon-card-label-bg: #3d6575;
-  --col-gotchi-uncommon-card-bg: #456f80;
-  --col-gotchi-uncommon-card-inner-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25), inset 0px 0px 14px 3px rgba(61, 101, 117, 0.7);
+  /* Paarcel aavegotchi_db_rarity.json — Uncommon high band 75-90 */
+  --col-gotchi-uncommon-300: #4a9eab;
+  --col-gotchi-uncommon-400: #37828e;
+  --col-gotchi-uncommon-500: #2a646e;
+  --col-gotchi-uncommon-card-border: #37828e;
+  --col-gotchi-uncommon-card-label-bg: #2a646e;
+  --col-gotchi-uncommon-card-bg: #2f6f7a;
+  --col-gotchi-uncommon-card-inner-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25), inset 0px 0px 14px 3px rgba(42, 100, 110, 0.7);
   
   --col-gotchi-rare-300: #f643f0;
   --col-gotchi-rare-400: #c82ac2;
@@ -177,12 +179,13 @@
   --col-gotchi-rare-card-bg: #8940B6;
   --col-gotchi-rare-card-inner-shadow: 0px 3.85075px 3.85075px rgba(0, 0, 0, 0.25), inset 0px 0px 14.4403px 2.88806px rgba(115, 0, 143, 0.7);
 
-  --col-gotchi-legendary-300: #00f470;
-  --col-gotchi-legendary-400: #51ffa8;
-  --col-gotchi-legendary-500: #00bf58;
-  --col-gotchi-legendary-card-border: #00EF8B;
-  --col-gotchi-legendary-card-label-bg: #05BA4E;
-  --col-gotchi-legendary-card-bg: #00763E;
+  /* Paarcel aavegotchi_db_rarity.json — Mythical high band 98-99 */
+  --col-gotchi-legendary-300: #7fffc0;
+  --col-gotchi-legendary-400: #4fffa9;
+  --col-gotchi-legendary-500: #2ecc85;
+  --col-gotchi-legendary-card-border: #4fffa9;
+  --col-gotchi-legendary-card-label-bg: #2ecc85;
+  --col-gotchi-legendary-card-bg: #1a7a52;
   --col-gotchi-legendary-card-inner-shadow: 0px 4px 4px rgba(0, 0, 0, 0.25), inset 0px 0px 14px 3px rgba(0, 95, 9, 0.7);
 
   --col-gotchi-freebie-card-border: #FFCF26;
