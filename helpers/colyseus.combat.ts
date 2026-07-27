@@ -346,7 +346,9 @@ function formatNvdaAmount(raw: string): string {
   }
 }
 
-export function detachColyseusCombat(): void {
+export function detachColyseusCombat(active?: RoomLike): void {
+  // Ignore detach for a superseded room (stale onLeave after reconnect join).
+  if (active && room && room !== active) return;
   room = null;
   predictRush = null;
 }

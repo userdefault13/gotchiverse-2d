@@ -217,6 +217,13 @@ async function socketConnect(
   // Walkable MVP: Colyseus room instead of legacy zone WebSocket protocol
   if (isColyseusNetcode()) {
     const network = GlobalState.WEB3?.state?.currentNetwork;
+    // /combat always means aarena even if MAP was briefly stale before the page effect ran.
+    const onCombatRoute =
+      typeof window !== 'undefined' &&
+      (window.location?.pathname === '/combat' || window.location?.pathname === '/combat-rh');
+    if (onCombatRoute && GameController.MAP !== 'aarena') {
+      GameController.MAP = 'aarena';
+    }
     const map =
       GameController.MAP === 'aarena'
         ? network === 'robinhood'
@@ -1568,7 +1575,10 @@ function sendData(channel: string, action: string | null, data): void {
       if (action === 'melee' || action === 'fire') {
         const ok = colyseusSendCombat(action, data);
         if (!ok) {
-          console.warn('@sendData combat dropped — not on aarena Colyseus room');
+          console.warn('@sendData combat dropped — not on aarena Colyseus room', {
+            map: GameController.MAP,
+            colyseusConnected: colyseusIsConnected(),
+          });
           handleToastNotification({
             message: 'Combat not connected. Re-enter the Aarena (REALM server must be running).',
             autoClose: true,

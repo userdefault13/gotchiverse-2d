@@ -319,10 +319,17 @@ export function colyseusPredictRush(opts: {
   }, tickMs);
 }
 
+function isAarenaRoomName(name: string | undefined | null): boolean {
+  return name === 'aarena' || name === 'aarena-rh';
+}
+
 function bindRoomHandlers(activeRoom: Room) {
   const players = activeRoom.state.players;
-  // Combat is aarena-only (citaadel stays walkable / foundry).
-  if (isColyseusAarenaMap()) {
+  // Prefer the live Colyseus room name over module map state (avoids attach misses
+  // if map flag and join ever diverge across reconnect).
+  const joinedName = String(activeRoom.name || getColyseusMap());
+  if (isAarenaRoomName(joinedName)) {
+    setColyseusMap(joinedName as 'aarena' | 'aarena-rh');
     attachColyseusCombat(activeRoom, { predictRush: colyseusPredictRush });
   }
 
@@ -350,7 +357,7 @@ function bindRoomHandlers(activeRoom: Room) {
 
   // Fallback poll for schema clients that don't expose onChange per instance
   const poll = setInterval(() => {
-    if (!room) {
+    if (!room || room !== activeRoom) {
       clearInterval(poll);
       return;
     }
@@ -360,6 +367,16 @@ function bindRoomHandlers(activeRoom: Room) {
     });
   }, 100);
   activeRoom.onLeave((code) => {
+    // room.leave() can resolve before the old socket's close event. A late
+    // onLeave must not null out a newer join or detach its combat handlers.
+    if (room && room !== activeRoom) {
+      console.warn('@colyseus onLeave ignored (stale room)', code, {
+        left: activeRoom.roomId,
+        current: room.roomId,
+      });
+      clearInterval(poll);
+      return;
+    }
     console.warn('@colyseus onLeave', code, { intentionalLeave });
     clearInterval(poll);
     stopKeyMoveLoop();
@@ -368,7 +385,7 @@ function bindRoomHandlers(activeRoom: Room) {
     clearRushTimerOnly();
     rushUntil = 0;
     detachFoundryColyseusRoom();
-    detachColyseusCombat();
+    detachColyseusCombat(activeRoom);
     room = null;
     if (intentionalLeave) {
       intentionalLeave = false;
@@ -382,12 +399,18 @@ function bindRoomHandlers(activeRoom: Room) {
     reconnectTimer = setTimeout(() => {
       reconnectTimer = null;
       const player = GlobalState.REALM?.state?.selectedPlayer as SelectedPlayer | undefined;
-      if (!player?.id || !player?.authToken) {
+      const token =
+        player?.authToken ||
+        (typeof localStorage !== 'undefined' ? localStorage.getItem('authToken') : null);
+      if (!player?.id || !token) {
         setConnected(false);
         return;
       }
       localAuthorityUntil = Date.now() + LOCAL_AUTHORITY_MS;
-      void colyseusConnect(player, { map: getColyseusMap() }).then((ok) => {
+      void colyseusConnect(
+        { ...player, authToken: token },
+        { map: getColyseusMap() },
+      ).then((ok) => {
         if (!ok) setConnected(false);
       });
     }, 400);
@@ -548,6 +571,10 @@ export async function colyseusConnect(
       joinOpts.spawnLocId = opts.spawnLocId;
     }
     room = await client.joinOrCreate(roomName, joinOpts);
+    // Trust the room we actually joined (source of truth for combat attach).
+    if (isAarenaRoomName(room.name)) {
+      setColyseusMap(room.name as 'aarena' | 'aarena-rh');
+    }
     bindRoomHandlers(room);
     if (isColyseusAarenaMap()) {
       seedColyseusWeapons(selectedPlayer);
@@ -702,7 +729,8 @@ export function colyseusDisconnect(): void {
   clearRushTimerOnly();
   rushUntil = 0;
   detachFoundryColyseusRoom();
-  detachColyseusCombat();
+  const leaving = room;
+  detachColyseusCombat(leaving || undefined);
   if (reconnectTimer) {
     clearTimeout(reconnectTimer);
     reconnectTimer = null;
