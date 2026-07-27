@@ -1,8 +1,14 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import styles from './styles';
 import { Button } from 'components/UI/elements';
-import { InstallationThumbnail, PaarcelThumbnail, SoftCText } from 'components/UI/widgets';
-import { Portal } from 'components/utility/Portal';
+import {
+  InstallationThumbnail,
+  MintHoverTip,
+  PaarcelThumbnail,
+  SoftCText,
+  mintTipPosition,
+  type MintHoverTipData,
+} from 'components/UI/widgets';
 import useAavegotchiSound from 'hooks/useAavegotchiSound';
 import { useUser } from 'contexts/UserContext';
 import {
@@ -19,20 +25,8 @@ type ViewMode = 'list' | 'grid';
 type CatalogTab = 'parcels' | 'installations';
 const VIEW_STORAGE_KEY = 'cpaarcelsMintView';
 const TAB_STORAGE_KEY = 'cpaarcelsMintTab';
-const TIP_WIDTH = 240;
-const TIP_EST_HEIGHT = 130;
 
-type HoverTip = {
-  key: string;
-  name: string;
-  sub: string;
-  extra?: string;
-  price: string;
-  priceFree: boolean;
-  top: number;
-  left: number;
-  place: 'above' | 'below';
-};
+type HoverTip = MintHoverTipData & { key: string };
 
 interface Props {
   cartParcelKeys: Set<string>;
@@ -42,22 +36,6 @@ interface Props {
   onAddAllParcelInstalls: (rows: MintableInstallationRow[]) => void;
   onAddAllWalletInstalls: (rows: MintableInstallationRow[]) => void;
   minting?: boolean;
-}
-
-function tipPosition(rect: DOMRect): { top: number; left: number; place: 'above' | 'below' } {
-  const gap = 14;
-  let place: 'above' | 'below' = 'above';
-  let top = rect.top - gap - TIP_EST_HEIGHT;
-  if (top < 10) {
-    place = 'below';
-    top = rect.bottom + gap;
-  }
-  let left = rect.left + rect.width / 2 - TIP_WIDTH / 2;
-  if (rect.right > window.innerWidth * 0.62) {
-    left = rect.right - TIP_WIDTH;
-  }
-  left = Math.min(window.innerWidth - TIP_WIDTH - 12, Math.max(12, left));
-  return { top, left, place };
 }
 
 export const PaarcelMintGallery = ({
@@ -146,12 +124,14 @@ export const PaarcelMintGallery = ({
   };
 
   const openParcelTip = (row: MintablePaarcelRow, el: HTMLElement, status: string) => {
-    const pos = tipPosition(el.getBoundingClientRect());
+    const pos = mintTipPosition(el.getBoundingClientRect());
     setHoverTip({
       key: row.key,
       name: row.parcelId,
-      sub: `#${row.realmTokenId} · ${row.size}${row.district != null ? ` · District ${row.district}` : ''}`,
-      extra: `${row.installations.length} nested installation${row.installations.length === 1 ? '' : 's'}`,
+      lines: [
+        `#${row.realmTokenId} · ${row.size}${row.district != null ? ` · District ${row.district}` : ''}`,
+        `${row.installations.length} nested installation${row.installations.length === 1 ? '' : 's'}`,
+      ],
       price: status === 'Available to mint' ? 'FREE' : `FREE · ${status}`,
       priceFree: true,
       ...pos,
@@ -159,7 +139,7 @@ export const PaarcelMintGallery = ({
   };
 
   const openInstallTip = (row: MintableInstallationRow, el: HTMLElement, status: string) => {
-    const pos = tipPosition(el.getBoundingClientRect());
+    const pos = mintTipPosition(el.getBoundingClientRect());
     const source =
       row.source === 'parcel-equip' && row.sourceRealmTokenId
         ? `On parcel #${row.sourceRealmTokenId}`
@@ -167,7 +147,7 @@ export const PaarcelMintGallery = ({
     setHoverTip({
       key: row.key,
       name: row.name,
-      sub: `#${row.itemTypeId} · ${row.kind} · ${source}`,
+      lines: [`#${row.itemTypeId} · ${row.kind} · ${source}`],
       price: status,
       priceFree: status === 'FREE' || status.startsWith('FREE'),
       ...pos,
@@ -204,12 +184,11 @@ export const PaarcelMintGallery = ({
           if (disabled) return;
           addParcel(row);
         }}
-        onPointerEnter={(e) => openParcelTip(row, e.currentTarget, status)}
-        onPointerLeave={() => setHoverTip((t) => (t?.key === row.key ? null : t))}
+        onMouseEnter={(e) => openParcelTip(row, e.currentTarget, status)}
+        onMouseLeave={() => setHoverTip((t) => (t?.key === row.key ? null : t))}
         onFocus={(e) => openParcelTip(row, e.currentTarget, status)}
         onBlur={() => setHoverTip((t) => (t?.key === row.key ? null : t))}
         aria-label={`${row.parcelId} · #${row.realmTokenId} · ${row.size} · ${row.installations.length} installs · ${status}`}
-        title=""
       >
         <span className={`cpaarcel-grid-check${inCart ? ' on' : ''}`} aria-hidden />
         <PaarcelThumbnail
@@ -240,12 +219,11 @@ export const PaarcelMintGallery = ({
           if (disabled) return;
           addInstall(row);
         }}
-        onPointerEnter={(e) => openInstallTip(row, e.currentTarget, status)}
-        onPointerLeave={() => setHoverTip((t) => (t?.key === row.key ? null : t))}
+        onMouseEnter={(e) => openInstallTip(row, e.currentTarget, status)}
+        onMouseLeave={() => setHoverTip((t) => (t?.key === row.key ? null : t))}
         onFocus={(e) => openInstallTip(row, e.currentTarget, status)}
         onBlur={() => setHoverTip((t) => (t?.key === row.key ? null : t))}
         aria-label={`${row.name} · #${row.itemTypeId} · ${status}`}
-        title=""
       >
         <span className={`cpaarcel-grid-check${inCart ? ' on' : ''}`} aria-hidden />
         <InstallationThumbnail
@@ -395,27 +373,7 @@ export const PaarcelMintGallery = ({
         )}
       </div>
 
-      {hoverTip ? (
-        <Portal target="#portal-tooltip">
-          <div
-            className={`cpaarcel-tip place-${hoverTip.place}`}
-            role="tooltip"
-            style={{
-              position: 'fixed',
-              top: hoverTip.top,
-              left: hoverTip.left,
-              width: TIP_WIDTH,
-              zIndex: 50000,
-              pointerEvents: 'none',
-            }}
-          >
-            <span className="tip-name">{hoverTip.name}</span>
-            <span className="tip-sub">{hoverTip.sub}</span>
-            {hoverTip.extra ? <span className="tip-sub">{hoverTip.extra}</span> : null}
-            <span className={`tip-price ${hoverTip.priceFree ? 'free' : ''}`}>{hoverTip.price}</span>
-          </div>
-        </Portal>
-      ) : null}
+      {hoverTip ? <MintHoverTip tip={hoverTip} /> : null}
 
       <style jsx>{styles}</style>
       <style jsx global>{`
@@ -482,84 +440,7 @@ export const PaarcelMintGallery = ({
           border-color: var(--rarity-glow, #ffd6f7);
           box-shadow: 0 0 6px var(--rarity-glow, #5c25bf);
         }
-        #portal-tooltip .cpaarcel-tip {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 0.15rem;
-          padding: 0.75rem 1rem 0.85rem;
-          border-radius: 1.4rem;
-          border: 0.28rem solid #3b7ea3;
-          background: repeating-linear-gradient(
-            180deg,
-            #d7fbff 0,
-            #d7fbff 0.2rem,
-            #c6f3f8 0.2rem,
-            #c6f3f8 0.4rem
-          );
-          box-shadow: 0.35rem 0.35rem 0 rgba(20, 40, 70, 0.28);
-          color: #2f3640;
-          font-family: Pixelar, 'Courier New', monospace;
-          text-align: center;
-        }
-        #portal-tooltip .cpaarcel-tip::after {
-          content: '';
-          position: absolute;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 0;
-          height: 0;
-          border-left: 0.85rem solid transparent;
-          border-right: 0.85rem solid transparent;
-        }
-        #portal-tooltip .cpaarcel-tip::before {
-          content: '';
-          position: absolute;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 0;
-          height: 0;
-          border-left: 0.6rem solid transparent;
-          border-right: 0.6rem solid transparent;
-          z-index: 1;
-        }
-        #portal-tooltip .cpaarcel-tip.place-above::after {
-          bottom: -1.05rem;
-          border-top: 1.05rem solid #3b7ea3;
-        }
-        #portal-tooltip .cpaarcel-tip.place-above::before {
-          bottom: -0.7rem;
-          border-top: 0.75rem solid #d7fbff;
-        }
-        #portal-tooltip .cpaarcel-tip.place-below::after {
-          top: -1.05rem;
-          border-bottom: 1.05rem solid #3b7ea3;
-        }
-        #portal-tooltip .cpaarcel-tip.place-below::before {
-          top: -0.7rem;
-          border-bottom: 0.75rem solid #d7fbff;
-        }
-        #portal-tooltip .cpaarcel-tip .tip-name {
-          font-size: 1.7rem;
-          line-height: 1.15;
-          color: #2a313a;
-        }
-        #portal-tooltip .cpaarcel-tip .tip-sub {
-          font-size: 1.25rem;
-          line-height: 1.25;
-          color: #3d4a57;
-          text-transform: capitalize;
-        }
-        #portal-tooltip .cpaarcel-tip .tip-price {
-          font-size: 1.35rem;
-          line-height: 1.2;
-          color: #1f6f8c;
-          margin-top: 0.1rem;
-        }
-        #portal-tooltip .cpaarcel-tip .tip-price.free {
-          color: #1a7a4a;
-        }
-      `}</style>
+`}</style>
     </>
   );
 };

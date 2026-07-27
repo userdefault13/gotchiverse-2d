@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState, type CSSProperties } from 'react';
 import styles from './styles';
 import { Button } from 'components/UI/elements';
-import { SoftCText, WearableThumbnail } from 'components/UI/widgets';
-import { Portal } from 'components/utility/Portal';
+import { MintHoverTip, SoftCText, WearableThumbnail, mintTipPosition, type MintHoverTipData } from 'components/UI/widgets';
 import useAavegotchiSound from 'hooks/useAavegotchiSound';
 import { useUser } from 'contexts/UserContext';
 import { mintedSourceTokenIds } from 'helpers/cartridgeHero.helper';
@@ -15,51 +14,14 @@ import {
 
 type ViewMode = 'list' | 'grid';
 const VIEW_STORAGE_KEY = 'cwearablesMintView';
-const TIP_WIDTH = 220;
-const TIP_EST_HEIGHT = 118;
 
-type GridTip = {
-  key: string;
-  name: string;
-  from: string;
-  slot: string;
-  rarity: string;
-  ownership: string;
-  price: string;
-  priceFree: boolean;
-  status: string;
-  top: number;
-  left: number;
-  place: 'above' | 'below';
-};
+type GridTip = MintHoverTipData & { key: string };
 
 interface Props {
   cartKeys: Set<string>;
   onAddToCart: (row: MintableWearableRow) => void;
   onAddAllToCart: (rows: MintableWearableRow[]) => void;
   minting?: boolean;
-}
-
-function tipPosition(rect: DOMRect): { top: number; left: number; place: 'above' | 'below' } {
-  const gap = 14;
-  // Prefer above the tile (Aavegotchi-style tip points down).
-  let place: 'above' | 'below' = 'above';
-  let top = rect.top - gap - TIP_EST_HEIGHT;
-  if (top < 10) {
-    place = 'below';
-    top = rect.bottom + gap;
-  }
-
-  // Center on tile; pull left near the right-rail cart so it isn't clipped.
-  let left = rect.left + rect.width / 2 - TIP_WIDTH / 2;
-  if (rect.right > window.innerWidth * 0.62) {
-    left = rect.right - TIP_WIDTH;
-  }
-  const minLeft = 12;
-  const maxLeft = window.innerWidth - TIP_WIDTH - 12;
-  left = Math.min(maxLeft, Math.max(minLeft, left));
-
-  return { top, left, place };
 }
 
 export const WearableMintGallery = ({
@@ -128,22 +90,19 @@ export const WearableMintGallery = ({
   };
 
   const openTip = (row: MintableWearableRow, el: HTMLElement, priceLabel: string, ownership: string) => {
-    const rect = el.getBoundingClientRect();
-    const pos = tipPosition(rect);
     const inCart = cartKeys.has(row.key);
+    const status = row.alreadyMinted ? 'Already minted' : inCart ? 'In cart' : 'Available to mint';
+    const pos = mintTipPosition(el.getBoundingClientRect());
     setGridTip({
       key: row.key,
       name: row.name,
-      from: `${row.gotchiName} · #${row.sourceTokenId}`,
-      slot: slotLabel(row.slotIndex),
-      rarity: row.rarity,
-      ownership,
-      price: priceLabel,
+      lines: [
+        `${slotLabel(row.slotIndex)} · ${row.rarity} · ${ownership}`,
+        `From ${row.gotchiName} · #${row.sourceTokenId}`,
+      ],
+      price: status === 'Available to mint' ? priceLabel : `${priceLabel} · ${status}`,
       priceFree: row.alreadyMinted || row.importFeeUsd <= 0 || inCart,
-      status: row.alreadyMinted ? 'Already minted' : inCart ? 'In cart' : 'Available to mint',
-      top: pos.top,
-      left: pos.left,
-      place: pos.place,
+      ...pos,
     });
   };
 
@@ -178,9 +137,8 @@ export const WearableMintGallery = ({
             addOne(row);
           }}
           aria-label={label}
-          title=""
-          onPointerEnter={(e) => openTip(row, e.currentTarget, priceLabel, ownership)}
-          onPointerLeave={() => setGridTip((t) => (t?.key === row.key ? null : t))}
+          onMouseEnter={(e) => openTip(row, e.currentTarget, priceLabel, ownership)}
+          onMouseLeave={() => setGridTip((t) => (t?.key === row.key ? null : t))}
           onFocus={(e) => openTip(row, e.currentTarget, priceLabel, ownership)}
           onBlur={() => setGridTip((t) => (t?.key === row.key ? null : t))}
         >
@@ -286,32 +244,7 @@ export const WearableMintGallery = ({
         </div>
       </div>
 
-      {gridTip ? (
-        <Portal target="#portal-tooltip">
-          <div
-            className={`cwearable-grid-tip place-${gridTip.place}`}
-            role="tooltip"
-            style={{
-              position: 'fixed',
-              top: gridTip.top,
-              left: gridTip.left,
-              width: TIP_WIDTH,
-              zIndex: 50000,
-              pointerEvents: 'none',
-            }}
-          >
-            <span className="tip-name">{gridTip.name}</span>
-            <span className="tip-sub">
-              {gridTip.slot} · {gridTip.rarity} · {gridTip.ownership}
-            </span>
-            <span className="tip-sub">From {gridTip.from}</span>
-            <span className={`tip-price ${gridTip.priceFree ? 'free' : ''}`}>
-              {gridTip.price}
-              {gridTip.status !== 'Available to mint' ? ` · ${gridTip.status}` : ''}
-            </span>
-          </div>
-        </Portal>
-      ) : null}
+      {gridTip ? <MintHoverTip tip={gridTip} /> : null}
 
       <style jsx>{styles}</style>
       <style jsx global>{`
@@ -378,84 +311,7 @@ export const WearableMintGallery = ({
           border-color: var(--rarity-glow, #ffd6f7);
           box-shadow: 0 0 6px var(--rarity-glow, #ff7ae9);
         }
-        #portal-tooltip .cwearable-grid-tip {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 0.15rem;
-          padding: 0.75rem 1rem 0.85rem;
-          border-radius: 1.4rem;
-          border: 0.28rem solid #3b7ea3;
-          background: repeating-linear-gradient(
-            180deg,
-            #d7fbff 0,
-            #d7fbff 0.2rem,
-            #c6f3f8 0.2rem,
-            #c6f3f8 0.4rem
-          );
-          box-shadow: 0.35rem 0.35rem 0 rgba(20, 40, 70, 0.28);
-          color: #2f3640;
-          font-family: Pixelar, 'Courier New', monospace;
-          text-align: center;
-        }
-        #portal-tooltip .cwearable-grid-tip::after {
-          content: '';
-          position: absolute;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 0;
-          height: 0;
-          border-left: 0.85rem solid transparent;
-          border-right: 0.85rem solid transparent;
-        }
-        #portal-tooltip .cwearable-grid-tip::before {
-          content: '';
-          position: absolute;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 0;
-          height: 0;
-          border-left: 0.6rem solid transparent;
-          border-right: 0.6rem solid transparent;
-          z-index: 1;
-        }
-        #portal-tooltip .cwearable-grid-tip.place-above::after {
-          bottom: -1.05rem;
-          border-top: 1.05rem solid #3b7ea3;
-        }
-        #portal-tooltip .cwearable-grid-tip.place-above::before {
-          bottom: -0.7rem;
-          border-top: 0.75rem solid #d7fbff;
-        }
-        #portal-tooltip .cwearable-grid-tip.place-below::after {
-          top: -1.05rem;
-          border-bottom: 1.05rem solid #3b7ea3;
-        }
-        #portal-tooltip .cwearable-grid-tip.place-below::before {
-          top: -0.7rem;
-          border-bottom: 0.75rem solid #d7fbff;
-        }
-        #portal-tooltip .cwearable-grid-tip .tip-name {
-          font-size: 1.7rem;
-          line-height: 1.15;
-          color: #2a313a;
-        }
-        #portal-tooltip .cwearable-grid-tip .tip-sub {
-          font-size: 1.25rem;
-          line-height: 1.25;
-          color: #3d4a57;
-          text-transform: capitalize;
-        }
-        #portal-tooltip .cwearable-grid-tip .tip-price {
-          font-size: 1.35rem;
-          line-height: 1.2;
-          color: #1f6f8c;
-          margin-top: 0.1rem;
-        }
-        #portal-tooltip .cwearable-grid-tip .tip-price.free {
-          color: #1a7a4a;
-        }
-      `}</style>
+`}</style>
     </>
   );
 };
