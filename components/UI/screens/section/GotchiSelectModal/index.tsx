@@ -13,8 +13,18 @@ import {
   WearableImportPanel,
   WearableMintGallery,
   WearableCart,
+  PaarcelMintGallery,
+  PaarcelCart,
 } from 'components/UI/screens/section';
-import { ContractParcel, GotchiverseAavegotchi, GotchiverseParcel, JsonParcel, Parcel, RealmEvent } from 'types';
+import {
+  ContractParcel,
+  GotchiverseAavegotchi,
+  GotchiverseParcel,
+  JsonParcel,
+  OwnedStatus,
+  Parcel,
+  RealmEvent,
+} from 'types';
 import { fetchAavegotchiURL, setAavegtochiToLocalStorage, getGotchiData, isTrueSpectator, brsToRarity } from 'helpers/gotchi.helper';
 import { useRealm } from 'contexts/RealmContext';
 import useResizeObserver from 'hooks/useResizeObserver';
@@ -31,7 +41,10 @@ import {
   ensureAarcadeCartridge,
   getAarcadeCartridgeStatus,
   getCartridgeWearables,
+  getCartridgePaarcels,
   importCartridgeWearables,
+  importCartridgePaarcels,
+  importCartridgeInstallations,
 } from 'helpers/auth.helper';
 import {
   collateralFromSimId,
@@ -48,16 +61,18 @@ import {
   wearablesFromCartridgeSnapshot,
   type MintableWearableRow,
 } from 'helpers/cartridgeWearable.helper';
-
+import type { MintableInstallationRow, MintablePaarcelRow } from 'helpers/cartridgePaarcel.helper';
 
 import { GotchiverseBaseCartridge, GotchiverseRhCartridge } from 'assets';
 import {
+  fetchAndSetGlobalParcels,
   fetchContractOwnedParcels,
   getParcelAccessRights,
   getParcelsAccessRightsWhitelistIds,
   mapInGotchiverseParcelData,
   transformParcelFormat,
 } from 'helpers/parcels.helper';
+import { updateInventory } from 'contexts/UserContext/actions';
 import Image from 'next/image';
 import GameController from 'components/controllers/GameController';
 import _ from 'lodash';
@@ -96,9 +111,9 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
   const [entering, setEntering] = useState(false);
   const [spawnSelectorOpen, setSpawnSelectorOpen] = useState(false);
   const [isEvent, setIsEvent] = useState(false);
-  /** Right-rail modes for soft-launch mint / wearables. */
+  /** Right-rail modes for soft-launch mint / wearables / paarcels. */
   const [mintStep, setMintStep] = useState<
-    'cartridge' | 'caavegotchi' | 'wearables-import' | 'wearables' | null
+    'cartridge' | 'caavegotchi' | 'wearables-import' | 'wearables' | 'paarcels' | null
   >(null);
   const [selectedCollateral, setSelectedCollateral] = useState<CollateralObject | null>(null);
   const [selectedWalletGotchi, setSelectedWalletGotchi] = useState<GotchiverseAavegotchi | null>(null);
@@ -113,6 +128,9 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
   const [mintError, setMintError] = useState<string | null>(null);
   /** cWearables manage cart — distinct source instances (by row.key). */
   const [wearableCartRows, setWearableCartRows] = useState<MintableWearableRow[]>([]);
+  /** cPaarcels manage cart. */
+  const [paarcelCartRows, setPaarcelCartRows] = useState<MintablePaarcelRow[]>([]);
+  const [paarcelInstallCartRows, setPaarcelInstallCartRows] = useState<MintableInstallationRow[]>([]);
   const mintMode = mintStep !== null;
   const cartridgeArt = currentNetwork === 'robinhood' ? GotchiverseRhCartridge : GotchiverseBaseCartridge;
   const selectedIsCartridgeHero = Boolean(selectedGotchi?.isCartridgeHero);
@@ -152,6 +170,11 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
     [mintableWearableRows],
   );
   const wearableCartKeys = useMemo(() => new Set(wearableCartRows.map((r) => r.key)), [wearableCartRows]);
+  const paarcelCartKeys = useMemo(() => new Set(paarcelCartRows.map((r) => r.key)), [paarcelCartRows]);
+  const paarcelInstallCartKeys = useMemo(
+    () => new Set(paarcelInstallCartRows.map((r) => r.key)),
+    [paarcelInstallCartRows],
+  );
 
   // Drop cart lines that are no longer mintable (already minted / unbound).
   useEffect(() => {
@@ -451,9 +474,9 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
   const handleMintCartridgeClick = () => {
     if (entering || minting) return;
     setMintError(null);
-    // Already minted → Manage toggles collateral/wallet mint rail (shows cWearables entry).
+    // Already minted → Manage enters rail; Exit (mintMode active) leaves manage entirely.
     if (hasCartridge) {
-      if (mintStep === 'caavegotchi') {
+      if (mintMode) {
         resetMintFlow();
         return;
       }
@@ -775,6 +798,141 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
     }
   };
 
+  const handleManagePaarcelsClick = async () => {
+    if (entering || minting) return;
+    if (currentNetwork !== 'base') {
+      toast.info('cPaarcels are Base-only', { theme: 'dark' });
+      return;
+    }
+    setMintError(null);
+    setMintStep('paarcels');
+    if (currentAccount && globalProvider && currentNetwork) {
+      void fetchAndSetGlobalParcels({ ownedStatus: 1 as OwnedStatus });
+      void updateInventory(
+        { network: currentNetwork, provider: globalProvider, account: currentAccount },
+        userDispatch,
+      );
+    }
+    if (!currentAccount || !cartridgeId) return;
+    const result = await getCartridgePaarcels(currentAccount, cartridgeId);
+    if (result.ok) {
+      userDispatch({
+        type: 'UPDATE_USER_CARTRIDGE',
+        parcelInventory: result.parcelInventory,
+        installationInventory: result.installationInventory,
+      });
+    }
+  };
+
+  const addPaarcelToCart = (row: MintablePaarcelRow) => {
+    setPaarcelCartRows((prev) => (prev.some((r) => r.key === row.key) ? prev : [...prev, row]));
+  };
+  const addPaarcelInstallToCart = (row: MintableInstallationRow) => {
+    setPaarcelInstallCartRows((prev) => (prev.some((r) => r.key === row.key) ? prev : [...prev, row]));
+  };
+  const addAllPaarcelInstallsToCart = (rows: MintableInstallationRow[]) => {
+    setPaarcelInstallCartRows((prev) => {
+      const keys = new Set(prev.map((r) => r.key));
+      const next = [...prev];
+      for (const row of rows) {
+        if (!keys.has(row.key)) {
+          keys.add(row.key);
+          next.push(row);
+        }
+      }
+      return next;
+    });
+  };
+
+  const handleMintPaarcelCart = async () => {
+    if (minting || !currentAccount) return;
+    if (paarcelCartRows.length === 0 && paarcelInstallCartRows.length === 0) return;
+    setMinting(true);
+    setMintError(null);
+    let imported = 0;
+    let alreadyMinted = 0;
+    try {
+      if (paarcelCartRows.length > 0) {
+        const result = await importCartridgePaarcels(currentAccount, {
+          parcels: paarcelCartRows.map((r) => ({
+            realmTokenId: r.realmTokenId,
+            installations: r.installations,
+          })),
+          cartridgeId,
+          network: currentNetwork,
+        });
+        if (!result.ok) {
+          const msg = result.error || 'Failed importing parcels';
+          setMintError(msg);
+          toast.error(msg, { theme: 'dark' });
+          return;
+        }
+        imported += Number(result.imported) || 0;
+        alreadyMinted += Number(result.alreadyMinted) || 0;
+        userDispatch({
+          type: 'UPDATE_USER_CARTRIDGE',
+          cartridgeId: result.cartridgeId || cartridgeId,
+          hasCartridge: true,
+          parcelInventory: result.parcelInventory,
+          installationInventory: result.installationInventory,
+        });
+      }
+      if (paarcelInstallCartRows.length > 0) {
+        const result = await importCartridgeInstallations(currentAccount, {
+          installations: paarcelInstallCartRows.map((r) => ({
+            itemTypeId: r.itemTypeId,
+            kind: r.kind,
+            balanceIndex: r.balanceIndex,
+            sourceRealmTokenId: r.sourceRealmTokenId,
+            x: r.x,
+            y: r.y,
+            name: r.name,
+            installationType: r.installationType,
+          })),
+          cartridgeId,
+          network: currentNetwork,
+        });
+        if (!result.ok) {
+          const msg = result.error || 'Failed importing installations';
+          setMintError(msg);
+          toast.error(msg, { theme: 'dark' });
+          return;
+        }
+        imported += Number(result.imported) || 0;
+        alreadyMinted += Number(result.alreadyMinted) || 0;
+        userDispatch({
+          type: 'UPDATE_USER_CARTRIDGE',
+          cartridgeId: result.cartridgeId || cartridgeId,
+          hasCartridge: true,
+          parcelInventory: result.parcelInventory,
+          installationInventory: result.installationInventory,
+        });
+      }
+      if (imported + alreadyMinted > 0) {
+        toast.success(
+          `Minted ${imported} item${imported === 1 ? '' : 's'}${
+            alreadyMinted ? ` · ${alreadyMinted} already owned` : ''
+          }`,
+          { theme: 'dark' },
+        );
+        setPaarcelCartRows([]);
+        setPaarcelInstallCartRows([]);
+      }
+      if (cartridgeId) {
+        const refreshed = await getCartridgePaarcels(currentAccount, cartridgeId);
+        if (refreshed.ok) {
+          userDispatch({
+            type: 'UPDATE_USER_CARTRIDGE',
+            parcelInventory: refreshed.parcelInventory,
+            installationInventory: refreshed.installationInventory,
+          });
+        }
+      }
+    } finally {
+      setMinting(false);
+    }
+  };
+
   /** Import selected/all mintable wearables grouped by source gotchi (stacks across sources). */
   const handleMintWearableRows = async (rows: MintableWearableRow[]) => {
     if (minting || !currentAccount || rows.length === 0) return;
@@ -1027,6 +1185,10 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
                   if (entering) return;
                   void handleManageWearablesClick();
                 }}
+                onManagePaarcelsClick={() => {
+                  if (entering) return;
+                  void handleManagePaarcelsClick();
+                }}
                 onManageCaavegotchisClick={() => {
                   if (entering || minting) return;
                   enterCaavegotchiStep();
@@ -1100,6 +1262,20 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
                     cartKeys={wearableCartKeys}
                     onAddToCart={addWearableToCart}
                     onAddAllToCart={addAllWearablesToCart}
+                    minting={minting}
+                  />
+                </div>
+              )}
+
+              {mintStep === 'paarcels' && currentNetwork && globalProvider && (
+                <div className="selected-gotchi-container mint-catalog">
+                  <PaarcelMintGallery
+                    cartParcelKeys={paarcelCartKeys}
+                    cartInstallKeys={paarcelInstallCartKeys}
+                    onAddParcel={addPaarcelToCart}
+                    onAddInstallation={addPaarcelInstallToCart}
+                    onAddAllParcelInstalls={addAllPaarcelInstallsToCart}
+                    onAddAllWalletInstalls={addAllPaarcelInstallsToCart}
                     minting={minting}
                   />
                 </div>
@@ -1281,7 +1457,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
 
               <div
                 className={`gotchi-details${mintMode ? ' mint-mode' : ''}${
-                  mintStep === 'wearables' ? ' mint-cart' : ''
+                  mintStep === 'wearables' || mintStep === 'paarcels' ? ' mint-cart' : ''
                 }`}
               >
                 {mintStep === 'cartridge' && currentNetwork && globalProvider ? (
@@ -1331,6 +1507,24 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
                     onRemoveLine={removeWearableCartLine}
                     onClear={() => setWearableCartRows([])}
                     onCheckout={() => handleMintWearableRows(wearableCartRows)}
+                    minting={minting}
+                    mintError={mintError}
+                  />
+                ) : mintStep === 'paarcels' && currentNetwork && globalProvider ? (
+                  <PaarcelCart
+                    cartParcels={paarcelCartRows}
+                    cartInstallations={paarcelInstallCartRows}
+                    onRemoveParcel={(key) =>
+                      setPaarcelCartRows((prev) => prev.filter((r) => r.key !== key))
+                    }
+                    onRemoveInstallation={(key) =>
+                      setPaarcelInstallCartRows((prev) => prev.filter((r) => r.key !== key))
+                    }
+                    onClear={() => {
+                      setPaarcelCartRows([]);
+                      setPaarcelInstallCartRows([]);
+                    }}
+                    onCheckout={() => handleMintPaarcelCart()}
                     minting={minting}
                     mintError={mintError}
                   />

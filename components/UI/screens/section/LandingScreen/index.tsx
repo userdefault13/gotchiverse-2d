@@ -281,6 +281,8 @@ export const LandingScreen = (): JSX.Element => {
       hasCartridge: false,
       cartridgeHeroes: [] as import('helpers/cartridgeHero.helper').CartridgeHero[],
       wearableInventory: [] as import('helpers/cartridgeWearable.helper').CWearable[],
+      parcelInventory: [] as import('helpers/cartridgePaarcel.helper').CPaarcel[],
+      installationInventory: [] as import('helpers/cartridgePaarcel.helper').CInstallation[],
     };
     userDispatch(clearPayload);
     GlobalState.USER?.dispatch?.(clearPayload);
@@ -289,9 +291,19 @@ export const LandingScreen = (): JSX.Element => {
     if (!status) return;
 
     let wearableInventory: import('helpers/cartridgeWearable.helper').CWearable[] = [];
+    let parcelInventory: import('helpers/cartridgePaarcel.helper').CPaarcel[] = [];
+    let installationInventory: import('helpers/cartridgePaarcel.helper').CInstallation[] = [];
     if (status.hasCartridge && status.cartridgeId) {
       const wearables = await getCartridgeWearables(address, status.cartridgeId);
       if (wearables.ok) wearableInventory = wearables.wearableInventory;
+      if (net === 'base') {
+        const { getCartridgePaarcels } = await import('helpers/auth.helper');
+        const paarcels = await getCartridgePaarcels(address, status.cartridgeId);
+        if (paarcels.ok) {
+          parcelInventory = paarcels.parcelInventory;
+          installationInventory = paarcels.installationInventory;
+        }
+      }
     }
 
     const payload = {
@@ -301,6 +313,8 @@ export const LandingScreen = (): JSX.Element => {
       cartridgeCatalogUrl: status.catalogUrl,
       cartridgeHeroes: status.hasCartridge ? status.heroes || [] : [],
       wearableInventory,
+      parcelInventory,
+      installationInventory,
     };
     userDispatch(payload);
     GlobalState.USER?.dispatch?.(payload);

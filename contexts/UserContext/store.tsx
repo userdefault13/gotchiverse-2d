@@ -1,6 +1,7 @@
 import { BigNumber } from '@ethersproject/bignumber';
 import type { CartridgeHero } from 'helpers/cartridgeHero.helper';
 import type { CWearable } from 'helpers/cartridgeWearable.helper';
+import type { CInstallation, CPaarcel } from 'helpers/cartridgePaarcel.helper';
 import type { AlchemicaBalance, GotchiverseAavegotchi, GotchiverseParcel, Installation, OngoingUpgrades } from 'types';
 
 export interface State {
@@ -25,6 +26,10 @@ export interface State {
   cartridgeHeroes?: CartridgeHero[];
   /** Dual-inventory cWearables on the player's Gotchiverse cartridge. */
   wearableInventory?: CWearable[];
+  /** Soft-launch cPaarcels (Base). */
+  parcelInventory?: CPaarcel[];
+  /** Soft-launch wallet/parcel-equip cInstallations (Base). */
+  installationInventory?: CInstallation[];
 }
 
 export const initialState: State = {
@@ -36,4 +41,6 @@ export const initialState: State = {
   cartridgeCatalogUrl: undefined,
   cartridgeHeroes: [],
   wearableInventory: [],
+  parcelInventory: [],
+  installationInventory: [],
 };

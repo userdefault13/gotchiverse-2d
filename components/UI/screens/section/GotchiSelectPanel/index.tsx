@@ -12,6 +12,7 @@ import { GotchiTongueIcon } from 'assets';
 import {
   GotchiPlaceholderCard,
   GotchiSelectCard,
+  ManagePaarcelsCard,
   ManageWearablesCard,
   MintCartridgeCard,
   WearableStackCard,
@@ -20,6 +21,7 @@ import {
 import { fetchAndSetGlobalAavegotchis, getSpectator } from 'helpers/gotchi.helper';
 import { mapCartridgeHeroToGotchi } from 'helpers/cartridgeHero.helper';
 import { stackWearableInventory } from 'helpers/cartridgeWearable.helper';
+import { stackPaarcelInventory } from 'helpers/cartridgePaarcel.helper';
 import { useUser } from 'contexts/UserContext';
 import { useGame } from 'contexts/GameContext';
 import { ChannelReadyToggle } from 'components/UI/elements/buttons/channelReadyToggle';
@@ -40,9 +42,10 @@ interface Props {
   storedId?: string;
   mintMode?: boolean;
   /** Soft-launch right-rail mode. */
-  mintStep?: 'cartridge' | 'caavegotchi' | 'wearables-import' | 'wearables' | null;
+  mintStep?: 'cartridge' | 'caavegotchi' | 'wearables-import' | 'wearables' | 'paarcels' | null;
   onMintCartridgeClick?: () => void;
   onManageWearablesClick?: () => void;
+  onManagePaarcelsClick?: () => void;
   /** From wearables manage mode — switch right rail back to cAavegotchi mint. */
   onManageCaavegotchisClick?: () => void;
   /** Manage mode: bound cAavegotchis open a stub manage modal instead of selecting for play. */
@@ -57,6 +60,7 @@ export const GotchiSelectPanel = ({
   mintStep,
   onMintCartridgeClick,
   onManageWearablesClick,
+  onManagePaarcelsClick,
   onManageCaavegotchisClick,
   onManageCaavegotchiClick,
 }: Props): JSX.Element => {
@@ -66,7 +70,7 @@ export const GotchiSelectPanel = ({
   const [sort, setSort] = useState<SortOption>();
   const [search, setSearch] = useState<string>();
   const [searchInput, setSearchInput] = useState<string>();
-  const [{ userAavegotchis, hasCartridge, cartridgeHeroes, wearableInventory }] = useUser();
+  const [{ userAavegotchis, hasCartridge, cartridgeHeroes, wearableInventory, parcelInventory }] = useUser();
   const [{ gameConfig }] = useGame();
   const [channelReady, setChannelReady] = useState<boolean>();
   const [optionLoaded, setOptionLoaded] = useState<boolean>(false);
@@ -74,8 +78,11 @@ export const GotchiSelectPanel = ({
   // Soft-launch Base/RH: left rail is Freebie + Manage + bound cAavegotchis (wallet gotchis mint from right tab).
   const cartridgeSelectMode = currentNetwork === 'base' || currentNetwork === 'robinhood';
   const wearablesManageMode = mintStep === 'wearables';
-  /** After Manage: show cWearables entry + keep roster; default load hides cWearables. */
+  const paarcelsManageMode = mintStep === 'paarcels';
+  const inventoryManageMode = wearablesManageMode || paarcelsManageMode;
+  /** After Manage: show cWearables (+ Base cPaarcels) entry + keep roster. */
   const manageRailActive = Boolean(mintMode && hasCartridge);
+  const showPaarcelsCard = manageRailActive && currentNetwork === 'base';
 
   const cartridgeGotchis = useMemo(() => {
     if (!currentAccount || !cartridgeHeroes?.length) return [] as GotchiverseAavegotchi[];
@@ -86,9 +93,13 @@ export const GotchiSelectPanel = ({
     () => (wearablesManageMode ? stackWearableInventory(wearableInventory) : []),
     [wearablesManageMode, wearableInventory],
   );
+  const paarcelStacks = useMemo(
+    () => (paarcelsManageMode ? stackPaarcelInventory(parcelInventory) : []),
+    [paarcelsManageMode, parcelInventory],
+  );
 
   // Legacy (matic / non–soft-launch): show L1 wallet gotchis in the left rail.
-  const showWalletGotchis = !cartridgeSelectMode && !wearablesManageMode;
+  const showWalletGotchis = !cartridgeSelectMode && !inventoryManageMode;
 
   const loadOptions = () => {
     let sortOption = localStorage.getItem('gotchiSortOption') || 'brs';
@@ -153,18 +164,19 @@ export const GotchiSelectPanel = ({
   }, [currentAccount, click, handleSelect]);
 
   const visibleWalletGotchis = showWalletGotchis ? userAavegotchis || [] : [];
-  const visibleHeroes = wearablesManageMode ? [] : cartridgeGotchis;
+  const visibleHeroes = inventoryManageMode ? [] : cartridgeGotchis;
   const gridItemCount =
     (visibleWalletGotchis?.length || 0) +
     (visibleHeroes?.length || 0) +
-    (wearableStacks?.length || 0);
+    (wearableStacks?.length || 0) +
+    (paarcelStacks?.length || 0);
 
-  // Freebie + Manage/Mint (+ cWearables while managing) + heroes/stacks + wallet.
+  // Freebie + Manage/Mint (+ cWearables / cPaarcels while managing) + heroes/stacks + wallet.
   const placeholderAavegotchis = useMemo(() => {
-    const fixed = 2 + (manageRailActive ? 1 : 0);
+    const fixed = 2 + (manageRailActive ? 1 : 0) + (showPaarcelsCard ? 1 : 0);
     const filled = gridItemCount + fixed;
     return Array.from({ length: Math.max((placeholderCount || 0) - filled, 0) }, (_, i) => i);
-  }, [gridItemCount, placeholderCount, manageRailActive]);
+  }, [gridItemCount, placeholderCount, manageRailActive, showPaarcelsCard]);
 
   const handleCartridgeGotchiClick = (gotchi: GotchiverseAavegotchi) => {
     // Manage rail: keep mint open and sync selection; play select still works via Freebie / exit Manage.
@@ -184,11 +196,16 @@ export const GotchiSelectPanel = ({
               <span className="title-lead">Your</span>{' '}
               <SoftCText>cWearables</SoftCText>
             </>
+          ) : paarcelsManageMode ? (
+            <>
+              <span className="title-lead">Your</span>{' '}
+              <SoftCText>cPaarcels</SoftCText>
+            </>
           ) : (
             'Select your Gotchi'
           )}
         </h1>
-        {!wearablesManageMode ? (
+        {!inventoryManageMode ? (
           <div className="filter-section">
             <div className="filter-option">
               <SearchInput
@@ -232,7 +249,11 @@ export const GotchiSelectPanel = ({
             </div>
           </div>
         ) : (
-          <p className="wearables-caption">Minted stacks on this cartridge. Equip on Aarcade.</p>
+          <p className="wearables-caption">
+            {paarcelsManageMode
+              ? 'Minted cPaarcels on this cartridge. Browse / mint only (phase 1).'
+              : 'Minted stacks on this cartridge. Equip on Aarcade.'}
+          </p>
         )}
 
         {!fetching && !cartridgeSelectMode && userAavegotchis?.length === 0 && !search && channelReady && (
@@ -253,16 +274,14 @@ export const GotchiSelectPanel = ({
                 handleSelect={joinAsObservoor}
               />
             </div>
-            {!wearablesManageMode ? (
-              <div className="gotchi-card">
-                <MintCartridgeCard
-                  network={currentNetwork}
-                  isSelected={!!mintMode && mintStep !== 'wearables-import'}
-                  hasCartridge={!!hasCartridge}
-                  onClick={onMintCartridgeClick}
-                />
-              </div>
-            ) : null}
+            <div className="gotchi-card">
+              <MintCartridgeCard
+                network={currentNetwork}
+                isSelected={!!mintMode && mintStep !== 'wearables-import'}
+                hasCartridge={!!hasCartridge}
+                onClick={onMintCartridgeClick}
+              />
+            </div>
             {manageRailActive ? (
               <div className="gotchi-card">
                 <ManageWearablesCard
@@ -274,10 +293,32 @@ export const GotchiSelectPanel = ({
                 />
               </div>
             ) : null}
+            {showPaarcelsCard ? (
+              <div className="gotchi-card">
+                <ManagePaarcelsCard
+                  isSelected={mintStep === 'paarcels'}
+                  onClick={onManagePaarcelsClick}
+                />
+              </div>
+            ) : null}
             {wearablesManageMode
               ? wearableStacks.map((stack) => (
                   <div key={stack.itemTypeId} className="gotchi-card">
                     <WearableStackCard stack={stack} />
+                  </div>
+                ))
+              : null}
+            {paarcelsManageMode
+              ? paarcelStacks.map((stack) => (
+                  <div key={stack.size} className="gotchi-card">
+                    <div className="paarcel-stack-card">
+                      <div className="paarcel-stack-icon" aria-hidden>
+                        ▣
+                      </div>
+                      <p className="paarcel-stack-name">
+                        {stack.size} ×{stack.count}
+                      </p>
+                    </div>
                   </div>
                 ))
               : null}

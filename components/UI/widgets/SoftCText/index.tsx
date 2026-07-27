@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 
 /** Soft-launch brand tokens: leading c stays lowercase and smaller. */
-const BRAND_RE = /(c)(Aavegotchi|Wearable)(s?)/g;
+const BRAND_RE = /(c)(Aavegotchi|Wearable|Paarcel|Installation)(s?)/g;
 
 type Props = {
   children: string;
@@ -9,7 +9,7 @@ type Props = {
 };
 
 /**
- * Renders copy with a smaller lowercase "c" in cAavegotchi / cWearable(s).
+ * Renders copy with a smaller lowercase "c" in cAavegotchi / cWearable(s) / cPaarcel(s) / cInstallation(s).
  * Survives parent `text-transform: uppercase` via `.soft-c { text-transform: none }`.
  * Keep preceding words (Your / Mint / Manage) outside this component in their own
  * element so parent gradient titles keep clipping correctly on that lead text.

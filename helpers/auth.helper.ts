@@ -370,6 +370,18 @@ export type AarcadeWearablesResult = {
   code?: string;
 };
 
+export type AarcadePaarcelsResult = {
+  ok: boolean;
+  wallet: string;
+  cartridgeId: string;
+  parcelInventory: import('helpers/cartridgePaarcel.helper').CPaarcel[];
+  installationInventory: import('helpers/cartridgePaarcel.helper').CInstallation[];
+  imported?: number;
+  alreadyMinted?: number;
+  error?: string;
+  code?: string;
+};
+
 /** Load cWearable inventory for a cartridge. */
 export const getCartridgeWearables = async (
   address: string,
@@ -486,6 +498,254 @@ export const importCartridgeWearables = async (
       wallet,
       cartridgeId: String(opts.cartridgeId || ''),
       wearableInventory: [],
+      error: 'Import request failed',
+      code: 'IMPORT_FAILED',
+    };
+  }
+};
+
+/** Load cPaarcel + cInstallation inventories for a cartridge (Base). */
+export const getCartridgePaarcels = async (
+  address: string,
+  cartridgeId: string,
+): Promise<AarcadePaarcelsResult> => {
+  const wallet = String(address || '').toLowerCase();
+  const id = String(cartridgeId || '').trim();
+  if (!wallet || !id) {
+    return {
+      ok: false,
+      wallet,
+      cartridgeId: id,
+      parcelInventory: [],
+      installationInventory: [],
+      error: 'wallet and cartridgeId required',
+    };
+  }
+  try {
+    const qs = new URLSearchParams({ wallet, cartridgeId: id });
+    const response = await fetch(`/api/aarcade-cartridge-parcels?${qs.toString()}`, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+      cache: 'no-store',
+    });
+    const data = await response.json().catch(() => ({}));
+    const { normalizeCPaarcels, normalizeCInstallations } = await import('helpers/cartridgePaarcel.helper');
+    if (!response.ok) {
+      return {
+        ok: false,
+        wallet,
+        cartridgeId: id,
+        parcelInventory: [],
+        installationInventory: [],
+        error: String(data?.error || 'Parcels lookup failed'),
+        code: data?.code ? String(data.code) : 'LOOKUP_FAILED',
+      };
+    }
+    return {
+      ok: true,
+      wallet,
+      cartridgeId: id,
+      parcelInventory: normalizeCPaarcels(data?.parcelInventory),
+      installationInventory: normalizeCInstallations(data?.installationInventory),
+    };
+  } catch (err) {
+    console.warn('getCartridgePaarcels failed', err);
+    return {
+      ok: false,
+      wallet,
+      cartridgeId: id,
+      parcelInventory: [],
+      installationInventory: [],
+      error: 'Parcels lookup failed',
+    };
+  }
+};
+
+/** Import owned L1 parcels onto the cartridge as cPaarcels (Base only, FREE). */
+export const importCartridgePaarcels = async (
+  address: string,
+  opts: {
+    parcels: Array<{
+      realmTokenId: string;
+      installations?: Array<{
+        itemTypeId: number;
+        kind?: string;
+        name?: string;
+        x?: number;
+        y?: number;
+        installationType?: number;
+      }>;
+    }>;
+    cartridgeId?: string | null;
+    network?: string | null;
+    gameId?: string;
+  },
+): Promise<AarcadePaarcelsResult> => {
+  const { cartridgeGameIdForNetwork } = await import('helpers/cartridgeGameId');
+  const gameId = String(opts.gameId || cartridgeGameIdForNetwork(opts.network));
+  const wallet = String(address || '').toLowerCase();
+  if (!wallet) {
+    return {
+      ok: false,
+      wallet: '',
+      cartridgeId: '',
+      parcelInventory: [],
+      installationInventory: [],
+      error: 'Wallet required',
+    };
+  }
+  try {
+    const response = await fetch('/api/aarcade-cartridge-parcels', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        wallet,
+        gameId,
+        cartridgeId: opts.cartridgeId || undefined,
+        mode: 'parcels',
+        parcels: opts.parcels,
+        simPay: true,
+      }),
+      cache: 'no-store',
+    });
+    const data = await response.json().catch(() => ({}));
+    const { normalizeCPaarcels, normalizeCInstallations, paarcelsFromCartridgeSnapshot } = await import(
+      'helpers/cartridgePaarcel.helper'
+    );
+    const fromSnap = paarcelsFromCartridgeSnapshot(data?.cartridge);
+    const parcelInventory =
+      normalizeCPaarcels(data?.parcelInventory).length > 0
+        ? normalizeCPaarcels(data?.parcelInventory)
+        : fromSnap.parcelInventory;
+    const installationInventory =
+      normalizeCInstallations(data?.installationInventory).length > 0
+        ? normalizeCInstallations(data?.installationInventory)
+        : fromSnap.installationInventory;
+    if (!response.ok) {
+      return {
+        ok: false,
+        wallet,
+        cartridgeId: String(data?.cartridgeId || opts.cartridgeId || ''),
+        parcelInventory,
+        installationInventory,
+        imported: Number(data?.imported) || 0,
+        alreadyMinted: Number(data?.alreadyMinted) || 0,
+        error: String(data?.error || 'Import failed'),
+        code: data?.code ? String(data.code) : 'IMPORT_FAILED',
+      };
+    }
+    return {
+      ok: true,
+      wallet,
+      cartridgeId: String(data?.cartridgeId || opts.cartridgeId || ''),
+      parcelInventory,
+      installationInventory,
+      imported: Number(data?.imported) || 0,
+      alreadyMinted: Number(data?.alreadyMinted) || 0,
+    };
+  } catch (err) {
+    console.warn('importCartridgePaarcels failed', err);
+    return {
+      ok: false,
+      wallet,
+      cartridgeId: String(opts.cartridgeId || ''),
+      parcelInventory: [],
+      installationInventory: [],
+      error: 'Import request failed',
+      code: 'IMPORT_FAILED',
+    };
+  }
+};
+
+/** Import wallet / parcel-equip installations onto installationInventory (Base only, FREE). */
+export const importCartridgeInstallations = async (
+  address: string,
+  opts: {
+    installations: Array<{
+      itemTypeId: number;
+      kind?: string;
+      balanceIndex?: number;
+      sourceRealmTokenId?: string;
+      x?: number;
+      y?: number;
+      name?: string;
+      installationType?: number;
+    }>;
+    cartridgeId?: string | null;
+    network?: string | null;
+    gameId?: string;
+  },
+): Promise<AarcadePaarcelsResult> => {
+  const { cartridgeGameIdForNetwork } = await import('helpers/cartridgeGameId');
+  const gameId = String(opts.gameId || cartridgeGameIdForNetwork(opts.network));
+  const wallet = String(address || '').toLowerCase();
+  if (!wallet) {
+    return {
+      ok: false,
+      wallet: '',
+      cartridgeId: '',
+      parcelInventory: [],
+      installationInventory: [],
+      error: 'Wallet required',
+    };
+  }
+  try {
+    const response = await fetch('/api/aarcade-cartridge-parcels', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        wallet,
+        gameId,
+        cartridgeId: opts.cartridgeId || undefined,
+        mode: 'installations',
+        installations: opts.installations,
+        simPay: true,
+      }),
+      cache: 'no-store',
+    });
+    const data = await response.json().catch(() => ({}));
+    const { normalizeCPaarcels, normalizeCInstallations, paarcelsFromCartridgeSnapshot } = await import(
+      'helpers/cartridgePaarcel.helper'
+    );
+    const fromSnap = paarcelsFromCartridgeSnapshot(data?.cartridge);
+    const parcelInventory =
+      normalizeCPaarcels(data?.parcelInventory).length > 0
+        ? normalizeCPaarcels(data?.parcelInventory)
+        : fromSnap.parcelInventory;
+    const installationInventory =
+      normalizeCInstallations(data?.installationInventory).length > 0
+        ? normalizeCInstallations(data?.installationInventory)
+        : fromSnap.installationInventory;
+    if (!response.ok) {
+      return {
+        ok: false,
+        wallet,
+        cartridgeId: String(data?.cartridgeId || opts.cartridgeId || ''),
+        parcelInventory,
+        installationInventory,
+        imported: Number(data?.imported) || 0,
+        alreadyMinted: Number(data?.alreadyMinted) || 0,
+        error: String(data?.error || 'Import failed'),
+        code: data?.code ? String(data.code) : 'IMPORT_FAILED',
+      };
+    }
+    return {
+      ok: true,
+      wallet,
+      cartridgeId: String(data?.cartridgeId || opts.cartridgeId || ''),
+      parcelInventory,
+      installationInventory,
+      imported: Number(data?.imported) || 0,
+      alreadyMinted: Number(data?.alreadyMinted) || 0,
+    };
+  } catch (err) {
+    console.warn('importCartridgeInstallations failed', err);
+    return {
+      ok: false,
+      wallet,
+      cartridgeId: String(opts.cartridgeId || ''),
+      parcelInventory: [],
+      installationInventory: [],
       error: 'Import request failed',
       code: 'IMPORT_FAILED',
     };

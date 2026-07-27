@@ -319,7 +319,8 @@ export default css`
       overflow: visible;
     }
 
-    .selected-gotchi-container.mint-catalog .wearable-mint-gallery {
+    .selected-gotchi-container.mint-catalog .wearable-mint-gallery,
+    .selected-gotchi-container.mint-catalog .paarcel-mint-gallery {
       overflow: hidden;
       min-height: 0;
     }

@@ -42,6 +42,35 @@ export default css`
     line-height: 1.3;
     color: var(--col-info-200);
   }
+
+  .paarcel-stack-card {
+    position: relative;
+    border-radius: 0.4rem;
+    border: 0.3rem solid #5eead4;
+    background: rgba(8, 40, 36, 0.85);
+    min-height: 13rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    padding: 0.8rem;
+  }
+
+  .paarcel-stack-icon {
+    font-size: 3.2rem;
+    color: #c8fff5;
+    line-height: 1;
+  }
+
+  .paarcel-stack-name {
+    margin: 0;
+    font-family: 'Kimberley Rg', sans-serif;
+    font-size: 1.2rem;
+    color: #fff;
+    text-transform: capitalize;
+    text-align: center;
+  }
   @media (max-width: 1023px) {
     .select-panel-title {
       font-size: 3.2rem;

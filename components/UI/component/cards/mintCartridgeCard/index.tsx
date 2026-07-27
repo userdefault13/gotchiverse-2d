@@ -14,7 +14,8 @@ export const MintCartridgeCard = ({ network, isSelected, hasCartridge, onClick }
   const { click } = useAavegotchiSound();
   const isRobinhood = network === 'robinhood';
   const cartridgeImg = isRobinhood ? GotchiverseRhCartridge : GotchiverseBaseCartridge;
-  const label = hasCartridge ? 'Manage' : 'Mint Cartridge';
+  // Manage mode selected → Exit (toggle off); otherwise Manage / Mint Cartridge.
+  const label = hasCartridge ? (isSelected ? 'Exit' : 'Manage') : 'Mint Cartridge';
 
   const handleClick = () => {
     click();
