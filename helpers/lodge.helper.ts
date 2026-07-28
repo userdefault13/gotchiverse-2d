@@ -32,7 +32,7 @@ export function isLodgeInstallationId(id: string): boolean {
   }
 }
 
-/** Waall, Lodge, or Store building — local off-chain parcel installs (not Shelf/Cashier furniture). */
+/** Waall, Lodge, or Store — local off-chain parcel installs (not Shelf/Cashier/Console furniture). */
 export function isLocalOffchainItemId(itemId: number | string): boolean {
   return isWaallItemId(itemId) || isLodgeItemId(itemId) || isStoreItemId(itemId);
 }

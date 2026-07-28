@@ -20,7 +20,14 @@ import { FoundryNet } from 'helpers/foundry';
 import { getLocalWaallRecipes, isWaallItemId } from 'helpers/waalls.helper';
 import { getLocalLodgeRecipes, isLodgeItemId } from 'helpers/lodge.helper';
 import { getLocalStorePageRecipes, isStoreItemId } from 'helpers/store.installation.helper';
-import { craftStoreFurniture, isStoreFurnitureItemId, getFurnitureQty } from 'helpers/store.layout.helper';
+import { CONSOLE_AARCADE_GAMES, getLocalConsoleRecipes, isConsoleItemId } from 'helpers/console.installation.helper';
+import {
+  craftConsoleFurniture,
+  craftStoreFurniture,
+  getConsoleBagCount,
+  getFurnitureQty,
+  isStoreFurnitureItemId,
+} from 'helpers/store.layout.helper';
 
 interface Props {
   selectRecipe: (recipe: Recipe) => void;
@@ -129,9 +136,12 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
       ? [{ id: 'foundry', label: 'LOGISTICS RECIPES', shortLabel: 'Off-chain foundry salvage' } as RecipeBookPage]
       : []),
     { id: 'store', label: 'STORE RECIPES', shortLabel: 'Soft-launch store & furniture' },
+    { id: 'console', label: 'CONSOLE RECIPES', shortLabel: 'Craft into bag · place inside Store' },
   ];
 
   const storeRecipes = getLocalStorePageRecipes();
+  const consoleRecipes = getLocalConsoleRecipes();
+  const [pendingConsoleRecipe, setPendingConsoleRecipe] = useState<Recipe | null>(null);
   const onSetSortBy = (name: string, value: string, direction: 'asc' | 'desc') => {
     setSort({
       name,
@@ -188,7 +198,9 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
           ? getLocalLodgeRecipes().filter((r) => !nameFilter || r.name.toLowerCase().includes(String(nameFilter).toLowerCase()))
           : [];
       // Store recipes live on the dedicated STORE RECIPES book page.
-      const withoutLocal = recipes.filter((r) => !isWaallItemId(r.id) && !isLodgeItemId(r.id) && !isStoreItemId(r.id));
+      const withoutLocal = recipes.filter(
+        (r) => !isWaallItemId(r.id) && !isLodgeItemId(r.id) && !isStoreItemId(r.id) && !isConsoleItemId(r.id),
+      );
       const merged = _.concat(withoutLocal, localWaalls, localLodges);
 
       let sorted: Recipe[];
@@ -248,7 +260,9 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
     const fetchedInstallations = await fetchContractRecipe(currentNetwork, globalProvider, 'INSTALLATION');
     const fetchedTiles = await fetchContractRecipe(currentNetwork, globalProvider, 'TILE');
     const fetchedItems = _.concat(fetchedInstallations, fetchedTiles);
-    const withoutLocal = fetchedItems.filter((r) => !isWaallItemId(r.id) && !isLodgeItemId(r.id) && !isStoreItemId(r.id));
+    const withoutLocal = fetchedItems.filter(
+      (r) => !isWaallItemId(r.id) && !isLodgeItemId(r.id) && !isStoreItemId(r.id) && !isConsoleItemId(r.id),
+    );
     setRecipes(_.concat(withoutLocal, getLocalWaallRecipes(), getLocalLodgeRecipes()));
     setPending(false);
   };
@@ -294,9 +308,31 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
     setOpen(false);
   };
 
+  const handleSelectConsoleRecipe = (recipe: Recipe) => {
+    click();
+    // Console L1 → pick first Aarcade title, then craft into instance bag.
+    if (isConsoleItemId(recipe.id)) {
+      setPendingConsoleRecipe(recipe);
+      return;
+    }
+    selectRecipe(recipe);
+    setOpen(false);
+  };
+
+  const finishConsoleCraft = (gameId: string) => {
+    if (!pendingConsoleRecipe) return;
+    click();
+    const result = craftConsoleFurniture(Number(pendingConsoleRecipe.id), gameId, 1);
+    const qty = getConsoleBagCount(Number(pendingConsoleRecipe.id));
+    setCraftToast(result.ok ? `${result.message} (bag: ${qty})` : result.message);
+    setPendingConsoleRecipe(null);
+    window.setTimeout(() => setCraftToast(''), 2500);
+  };
+
   const showOnChainPage = bookPages[bookPage]?.id === 'onchain';
   const showFoundryPage = bookPages[bookPage]?.id === 'foundry';
   const showStorePage = bookPages[bookPage]?.id === 'store';
+  const showConsolePage = bookPages[bookPage]?.id === 'console';
 
   return (
     <>
@@ -344,6 +380,29 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
             Soft-launch retail: craft a Store for your parcel, then Shelf & Cashier into your furniture bag — place them inside the Store.
           </div>
         ) : null}
+        {showConsolePage ? (
+          <div className="foundry-intro">
+            Soft-launch arcade: craft a Console into your furniture bag (pick a title to unlock), then place it inside a Store. Level =
+            title slots; L9 plays any owned cartridge.
+          </div>
+        ) : null}
+        {pendingConsoleRecipe ? (
+          <div className="foundry-intro console-title-pick">
+            <p>
+              Load first title onto <strong>{pendingConsoleRecipe.name}</strong>:
+            </p>
+            <div className="console-title-grid">
+              {CONSOLE_AARCADE_GAMES.map((game) => (
+                <button key={game.id} type="button" className="console-title-btn" onClick={() => finishConsoleCraft(game.id)}>
+                  {game.name}
+                </button>
+              ))}
+            </div>
+            <button type="button" className="console-title-cancel" onClick={() => setPendingConsoleRecipe(null)}>
+              Cancel
+            </button>
+          </div>
+        ) : null}
         {craftToast ? <div className="craft-toast">{craftToast}</div> : null}
         <div className={`scrollable ${gameConfig.gotchiverseTheme}`}>
           <div className="content">
@@ -361,6 +420,11 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
             {showStorePage
               ? storeRecipes.map((recipe, i) => (
                   <RecipeCard onClick={handleSelectStoreRecipe} recipe={recipe} key={`store-${recipe.id}-${i}`} />
+                ))
+              : null}
+            {showConsolePage
+              ? consoleRecipes.map((recipe, i) => (
+                  <RecipeCard onClick={handleSelectConsoleRecipe} recipe={recipe} key={`console-${recipe.id}-${i}`} />
                 ))
               : null}
           </div>

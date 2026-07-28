@@ -87,6 +87,39 @@ export default css`
     line-height: 1.35;
   }
 
+  .console-title-pick {
+    margin-bottom: 1.6rem;
+  }
+
+  .console-title-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    margin: 1rem 0;
+  }
+
+  .console-title-btn {
+    padding: 0.6rem 1.2rem;
+    border: 0.2rem solid #7b61ff;
+    background: rgba(16, 2, 33, 0.9);
+    color: #fff;
+    font-size: 1.6rem;
+    cursor: pointer;
+  }
+
+  .console-title-btn:hover {
+    border-color: #ff6b9d;
+  }
+
+  .console-title-cancel {
+    background: transparent;
+    border: 0;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 1.5rem;
+    cursor: pointer;
+    text-decoration: underline;
+  }
+
   .craft-toast {
     position: absolute;
     top: 6rem;

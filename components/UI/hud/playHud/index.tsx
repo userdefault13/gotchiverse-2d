@@ -33,6 +33,7 @@ import {
   ExitArenaModal,
   FoundryPanel,
   StoreModal,
+  ConsoleModal,
 } from '../components';
 import { GameNav } from 'components/UI/structures';
 import { SuperChatList } from 'components/UI/component/superChat/SuperChatList';
@@ -180,6 +181,7 @@ export const PlayHud = () => {
       <ExitArenaModal />
       <NftDisplayModal />
       <StoreModal />
+      <ConsoleModal />
       <EventHologram />
       <ActiveEventsModal />
       <TravelParcelsModal />

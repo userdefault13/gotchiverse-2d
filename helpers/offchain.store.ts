@@ -18,11 +18,15 @@ const LEGACY_STORE_INV = 'gotchiverse.store.inventory.v1';
 const LEGACY_PLACEMENTS = 'gotchiverse.offchain.placements.v1';
 const FLUSH_MS = 1500;
 
-/** Waall 162–170 + Lodge 171–179 + Store 180–188 — keep inline to avoid circular imports. */
+/** Waall 162–170 + Lodge 171–179 + Store 180–188 — keep inline to avoid circular imports.
+ * Console 199–207 is Store furniture (not parcel offchain inventory). */
 function isOffchainInstallationId(id: string): boolean {
   try {
     const itemId = Number(String(id).split('_')[1]);
-    return (itemId >= 162 && itemId <= 179) || (itemId >= 180 && itemId <= 188);
+    return (
+      (itemId >= 162 && itemId <= 179) ||
+      (itemId >= 180 && itemId <= 188)
+    );
   } catch {
     return false;
   }

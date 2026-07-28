@@ -79,6 +79,9 @@ export default css`
   .cell.cashier {
     background: #4a90e8;
   }
+  .cell.console {
+    background: #9b59ff;
+  }
   .cell.selected {
     outline: 2px solid #fff;
     outline-offset: -2px;

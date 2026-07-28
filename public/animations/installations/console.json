@@ -1,0 +1,19 @@
+{
+  "columns": 3,
+  "image": "console.png",
+  "imageheight": 768,
+  "imagewidth": 768,
+  "margin": 0,
+  "name": "console",
+  "spacing": 0,
+  "tilecount": 9,
+  "tiledversion": "1.7.0",
+  "tileheight": 256,
+  "tilewidth": 256,
+  "type": "tileset",
+  "version": "1.6",
+  "offset": {
+    "x": 0,
+    "y": 0
+  }
+}

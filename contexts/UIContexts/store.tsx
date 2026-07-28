@@ -65,6 +65,19 @@ export interface State {
     cartridgeId?: string;
   };
 
+  /** Soft-launch Console furniture inside a Store — Unity game picker / embed. */
+  consoleState: {
+    open: boolean;
+    /** Furniture piece id inside the store layout. */
+    furnitureId?: string;
+    storeId?: string;
+    itemId?: number;
+    loadedTitles?: string[];
+    isOwner?: boolean;
+    /** @deprecated use furnitureId — kept for older callers */
+    installationId?: string;
+  };
+
   /** Session cart while inside a store (cleared on leave). */
   storeCart: Array<{
     shelfId: string;
@@ -175,6 +188,9 @@ export const initialState: State = {
     installationId: undefined,
   },
   storeState: {
+    open: false,
+  },
+  consoleState: {
     open: false,
   },
   storeCart: [],

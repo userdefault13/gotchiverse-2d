@@ -70,6 +70,7 @@ export type Action =
   | { type: 'UPDATE_NFT_DISPLAY'; nftDisplayState: State['nftDisplayState'] }
   | { type: 'UPDATE_NFT_DISPLAY_ADMIN'; nftDisplayAdminState: State['nftDisplayAdminState'] }
   | { type: 'UPDATE_STORE_MODAL'; storeState: State['storeState'] }
+  | { type: 'UPDATE_CONSOLE_MODAL'; consoleState: State['consoleState'] }
   | { type: 'UPDATE_STORE_CART'; storeCart: State['storeCart'] }
   | { type: 'UPDATE_STORE_SHELF_MODAL'; storeShelfModal: State['storeShelfModal'] }
   | { type: 'UPDATE_EVENT_HOLOGRAM'; eventHologramState: State['eventHologramState'] }
@@ -186,6 +187,11 @@ export const reducer = (state: State, action: Action): State => {
       return {
         ...state,
         storeState: action.storeState,
+      };
+    case 'UPDATE_CONSOLE_MODAL':
+      return {
+        ...state,
+        consoleState: action.consoleState,
       };
     case 'UPDATE_STORE_CART':
       return {

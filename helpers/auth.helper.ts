@@ -136,6 +136,16 @@ export const getIsValidated = async (address: string, opts?: { fresh?: boolean }
   return Boolean(status?.verified);
 };
 
+export type AarcadeCartridgeListItem = {
+  cartridgeId: string;
+  gameId: string;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+  activeCAavegotchiId?: string | null;
+  heroCount: number;
+  heroLabel?: string | null;
+};
+
 export type AarcadeCartridgeStatus = {
   wallet: string;
   gameId: string;
@@ -143,6 +153,8 @@ export type AarcadeCartridgeStatus = {
   cartridgeId: string | null;
   heroes: import('helpers/cartridgeHero.helper').CartridgeHero[];
   activeCAavegotchiId?: string | null;
+  /** All cartridges for this wallet + gameId (newest first from sim). */
+  cartridges: AarcadeCartridgeListItem[];
   catalogUrl: string;
   checkedAt?: string | null;
 };
@@ -165,16 +177,68 @@ async function fetchCartridgeStatusForGameId(
   if (!response.ok) return null;
   const data = await response.json();
   const { normalizeCartridgeHeroes } = await import('helpers/cartridgeHero.helper');
+  const cartridges = normalizeAarcadeCartridgeList(data?.cartridges, gameId);
+  const primaryId = data?.cartridgeId
+    ? String(data.cartridgeId)
+    : cartridges[0]?.cartridgeId || null;
   return {
     wallet: String(data?.wallet || address).toLowerCase(),
     gameId: String(data?.gameId || gameId),
-    hasCartridge: Boolean(data?.hasCartridge),
-    cartridgeId: data?.cartridgeId ? String(data.cartridgeId) : null,
+    hasCartridge: Boolean(primaryId || data?.hasCartridge),
+    cartridgeId: primaryId,
     heroes: normalizeCartridgeHeroes(data?.heroes),
     activeCAavegotchiId: data?.activeCAavegotchiId ? String(data.activeCAavegotchiId) : null,
+    cartridges,
     catalogUrl: String(data?.catalogUrl || getAarcadeGamesCatalogUrl()),
     checkedAt: data?.checkedAt ?? null,
   };
+}
+
+function normalizeAarcadeCartridgeList(
+  raw: unknown,
+  gameId: string,
+): AarcadeCartridgeListItem[] {
+  if (!Array.isArray(raw)) return [];
+  const want = String(gameId || '')
+    .trim()
+    .toLowerCase();
+  const out: AarcadeCartridgeListItem[] = [];
+  for (const row of raw) {
+    if (!row || typeof row !== 'object') continue;
+    const rec = row as Record<string, unknown>;
+    const cartridgeId = String(rec.cartridgeId || '').trim();
+    const rowGameId = String(rec.gameId || '')
+      .trim()
+      .toLowerCase();
+    if (!cartridgeId) continue;
+    if (want && rowGameId && rowGameId !== want) continue;
+    const roster = Array.isArray(rec.cAavegotchis)
+      ? rec.cAavegotchis
+      : rec.cAavegotchi
+        ? [rec.cAavegotchi]
+        : [];
+    const activeId = rec.activeCAavegotchiId
+      ? String(rec.activeCAavegotchiId)
+      : null;
+    const active =
+      roster.find(
+        (h) => h && typeof h === 'object' && String((h as { id?: string }).id || '') === activeId,
+      ) || roster[0];
+    const activeRec = active && typeof active === 'object' ? (active as Record<string, unknown>) : null;
+    const heroLabel = activeRec
+      ? String(activeRec.name || activeRec.sourceTokenId || activeRec.id || '').trim() || null
+      : null;
+    out.push({
+      cartridgeId,
+      gameId: rowGameId || want,
+      createdAt: rec.createdAt ? String(rec.createdAt) : null,
+      updatedAt: rec.updatedAt ? String(rec.updatedAt) : null,
+      activeCAavegotchiId: activeId,
+      heroCount: roster.length,
+      heroLabel,
+    });
+  }
+  return out;
 }
 
 /**
@@ -212,6 +276,7 @@ export const getAarcadeCartridgeStatus = async (
         cartridgeId: null,
         heroes: [],
         activeCAavegotchiId: null,
+        cartridges: [],
         catalogUrl: getAarcadeGamesCatalogUrl(),
         checkedAt: null,
       }

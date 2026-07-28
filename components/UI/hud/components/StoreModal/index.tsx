@@ -18,6 +18,7 @@ import {
 import {
   SHELF_ITEM_ID,
   CASHIER_ITEM_ID,
+  CONSOLE_ITEM_ID,
   StoreLayout,
   StoreFurniturePiece,
   StoreListingBind,
@@ -31,19 +32,22 @@ import {
   bindListingToShelf,
   furnitureAt,
   getFurnitureQty,
+  getConsoleBagCount,
   makeDemoListing,
   isShelfItemId,
   isCashierItemId,
+  isConsoleItemId,
 } from 'helpers/store.layout.helper';
+import { consoleLevelFromItemId } from 'helpers/console.installation.helper';
 import styles from './styles';
 
 const STORE_MAX = 8;
 const GRID = 16;
 
-type PlaceBrush = typeof SHELF_ITEM_ID | typeof CASHIER_ITEM_ID | null;
+type PlaceBrush = typeof SHELF_ITEM_ID | typeof CASHIER_ITEM_ID | typeof CONSOLE_ITEM_ID | null;
 
 export const StoreModal = (): JSX.Element => {
-  const [{ storeState, storeCart, storeShelfModal }, uiDispatch] = useUI();
+  const [{ storeState, storeCart, storeShelfModal, consoleState }, uiDispatch] = useUI();
   const { back, click } = useAavegotchiSound();
   const [occupancy, setOccupancy] = useState(0);
   const [joining, setJoining] = useState(false);
@@ -54,6 +58,7 @@ export const StoreModal = (): JSX.Element => {
   const [placeBrush, setPlaceBrush] = useState<PlaceBrush>(null);
   const [shelfQty, setShelfQty] = useState(0);
   const [cashierQty, setCashierQty] = useState(0);
+  const [consoleQty, setConsoleQty] = useState(0);
   const [showCart, setShowCart] = useState(false);
   const [bindForm, setBindForm] = useState<StoreListingBind | null>(null);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
@@ -65,6 +70,7 @@ export const StoreModal = (): JSX.Element => {
   const refreshInv = () => {
     setShelfQty(getFurnitureQty(SHELF_ITEM_ID));
     setCashierQty(getFurnitureQty(CASHIER_ITEM_ID));
+    setConsoleQty(getConsoleBagCount());
   };
 
   const applyLayout = (next: StoreLayout, publish: boolean) => {
@@ -146,7 +152,16 @@ export const StoreModal = (): JSX.Element => {
     return () => clearInterval(id);
   }, [open, occupancy]);
 
-  // S = open selected shelf; E = cashier / cart (StoreModal owns keys while phaser keyboard disabled).
+  useEffect(() => {
+    if (!open || !installationId) return;
+    // Refresh layout/bag when Console modal closes (titles / upgrades persisted there).
+    if (!consoleState?.open) {
+      setLayout(loadStoreLayout(installationId));
+      refreshInv();
+    }
+  }, [open, installationId, consoleState?.open, consoleState?.itemId, consoleState?.loadedTitles]);
+
+  // S = open selected shelf; E = cashier / cart / console (StoreModal owns keys while phaser keyboard disabled).
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
@@ -167,6 +182,10 @@ export const StoreModal = (): JSX.Element => {
           e.preventDefault();
           setShowCart(true);
           setStatusMsg('Cashier — review cart. Checkout (escrow) lands in phase 1c.');
+        }
+        if (piece && isConsoleItemId(piece.itemId)) {
+          e.preventDefault();
+          openConsole(piece);
         }
       }
     };
@@ -203,6 +222,24 @@ export const StoreModal = (): JSX.Element => {
     });
   };
 
+  const openConsole = (piece: StoreFurniturePiece) => {
+    if (!isConsoleItemId(piece.itemId) || !installationId) return;
+    click();
+    setSelectedId(piece.id);
+    uiDispatch({
+      type: 'UPDATE_CONSOLE_MODAL',
+      consoleState: {
+        open: true,
+        furnitureId: piece.id,
+        installationId: piece.id,
+        storeId: installationId,
+        itemId: piece.itemId,
+        loadedTitles: piece.loadedTitles || [],
+        isOwner,
+      },
+    });
+  };
+
   const handleTileClick = (tx: number, ty: number) => {
     if (!layout || !installationId) return;
     click();
@@ -230,6 +267,7 @@ export const StoreModal = (): JSX.Element => {
       setShowCart(true);
       setStatusMsg('Cashier — review cart. Checkout (escrow) lands in phase 1c.');
     }
+    if (isConsoleItemId(piece.itemId)) openConsole(piece);
   };
 
   const handleCraft = (itemId: typeof SHELF_ITEM_ID | typeof CASHIER_ITEM_ID) => {
@@ -327,6 +365,10 @@ export const StoreModal = (): JSX.Element => {
     uiDispatch({ type: 'UPDATE_STORE_CART', storeCart: [] });
     uiDispatch({ type: 'UPDATE_STORE_SHELF_MODAL', storeShelfModal: { open: false } });
     uiDispatch({
+      type: 'UPDATE_CONSOLE_MODAL',
+      consoleState: { open: false, furnitureId: undefined, installationId: undefined },
+    });
+    uiDispatch({
       type: 'UPDATE_STORE_MODAL',
       storeState: { open: false, installationId: undefined, isOwner: false },
     });
@@ -375,6 +417,14 @@ export const StoreModal = (): JSX.Element => {
               >
                 Place Cashier
               </Button>
+              <Button
+                size={2}
+                secondary={placeBrush !== CONSOLE_ITEM_ID}
+                onClick={() => setPlaceBrush(placeBrush === CONSOLE_ITEM_ID ? null : CONSOLE_ITEM_ID)}
+                disabled={consoleQty < 1}
+              >
+                Place Console ({consoleQty})
+              </Button>
               {selectedId ? (
                 <Button size={2} onClick={handleRemoveSelected}>
                   Remove selected
@@ -396,6 +446,7 @@ export const StoreModal = (): JSX.Element => {
                 let kind = '';
                 if (furn && isShelfItemId(furn.itemId)) kind = furn.listing ? 'shelf-bound' : 'shelf';
                 if (furn && isCashierItemId(furn.itemId)) kind = 'cashier';
+                if (furn && isConsoleItemId(furn.itemId)) kind = 'console';
                 return (
                   <button
                     type="button"
@@ -405,7 +456,9 @@ export const StoreModal = (): JSX.Element => {
                     }`}
                     title={
                       furn
-                        ? `${isShelfItemId(furn.itemId) ? 'Shelf' : 'Cashier'}${furn.listing ? `: ${furn.listing.title}` : ''}`
+                        ? isConsoleItemId(furn.itemId)
+                          ? `Console L${consoleLevelFromItemId(furn.itemId)} · ${(furn.loadedTitles || []).length} titles`
+                          : `${isShelfItemId(furn.itemId) ? 'Shelf' : 'Cashier'}${furn.listing ? `: ${furn.listing.title}` : ''}`
                         : who || `${tx},${ty}`
                     }
                     onClick={() => handleTileClick(tx, ty)}
@@ -453,8 +506,12 @@ export const StoreModal = (): JSX.Element => {
           </div>
 
           <p className="hint">
-            Click shelf or press <kbd>S</kbd> · Cashier / <kbd>E</kbd> opens cart
-            {placeBrush ? ` · Placing ${placeBrush === SHELF_ITEM_ID ? 'Shelf' : 'Cashier'}` : ''}
+            Click shelf / <kbd>S</kbd> · Cashier / <kbd>E</kbd> cart · Console / <kbd>E</kbd> play
+            {placeBrush
+              ? ` · Placing ${
+                  placeBrush === SHELF_ITEM_ID ? 'Shelf' : placeBrush === CASHIER_ITEM_ID ? 'Cashier' : 'Console'
+                }`
+              : ''}
           </p>
           <div className="actions">
             <Button secondary onClick={() => setShowCart((v) => !v)}>

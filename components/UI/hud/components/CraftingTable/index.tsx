@@ -126,6 +126,7 @@ export const CraftingTable = ({ open, onClose }: Props): JSX.Element => {
     setPending(true);
 
     // Waalls / Lodges / Store are not on InstallationDiamond — craft into local inventory (demo / PoC).
+    // Console crafts from RecipeBook into the store furniture bag (requires a title pick).
     if (recipe.type === 'INSTALLATION' && (isWaallItemId(recipe.id) || isLodgeItemId(recipe.id) || isStoreItemId(recipe.id))) {
       let notificationId;
       try {

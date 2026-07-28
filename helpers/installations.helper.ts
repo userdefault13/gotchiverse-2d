@@ -124,6 +124,7 @@ export const getInstallationKeyByTypeData = (typeData: InstallationTypeLocal): s
     const itemId = Number(typeData.itemId);
     if (itemId >= 189 && itemId <= 197) return 'cashier';
     if (itemId === 198) return 'shelf';
+    if (itemId >= 199 && itemId <= 207) return 'console';
   }
   return ALCHEMICA_BASED_INSTALLATION_TYPES.includes(typeData.installationType)
     ? `${typeData.installationType}_${typeData.alchemicaType}`

@@ -199,12 +199,11 @@ const spawnSprite = async (installationData: InstallationMetadata, options?: Cre
     const footprintW = width * GOTCHI_SIZE.UNIT;
     const footprintH = height * GOTCHI_SIZE.UNIT;
     const isStore = Number(installationType) === 9 || key === 'store';
-    // Store sheet is 256×256 on a 2×2 (128×128) pad — scale to footprint so placer outline matches the grid
-    // (Bounce Gate keeps native 256 art + tileset offset; Store cottage needs an exact pad fit).
+    // Store sheet is 256×256 on a 2×2 (128×128) pad — scale to footprint.
+    // Console is Store furniture (not a parcel installation).
     if (isStore) {
       offset.x = 0;
       offset.y = 0;
-      // Production CDN (verse-static) does not host soft-launch store.png — load from this app.
       await AssetsController.ensureSpritesheet('store', 'installations', 256, 256);
     }
     // Always top-left origin on the footprint — do not use tileset originX/Y here
@@ -219,11 +218,13 @@ const spawnSprite = async (installationData: InstallationMetadata, options?: Cre
       if (isStore) {
         installationImage.setDisplaySize(footprintW, footprintH);
       }
+      installationImage.setName('sprite');
     } else if (isStore) {
       // Last resort: UI thumb that is already served from this app's /public.
       const thumbKey = 'store_thumb_180';
+      const thumbPath = '/images/installations/png/180.png';
       if (!scene.textures.exists(thumbKey)) {
-        await AssetsController.checkTexture(thumbKey, '/images/installations/png/180.png', 'image');
+        await AssetsController.checkTexture(thumbKey, thumbPath, 'image');
       }
       if (scene.textures.exists(thumbKey) && scene.textures.get(thumbKey)?.key !== '__MISSING') {
         installationImage = scene.add.image(-footprintW / 2, -footprintH / 2, thumbKey).setOrigin(0);
@@ -263,7 +264,13 @@ const spawnSprite = async (installationData: InstallationMetadata, options?: Cre
 
   // Waalls: keep a 1×1 footprint hitbox centered on the cell (same as other installs).
   // Lodges / Stores: footprint matches type width/height centered on the cell.
-  if ((Number(installationType) === 3 || Number(installationType) === 4 || Number(installationType) === 9) && type === 'INSTALLATION') {
+  if (
+    (Number(installationType) === 3 ||
+      Number(installationType) === 4 ||
+      Number(installationType) === 9 ||
+      Number(installationType) === 11) &&
+    type === 'INSTALLATION'
+  ) {
     const hitW = width * GOTCHI_SIZE.UNIT;
     const hitH = height * GOTCHI_SIZE.UNIT;
     installationContainer.setSize(hitW, hitH);
@@ -708,7 +715,7 @@ const updateNearbyStorePrompt = (): void => {
     setStoreInteractPrompt(false);
     return;
   }
-  if (GlobalState.UI?.state?.storeState?.open) {
+  if (GlobalState.UI?.state?.storeState?.open || GlobalState.UI?.state?.consoleState?.open) {
     setStoreInteractPrompt(false);
     return;
   }
@@ -717,29 +724,32 @@ const updateNearbyStorePrompt = (): void => {
     setStoreInteractPrompt(false);
     return;
   }
-  const nearId = getNearestStoreId();
-  setStoreInteractPrompt(Boolean(nearId), nearId);
+  const nearStore = getNearestStoreId();
+  setStoreInteractPrompt(Boolean(nearStore), nearStore);
 };
 
 /**
- * E-key: enter nearest Store (or active Store) → StoreModal + Colyseus StoreRoom.
+ * E-key: enter nearest Store (or active).
  * Returns true if handled so deposit E does not also fire.
  */
 const tryInteractActive = (): boolean => {
   if (Installations.buildModeState || scene.disableKeyboard) return false;
-  if (GlobalState.UI?.state?.storeState?.open) return true;
+  if (GlobalState.UI?.state?.storeState?.open || GlobalState.UI?.state?.consoleState?.open) return true;
 
   let storeId: string | null = null;
   const activeId = scene.activeInstallation?.data?.get('id') as string | undefined;
-  if (activeId && Number(getTypeById(activeId)?.installationType) === 9) {
-    storeId = activeId;
+  if (activeId) {
+    const activeType = Number(getTypeById(activeId)?.installationType);
+    if (activeType === 9) storeId = activeId;
   }
   if (!storeId) storeId = getNearestStoreId();
-  if (!storeId) return false;
 
-  SFXController.playFX('click');
-  handleEnterStore(storeId);
-  return true;
+  if (storeId) {
+    SFXController.playFX('click');
+    handleEnterStore(storeId);
+    return true;
+  }
+  return false;
 };
 
 const handleMove = async (id: string, container) => {
@@ -1573,7 +1583,11 @@ const handleEquipUnequipMove = async (selectedInstallation: EquipUnequipMoveData
         state: 0,
       });
       removeInstallationBuildModeUI(scene.activeInstallation);
-      const label = isStoreItemId(itemId) ? 'Store' : isLodgeItemId(itemId) ? 'Lodge' : 'Waall';
+      const label = isStoreItemId(itemId)
+        ? 'Store'
+        : isLodgeItemId(itemId)
+          ? 'Lodge'
+          : 'Waall';
 
       if (callMethod === 'move' && isMoving) {
         destroyMarker();

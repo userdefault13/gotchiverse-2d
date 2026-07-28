@@ -1,5 +1,16 @@
 /** Soft-launch store interior furniture + listing pointers (phase 1b). */
 
+import {
+  CONSOLE_AARCADE_GAMES,
+  CONSOLE_ITEM_ID as CONSOLE_L1,
+  CONSOLE_ITEM_ID_END as CONSOLE_END,
+  CONSOLE_ITEM_ID_START as CONSOLE_START,
+  consoleLevelFromItemId,
+  getLocalConsoleUpgradeInfo,
+  isConsoleItemId,
+  normalizeLoadedTitles,
+} from './console.installation.helper';
+
 /** Cashier L1–9 (Maaker-style), own spritesheet `cashier`. */
 export const CASHIER_ITEM_ID_START = 189;
 export const CASHIER_ITEM_ID_END = 197;
@@ -9,10 +20,16 @@ export const CASHIER_ITEM_ID = CASHIER_ITEM_ID_START;
 /** Shelf L1 only (own spritesheet `shelf`). */
 export const SHELF_ITEM_ID = 198;
 
+/** Console L1–9 (re-export for furniture callers). */
+export const CONSOLE_ITEM_ID_START = CONSOLE_START;
+export const CONSOLE_ITEM_ID_END = CONSOLE_END;
+export const CONSOLE_ITEM_ID = CONSOLE_L1;
+
 export const STORE_FURNITURE_TYPE = 10;
 
 export const STORE_LAYOUT_KEY = 'gotchiverse.store.layout.v1';
 export const STORE_FURNITURE_INV_KEY = 'gotchiverse.store.furnitureInv.v1';
+export const CONSOLE_BAG_KEY = 'gotchiverse.store.consoleBag.v1';
 
 /** Legacy furniture ids from first soft-launch pass (before local L1–9 catalog). */
 const LEGACY_SHELF_ITEM_ID = 181;
@@ -36,6 +53,8 @@ export type StoreFurniturePiece = {
   x: number;
   y: number;
   listing?: StoreListingBind | null;
+  /** Console: Aarcade game ids loaded onto this piece. */
+  loadedTitles?: string[];
 };
 
 export type StoreLayout = {
@@ -54,6 +73,12 @@ export type StoreFurnitureInventory = {
   [itemId: string]: number;
 };
 
+export type ConsoleBagInstance = {
+  bagId: string;
+  itemId: number;
+  loadedTitles: string[];
+};
+
 export function isShelfItemId(itemId: number | string): boolean {
   return Number(itemId) === SHELF_ITEM_ID;
 }
@@ -63,8 +88,10 @@ export function isCashierItemId(itemId: number | string): boolean {
   return id >= CASHIER_ITEM_ID_START && id <= CASHIER_ITEM_ID_END;
 }
 
+export { isConsoleItemId };
+
 export function isStoreFurnitureItemId(itemId: number | string): boolean {
-  return isShelfItemId(itemId) || isCashierItemId(itemId);
+  return isShelfItemId(itemId) || isCashierItemId(itemId) || isConsoleItemId(itemId);
 }
 
 function migrateFurnitureItemId(itemId: number): number {
@@ -74,10 +101,14 @@ function migrateFurnitureItemId(itemId: number): number {
 }
 
 function migrateFurnitureList(furniture: StoreFurniturePiece[]): StoreFurniturePiece[] {
-  return (furniture || []).map((piece) => ({
-    ...piece,
-    itemId: migrateFurnitureItemId(Number(piece.itemId)),
-  }));
+  return (furniture || []).map((piece) => {
+    const itemId = migrateFurnitureItemId(Number(piece.itemId));
+    const next: StoreFurniturePiece = { ...piece, itemId };
+    if (isConsoleItemId(itemId)) {
+      next.loadedTitles = normalizeLoadedTitles(piece.loadedTitles);
+    }
+    return next;
+  });
 }
 
 function readJson<T>(key: string, fallback: T): T {
@@ -164,11 +195,18 @@ export function saveFurnitureInventory(inv: StoreFurnitureInventory): void {
 }
 
 export function getFurnitureQty(itemId: number): number {
+  if (isConsoleItemId(itemId)) {
+    return loadConsoleBag().filter((c) => Number(c.itemId) === Number(itemId)).length;
+  }
   const inv = loadFurnitureInventory();
   return Math.max(0, Number(inv[String(itemId)] || 0));
 }
 
 export function adjustFurnitureQty(itemId: number, delta: number): number {
+  if (isConsoleItemId(itemId)) {
+    // Console uses instance bag; qty helpers only for shelf/cashier.
+    return getFurnitureQty(itemId);
+  }
   const inv = loadFurnitureInventory();
   const next = Math.max(0, Number(inv[String(itemId)] || 0) + delta);
   inv[String(itemId)] = next;
@@ -176,19 +214,79 @@ export function adjustFurnitureQty(itemId: number, delta: number): number {
   return next;
 }
 
+export function loadConsoleBag(): ConsoleBagInstance[] {
+  const raw = readJson<ConsoleBagInstance[]>(CONSOLE_BAG_KEY, []);
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((row) => row && isConsoleItemId(row.itemId))
+    .map((row) => ({
+      bagId: String(row.bagId || `bag_${Date.now()}`),
+      itemId: Number(row.itemId),
+      loadedTitles: normalizeLoadedTitles(row.loadedTitles),
+    }));
+}
+
+export function saveConsoleBag(bag: ConsoleBagInstance[]): void {
+  writeJson(CONSOLE_BAG_KEY, bag);
+}
+
+export function getConsoleBagCount(itemId?: number): number {
+  const bag = loadConsoleBag();
+  if (itemId == null) return bag.length;
+  return bag.filter((c) => Number(c.itemId) === Number(itemId)).length;
+}
+
 /** Soft-launch free craft into store-furniture bag (not parcel inventory). */
 export function craftStoreFurniture(itemId: number, quantity = 1): { ok: boolean; message: string; qty: number } {
   if (!isStoreFurnitureItemId(itemId) || quantity < 1) {
     return { ok: false, message: 'Invalid furniture', qty: 0 };
+  }
+  if (isConsoleItemId(itemId)) {
+    return { ok: false, message: 'Console craft requires a title — use craftConsoleFurniture', qty: 0 };
   }
   const qty = adjustFurnitureQty(itemId, quantity);
   const name = isShelfItemId(itemId) ? 'Shelf' : 'Cashier';
   return { ok: true, message: `Crafted ${quantity}× ${name}`, qty };
 }
 
+/**
+ * Craft a Console into the instance bag with at least one loaded title.
+ * Soft-launch: free craft (no alchemica).
+ */
+export function craftConsoleFurniture(
+  itemId: number,
+  firstTitle: string,
+  quantity = 1,
+): { ok: boolean; message: string; qty: number; bagIds: string[] } {
+  if (!isConsoleItemId(itemId) || quantity < 1) {
+    return { ok: false, message: 'Invalid Console', qty: 0, bagIds: [] };
+  }
+  const title = String(firstTitle || '')
+    .trim()
+    .toLowerCase();
+  if (!CONSOLE_AARCADE_GAMES.some((g) => g.id === title)) {
+    return { ok: false, message: 'Pick an Aarcade title to load', qty: 0, bagIds: [] };
+  }
+  const bag = loadConsoleBag();
+  const bagIds: string[] = [];
+  for (let i = 0; i < quantity; i += 1) {
+    const bagId = `console_${itemId}_${Date.now()}_${i}_${Math.random().toString(36).slice(2, 7)}`;
+    bag.push({ bagId, itemId: Number(itemId), loadedTitles: [title] });
+    bagIds.push(bagId);
+  }
+  saveConsoleBag(bag);
+  const name = CONSOLE_AARCADE_GAMES.find((g) => g.id === title)?.name || title;
+  return {
+    ok: true,
+    message: `Crafted ${quantity}× Console with ${name}`,
+    qty: bag.filter((c) => Number(c.itemId) === Number(itemId)).length,
+    bagIds,
+  };
+}
+
 export function placeFurniture(
   layout: StoreLayout,
-  itemId: typeof SHELF_ITEM_ID | typeof CASHIER_ITEM_ID,
+  itemId: number,
   x: number,
   y: number,
 ): { ok: boolean; message: string; layout: StoreLayout } {
@@ -197,6 +295,37 @@ export function placeFurniture(
   }
   if (layout.furniture.some((f) => f.x === x && f.y === y)) {
     return { ok: false, message: 'Tile occupied', layout };
+  }
+
+  if (isConsoleItemId(itemId)) {
+    const bag = loadConsoleBag();
+    let idx = bag.findIndex((c) => Number(c.itemId) === Number(itemId));
+    // Place Console brush is L1 id — allow placing any bag instance (incl. reclaimed upgrades).
+    if (idx < 0 && Number(itemId) === CONSOLE_ITEM_ID && bag.length > 0) {
+      idx = 0;
+    }
+    if (idx < 0) {
+      return { ok: false, message: 'No Console in bag — craft first', layout };
+    }
+    const [instance] = bag.splice(idx, 1);
+    saveConsoleBag(bag);
+    const piece: StoreFurniturePiece = {
+      id: `f_${instance.itemId}_${x}_${y}_${Date.now()}`,
+      itemId: Number(instance.itemId),
+      x,
+      y,
+      listing: null,
+      loadedTitles: normalizeLoadedTitles(instance.loadedTitles),
+    };
+    const next = saveStoreLayout({
+      ...layout,
+      furniture: [...layout.furniture, piece],
+    });
+    return { ok: true, message: 'Placed Console', layout: next };
+  }
+
+  if (!isShelfItemId(itemId) && !isCashierItemId(itemId)) {
+    return { ok: false, message: 'Invalid furniture', layout };
   }
   if (getFurnitureQty(itemId) < 1) {
     return { ok: false, message: 'No furniture in inventory — craft first', layout };
@@ -219,7 +348,19 @@ export function placeFurniture(
 export function removeFurniture(layout: StoreLayout, furnitureId: string): { ok: boolean; layout: StoreLayout } {
   const piece = layout.furniture.find((f) => f.id === furnitureId);
   if (!piece) return { ok: false, layout };
-  adjustFurnitureQty(piece.itemId, 1);
+
+  if (isConsoleItemId(piece.itemId)) {
+    const bag = loadConsoleBag();
+    bag.push({
+      bagId: `console_reclaim_${piece.id}_${Date.now()}`,
+      itemId: Number(piece.itemId),
+      loadedTitles: normalizeLoadedTitles(piece.loadedTitles),
+    });
+    saveConsoleBag(bag);
+  } else {
+    adjustFurnitureQty(piece.itemId, 1);
+  }
+
   const next = saveStoreLayout({
     ...layout,
     furniture: layout.furniture.filter((f) => f.id !== furnitureId),
@@ -242,6 +383,57 @@ export function bindListingToShelf(
   return { ok: true, message: listing ? 'Listing bound' : 'Listing cleared', layout: next };
 }
 
+export function setConsoleLoadedTitles(
+  layout: StoreLayout,
+  furnitureId: string,
+  loadedTitles: string[],
+): { ok: boolean; message: string; layout: StoreLayout } {
+  const idx = layout.furniture.findIndex((f) => f.id === furnitureId);
+  if (idx < 0) return { ok: false, message: 'Console not found', layout };
+  if (!isConsoleItemId(layout.furniture[idx].itemId)) {
+    return { ok: false, message: 'Not a Console', layout };
+  }
+  const furniture = layout.furniture.map((f, i) =>
+    i === idx ? { ...f, loadedTitles: normalizeLoadedTitles(loadedTitles) } : f,
+  );
+  const next = saveStoreLayout({ ...layout, furniture });
+  return { ok: true, message: 'Titles updated', layout: next };
+}
+
+/** Soft-launch in-store Console upgrade: bump itemId, keep loadedTitles. */
+export function upgradeConsoleFurniture(
+  layout: StoreLayout,
+  furnitureId: string,
+): { ok: boolean; message: string; layout: StoreLayout } {
+  const idx = layout.furniture.findIndex((f) => f.id === furnitureId);
+  if (idx < 0) return { ok: false, message: 'Console not found', layout };
+  const piece = layout.furniture[idx];
+  if (!isConsoleItemId(piece.itemId)) {
+    return { ok: false, message: 'Not a Console', layout };
+  }
+  const info = getLocalConsoleUpgradeInfo(piece.itemId);
+  if (!info?.next) {
+    return { ok: false, message: 'Console is max level', layout };
+  }
+  const furniture = layout.furniture.map((f, i) =>
+    i === idx
+      ? {
+          ...f,
+          itemId: info.next!.id,
+          loadedTitles: normalizeLoadedTitles(f.loadedTitles),
+        }
+      : f,
+  );
+  const next = saveStoreLayout({ ...layout, furniture });
+  return {
+    ok: true,
+    message: `Upgraded to ${info.next.name} (slots: ${
+      Number.isFinite(info.next.titleCapacity) ? info.next.titleCapacity : '∞'
+    })`,
+    layout: next,
+  };
+}
+
 export function furnitureAt(layout: StoreLayout, x: number, y: number): StoreFurniturePiece | undefined {
   return layout.furniture.find((f) => f.x === x && f.y === y);
 }
@@ -257,3 +449,6 @@ export function makeDemoListing(seed = 1): StoreListingBind {
     imageUrl: undefined,
   };
 }
+
+/** Re-export for callers that only import layout helper. */
+export { consoleLevelFromItemId };
