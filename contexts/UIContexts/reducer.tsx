@@ -69,6 +69,9 @@ export type Action =
   | { type: 'UPDATE_INMENU'; inMenu: State['inMenu'] }
   | { type: 'UPDATE_NFT_DISPLAY'; nftDisplayState: State['nftDisplayState'] }
   | { type: 'UPDATE_NFT_DISPLAY_ADMIN'; nftDisplayAdminState: State['nftDisplayAdminState'] }
+  | { type: 'UPDATE_STORE_MODAL'; storeState: State['storeState'] }
+  | { type: 'UPDATE_STORE_CART'; storeCart: State['storeCart'] }
+  | { type: 'UPDATE_STORE_SHELF_MODAL'; storeShelfModal: State['storeShelfModal'] }
   | { type: 'UPDATE_EVENT_HOLOGRAM'; eventHologramState: State['eventHologramState'] }
   | { type: 'UPDATE_ACTIVE_EVENTS_MODAL'; activeEventsModal: State['activeEventsModal'] }
   | { type: 'UPDATE_TRAVEL_PARCELS_MODAL'; travelParcelsModal: State['travelParcelsModal'] }
@@ -178,6 +181,21 @@ export const reducer = (state: State, action: Action): State => {
       return {
         ...state,
         nftDisplayAdminState: action.nftDisplayAdminState,
+      };
+    case 'UPDATE_STORE_MODAL':
+      return {
+        ...state,
+        storeState: action.storeState,
+      };
+    case 'UPDATE_STORE_CART':
+      return {
+        ...state,
+        storeCart: action.storeCart,
+      };
+    case 'UPDATE_STORE_SHELF_MODAL':
+      return {
+        ...state,
+        storeShelfModal: action.storeShelfModal,
       };
     case 'UPDATE_ACTIVE_EVENTS_MODAL':
       return { ...state, activeEventsModal: action.activeEventsModal };

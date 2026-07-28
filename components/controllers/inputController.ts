@@ -324,6 +324,9 @@ function handlePlayerKeys(): void {
   // INTERACT key
   scene.chatKeys.action.on('down', () => {
     if (!scene.disableKeyboard) {
+      if (Installations.tryInteractActive?.()) {
+        return;
+      }
       if (scene.activeDeposit && scene.currentDepositId !== undefined && !scene.disableKeyboard) {
         // console.log('#deposit vortex');
         updateWithdrawDialog(

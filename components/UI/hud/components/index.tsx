@@ -32,3 +32,4 @@ export * from './AarenaLobby';
 export * from './Leaderboard';
 export * from './FoundryPanel';
 export * from './RhStockPrizePanel';
+export * from './StoreModal';

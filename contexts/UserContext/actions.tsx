@@ -11,6 +11,7 @@ import { getTypeByItemId } from 'helpers/installations.helper';
 import Players from 'components/phaser/Players';
 import { mergeLocalWaallsIntoInventory } from 'helpers/waalls.helper';
 import { mergeLocalLodgesIntoInventory } from 'helpers/lodge.helper';
+import { mergeLocalStoresIntoInventory } from 'helpers/store.installation.helper';
 import { hydrateOffchainStore } from 'helpers/offchain.store';
 
 export const updateGhstBalance = async (
@@ -85,7 +86,9 @@ export const updateInventory = async (
 
   const tileBalances = await fetchContractInventory('TILE', web3Options);
 
-  const inventory = mergeLocalLodgesIntoInventory(mergeLocalWaallsIntoInventory([...installationBalances, ...tileBalances]));
+  const inventory = mergeLocalStoresIntoInventory(
+    mergeLocalLodgesIntoInventory(mergeLocalWaallsIntoInventory([...installationBalances, ...tileBalances])),
+  );
   dispatch({
     type: 'UPDATE_INVENTORY',
     inventory,

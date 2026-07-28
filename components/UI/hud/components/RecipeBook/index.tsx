@@ -19,6 +19,8 @@ import { FOUNDRY_RECIPES, FoundryRecipe } from 'helpers/foundry/recipes';
 import { FoundryNet } from 'helpers/foundry';
 import { getLocalWaallRecipes, isWaallItemId } from 'helpers/waalls.helper';
 import { getLocalLodgeRecipes, isLodgeItemId } from 'helpers/lodge.helper';
+import { getLocalStorePageRecipes, isStoreItemId } from 'helpers/store.installation.helper';
+import { craftStoreFurniture, isStoreFurnitureItemId, getFurnitureQty } from 'helpers/store.layout.helper';
 
 interface Props {
   selectRecipe: (recipe: Recipe) => void;
@@ -124,9 +126,15 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
     ? [
         { id: 'onchain', label: 'RECIPES BOOK', shortLabel: 'On-chain installations' },
         { id: 'foundry', label: 'LOGISTICS RECIPES', shortLabel: 'Off-chain foundry salvage' },
+        { id: 'store', label: 'STORE RECIPES', shortLabel: 'Soft-launch store & furniture' },
       ]
-    : [{ id: 'onchain', label: 'RECIPES BOOK', shortLabel: 'On-chain installations' }];
+    : [
+        { id: 'onchain', label: 'RECIPES BOOK', shortLabel: 'On-chain installations' },
+        { id: 'store', label: 'STORE RECIPES', shortLabel: 'Soft-launch store & furniture' },
+      ];
 
+  const storePageIndex = foundryEnabled ? 2 : 1;
+  const storeRecipes = getLocalStorePageRecipes();
   const onSetSortBy = (name: string, value: string, direction: 'asc' | 'desc') => {
     setSort({
       name,
@@ -182,7 +190,8 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
         typeFilter.lodge !== false
           ? getLocalLodgeRecipes().filter((r) => !nameFilter || r.name.toLowerCase().includes(String(nameFilter).toLowerCase()))
           : [];
-      const withoutLocal = recipes.filter((r) => !isWaallItemId(r.id) && !isLodgeItemId(r.id));
+      // Store recipes live on the dedicated STORE RECIPES book page.
+      const withoutLocal = recipes.filter((r) => !isWaallItemId(r.id) && !isLodgeItemId(r.id) && !isStoreItemId(r.id));
       const merged = _.concat(withoutLocal, localWaalls, localLodges);
 
       let sorted: Recipe[];
@@ -242,7 +251,7 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
     const fetchedInstallations = await fetchContractRecipe(currentNetwork, globalProvider, 'INSTALLATION');
     const fetchedTiles = await fetchContractRecipe(currentNetwork, globalProvider, 'TILE');
     const fetchedItems = _.concat(fetchedInstallations, fetchedTiles);
-    const withoutLocal = fetchedItems.filter((r) => !isWaallItemId(r.id) && !isLodgeItemId(r.id));
+    const withoutLocal = fetchedItems.filter((r) => !isWaallItemId(r.id) && !isLodgeItemId(r.id) && !isStoreItemId(r.id));
     setRecipes(_.concat(withoutLocal, getLocalWaallRecipes(), getLocalLodgeRecipes()));
     setPending(false);
   };
@@ -273,8 +282,24 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
     window.setTimeout(() => setCraftToast(''), 2500);
   };
 
+  const handleSelectStoreRecipe = (recipe: Recipe) => {
+    click();
+    // Shelf / Cashier craft into the store-furniture bag (place inside Store modal).
+    if (isStoreFurnitureItemId(recipe.id)) {
+      const result = craftStoreFurniture(Number(recipe.id), 1);
+      const qty = getFurnitureQty(Number(recipe.id));
+      setCraftToast(result.ok ? `${result.message} (bag: ${qty})` : result.message);
+      window.setTimeout(() => setCraftToast(''), 2500);
+      return;
+    }
+    // Store building → CraftingTable / local off-chain craft.
+    selectRecipe(recipe);
+    setOpen(false);
+  };
+
   const showOnChainPage = bookPage === 0;
   const showFoundryPage = foundryEnabled && bookPage === 1;
+  const showStorePage = bookPage === storePageIndex;
 
   return (
     <>
@@ -317,6 +342,11 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
             Off-chain logistics: mine ores/gases → smelt (costs alchemica power) → parts → assemble Antenna Relay → place on map.
           </div>
         ) : null}
+        {showStorePage ? (
+          <div className="foundry-intro">
+            Soft-launch retail: craft a Store for your parcel, then Shelf & Cashier into your furniture bag — place them inside the Store.
+          </div>
+        ) : null}
         {craftToast ? <div className="craft-toast">{craftToast}</div> : null}
         <div className={`scrollable ${gameConfig.gotchiverseTheme}`}>
           <div className="content">
@@ -329,6 +359,11 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
             {showFoundryPage
               ? FOUNDRY_RECIPES.map((recipe) => (
                   <FoundryRecipeCard recipe={recipe} key={recipe.id} onCraft={handleCraftFoundryRecipe} />
+                ))
+              : null}
+            {showStorePage
+              ? storeRecipes.map((recipe, i) => (
+                  <RecipeCard onClick={handleSelectStoreRecipe} recipe={recipe} key={`store-${recipe.id}-${i}`} />
                 ))
               : null}
           </div>

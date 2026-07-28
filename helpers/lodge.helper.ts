@@ -5,6 +5,7 @@ import { AlchemicaBalance, Installation, InstallationIdData, Recipe } from 'type
 import { getTypeByItemId, setLocalInventory, getLocalInventoryItem } from './installations.helper';
 import { getInstallationIdDataById } from 'shared_code/utils/shared.utils.installations';
 import { isWaallItemId, isWaallInstallationId } from './waalls.helper';
+import { isStoreItemId, isStoreInstallationId } from './store.installation.helper';
 import { adjustOffchainInventoryQty, getOffchainInventory, setOffchainInventoryQty } from './offchain.store';
 
 /** Local-only Gotchi Lodge itemIds (not deployed on InstallationDiamond / subgraph). */
@@ -31,13 +32,13 @@ export function isLodgeInstallationId(id: string): boolean {
   }
 }
 
-/** Waall or Lodge — local off-chain parcel installs. */
+/** Waall, Lodge, or Store — local off-chain parcel installs. */
 export function isLocalOffchainItemId(itemId: number | string): boolean {
-  return isWaallItemId(itemId) || isLodgeItemId(itemId);
+  return isWaallItemId(itemId) || isLodgeItemId(itemId) || isStoreItemId(itemId);
 }
 
 export function isLocalOffchainInstallationId(id: string): boolean {
-  return isWaallInstallationId(id) || isLodgeInstallationId(id);
+  return isWaallInstallationId(id) || isLodgeInstallationId(id) || isStoreInstallationId(id);
 }
 
 export function adjustLocalLodgeQuantity(itemId: number, delta: number): number {

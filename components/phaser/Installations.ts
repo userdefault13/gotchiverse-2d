@@ -96,6 +96,7 @@ import {
   isLocalOffchainItemId,
   syncLodgeInventoryFromScene,
 } from 'helpers/lodge.helper';
+import { isStoreItemId, syncStoreInventoryFromScene } from 'helpers/store.installation.helper';
 import {
   readOffchainPlacements,
   removeOffchainPlacement,
@@ -127,6 +128,7 @@ interface InstallationInterface {
   upgradeLocalLodge: (installationId: string) => Promise<{ ok: boolean; message: string; nextId?: string }>;
   updatePlaceQueue: (id: string, action: 'EQUIP' | 'UNEQUIP' | 'CANCEL') => void;
   resetStates: () => void;
+  tryInteractActive: () => boolean;
 }
 
 // Create Destroy by ID
@@ -274,8 +276,14 @@ const spawnSprite = async (installationData: InstallationMetadata, options?: Cre
           // upgrade installation, close UI etc
         }
         createInstallationBuildModeUI(installationContainer);
-      } else if (isAaltar(id) || installationType === 8 || Number(installationType) === 3 || Number(installationType) === 4) {
-        // Aaltar / Bounce Gate / local Waalls / Lodges still get build-mode controls when parcel ownership lookup misses.
+      } else if (
+        isAaltar(id) ||
+        installationType === 8 ||
+        installationType === 9 ||
+        Number(installationType) === 3 ||
+        Number(installationType) === 4
+      ) {
+        // Aaltar / Bounce Gate / Store / local Waalls / Lodges still get build-mode controls when parcel ownership lookup misses.
         createInstallationBuildModeUI(installationContainer);
       }
     }
@@ -406,6 +414,12 @@ const createInstallationBuildModeUI = (installationContainer) => {
         handleBounceGaate(id);
         return;
       }
+      if (installationType?.installationType === 9) {
+        SFXController.playFX('click');
+        void setActiveInstallation(id);
+        handleEnterStore(id);
+        return;
+      }
       if (!isUpgradable(id) || installationType?.installationType === 5) {
         resetStates();
         return;
@@ -483,6 +497,10 @@ const handleUnownedInterractions = (id: string) => {
       handleBounceGaate(id);
       break;
 
+    case 9:
+      handleEnterStore(id);
+      break;
+
     default:
       break;
   }
@@ -542,6 +560,10 @@ const handleOwnedInterraction = () => {
       handleBounceGaate(activeInstallationId);
       break;
 
+    case 9:
+      handleEnterStore(activeInstallationId);
+      break;
+
     default:
       break;
   }
@@ -560,6 +582,35 @@ const handleBounceGaate = (id: string): void => {
       installationId: id,
     },
   });
+};
+
+const handleEnterStore = (id: string): void => {
+  if (Installations.buildModeState) return;
+  toggleFocus(id, true);
+  InputController.updateDisableKeyboard(true);
+  if (!scene || !GlobalState?.UI?.dispatch) return;
+  const owned = isOwnedById(id);
+  GlobalState.UI.dispatch({
+    type: 'UPDATE_STORE_MODAL',
+    storeState: {
+      open: true,
+      installationId: id,
+      isOwner: Boolean(owned),
+      ownerAddress: owned ? String((owned as Parcel).owner || '').toLowerCase() : undefined,
+      cartridgeId: GlobalState.USER?.state?.cartridgeId || undefined,
+    },
+  });
+};
+
+/** E-key / external interact when a Store (type 9) is the active installation. */
+const tryInteractActive = (): boolean => {
+  if (Installations.buildModeState || scene.disableKeyboard || !scene.activeInstallation) return false;
+  const activeId = scene.activeInstallation.getData('id') as string;
+  if (!activeId) return false;
+  const type = getTypeById(activeId);
+  if (type?.installationType !== 9) return false;
+  handleEnterStore(activeId);
+  return true;
 };
 
 const handleMove = async (id: string, container) => {
@@ -1358,7 +1409,7 @@ const handleEquipUnequipMove = async (selectedInstallation: EquipUnequipMoveData
         state: 0,
       });
       removeInstallationBuildModeUI(scene.activeInstallation);
-      const label = isLodgeItemId(itemId) ? 'Lodge' : 'Waall';
+      const label = isStoreItemId(itemId) ? 'Store' : isLodgeItemId(itemId) ? 'Lodge' : 'Waall';
 
       if (callMethod === 'move' && isMoving) {
         destroyMarker();
@@ -1389,6 +1440,7 @@ const handleEquipUnequipMove = async (selectedInstallation: EquipUnequipMoveData
         setLocalInventory(itemId, 'INSTALLATION', 1);
         if (isWaallItemId(itemId)) syncWaallInventoryFromScene(itemId);
         if (isLodgeItemId(itemId)) syncLodgeInventoryFromScene(itemId);
+        if (isStoreItemId(itemId)) syncStoreInventoryFromScene(itemId);
         void flushOffchainStore();
         SFXController.playFX('send');
         if (GlobalState.NOTIFICATION.dispatch) {
@@ -2015,6 +2067,7 @@ const Installations: InstallationInterface = {
   resetStates,
   upgradeLocalWaall,
   upgradeLocalLodge,
+  tryInteractActive,
 };
 
 export default Installations;

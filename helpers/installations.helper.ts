@@ -109,6 +109,10 @@ export const getInstallationKeyByTypeData = (typeData: InstallationTypeLocal): s
   // Waalls / Lodges share one spritesheet each; frames map by level.
   if (Number(typeData.installationType) === 3) return 'waall';
   if (Number(typeData.installationType) === 4) return 'lodge';
+  // Soft-launch Store (type 9): reuse Bounce Gate art until dedicated Store sprites exist.
+  if (Number(typeData.installationType) === 9) return '145';
+  // Soft-launch store furniture (Shelf / Cashier): reuse Bounce Gate stub art.
+  if (Number(typeData.installationType) === 10) return '145';
   return ALCHEMICA_BASED_INSTALLATION_TYPES.includes(typeData.installationType)
     ? `${typeData.installationType}_${typeData.alchemicaType}`
     : typeData.itemId.toString();
@@ -315,7 +319,14 @@ export const isNFTDisplay = (itemId: number | string) => {
 
 export const isUpgradable = (id: string): boolean => {
   const { installationType, type } = getTypeById(id);
-  return type === 'INSTALLATION' && installationType !== 5 && installationType !== 8 && installationType !== 7;
+  return (
+    type === 'INSTALLATION' &&
+    installationType !== 5 &&
+    installationType !== 8 &&
+    installationType !== 7 &&
+    installationType !== 9 &&
+    installationType !== 10
+  );
 };
 
 export const isUpgrading = (id: string): boolean => {

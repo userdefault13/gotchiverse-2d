@@ -28,6 +28,7 @@ import { useGame } from 'contexts/GameContext';
 import type { AlchemicaBalance, NetworkNames, Recipe } from 'types';
 import { craftWaallLocally, isWaallItemId } from 'helpers/waalls.helper';
 import { craftLodgeLocally, isLodgeItemId } from 'helpers/lodge.helper';
+import { craftStoreLocally, isStoreItemId } from 'helpers/store.installation.helper';
 import GlobalState from 'contexts/GlobalState';
 
 interface Props {
@@ -124,15 +125,20 @@ export const CraftingTable = ({ open, onClose }: Props): JSX.Element => {
   ) => {
     setPending(true);
 
-    // Waalls / Lodges are not on InstallationDiamond — craft into local inventory (demo / PoC).
-    if (recipe.type === 'INSTALLATION' && (isWaallItemId(recipe.id) || isLodgeItemId(recipe.id))) {
+    // Waalls / Lodges / Store are not on InstallationDiamond — craft into local inventory (demo / PoC).
+    if (recipe.type === 'INSTALLATION' && (isWaallItemId(recipe.id) || isLodgeItemId(recipe.id) || isStoreItemId(recipe.id))) {
       let notificationId;
       try {
         const isLodge = isLodgeItemId(recipe.id);
+        const isStore = isStoreItemId(recipe.id);
         notificationId = showTransactionNotification(notificationDispatch, {
-          message: isLodge ? 'Crafting Lodge (local)' : 'Crafting Waall (local)',
+          message: isStore ? 'Crafting Store (local)' : isLodge ? 'Crafting Lodge (local)' : 'Crafting Waall (local)',
         });
-        const result = isLodge ? craftLodgeLocally(recipe, quanity, alchemicaBalance) : craftWaallLocally(recipe, quanity, alchemicaBalance);
+        const result = isStore
+          ? craftStoreLocally(recipe, quanity, alchemicaBalance)
+          : isLodge
+            ? craftLodgeLocally(recipe, quanity, alchemicaBalance)
+            : craftWaallLocally(recipe, quanity, alchemicaBalance);
         if (!result.ok) {
           updateTransactionNotificationStatus(notificationDispatch, notificationId, 'error', result.message);
           craftError();
@@ -235,7 +241,7 @@ export const CraftingTable = ({ open, onClose }: Props): JSX.Element => {
   }, [open, currentAccount, currentNetwork, globalProvider, ethersSigner]);
 
   useEffect(() => {
-    if (currentAccount && currentNetwork && globalProvider && selectedRecipe && !isWaallItemId(selectedRecipe.id) && !isLodgeItemId(selectedRecipe.id)) {
+    if (currentAccount && currentNetwork && globalProvider && selectedRecipe && !isWaallItemId(selectedRecipe.id) && !isLodgeItemId(selectedRecipe.id) && !isStoreItemId(selectedRecipe.id)) {
       void fetchAndSetAllowance(currentAccount, currentNetwork, globalProvider, selectedRecipe);
     }
   }, [selectedRecipe, currentAccount, currentNetwork, globalProvider]);
@@ -259,6 +265,7 @@ export const CraftingTable = ({ open, onClose }: Props): JSX.Element => {
     selectedRecipe !== undefined &&
     !isWaallItemId(selectedRecipe.id) &&
     !isLodgeItemId(selectedRecipe.id) &&
+    !isStoreItemId(selectedRecipe.id) &&
     isApproved(alchemicaApproved[getContractFromRecipeType(selectedRecipe.type)]) === 'false'
   ) {
     return (

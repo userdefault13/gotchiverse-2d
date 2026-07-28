@@ -56,6 +56,31 @@ export interface State {
     installationId: string;
   };
 
+  /** Soft-launch Store interior (installationType 9). */
+  storeState: {
+    open: boolean;
+    isOwner?: boolean;
+    installationId?: string;
+    ownerAddress?: string;
+    cartridgeId?: string;
+  };
+
+  /** Session cart while inside a store (cleared on leave). */
+  storeCart: Array<{
+    shelfId: string;
+    listingId: string;
+    title: string;
+    price: number;
+    currency: string;
+    quantity: number;
+  }>;
+
+  storeShelfModal: {
+    open: boolean;
+    shelfId?: string;
+    isOwner?: boolean;
+  };
+
   itemShopState: {
     purchaseStatus?: ShopPurchaseStatus;
   };
@@ -148,6 +173,13 @@ export const initialState: State = {
   nftDisplayAdminState: {
     open: false,
     installationId: undefined,
+  },
+  storeState: {
+    open: false,
+  },
+  storeCart: [],
+  storeShelfModal: {
+    open: false,
   },
 
   eventsModal: {
