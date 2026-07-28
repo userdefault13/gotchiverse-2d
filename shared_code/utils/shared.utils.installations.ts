@@ -1,4 +1,4 @@
-const installationTypes = require('../data/installations.json');
+const installationTypes = require('../data/installationsCatalog');
 const tileTypes = require('../data/tiles.json');
 const _ = require('lodash');
 import { getParcelTokenIdById } from './shared.utils.parcel';

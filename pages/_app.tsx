@@ -3,6 +3,7 @@ import App from 'next/app';
 import 'react-toastify/dist/ReactToastify.css';
 import '../styles/globalStyles.css';
 import '../styles/palettes.scss';
+import '../styles/crtScanlines.css';
 import GlobalContextProvider from 'contexts';
 
 import { useGeneral } from 'contexts/GeneralContext';

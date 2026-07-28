@@ -1,0 +1,382 @@
+{
+   "180": {
+      "itemId": 180,
+      "width": 2,
+      "height": 2,
+      "name": "Store Level 1",
+      "type": "INSTALLATION",
+      "installationType": 9,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "181": {
+      "itemId": 181,
+      "width": 2,
+      "height": 2,
+      "name": "Store Level 2",
+      "type": "INSTALLATION",
+      "installationType": 9,
+      "alchemicaType": 0,
+      "level": 2,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "182": {
+      "itemId": 182,
+      "width": 2,
+      "height": 2,
+      "name": "Store Level 3",
+      "type": "INSTALLATION",
+      "installationType": 9,
+      "alchemicaType": 0,
+      "level": 3,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "183": {
+      "itemId": 183,
+      "width": 2,
+      "height": 2,
+      "name": "Store Level 4",
+      "type": "INSTALLATION",
+      "installationType": 9,
+      "alchemicaType": 0,
+      "level": 4,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "184": {
+      "itemId": 184,
+      "width": 2,
+      "height": 2,
+      "name": "Store Level 5",
+      "type": "INSTALLATION",
+      "installationType": 9,
+      "alchemicaType": 0,
+      "level": 5,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "185": {
+      "itemId": 185,
+      "width": 2,
+      "height": 2,
+      "name": "Store Level 6",
+      "type": "INSTALLATION",
+      "installationType": 9,
+      "alchemicaType": 0,
+      "level": 6,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "186": {
+      "itemId": 186,
+      "width": 2,
+      "height": 2,
+      "name": "Store Level 7",
+      "type": "INSTALLATION",
+      "installationType": 9,
+      "alchemicaType": 0,
+      "level": 7,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "187": {
+      "itemId": 187,
+      "width": 2,
+      "height": 2,
+      "name": "Store Level 8",
+      "type": "INSTALLATION",
+      "installationType": 9,
+      "alchemicaType": 0,
+      "level": 8,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "188": {
+      "itemId": 188,
+      "width": 2,
+      "height": 2,
+      "name": "Store Level 9",
+      "type": "INSTALLATION",
+      "installationType": 9,
+      "alchemicaType": 0,
+      "level": 9,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "189": {
+      "itemId": 189,
+      "width": 1,
+      "height": 1,
+      "name": "Cashier Level 1",
+      "type": "INSTALLATION",
+      "installationType": 10,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "190": {
+      "itemId": 190,
+      "width": 1,
+      "height": 1,
+      "name": "Cashier Level 2",
+      "type": "INSTALLATION",
+      "installationType": 10,
+      "alchemicaType": 0,
+      "level": 2,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "191": {
+      "itemId": 191,
+      "width": 1,
+      "height": 1,
+      "name": "Cashier Level 3",
+      "type": "INSTALLATION",
+      "installationType": 10,
+      "alchemicaType": 0,
+      "level": 3,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "192": {
+      "itemId": 192,
+      "width": 1,
+      "height": 1,
+      "name": "Cashier Level 4",
+      "type": "INSTALLATION",
+      "installationType": 10,
+      "alchemicaType": 0,
+      "level": 4,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "193": {
+      "itemId": 193,
+      "width": 1,
+      "height": 1,
+      "name": "Cashier Level 5",
+      "type": "INSTALLATION",
+      "installationType": 10,
+      "alchemicaType": 0,
+      "level": 5,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "194": {
+      "itemId": 194,
+      "width": 1,
+      "height": 1,
+      "name": "Cashier Level 6",
+      "type": "INSTALLATION",
+      "installationType": 10,
+      "alchemicaType": 0,
+      "level": 6,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "195": {
+      "itemId": 195,
+      "width": 1,
+      "height": 1,
+      "name": "Cashier Level 7",
+      "type": "INSTALLATION",
+      "installationType": 10,
+      "alchemicaType": 0,
+      "level": 7,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "196": {
+      "itemId": 196,
+      "width": 1,
+      "height": 1,
+      "name": "Cashier Level 8",
+      "type": "INSTALLATION",
+      "installationType": 10,
+      "alchemicaType": 0,
+      "level": 8,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "197": {
+      "itemId": 197,
+      "width": 1,
+      "height": 1,
+      "name": "Cashier Level 9",
+      "type": "INSTALLATION",
+      "installationType": 10,
+      "alchemicaType": 0,
+      "level": 9,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   },
+   "198": {
+      "itemId": 198,
+      "width": 1,
+      "height": 1,
+      "name": "Shelf Level 1",
+      "type": "INSTALLATION",
+      "installationType": 10,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   }
+}

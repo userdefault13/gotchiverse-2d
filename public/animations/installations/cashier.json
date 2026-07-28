@@ -1,0 +1,19 @@
+{
+  "columns": 3,
+  "image": "cashier.png",
+  "imageheight": 768,
+  "imagewidth": 768,
+  "margin": 0,
+  "name": "cashier",
+  "spacing": 0,
+  "tilecount": 9,
+  "tiledversion": "1.7.0",
+  "tileheight": 256,
+  "tilewidth": 256,
+  "type": "tileset",
+  "version": "1.6",
+  "offset": {
+    "x": -64,
+    "y": -64
+  }
+}

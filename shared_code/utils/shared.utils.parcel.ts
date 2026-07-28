@@ -1,7 +1,7 @@
 import { PARCELS_BY_ID, PARCELS_BY_TOKEN_ID } from '../models/model.realm';
 
 import { GOTCHI_SIZE, HOOD_SIZE } from '../constants/const.game';
-const installationTypes = require('../data/installations.json');
+const installationTypes = require('../data/installationsCatalog');
 const tileTypes = require('../data/tiles.json');
 import { getNFTDisplayStatuses, getParcelOwners, getOwnedAavegotchisOfOwner } from '../web3/subgraph/queries';
 import { useSubgraphCall } from './shared.utils.ethers';

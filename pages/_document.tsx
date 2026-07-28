@@ -14,6 +14,7 @@ export default class MyDocument extends Document {
           <Main />
           <div id="portal" />
           <div id="portal-tooltip"></div>
+          <div id="gv-crt-overlay" aria-hidden="true" />
           <NextScript />
           {process.env.APP_ENV === 'production' && <script async defer src="https://scripts.simpleanalyticscdn.com/latest.js"></script>}
           <noscript>

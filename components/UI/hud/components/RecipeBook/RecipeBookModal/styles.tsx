@@ -43,7 +43,7 @@ export default css`
     left: 50%;
     top: 0;
     max-width: 90%;
-    width: 32rem;
+    width: min(52rem, 92%);
     transform: translate(-50%, calc(-50% - 0.4rem));
   }
 
@@ -72,6 +72,39 @@ export default css`
 
   .halloween .page-subtitle {
     color: var(--col-halloween-200);
+  }
+
+  .page-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.6rem;
+    margin-top: 1rem;
+  }
+
+  .page-tab-btn {
+    border: 0.2rem solid var(--col-pink-400);
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--col-white);
+    font-size: 1.4rem;
+    line-height: 1;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 0.5rem 0.9rem;
+    cursor: url('/cursors/pointer.png'), pointer;
+  }
+
+  .page-tab-btn.active {
+    background: var(--col-pink-400);
+    color: var(--col-black);
+  }
+
+  .halloween .page-tab-btn {
+    border-color: var(--col-halloween-400);
+  }
+
+  .halloween .page-tab-btn.active {
+    background: var(--col-halloween-400);
   }
 
   .divider {
@@ -203,8 +236,11 @@ export default css`
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 1.6rem;
+    justify-content: center;
+    gap: 1.2rem;
     padding: 1rem 0;
+    min-height: 8rem;
+    overflow: visible;
   }
 
   .page-dot {

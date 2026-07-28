@@ -4,8 +4,7 @@ import Image from 'next/image';
 import Spritesheet from 'react-responsive-spritesheet';
 import { useEffect, useState } from 'react';
 import { InstallationTypeLocal, SpriteMetadata } from 'types';
-import installationTypes from 'shared_code/data/installations.json';
-import { GOTCHI_SIZE } from 'shared_code/constants/const.game';
+import installationTypes from 'shared_code/data/installationsCatalog';
 import { getSpriteMetadataByItemId, isSimpleDecoration } from 'helpers/installations.helper';
 
 interface Props {
@@ -40,13 +39,12 @@ export const InstallationDisplayImg = ({ type, itemId, installationScale = 0.5, 
         style={{
           position: 'relative',
           top: Number(spriteMetadata?.jsonData?.offset?.y || 2) / 2,
-          // : Number(itemType.height * GOTCHI_SIZE.UNIT) / 2 + Number(spriteMetadata?.jsonData?.offset?.y || 2),
-          height: spriteMetadata.isDecoration ? Number(itemType.height * GOTCHI_SIZE.UNIT) : Number(spriteMetadata.jsonData.tileheight),
+          height: spriteMetadata.isDecoration ? Number(itemType.height * 64) : Number(spriteMetadata.jsonData.tileheight),
           width: Number(spriteMetadata.jsonData.tilewidth),
         }}
       >
         <Spritesheet
-          image={`animations/${spriteMetadata.isDecoration ? 'decorations' : 'installations'}/${spriteMetadata.key}.png`}
+          image={`/animations/${spriteMetadata.isDecoration ? 'decorations' : 'installations'}/${spriteMetadata.key}.png`}
           widthFrame={spriteMetadata.jsonData.tilewidth}
           heightFrame={spriteMetadata.jsonData.tileheight}
           steps={1}
@@ -63,8 +61,8 @@ export const InstallationDisplayImg = ({ type, itemId, installationScale = 0.5, 
   const fetchAndsetSpriteMetadata = async () => {
     const data = await getSpriteMetadataByItemId(itemId);
     setSpriteMetadata(data);
-    const type = installationTypes[itemId];
-    setItemType(type);
+    const typeData = installationTypes[itemId] || installationTypes[String(itemId)];
+    setItemType(typeData);
   };
 
   const getScalePerTileHeight = (): number => {
@@ -78,6 +76,16 @@ export const InstallationDisplayImg = ({ type, itemId, installationScale = 0.5, 
     // Large multi-tile art (Gotchi Lodge 320×384) — fit the card instead of shrinking to 1 tile.
     if (spriteMetadata?.key === 'lodge' || Number(itemType?.installationType) === 4) {
       scale = 150 / Math.max(tilewidth, effectiveHeight);
+    }
+
+    // Soft-launch Store / Cashier / Shelf sheets — fit the card.
+    if (
+      spriteMetadata?.key === 'store' ||
+      spriteMetadata?.key === 'cashier' ||
+      spriteMetadata?.key === 'shelf' ||
+      Number(itemType?.installationType) === 9
+    ) {
+      scale = 150 / Math.max(tilewidth, tileheight);
     }
 
     return scale;

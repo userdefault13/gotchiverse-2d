@@ -1,0 +1,99 @@
+/**
+ * Global CRT / CCTV scan-line overlay on every page.
+ * Rendered via #gv-crt-overlay (sibling of app content) so mobile browsers cover
+ * the full viewport — pseudo-elements on body/html can clip on iOS/Brave mobile.
+ * Ported from AarcadeGh-t src/theme/crtScanlines.css.
+ */
+
+:root {
+  --gv-crt-line-color: rgba(0, 0, 0, 0.28);
+  /* One dark line + gap, twice per tile (two alternating lines) */
+  --gv-crt-pair-height: 4px;
+  --gv-crt-line-thickness: 1px;
+  --gv-crt-scroll-duration: 2.4s;
+  --gv-crt-vignette-outer: rgba(0, 0, 0, 0.42);
+  --gv-crt-phosphor: rgba(100, 255, 210, 0.045);
+  --gv-crt-blend: multiply;
+  --gv-crt-strength: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #gv-crt-overlay::after {
+    animation: none !important;
+  }
+}
+
+#gv-crt-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  /* Cover dynamic mobile viewport (address bar show/hide) */
+  height: 100vh;
+  height: 100dvh;
+  min-height: -webkit-fill-available;
+  /* Above HUD / modals; pointer-events none so UI stays clickable */
+  z-index: 1000001;
+  pointer-events: none;
+  overflow: hidden;
+  /* Own compositor layer — avoids iOS clipping/stacking quirks */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* Static vignette + phosphor */
+#gv-crt-overlay::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: var(--gv-crt-strength);
+  mix-blend-mode: var(--gv-crt-blend);
+  background-image:
+    radial-gradient(
+      ellipse 88% 78% at 50% 48%,
+      transparent 52%,
+      var(--gv-crt-vignette-outer) 100%
+    ),
+    radial-gradient(ellipse at center, var(--gv-crt-phosphor) 0%, transparent 72%);
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+}
+
+/* Animated dual scan lines (scroll top → bottom) */
+#gv-crt-overlay::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  opacity: var(--gv-crt-strength);
+  mix-blend-mode: var(--gv-crt-blend);
+  background-image: repeating-linear-gradient(
+    to bottom,
+    var(--gv-crt-line-color) 0,
+    var(--gv-crt-line-color) var(--gv-crt-line-thickness),
+    transparent var(--gv-crt-line-thickness),
+    transparent calc(var(--gv-crt-pair-height) / 2),
+    var(--gv-crt-line-color) calc(var(--gv-crt-pair-height) / 2),
+    var(--gv-crt-line-color) calc(var(--gv-crt-pair-height) / 2 + var(--gv-crt-line-thickness)),
+    transparent calc(var(--gv-crt-pair-height) / 2 + var(--gv-crt-line-thickness)),
+    transparent var(--gv-crt-pair-height)
+  );
+  background-size: 100% var(--gv-crt-pair-height);
+  background-repeat: repeat;
+  background-position: 0 0;
+  animation: gv-crt-scan-scroll var(--gv-crt-scroll-duration) linear infinite;
+}
+
+@keyframes gv-crt-scan-scroll {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 0 var(--gv-crt-pair-height);
+  }
+}

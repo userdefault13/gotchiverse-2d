@@ -68,6 +68,22 @@ export const RecipeBookModal = ({ open, onClose, children, pages, activePage, on
                 )}
                 <h2>{pages[activePage]?.label || 'RECIPES BOOK'}</h2>
                 {pages.length > 1 ? <p className="page-subtitle">{pages[activePage]?.shortLabel}</p> : null}
+                {pages.length > 1 ? (
+                  <div className="page-tabs" role="tablist" aria-label="Recipe book sections">
+                    {pages.map((page, index) => (
+                      <button
+                        key={`tab-${page.id}`}
+                        type="button"
+                        role="tab"
+                        aria-selected={index === activePage}
+                        className={`page-tab-btn ${index === activePage ? 'active' : ''}`}
+                        onClick={() => onPageChange(index)}
+                      >
+                        {page.id === 'onchain' ? 'Installations' : page.id === 'foundry' ? 'Logistics' : page.id === 'store' ? 'Store' : page.shortLabel}
+                      </button>
+                    ))}
+                  </div>
+                ) : null}
               </div>
             </div>
             <span className="divider" />

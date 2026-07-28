@@ -1,11 +1,22 @@
 /** Soft-launch store interior furniture + listing pointers (phase 1b). */
 
-export const SHELF_ITEM_ID = 181;
-export const CASHIER_ITEM_ID = 182;
+/** Cashier L1–9 (Maaker-style), own spritesheet `cashier`. */
+export const CASHIER_ITEM_ID_START = 189;
+export const CASHIER_ITEM_ID_END = 197;
+/** Level-1 Cashier craft/place id */
+export const CASHIER_ITEM_ID = CASHIER_ITEM_ID_START;
+
+/** Shelf L1 only (own spritesheet `shelf`). */
+export const SHELF_ITEM_ID = 198;
+
 export const STORE_FURNITURE_TYPE = 10;
 
 export const STORE_LAYOUT_KEY = 'gotchiverse.store.layout.v1';
 export const STORE_FURNITURE_INV_KEY = 'gotchiverse.store.furnitureInv.v1';
+
+/** Legacy furniture ids from first soft-launch pass (before local L1–9 catalog). */
+const LEGACY_SHELF_ITEM_ID = 181;
+const LEGACY_CASHIER_ITEM_ID = 182;
 
 export type StoreListingBind = {
   listingId: string;
@@ -21,7 +32,7 @@ export type StoreListingBind = {
 
 export type StoreFurniturePiece = {
   id: string;
-  itemId: typeof SHELF_ITEM_ID | typeof CASHIER_ITEM_ID;
+  itemId: number;
   x: number;
   y: number;
   listing?: StoreListingBind | null;
@@ -48,11 +59,25 @@ export function isShelfItemId(itemId: number | string): boolean {
 }
 
 export function isCashierItemId(itemId: number | string): boolean {
-  return Number(itemId) === CASHIER_ITEM_ID;
+  const id = Number(itemId);
+  return id >= CASHIER_ITEM_ID_START && id <= CASHIER_ITEM_ID_END;
 }
 
 export function isStoreFurnitureItemId(itemId: number | string): boolean {
   return isShelfItemId(itemId) || isCashierItemId(itemId);
+}
+
+function migrateFurnitureItemId(itemId: number): number {
+  if (itemId === LEGACY_SHELF_ITEM_ID) return SHELF_ITEM_ID;
+  if (itemId === LEGACY_CASHIER_ITEM_ID) return CASHIER_ITEM_ID;
+  return itemId;
+}
+
+function migrateFurnitureList(furniture: StoreFurniturePiece[]): StoreFurniturePiece[] {
+  return (furniture || []).map((piece) => ({
+    ...piece,
+    itemId: migrateFurnitureItemId(Number(piece.itemId)),
+  }));
 }
 
 function readJson<T>(key: string, fallback: T): T {
@@ -78,7 +103,9 @@ function writeJson(key: string, value: unknown): void {
 export function loadStoreLayout(storeId: string): StoreLayout {
   const all = readJson<Record<string, StoreLayout>>(STORE_LAYOUT_KEY, {});
   const existing = all[storeId];
-  if (existing?.furniture) return existing;
+  if (existing?.furniture) {
+    return { ...existing, storeId, furniture: migrateFurnitureList(existing.furniture) };
+  }
   return { storeId, furniture: [], updatedAt: Date.now() };
 }
 
@@ -97,7 +124,11 @@ export function parseLayoutJson(raw: string | undefined | null, storeId: string)
     if (!parsed || !Array.isArray(parsed.furniture)) {
       return { storeId, furniture: [], updatedAt: 0 };
     }
-    return { storeId, furniture: parsed.furniture, updatedAt: Number(parsed.updatedAt) || 0 };
+    return {
+      storeId,
+      furniture: migrateFurnitureList(parsed.furniture),
+      updatedAt: Number(parsed.updatedAt) || 0,
+    };
   } catch {
     return { storeId, furniture: [], updatedAt: 0 };
   }
@@ -112,7 +143,20 @@ export function serializeLayout(layout: StoreLayout): string {
 }
 
 export function loadFurnitureInventory(): StoreFurnitureInventory {
-  return readJson<StoreFurnitureInventory>(STORE_FURNITURE_INV_KEY, {});
+  const raw = readJson<StoreFurnitureInventory>(STORE_FURNITURE_INV_KEY, {});
+  const next: StoreFurnitureInventory = { ...raw };
+  if (raw[String(LEGACY_SHELF_ITEM_ID)]) {
+    next[String(SHELF_ITEM_ID)] =
+      Number(next[String(SHELF_ITEM_ID)] || 0) + Number(raw[String(LEGACY_SHELF_ITEM_ID)] || 0);
+    delete next[String(LEGACY_SHELF_ITEM_ID)];
+  }
+  if (raw[String(LEGACY_CASHIER_ITEM_ID)]) {
+    next[String(CASHIER_ITEM_ID)] =
+      Number(next[String(CASHIER_ITEM_ID)] || 0) + Number(raw[String(LEGACY_CASHIER_ITEM_ID)] || 0);
+    delete next[String(LEGACY_CASHIER_ITEM_ID)];
+  }
+  if (JSON.stringify(next) !== JSON.stringify(raw)) saveFurnitureInventory(next);
+  return next;
 }
 
 export function saveFurnitureInventory(inv: StoreFurnitureInventory): void {

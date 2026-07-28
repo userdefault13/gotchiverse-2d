@@ -19,7 +19,7 @@ import {
   Vector2,
 } from 'types';
 
-import installationTypes from 'shared_code/data/installations.json';
+import installationTypes from 'shared_code/data/installationsCatalog';
 import tileTypes from 'shared_code/data/tiles.json';
 import installationsData from 'data/installationsData.json';
 import { PARCELS_BY_TOKEN_ID } from 'shared_code/models/model.realm';
@@ -109,10 +109,14 @@ export const getInstallationKeyByTypeData = (typeData: InstallationTypeLocal): s
   // Waalls / Lodges share one spritesheet each; frames map by level.
   if (Number(typeData.installationType) === 3) return 'waall';
   if (Number(typeData.installationType) === 4) return 'lodge';
-  // Soft-launch Store (type 9): reuse Bounce Gate art until dedicated Store sprites exist.
-  if (Number(typeData.installationType) === 9) return '145';
-  // Soft-launch store furniture (Shelf / Cashier): reuse Bounce Gate stub art.
-  if (Number(typeData.installationType) === 10) return '145';
+  // Soft-launch Store / Cashier / Shelf — own spritesheets (local catalog, not diamond art).
+  // Store 180–188, Cashier 189–197, Shelf 198 — keep ranges in sync with store.*.helper.
+  if (Number(typeData.installationType) === 9) return 'store';
+  {
+    const itemId = Number(typeData.itemId);
+    if (itemId >= 189 && itemId <= 197) return 'cashier';
+    if (itemId === 198) return 'shelf';
+  }
   return ALCHEMICA_BASED_INSTALLATION_TYPES.includes(typeData.installationType)
     ? `${typeData.installationType}_${typeData.alchemicaType}`
     : typeData.itemId.toString();

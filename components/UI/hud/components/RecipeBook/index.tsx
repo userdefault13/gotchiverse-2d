@@ -122,18 +122,15 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
     Boolean((gameConfig as { enableParcelFoundryPoC?: boolean })?.enableParcelFoundryPoC) ||
     process.env.NEXT_PUBLIC_ENABLE_FOUNDRY_POC === 'true';
 
-  const bookPages: RecipeBookPage[] = foundryEnabled
-    ? [
-        { id: 'onchain', label: 'RECIPES BOOK', shortLabel: 'On-chain installations' },
-        { id: 'foundry', label: 'LOGISTICS RECIPES', shortLabel: 'Off-chain foundry salvage' },
-        { id: 'store', label: 'STORE RECIPES', shortLabel: 'Soft-launch store & furniture' },
-      ]
-    : [
-        { id: 'onchain', label: 'RECIPES BOOK', shortLabel: 'On-chain installations' },
-        { id: 'store', label: 'STORE RECIPES', shortLabel: 'Soft-launch store & furniture' },
-      ];
+  // Always expose Store as its own book section (third page when foundry is on).
+  const bookPages: RecipeBookPage[] = [
+    { id: 'onchain', label: 'RECIPES BOOK', shortLabel: 'On-chain installations' },
+    ...(foundryEnabled
+      ? [{ id: 'foundry', label: 'LOGISTICS RECIPES', shortLabel: 'Off-chain foundry salvage' } as RecipeBookPage]
+      : []),
+    { id: 'store', label: 'STORE RECIPES', shortLabel: 'Soft-launch store & furniture' },
+  ];
 
-  const storePageIndex = foundryEnabled ? 2 : 1;
   const storeRecipes = getLocalStorePageRecipes();
   const onSetSortBy = (name: string, value: string, direction: 'asc' | 'desc') => {
     setSort({
@@ -297,9 +294,9 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
     setOpen(false);
   };
 
-  const showOnChainPage = bookPage === 0;
-  const showFoundryPage = foundryEnabled && bookPage === 1;
-  const showStorePage = bookPage === storePageIndex;
+  const showOnChainPage = bookPages[bookPage]?.id === 'onchain';
+  const showFoundryPage = bookPages[bookPage]?.id === 'foundry';
+  const showStorePage = bookPages[bookPage]?.id === 'store';
 
   return (
     <>
