@@ -57,11 +57,80 @@ export type StoreFurniturePiece = {
   loadedTitles?: string[];
 };
 
+/** Floor cell art: greyscale base pack vs owner wallet Tile_LE PNG. */
+export type StoreFloorArt = 'base' | 'wallet';
+
+export type StoreFloorCell = {
+  tileId: number;
+  art: StoreFloorArt;
+};
+
+/** Map key `${x},${y}` → floor tile. */
+export type StoreFloorMap = Record<string, StoreFloorCell>;
+
 export type StoreLayout = {
   storeId: string;
   furniture: StoreFurniturePiece[];
+  /** Interior floor decoration (random greyscale bases + owner wallet tiles). */
+  floor?: StoreFloorMap;
   updatedAt: number;
 };
+
+/** Source tile ids with shade_00_base greyscale assets (8–37). */
+export const STORE_BASE_SHADE_IDS: number[] = Array.from({ length: 30 }, (_, i) => i + 8);
+
+export const STORE_GRID = 16;
+
+export function floorKey(x: number, y: number): string {
+  return `${x},${y}`;
+}
+
+export function greyscaleBaseUrl(tileId: number): string {
+  return `/images/tiles/greyscale/Tile_LE_${tileId}_base.png`;
+}
+
+export function walletTileUrl(tileId: number): string {
+  return `/images/tiles/Tile_LE_${tileId}.png`;
+}
+
+export function floorCellUrl(cell: StoreFloorCell | undefined | null): string | null {
+  if (!cell?.tileId) return null;
+  return cell.art === 'wallet' ? walletTileUrl(cell.tileId) : greyscaleBaseUrl(cell.tileId);
+}
+
+function pickBaseShadeId(): number {
+  return STORE_BASE_SHADE_IDS[Math.floor(Math.random() * STORE_BASE_SHADE_IDS.length)];
+}
+
+/** Fill every interior floor cell with a random greyscale base shade (walls/door/window excluded by caller keys). */
+export function buildRandomFloorMap(keys: string[]): StoreFloorMap {
+  const floor: StoreFloorMap = {};
+  keys.forEach((key) => {
+    floor[key] = { tileId: pickBaseShadeId(), art: 'base' };
+  });
+  return floor;
+}
+
+export function ensureStoreFloor(layout: StoreLayout, floorKeys: string[]): StoreLayout {
+  const existing = layout.floor && Object.keys(layout.floor).length > 0 ? layout.floor : null;
+  if (existing) return layout;
+  return {
+    ...layout,
+    floor: buildRandomFloorMap(floorKeys),
+  };
+}
+
+export function setFloorTile(
+  layout: StoreLayout,
+  x: number,
+  y: number,
+  tileId: number,
+  art: StoreFloorArt = 'wallet',
+): StoreLayout {
+  const floor = { ...(layout.floor || {}) };
+  floor[floorKey(x, y)] = { tileId: Number(tileId), art };
+  return { ...layout, floor };
+}
 
 export type StoreCartLine = {
   shelfId: string;
@@ -135,9 +204,14 @@ export function loadStoreLayout(storeId: string): StoreLayout {
   const all = readJson<Record<string, StoreLayout>>(STORE_LAYOUT_KEY, {});
   const existing = all[storeId];
   if (existing?.furniture) {
-    return { ...existing, storeId, furniture: migrateFurnitureList(existing.furniture) };
+    return {
+      ...existing,
+      storeId,
+      furniture: migrateFurnitureList(existing.furniture),
+      floor: existing.floor && typeof existing.floor === 'object' ? existing.floor : undefined,
+    };
   }
-  return { storeId, furniture: [], updatedAt: Date.now() };
+  return { storeId, furniture: [], floor: undefined, updatedAt: Date.now() };
 }
 
 export function saveStoreLayout(layout: StoreLayout): StoreLayout {
@@ -149,19 +223,20 @@ export function saveStoreLayout(layout: StoreLayout): StoreLayout {
 }
 
 export function parseLayoutJson(raw: string | undefined | null, storeId: string): StoreLayout {
-  if (!raw) return { storeId, furniture: [], updatedAt: 0 };
+  if (!raw) return { storeId, furniture: [], floor: undefined, updatedAt: 0 };
   try {
     const parsed = JSON.parse(raw) as StoreLayout;
     if (!parsed || !Array.isArray(parsed.furniture)) {
-      return { storeId, furniture: [], updatedAt: 0 };
+      return { storeId, furniture: [], floor: undefined, updatedAt: 0 };
     }
     return {
       storeId,
       furniture: migrateFurnitureList(parsed.furniture),
+      floor: parsed.floor && typeof parsed.floor === 'object' ? parsed.floor : undefined,
       updatedAt: Number(parsed.updatedAt) || 0,
     };
   } catch {
-    return { storeId, furniture: [], updatedAt: 0 };
+    return { storeId, furniture: [], floor: undefined, updatedAt: 0 };
   }
 }
 
@@ -169,6 +244,7 @@ export function serializeLayout(layout: StoreLayout): string {
   return JSON.stringify({
     storeId: layout.storeId,
     furniture: layout.furniture,
+    floor: layout.floor || {},
     updatedAt: layout.updatedAt,
   });
 }

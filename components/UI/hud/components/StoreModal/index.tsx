@@ -37,17 +37,50 @@ import {
   isShelfItemId,
   isCashierItemId,
   isConsoleItemId,
+  STORE_GRID,
+  floorKey,
+  floorCellUrl,
+  buildRandomFloorMap,
+  ensureStoreFloor,
+  setFloorTile,
+  STORE_BASE_SHADE_IDS,
 } from 'helpers/store.layout.helper';
 import { consoleLevelFromItemId } from 'helpers/console.installation.helper';
+import { useUser } from 'contexts/UserContext';
 import styles from './styles';
 
 const STORE_MAX = 8;
-const GRID = 16;
+const GRID = STORE_GRID;
+/** Bottom-center door opening (2 tiles). */
+const DOOR_TX = [7, 8] as const;
+/** Top-wall storefront windows. */
+const WINDOW_TX = [2, 3, 4, 11, 12, 13] as const;
 
-type PlaceBrush = typeof SHELF_ITEM_ID | typeof CASHIER_ITEM_ID | typeof CONSOLE_ITEM_ID | null;
+type FurnitureBrush = typeof SHELF_ITEM_ID | typeof CASHIER_ITEM_ID | typeof CONSOLE_ITEM_ID;
+type PlaceBrush = FurnitureBrush | null;
+type StructureKind = 'floor' | 'wall' | 'door' | 'window';
+
+const structureAt = (tx: number, ty: number): StructureKind => {
+  const onEdge = tx === 0 || tx === GRID - 1 || ty === 0 || ty === GRID - 1;
+  if (ty === GRID - 1 && (DOOR_TX as readonly number[]).includes(tx)) return 'door';
+  if (ty === 0 && (WINDOW_TX as readonly number[]).includes(tx)) return 'window';
+  if (onEdge) return 'wall';
+  return 'floor';
+};
+
+const interiorFloorKeys = (): string[] => {
+  const keys: string[] = [];
+  for (let ty = 0; ty < GRID; ty += 1) {
+    for (let tx = 0; tx < GRID; tx += 1) {
+      if (structureAt(tx, ty) === 'floor') keys.push(floorKey(tx, ty));
+    }
+  }
+  return keys;
+};
 
 export const StoreModal = (): JSX.Element => {
   const [{ storeState, storeCart, storeShelfModal, consoleState }, uiDispatch] = useUI();
+  const [{ inventory }] = useUser();
   const { back, click } = useAavegotchiSound();
   const [occupancy, setOccupancy] = useState(0);
   const [joining, setJoining] = useState(false);
@@ -56,6 +89,7 @@ export const StoreModal = (): JSX.Element => {
   const [layout, setLayout] = useState<StoreLayout | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [placeBrush, setPlaceBrush] = useState<PlaceBrush>(null);
+  const [floorBrush, setFloorBrush] = useState<number | null>(null);
   const [shelfQty, setShelfQty] = useState(0);
   const [cashierQty, setCashierQty] = useState(0);
   const [consoleQty, setConsoleQty] = useState(0);
@@ -66,6 +100,17 @@ export const StoreModal = (): JSX.Element => {
   const open = Boolean(storeState?.open);
   const installationId = storeState?.installationId;
   const isOwner = Boolean(storeState?.isOwner);
+
+  const walletFloorTiles = useMemo(() => {
+    return (inventory || [])
+      .filter((item) => item.type === 'TILE' && Number(item.quantity) > 0 && Number(item.itemId) > 0)
+      .map((item) => ({
+        itemId: Number(item.itemId),
+        name: item.name || `Tile ${item.itemId}`,
+        quantity: Number(item.quantity),
+      }))
+      .sort((a, b) => a.itemId - b.itemId);
+  }, [inventory]);
 
   const refreshInv = () => {
     setShelfQty(getFurnitureQty(SHELF_ITEM_ID));
@@ -79,6 +124,19 @@ export const StoreModal = (): JSX.Element => {
     if (publish) publishStoreLayout(serializeLayout(saved));
   };
 
+  const withFloor = (next: StoreLayout): StoreLayout => ensureStoreFloor(next, interiorFloorKeys());
+
+  const handleRandomizeFloor = () => {
+    if (!layout || !isOwner) return;
+    click();
+    const next = {
+      ...layout,
+      floor: buildRandomFloorMap(interiorFloorKeys()),
+    };
+    applyLayout(next, true);
+    setStatusMsg(`Floor randomized from ${STORE_BASE_SHADE_IDS.length} greyscale base shades`);
+  };
+
   useEffect(() => {
     if (!open || !installationId) return;
     let cancelled = false;
@@ -86,11 +144,16 @@ export const StoreModal = (): JSX.Element => {
     setJoinError(null);
     setSelectedId(null);
     setPlaceBrush(null);
+    setFloorBrush(null);
     setShowCart(false);
     setBindForm(null);
     refreshInv();
 
-    const local = loadStoreLayout(installationId);
+    const loaded = loadStoreLayout(installationId);
+    const local = withFloor(loaded);
+    if (local !== loaded && (!loaded.floor || !Object.keys(loaded.floor).length)) {
+      saveStoreLayout(local);
+    }
     setLayout(local);
 
     void (async () => {
@@ -108,8 +171,8 @@ export const StoreModal = (): JSX.Element => {
       seedStoreLayout(serializeLayout(local));
       const remote = String(room.state?.layoutJson || '');
       if (remote) {
-        const parsed = parseLayoutJson(remote, installationId);
-        if (parsed.furniture.length || parsed.updatedAt >= local.updatedAt) {
+        const parsed = withFloor(parseLayoutJson(remote, installationId));
+        if (parsed.furniture.length || parsed.updatedAt >= local.updatedAt || (parsed.floor && Object.keys(parsed.floor).length)) {
           setLayout(parsed);
           if (isOwner) saveStoreLayout(parsed);
         }
@@ -119,7 +182,7 @@ export const StoreModal = (): JSX.Element => {
     const unsubOcc = subscribeStoreOccupancy(setOccupancy);
     const unsubLayout = subscribeStoreLayout((json) => {
       if (!json || !installationId) return;
-      const parsed = parseLayoutJson(json, installationId);
+      const parsed = withFloor(parseLayoutJson(json, installationId));
       setLayout(parsed);
     });
 
@@ -245,7 +308,22 @@ export const StoreModal = (): JSX.Element => {
     click();
     sendStoreMove(tx * 64 + 32, ty * 64 + 32);
 
+    if (isOwner && floorBrush != null && structureAt(tx, ty) === 'floor') {
+      const owned = walletFloorTiles.some((t) => t.itemId === floorBrush);
+      if (!owned) {
+        setStatusMsg('You do not own that tile in your wallet');
+        return;
+      }
+      applyLayout(setFloorTile(layout, tx, ty, floorBrush, 'wallet'), true);
+      setStatusMsg(`Placed wallet tile #${floorBrush}`);
+      return;
+    }
+
     if (isOwner && placeBrush != null) {
+      if (structureAt(tx, ty) !== 'floor') {
+        setStatusMsg('Furniture goes on the floor');
+        return;
+      }
       const result = placeFurniture(layout, placeBrush, tx, ty);
       setStatusMsg(result.message);
       refreshInv();
@@ -406,30 +484,68 @@ export const StoreModal = (): JSX.Element => {
               <Button
                 size={2}
                 secondary={placeBrush !== SHELF_ITEM_ID}
-                onClick={() => setPlaceBrush(placeBrush === SHELF_ITEM_ID ? null : SHELF_ITEM_ID)}
+                onClick={() => {
+                  setFloorBrush(null);
+                  setPlaceBrush(placeBrush === SHELF_ITEM_ID ? null : SHELF_ITEM_ID);
+                }}
               >
                 Place Shelf
               </Button>
               <Button
                 size={2}
                 secondary={placeBrush !== CASHIER_ITEM_ID}
-                onClick={() => setPlaceBrush(placeBrush === CASHIER_ITEM_ID ? null : CASHIER_ITEM_ID)}
+                onClick={() => {
+                  setFloorBrush(null);
+                  setPlaceBrush(placeBrush === CASHIER_ITEM_ID ? null : CASHIER_ITEM_ID);
+                }}
               >
                 Place Cashier
               </Button>
               <Button
                 size={2}
                 secondary={placeBrush !== CONSOLE_ITEM_ID}
-                onClick={() => setPlaceBrush(placeBrush === CONSOLE_ITEM_ID ? null : CONSOLE_ITEM_ID)}
+                onClick={() => {
+                  setFloorBrush(null);
+                  setPlaceBrush(placeBrush === CONSOLE_ITEM_ID ? null : CONSOLE_ITEM_ID);
+                }}
                 disabled={consoleQty < 1}
               >
                 Place Console ({consoleQty})
+              </Button>
+              <Button size={2} secondary onClick={handleRandomizeFloor}>
+                Randomize floor
               </Button>
               {selectedId ? (
                 <Button size={2} onClick={handleRemoveSelected}>
                   Remove selected
                 </Button>
               ) : null}
+            </div>
+          ) : null}
+
+          {isOwner ? (
+            <div className="floor-tile-bar">
+              <span className="floor-tile-label">Wallet tiles</span>
+              {!walletFloorTiles.length ? (
+                <span className="muted">None in wallet — random greyscale floor still works</span>
+              ) : (
+                <div className="floor-tile-list">
+                  {walletFloorTiles.map((t) => (
+                    <button
+                      type="button"
+                      key={t.itemId}
+                      className={`floor-tile-chip${floorBrush === t.itemId ? ' active' : ''}`}
+                      title={`${t.name} ×${t.quantity}`}
+                      style={{ backgroundImage: `url(/images/tiles/Tile_LE_${t.itemId}.png)` }}
+                      onClick={() => {
+                        click();
+                        setPlaceBrush(null);
+                        setFloorBrush(floorBrush === t.itemId ? null : t.itemId);
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           ) : null}
 
@@ -443,23 +559,34 @@ export const StoreModal = (): JSX.Element => {
                 const who = playerByTile.get(`${tx},${ty}`);
                 const furn = furnitureByTile.get(`${tx},${ty}`);
                 const isSelected = furn && furn.id === selectedId;
+                const structure = structureAt(tx, ty);
+                const floorCell = layout?.floor?.[floorKey(tx, ty)];
+                const floorUrl = structure === 'floor' ? floorCellUrl(floorCell) : null;
                 let kind = '';
                 if (furn && isShelfItemId(furn.itemId)) kind = furn.listing ? 'shelf-bound' : 'shelf';
                 if (furn && isCashierItemId(furn.itemId)) kind = 'cashier';
                 if (furn && isConsoleItemId(furn.itemId)) kind = 'console';
+                const placing = Boolean(placeBrush || floorBrush);
                 return (
                   <button
                     type="button"
                     key={`${tx}-${ty}`}
-                    className={`cell${who ? ' occupied' : ''}${kind ? ` ${kind}` : ''}${isSelected ? ' selected' : ''}${
-                      placeBrush ? ' placeable' : ''
-                    }`}
+                    className={`cell ${structure}${who ? ' occupied' : ''}${kind ? ` ${kind}` : ''}${
+                      isSelected ? ' selected' : ''
+                    }${placing ? ' placeable' : ''}${floorBrush && structure === 'floor' ? ' floor-paint' : ''}`}
+                    style={
+                      floorUrl && !kind
+                        ? { backgroundImage: `url(${floorUrl})` }
+                        : undefined
+                    }
                     title={
                       furn
                         ? isConsoleItemId(furn.itemId)
                           ? `Console L${consoleLevelFromItemId(furn.itemId)} · ${(furn.loadedTitles || []).length} titles`
                           : `${isShelfItemId(furn.itemId) ? 'Shelf' : 'Cashier'}${furn.listing ? `: ${furn.listing.title}` : ''}`
-                        : who || `${tx},${ty}`
+                        : floorCell
+                          ? `Floor tile #${floorCell.tileId} (${floorCell.art}) ${tx},${ty}`
+                          : who || `${structure} ${tx},${ty}`
                     }
                     onClick={() => handleTileClick(tx, ty)}
                   />
@@ -512,6 +639,7 @@ export const StoreModal = (): JSX.Element => {
                   placeBrush === SHELF_ITEM_ID ? 'Shelf' : placeBrush === CASHIER_ITEM_ID ? 'Cashier' : 'Console'
                 }`
               : ''}
+            {floorBrush != null ? ` · Painting floor with wallet tile #${floorBrush}` : ''}
           </p>
           <div className="actions">
             <Button secondary onClick={() => setShowCart((v) => !v)}>

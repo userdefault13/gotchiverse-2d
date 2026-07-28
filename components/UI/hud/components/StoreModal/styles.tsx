@@ -52,35 +52,59 @@ export default css`
   .store-grid {
     display: grid;
     grid-template-columns: repeat(16, 1fr);
-    gap: 2px;
+    gap: 1px;
     flex: 1;
     aspect-ratio: 1;
     max-height: 56vh;
-    background: #2a2a3a;
+    background: #1a1410;
     padding: 4px;
     image-rendering: pixelated;
   }
   .cell {
-    background: #3d3d55;
     min-height: 0;
     border: none;
     padding: 0;
     cursor: pointer;
+    background-color: #3d3d55;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+  .cell.floor {
+    background-color: #3a3a48;
+  }
+  .cell.wall {
+    background-image: url('/images/store/interior/wall-wood.png');
+    background-color: #6b4423;
+  }
+  .cell.door {
+    background-image: url('/images/store/interior/door.png');
+    background-color: #4a6a8a;
+  }
+  .cell.window {
+    background-image: url('/images/store/interior/window.png');
+    background-color: #5a7088;
   }
   .cell.occupied {
     box-shadow: inset 0 0 0 2px #51ffa8;
   }
   .cell.shelf {
-    background: #c4a574;
+    background-image: none;
+    background-color: #c4a574;
   }
   .cell.shelf-bound {
-    background: #e8b84a;
+    background-image: none;
+    background-color: #e8b84a;
   }
   .cell.cashier {
-    background: #4a90e8;
+    background-image: none;
+    background-color: #4a90e8;
   }
   .cell.console {
-    background: #9b59ff;
+    background-image: none;
+    background-color: #9b59ff;
   }
   .cell.selected {
     outline: 2px solid #fff;
@@ -88,7 +112,45 @@ export default css`
     z-index: 1;
   }
   .cell.placeable:hover {
-    background: #6d5cff;
+    filter: brightness(1.15);
+  }
+  .cell.floor-paint:hover {
+    outline: 2px solid #51ffa8;
+    outline-offset: -2px;
+  }
+  .floor-tile-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.8rem;
+  }
+  .floor-tile-label {
+    font-size: 1.3rem;
+    color: #555;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .floor-tile-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    max-height: 7.2rem;
+    overflow: auto;
+  }
+  .floor-tile-chip {
+    width: 3.6rem;
+    height: 3.6rem;
+    border: 2px solid #ccc;
+    padding: 0;
+    cursor: pointer;
+    background-color: #222;
+    background-size: cover;
+    background-position: center;
+    image-rendering: pixelated;
+  }
+  .floor-tile-chip.active {
+    border-color: #6231ff;
+    outline: 2px solid #6231ff;
   }
   .cart-panel {
     width: 24rem;
