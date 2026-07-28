@@ -42,6 +42,16 @@ export const GotchiSelectCard = ({ gotchi, handleSelect, isSelected }: Props): J
     setIsBlocked(!parcelAccessOwners.includes(gotchi.originalOwner.id.toLowerCase()));
   }, [parcelAccessOwners, gotchi]);
 
+  const equipKey = useMemo(
+    () => (gotchi?.equippedWearables || []).map((n) => Number(n) || 0).join(','),
+    [gotchi?.equippedWearables],
+  );
+  const traitsKey = useMemo(() => {
+    const t = gotchi?.withSetsNumericTraits || gotchi?.numericTraits || [];
+    return t.map((n) => Number(n) || 50).join(',');
+  }, [gotchi?.withSetsNumericTraits, gotchi?.numericTraits]);
+  const sourceTokenId = gotchi?.cartridgeSourceTokenId || undefined;
+
   useEffect(() => {
     if (!isCartridgeHero || !gotchi?.cartridgeCollateral) {
       setCartridgeBlobUrl('');
@@ -51,7 +61,15 @@ export const GotchiSelectCard = ({ gotchi, handleSelect, isSelected }: Props): J
     if (!collateral) return;
     let cancelled = false;
     let createdUrl = '';
-    void fetchCollateralGotchiBlobUrl(collateral, currentNetwork).then((url) => {
+    const equipped = equipKey ? equipKey.split(',').map((n) => Number(n) || 0) : undefined;
+    const traits = traitsKey ? traitsKey.split(',').map((n) => Number(n) || 50) : undefined;
+    void fetchCollateralGotchiBlobUrl(
+      collateral,
+      currentNetwork,
+      equipped,
+      traits,
+      sourceTokenId,
+    ).then((url) => {
       if (cancelled) {
         URL.revokeObjectURL(url);
         return;
@@ -63,7 +81,14 @@ export const GotchiSelectCard = ({ gotchi, handleSelect, isSelected }: Props): J
       cancelled = true;
       if (createdUrl) URL.revokeObjectURL(createdUrl);
     };
-  }, [isCartridgeHero, gotchi?.cartridgeCollateral, currentNetwork]);
+  }, [
+    isCartridgeHero,
+    gotchi?.cartridgeCollateral,
+    equipKey,
+    traitsKey,
+    sourceTokenId,
+    currentNetwork,
+  ]);
 
   const rarity = useMemo(
     () => 'gotchi-' + (gotchi?.isSpectator ? 'freebie' : brsToRarity(Number(gotchi?.baseRarityScore))),

@@ -14,6 +14,7 @@ type CartridgeHeroRow = {
   templateId?: string;
   sourceTokenId?: string;
   traits?: number[];
+  equippedWearables?: number[];
   level?: number;
   kinship?: number;
   experience?: number;
@@ -54,6 +55,9 @@ function extractHeroes(match: CartridgeRecord | null): {
     const traits = Array.isArray(row.traits)
       ? row.traits.map((n) => Number(n) || 50).slice(0, 6)
       : [50, 50, 50, 50, 50, 50];
+    const equippedWearables = Array.isArray(row.equippedWearables)
+      ? row.equippedWearables.map((n) => Number(n) || 0).slice(0, 16)
+      : undefined;
     heroes.push({
       id,
       bindType: row.bindType ? String(row.bindType) : undefined,
@@ -61,6 +65,7 @@ function extractHeroes(match: CartridgeRecord | null): {
       templateId: row.templateId ? String(row.templateId) : undefined,
       sourceTokenId: row.sourceTokenId != null ? String(row.sourceTokenId) : undefined,
       traits,
+      equippedWearables,
       level: Number(row.level) || 1,
       kinship: Number(row.kinship) || 0,
       experience: Number(row.experience) || 0,

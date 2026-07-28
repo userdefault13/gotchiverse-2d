@@ -35,7 +35,7 @@ export const LandingScreen = (): JSX.Element => {
   const [selectedSpawn, setSelectedSpawn] = useState<string>();
   const [storedPlayerId, setStoredPlayerId] = useState<string>();
   const [selectedGotchi, setSelectedGotchi] = useState<GotchiverseAavegotchi>();
-  const [{ userAavegotchis, addresses, cartridgeHeroes }, userDispatch] = useUser();
+  const [{ userAavegotchis, addresses, cartridgeHeroes, wearableInventory }, userDispatch] = useUser();
   const [{ gameConfig }, gameDispatch] = useGame();
 
   const parcelSection = useRef(null);
@@ -52,7 +52,7 @@ export const LandingScreen = (): JSX.Element => {
   useEffect(() => {
     void setLastPlayerUsed();
     void handleQueryUpdate(true);
-  }, [userAavegotchis, cartridgeHeroes]);
+  }, [userAavegotchis, cartridgeHeroes, wearableInventory]);
 
   const setLastPlayerUsed = async () => {
     const storedPlayer = await JSON.parse(localStorage.getItem('selectedPlayer'));
@@ -73,7 +73,7 @@ export const LandingScreen = (): JSX.Element => {
     const owned = _.find(userAavegotchis, (gotchi) => gotchiId === gotchi.id);
     if (owned) return owned;
     const hero = _.find(cartridgeHeroes, (h) => gotchiId === h.id);
-    if (hero) return mapCartridgeHeroToGotchi(hero, currentAccount);
+    if (hero) return mapCartridgeHeroToGotchi(hero, currentAccount, wearableInventory);
     return undefined;
   };
 

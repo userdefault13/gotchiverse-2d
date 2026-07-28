@@ -199,6 +199,8 @@ export interface GotchiverseAavegotchi extends Aavegotchi {
   isCartridgeHero?: boolean;
   /** Sim collateral id (dai, weth, …) when isCartridgeHero. */
   cartridgeCollateral?: string;
+  /** L1 token id bound onto this cAavegotchi (for Base preview identity). */
+  cartridgeSourceTokenId?: string;
 }
 
 export enum Direction {

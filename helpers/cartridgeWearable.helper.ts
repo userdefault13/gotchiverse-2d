@@ -382,3 +382,41 @@ export function wearablesFromCartridgeSnapshot(snapshot: unknown): CWearable[] {
   const doc = snapshot as Record<string, unknown>;
   return normalizeCWearables(doc.wearableInventory);
 }
+
+const EMPTY_EQUIP = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+
+export function padEquippedWearables(raw: unknown): number[] {
+  const arr = Array.isArray(raw) ? raw.map((n) => Number(n) || 0) : [];
+  while (arr.length < 16) arr.push(0);
+  return arr.slice(0, 16);
+}
+
+/**
+ * Soft-launch display equip: ONLY minted cWearables with equippedTo === hero.id.
+ * Prefer inventory over roster.equippedWearables (bind strip / stale L1 snapshot).
+ */
+export function resolveHeroEquippedWearables(
+  heroId: string | undefined | null,
+  wearableInventory?: Array<{
+    itemTypeId?: number;
+    slotIndex?: number;
+    equippedTo?: string | null;
+  }> | null,
+  fallbackEquipped?: number[] | null,
+): number[] {
+  const id = String(heroId || '').trim();
+  const fromInv = [...EMPTY_EQUIP];
+  let hit = false;
+  if (id && Array.isArray(wearableInventory) && wearableInventory.length) {
+    for (const w of wearableInventory) {
+      if (!w || String(w.equippedTo || '') !== id) continue;
+      const slot = Number(w.slotIndex);
+      const itemTypeId = Number(w.itemTypeId) || 0;
+      if (!Number.isInteger(slot) || slot < 0 || slot > 15 || !itemTypeId) continue;
+      fromInv[slot] = itemTypeId;
+      hit = true;
+    }
+  }
+  if (hit) return fromInv;
+  return padEquippedWearables(fallbackEquipped);
+}

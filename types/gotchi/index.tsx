@@ -24,6 +24,10 @@ export interface SelectedPlayer {
   isCartridgeHero?: boolean;
   /** Sim collateral id (dai, uni, …) for in-game sprite. */
   cartridgeCollateral?: string;
+  /** L1 token id for Base previewAavegotchi identity. */
+  cartridgeSourceTokenId?: string;
+  /** Equipped cWearable itemTypeIds (16 slots) for cartridge hero sprites. */
+  equippedWearables?: number[];
   /** Modified numeric traits [NRG,AGG,SPK,BRN,EYC,EYS] for aarena combat join. */
   withSetsNumericTraits?: [number, number, number, number, number, number];
 }

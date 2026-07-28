@@ -23,7 +23,8 @@ export default css`
     position: fixed;
     bottom: 50%;
     left: 0;
-    z-index: 1000;
+    /* Above ModalWrapper (200000) so mint/tx toasts show over select modal */
+    z-index: 210000;
     transform: translate(0);
   }
 

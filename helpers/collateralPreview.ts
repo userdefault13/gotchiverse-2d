@@ -6,6 +6,7 @@ import type { NetworkNames, Tuple } from 'types';
 import { abis, varsForNetwork } from 'shared_code/web3/shared.const.web3';
 
 const svgCache = new Map<string, string>();
+const identityCache = new Map<string, BaseGotchiIdentity>();
 const rpcProviders = new Map<string, ethers.providers.JsonRpcProvider>();
 
 const EMPTY_WEARABLES = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] as Tuple<number, 16>;
@@ -16,12 +17,15 @@ const EMPTY_WEARABLES = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] as Tupl
  */
 export const BASE_PREVIEW_TRAITS = [50, 50, 50, 50, 50, 50] as Tuple<number, 6>;
 
-/**
- * Classic aToken collaterals + previewAavegotchi live on the Polygon diamond.
- * Base diamond does not expose previewAavegotchi for these addresses.
- */
+type BaseGotchiIdentity = {
+  hauntId: number;
+  collateral: string;
+  traits: number[];
+};
+
+/** Soft-launch previews always use the Base diamond (not Polygon). */
 function previewNetwork(_network?: NetworkNames | string): NetworkNames {
-  return 'matic';
+  return 'base';
 }
 
 function rpcProviderFor(network: NetworkNames): ethers.providers.JsonRpcProvider {
@@ -33,6 +37,7 @@ function rpcProviderFor(network: NetworkNames): ethers.providers.JsonRpcProvider
 }
 
 function collateralAddress(collateral: CollateralObject): string | null {
+  // Classic aToken collateral ids are shared across migrated Base gotchis.
   const raw = collateral.maticAddress || collateral.mainnetAddress;
   if (!raw) return null;
   try {
@@ -47,6 +52,21 @@ function stripGotchiBackground(svg: string): string {
     return removeBG(svg);
   }
   return svg.replace(/<svg([^>]*)>/, '<svg$1><style>.gotchi-bg,.wearable-bg{display:none}</style>');
+}
+
+function padEquip(equippedWearables?: number[] | Tuple<number, 16> | null): number[] {
+  const equipped = Array.isArray(equippedWearables)
+    ? equippedWearables.map((n) => Number(n) || 0).slice(0, 16)
+    : [...EMPTY_WEARABLES];
+  while (equipped.length < 16) equipped.push(0);
+  return equipped;
+}
+
+function padTraits(traits?: number[] | Tuple<number, 6> | null): number[] {
+  if (Array.isArray(traits) && traits.length >= 6) {
+    return traits.slice(0, 6).map((n) => Number(n) || 50);
+  }
+  return [...BASE_PREVIEW_TRAITS];
 }
 
 /** Recolor a base gotchi SVG (front or side) with collateral palette. */
@@ -114,32 +134,84 @@ export function buildCollateralGotchiSvg(collateral: CollateralObject, opts?: { 
   return buildCollateralGotchiSvgFromBase(defaultGotchi[0], collateral, opts);
 }
 
-/**
- * 4-direction sprites for a cartridge cAavegotchi:
- * front = diamond previewAavegotchi; left/right/back = recolored default sides.
- */
-export async function fetchCartridgeHeroSideSVGs(
-  collateral: CollateralObject,
-  network?: NetworkNames | string,
-): Promise<[string, string, string, string]> {
-  const front = await fetchCollateralGotchiSvg(collateral, undefined, network);
-  return [
-    front,
-    buildCollateralGotchiSvgFromBase(defaultGotchi[1], collateral),
-    buildCollateralGotchiSvgFromBase(defaultGotchi[2], collateral),
-    buildCollateralGotchiSvgFromBase(defaultGotchi[3], collateral),
-  ];
+/** Resolve haunt / collateral / traits from Base getAavegotchi. */
+export async function fetchBaseGotchiIdentity(tokenId: string): Promise<BaseGotchiIdentity | null> {
+  const tid = String(tokenId || '').trim();
+  if (!/^\d+$/.test(tid)) return null;
+  if (identityCache.has(tid)) return identityCache.get(tid) || null;
+
+  try {
+    const provider = rpcProviderFor('base');
+    const diamond = varsForNetwork('base').aavegotchiDiamond;
+    if (!diamond) throw new Error('No Base aavegotchi diamond');
+    const contract = new ethers.Contract(diamond, abis.aavegotchiDiamond, provider);
+    const info = await contract.getAavegotchi(tid);
+    const hauntRaw = Number(info.hauntId ?? 1);
+    const identity: BaseGotchiIdentity = {
+      hauntId: Math.min(Math.max(hauntRaw || 1, 1), 2),
+      collateral: ethers.utils.getAddress(String(info.collateral || '').toLowerCase()),
+      traits: [...(info.numericTraits || [])].slice(0, 6).map((t) => Number(t) || 50),
+    };
+    if (!identity.collateral || identity.traits.length < 6) return null;
+    identityCache.set(tid, identity);
+    return identity;
+  } catch (err) {
+    console.warn('@fetchBaseGotchiIdentity', tid, err);
+    return null;
+  }
 }
 
-/** On-chain full cAavegotchi preview (body + eyes + collateral) with base 50 traits. */
+async function previewOnBase(
+  hauntId: number,
+  collateralAddr: string,
+  traits: number[],
+  equipped: number[],
+): Promise<string> {
+  const provider = rpcProviderFor('base');
+  const diamond = varsForNetwork('base').aavegotchiDiamond;
+  if (!diamond) throw new Error('No Base aavegotchi diamond');
+  const contract = new ethers.Contract(diamond, abis.aavegotchiDiamond, provider);
+  const svg: string = await contract.previewAavegotchi(hauntId, collateralAddr, traits, equipped);
+  if (!svg || typeof svg !== 'string' || svg.length < 100) {
+    throw new Error('empty preview svg');
+  }
+  if (!svg.includes('gotchi-body') || !svg.includes('gotchi-collateral')) {
+    throw new Error('incomplete preview svg layers');
+  }
+  return stripGotchiBackground(svg);
+}
+
+/**
+ * On-chain cAavegotchi preview on Base (body + eyes + collateral + optional wearables).
+ * Pass `sourceTokenId` for wallet-bound heroes so haunt/collateral/traits match L1.
+ */
 export async function fetchCollateralGotchiSvg(
   collateral: CollateralObject,
   _walletProvider?: ethers.providers.Provider,
   network?: NetworkNames | string,
+  equippedWearables?: number[] | Tuple<number, 16> | null,
+  traits?: number[] | Tuple<number, 6> | null,
+  sourceTokenId?: string | null,
 ): Promise<string> {
-  const addr = collateralAddress(collateral);
   const net = previewNetwork(network);
-  const cacheKey = `${net}:${addr || collateral.name}:t50`;
+  const equipped = padEquip(equippedWearables);
+  const tid = String(sourceTokenId || '').trim();
+  const isL1 = Boolean(tid && tid !== '0' && /^\d+$/.test(tid));
+
+  let hauntId = 1;
+  let addr = collateralAddress(collateral);
+  let traitArr = padTraits(traits);
+
+  if (isL1) {
+    const identity = await fetchBaseGotchiIdentity(tid);
+    if (identity) {
+      hauntId = identity.hauntId;
+      addr = identity.collateral;
+      traitArr = identity.traits;
+    }
+  }
+
+  const cacheKey = `base:v1:${tid || addr || collateral.name}:h${hauntId}:t${traitArr.join(',')}:w${equipped.join(',')}`;
   if (svgCache.has(cacheKey)) return svgCache.get(cacheKey);
 
   if (!addr) {
@@ -149,22 +221,11 @@ export async function fetchCollateralGotchiSvg(
   }
 
   try {
-    const provider = rpcProviderFor(net);
-    const diamond = varsForNetwork(net).aavegotchiDiamond;
-    if (!diamond) throw new Error(`No aavegotchi diamond for ${net}`);
-    const contract = new ethers.Contract(diamond, abis.aavegotchiDiamond, provider);
-    const svg: string = await contract.previewAavegotchi(1, addr, BASE_PREVIEW_TRAITS, EMPTY_WEARABLES);
-    if (!svg || typeof svg !== 'string' || svg.length < 100) {
-      throw new Error('empty preview svg');
-    }
-    if (!svg.includes('gotchi-body') || !svg.includes('gotchi-collateral')) {
-      throw new Error('incomplete preview svg layers');
-    }
-    const cleaned = stripGotchiBackground(svg);
+    const cleaned = await previewOnBase(hauntId, addr, traitArr, equipped);
     svgCache.set(cacheKey, cleaned);
     return cleaned;
   } catch (err) {
-    console.warn('@fetchCollateralGotchiSvg', collateral.name, err);
+    console.warn('@fetchCollateralGotchiSvg', collateral.name, tid || '', err);
     const fallback = buildCollateralGotchiSvg(collateral);
     svgCache.set(cacheKey, fallback);
     return fallback;
@@ -175,7 +236,44 @@ export async function fetchCollateralGotchiSvg(
 export async function fetchCollateralGotchiBlobUrl(
   collateral: CollateralObject,
   network?: NetworkNames | string,
+  equippedWearables?: number[] | Tuple<number, 16> | null,
+  traits?: number[] | Tuple<number, 6> | null,
+  sourceTokenId?: string | null,
 ): Promise<string> {
-  const svg = await fetchCollateralGotchiSvg(collateral, undefined, network);
+  const svg = await fetchCollateralGotchiSvg(
+    collateral,
+    undefined,
+    network,
+    equippedWearables,
+    traits,
+    sourceTokenId,
+  );
   return convertInlineSVGToBlobURL(svg);
+}
+
+/**
+ * 4-direction sprites for a cartridge cAavegotchi:
+ * front = Base previewAavegotchi (+ equipped cWearables); left/right/back = recolored default sides.
+ */
+export async function fetchCartridgeHeroSideSVGs(
+  collateral: CollateralObject,
+  network?: NetworkNames | string,
+  equippedWearables?: number[] | Tuple<number, 16> | null,
+  traits?: number[] | Tuple<number, 6> | null,
+  sourceTokenId?: string | null,
+): Promise<[string, string, string, string]> {
+  const front = await fetchCollateralGotchiSvg(
+    collateral,
+    undefined,
+    network,
+    equippedWearables,
+    traits,
+    sourceTokenId,
+  );
+  return [
+    front,
+    buildCollateralGotchiSvgFromBase(defaultGotchi[1], collateral),
+    buildCollateralGotchiSvgFromBase(defaultGotchi[2], collateral),
+    buildCollateralGotchiSvgFromBase(defaultGotchi[3], collateral),
+  ];
 }

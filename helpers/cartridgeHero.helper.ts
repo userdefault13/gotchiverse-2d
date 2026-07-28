@@ -1,5 +1,10 @@
 import type { GotchiverseAavegotchi, Tuple } from 'types';
 import { collateralByAddress, collaterals, type CollateralObject } from 'helpers/ethers.helper';
+import {
+  padEquippedWearables,
+  resolveHeroEquippedWearables,
+  type CWearable,
+} from 'helpers/cartridgeWearable.helper';
 
 export type CartridgeHero = {
   id: string;
@@ -8,6 +13,7 @@ export type CartridgeHero = {
   templateId?: string;
   sourceTokenId?: string;
   traits?: number[];
+  equippedWearables?: number[];
   level?: number;
   kinship?: number;
   experience?: number;
@@ -97,6 +103,7 @@ export function normalizeCartridgeHeroes(raw: unknown): CartridgeHero[] {
         templateId: row.templateId ? String(row.templateId) : undefined,
         sourceTokenId: row.sourceTokenId != null ? String(row.sourceTokenId) : undefined,
         traits,
+        equippedWearables: padEquippedWearables(row.equippedWearables),
         level: Number(row.level) || 1,
         kinship: Number(row.kinship) || 0,
         experience: Number(row.experience) || 0,
@@ -115,17 +122,28 @@ export function heroesFromCartridgeSnapshot(snapshot: unknown): CartridgeHero[] 
   return [];
 }
 
-export function mapCartridgeHeroToGotchi(hero: CartridgeHero, owner: string): GotchiverseAavegotchi {
+export function mapCartridgeHeroToGotchi(
+  hero: CartridgeHero,
+  owner: string,
+  wearableInventory?: CWearable[] | null,
+): GotchiverseAavegotchi {
   const wallet = String(owner || '').toLowerCase();
   const traits = (hero.traits?.length === 6 ? hero.traits : [50, 50, 50, 50, 50, 50]) as Tuple<number, 6>;
   const brs = String(traits.reduce((sum, n) => sum + Number(n || 0), 0));
   const coll = collateralFromSimId(hero.collateral);
   const label = coll ? coll.maticDisplay || coll.name : hero.collateral.toUpperCase();
+  const equipped = resolveHeroEquippedWearables(
+    hero.id,
+    wearableInventory,
+    hero.equippedWearables,
+  ) as Tuple<number, 16>;
 
   return {
     id: hero.id,
     isCartridgeHero: true,
     cartridgeCollateral: hero.collateral,
+    cartridgeSourceTokenId:
+      hero.sourceTokenId && hero.sourceTokenId !== '0' ? String(hero.sourceTokenId) : undefined,
     escrow: '',
     withSetsNumericTraits: traits,
     numericTraits: traits,
@@ -135,7 +153,7 @@ export function mapCartridgeHeroToGotchi(hero: CartridgeHero, owner: string): Go
     originalOwner: { id: wallet },
     name: `c${label}`,
     borrowed: false,
-    equippedWearables: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+    equippedWearables: equipped,
     level: String(hero.level || 1),
     experience: String(hero.experience || 0),
     stakedAmount: '0',

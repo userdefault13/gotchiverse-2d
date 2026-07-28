@@ -170,14 +170,15 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
     return null;
   }, [mintStep, selectedCollateral, selectedIsCartridgeHero, selectedGotchi?.cartridgeCollateral]);
 
-  /** Stable key so center Image remounts when the selected cAavegotchi / collateral changes. */
+  /** Stable key so center Image remounts when the selected cAavegotchi / collateral / gear changes. */
   const previewArtKey = useMemo(() => {
     if (mintStep === 'caavegotchi' && selectedWalletGotchi) return `wallet-${selectedWalletGotchi.id}`;
     if (mintStep === 'caavegotchi' && selectedCollateral) {
       return `coll-${selectedCollateral.name || selectedCollateral.svgId}`;
     }
     if (selectedIsCartridgeHero) {
-      return `hero-${selectedGotchi?.id}-${selectedGotchi?.cartridgeCollateral || ''}`;
+      const equip = (selectedGotchi?.equippedWearables || []).join(',');
+      return `hero-${selectedGotchi?.id}-${selectedGotchi?.cartridgeCollateral || ''}-${equip}`;
     }
     return selectedGotchi?.id || 'none';
   }, [
@@ -187,7 +188,23 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
     selectedIsCartridgeHero,
     selectedGotchi?.id,
     selectedGotchi?.cartridgeCollateral,
+    selectedGotchi?.equippedWearables,
   ]);
+
+  const selectedEquipPreview = useMemo(() => {
+    if (!selectedIsCartridgeHero || !selectedGotchi) return null;
+    const equipped = (selectedGotchi.equippedWearables || []).map((n) => Number(n) || 0);
+    const traits = (selectedGotchi.withSetsNumericTraits || selectedGotchi.numericTraits || []).map(
+      (n) => Number(n) || 50,
+    );
+    const sourceTokenId = selectedGotchi.cartridgeSourceTokenId || '';
+    return {
+      equipped,
+      traits,
+      sourceTokenId,
+      key: `${sourceTokenId}|${equipped.join(',')}|${traits.join(',')}`,
+    };
+  }, [selectedIsCartridgeHero, selectedGotchi]);
 
   const boundWalletIds = useMemo(() => mintedSourceTokenIds(cartridgeHeroes), [cartridgeHeroes]);
   const mintableWearableRows = useMemo(
@@ -228,7 +245,19 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
     });
     if (!previewCollateral) return;
 
-    void fetchCollateralGotchiBlobUrl(previewCollateral, currentNetwork).then((url) => {
+    const equipped =
+      mintStep === 'caavegotchi' ? null : selectedEquipPreview?.equipped || null;
+    const traits = mintStep === 'caavegotchi' ? null : selectedEquipPreview?.traits || null;
+    const sourceTokenId =
+      mintStep === 'caavegotchi' ? null : selectedEquipPreview?.sourceTokenId || null;
+
+    void fetchCollateralGotchiBlobUrl(
+      previewCollateral,
+      currentNetwork,
+      equipped,
+      traits,
+      sourceTokenId,
+    ).then((url) => {
       if (cancelled) {
         URL.revokeObjectURL(url);
         return;
@@ -236,7 +265,13 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
       setCollateralPreviewUrl(url);
     });
     // Prefetch all sides so enter-portal can flip to back view immediately.
-    void fetchCartridgeHeroSideSVGs(previewCollateral, currentNetwork).then((sides) => {
+    void fetchCartridgeHeroSideSVGs(
+      previewCollateral,
+      currentNetwork,
+      equipped,
+      traits,
+      sourceTokenId,
+    ).then((sides) => {
       if (cancelled) return;
       const urls = sides.map((svg) => convertInlineSVGToBlobURL(svg)) as [string, string, string, string];
       if (cancelled) {
@@ -248,7 +283,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
     return () => {
       cancelled = true;
     };
-  }, [previewCollateral, currentNetwork]);
+  }, [previewCollateral, currentNetwork, mintStep, selectedEquipPreview?.key]);
 
   const syncCartridgeFromResult = async (result: {
     cartridgeId?: string;
@@ -471,10 +506,12 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
     setWearableCartRows((prev) => prev.filter((r) => r.itemTypeId !== itemTypeId));
   }, []);
 
-  const finishWithHero = (hero: CartridgeHero | null) => {
+  const finishWithHero = (hero: CartridgeHero | null, inventory?: typeof wearableInventory) => {
     resetMintFlow();
     if (hero && currentAccount) {
-      handleGotchiSelect(mapCartridgeHeroToGotchi(hero, currentAccount));
+      handleGotchiSelect(
+        mapCartridgeHeroToGotchi(hero, currentAccount, inventory ?? wearableInventory),
+      );
     }
   };
 
@@ -591,7 +628,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
         heroes[heroes.length - 1] ||
         null;
       if (bound) {
-        handleGotchiSelect(mapCartridgeHeroToGotchi(bound, currentAccount));
+        handleGotchiSelect(mapCartridgeHeroToGotchi(bound, currentAccount, wearableInventory));
       }
     } catch (e) {
       const msg = (e as Error)?.message || 'Bind failed';
@@ -622,10 +659,29 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
     hero: CartridgeHero | null,
     cid: string | null | undefined,
   ) => {
-    if (!currentAccount || !hero) return { ok: true as const, imported: 0, equipped: 0, alreadyMinted: 0 };
     const bindKind = gotchi.isLent ? 'rental' : 'owned';
     const gear = listEquippedWearableSlots(gotchi, bindKind);
-    if (gear.length === 0) return { ok: true as const, imported: 0, equipped: 0, alreadyMinted: 0 };
+    if (gear.length === 0) {
+      return {
+        ok: true as const,
+        imported: 0,
+        equipped: 0,
+        alreadyMinted: 0,
+        wearableInventory: wearableInventory || [],
+      };
+    }
+    if (!currentAccount || !hero) {
+      return {
+        ok: false as const,
+        error: !hero
+          ? 'Bound hero missing after mint — cannot equip wearables'
+          : 'Connect a wallet to mint wearables',
+        imported: 0,
+        equipped: 0,
+        alreadyMinted: 0,
+        wearableInventory: wearableInventory || [],
+      };
+    }
     const result = await importCartridgeWearables(currentAccount, {
       sourceTokenId: gotchi.id,
       items: gear.map((s) => ({ itemTypeId: s.itemTypeId, slotIndex: s.slotIndex })),
@@ -642,6 +698,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
         imported: result.imported || 0,
         equipped: result.equipped || 0,
         alreadyMinted: result.alreadyMinted || 0,
+        wearableInventory: result.wearableInventory || [],
       };
     }
     userDispatch({
@@ -655,6 +712,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
       imported: result.imported || 0,
       equipped: result.equipped || 0,
       alreadyMinted: result.alreadyMinted || 0,
+      wearableInventory: result.wearableInventory || [],
     };
   };
 
@@ -711,7 +769,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
             wear.error || 'Wearable mint/equip failed',
           );
           // Gotchi minted; leave player on the hero even if gear failed.
-          finishWithHero(bound);
+          finishWithHero(bound, wear.wearableInventory);
           return;
         }
         setMintGhost({ label: 'Equipping wearables…', progress: 92 });
@@ -725,6 +783,8 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
                 wear.equipped === 1 ? '' : 's'
               }`,
         );
+        finishWithHero(bound, wear.wearableInventory);
+        return;
       } else {
         setMintGhost({ label: 'Minted!', progress: 100 });
         updateTransactionNotificationStatus(
@@ -777,6 +837,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
     let gearMinted = 0;
     let gearEquipped = 0;
     let lastHeroes: CartridgeHero[] = cartridgeHeroes || [];
+    let lastInventory = wearableInventory || [];
     let failed = false;
     try {
       for (let i = 0; i < queue.length; i++) {
@@ -819,6 +880,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
           }
           gearMinted += wear.imported;
           gearEquipped += wear.equipped;
+          lastInventory = wear.wearableInventory || lastInventory;
         }
       }
       if (!failed && okCount + skipCount > 0) {
@@ -841,7 +903,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
       if (lastHeroes.length > 0 && okCount > 0) {
         resetMintFlow();
         const last = lastHeroes[lastHeroes.length - 1];
-        handleGotchiSelect(mapCartridgeHeroToGotchi(last, currentAccount));
+        handleGotchiSelect(mapCartridgeHeroToGotchi(last, currentAccount, lastInventory));
       }
     } catch (e) {
       const msg = (e as Error)?.message || 'Mint failed';
@@ -885,7 +947,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
         }${result.alreadyMinted ? ` · ${result.alreadyMinted} already owned` : ''}`,
         { theme: 'dark' },
       );
-      finishWithHero(pendingHeroAfterImport);
+      finishWithHero(pendingHeroAfterImport, result.wearableInventory);
     } finally {
       setMinting(false);
     }

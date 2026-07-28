@@ -4,7 +4,8 @@ export default css`
   .mint-ghost-overlay {
     position: fixed;
     inset: 0;
-    z-index: 1400;
+    /* Above ModalWrapper (200000) so mint progress shows over select modal */
+    z-index: 210000;
     display: flex;
     flex-direction: column;
     align-items: center;

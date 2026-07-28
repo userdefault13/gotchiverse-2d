@@ -100,8 +100,8 @@ export const GotchiSelectPanel = ({
 
   const cartridgeGotchis = useMemo(() => {
     if (!currentAccount || !cartridgeHeroes?.length) return [] as GotchiverseAavegotchi[];
-    return cartridgeHeroes.map((hero) => mapCartridgeHeroToGotchi(hero, currentAccount));
-  }, [cartridgeHeroes, currentAccount]);
+    return cartridgeHeroes.map((hero) => mapCartridgeHeroToGotchi(hero, currentAccount, wearableInventory));
+  }, [cartridgeHeroes, currentAccount, wearableInventory]);
 
   const wearableStacks = useMemo(
     () => (wearablesManageMode ? stackWearableInventory(wearableInventory) : []),

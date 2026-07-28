@@ -250,13 +250,22 @@ export async function fetchAavegotchiURL(gotchiData: SelectedPlayer | Player): P
   const result = await fetchAavegotchiURLById(id, {
     cartridgeCollateral: selected.cartridgeCollateral || (selected.isCartridgeHero ? parseCartridgeHeroCollateral(id) : undefined),
     network: selected.network as NetworkNames | undefined,
+    equippedWearables: selected.equippedWearables,
+    traits: selected.withSetsNumericTraits,
+    sourceTokenId: selected.cartridgeSourceTokenId,
   });
   return result;
 }
 
 export async function fetchAavegotchiURLById(
   id: string,
-  opts?: { cartridgeCollateral?: string; network?: NetworkNames },
+  opts?: {
+    cartridgeCollateral?: string;
+    network?: NetworkNames;
+    equippedWearables?: number[];
+    traits?: number[];
+    sourceTokenId?: string;
+  },
 ): Promise<GotchiUrl> {
   const cartridgeCollateral = opts?.cartridgeCollateral || parseCartridgeHeroCollateral(id);
   const sideviewArray = await fetchAavegotchiSideSVGs(id, opts);
@@ -360,18 +369,33 @@ export const getSpectator = (currentAccount: string): Aavegotchi => {
 
 export const fetchAavegotchiSideSVGs = async (
   id: string,
-  opts?: { cartridgeCollateral?: string; network?: NetworkNames },
+  opts?: {
+    cartridgeCollateral?: string;
+    network?: NetworkNames;
+    equippedWearables?: number[];
+    traits?: number[];
+    sourceTokenId?: string;
+  },
 ): Promise<string[]> => {
-  // Soft-launch cartridge hero — collateral preview art (not L1 token SVGs).
+  // Soft-launch cartridge hero — Base preview art (+ equipped cWearables).
   const simCollateral = opts?.cartridgeCollateral || parseCartridgeHeroCollateral(id);
   if (simCollateral) {
-    const cacheKey = `cartridge:${simCollateral}`;
+    const equipKey = (opts?.equippedWearables || []).map((n) => Number(n) || 0).join(',');
+    const traitKey = (opts?.traits || []).map((n) => Number(n) || 50).join(',');
+    const sourceKey = String(opts?.sourceTokenId || '');
+    const cacheKey = `cartridge:base:${simCollateral}:src${sourceKey}:w${equipKey}:t${traitKey}`;
     if (GlobalState.CHAT.state.gotchiSides[cacheKey]) {
       return GlobalState.CHAT.state.gotchiSides[cacheKey];
     }
     const collateral = collateralFromSimId(simCollateral);
     if (collateral) {
-      const svgs = await fetchCartridgeHeroSideSVGs(collateral, opts?.network);
+      const svgs = await fetchCartridgeHeroSideSVGs(
+        collateral,
+        opts?.network,
+        opts?.equippedWearables,
+        opts?.traits,
+        opts?.sourceTokenId,
+      );
       GlobalState.CHAT.dispatch({
         type: 'PUSH_GOTCHI_SIDES',
         gotchiSides: { [cacheKey]: svgs, [id]: svgs },
@@ -453,6 +477,7 @@ export function getGotchiData(
     cartridgeHero.cartridgeCollateral ||
     (isCartridgeHero ? parseCartridgeHeroCollateral(String(cartridgeHero.id || '')) : undefined) ||
     undefined;
+  const cartridgeSourceTokenId = cartridgeHero.cartridgeSourceTokenId || undefined;
 
   let collateralColor;
   let rightHand;
@@ -462,6 +487,8 @@ export function getGotchiData(
     if (isCartridgeHero) {
       const coll = collateralFromSimId(cartridgeCollateral);
       collateralColor = coll?.primaryColor || '#64438E';
+      rightHand = getHandWearables(equippedWearables?.[5] || 0);
+      leftHand = getHandWearables(equippedWearables?.[4] || 0);
     } else {
       collateralColor = collateralByAddress(currentNetwork, collateral).primaryColor;
       rightHand = getHandWearables(equippedWearables[5]);
@@ -503,6 +530,10 @@ export function getGotchiData(
     leftHand,
     isCartridgeHero: isCartridgeHero || undefined,
     cartridgeCollateral,
+    cartridgeSourceTokenId,
+    equippedWearables: isCartridgeHero
+      ? ((Array.isArray(equippedWearables) ? equippedWearables : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]) as number[])
+      : undefined,
     withSetsNumericTraits,
   };
 }
