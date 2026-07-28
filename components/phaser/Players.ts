@@ -760,6 +760,8 @@ function updatePlayerPosition(playerPosition: PositionEvent): void {
       if (scene.activeRealmId) {
         void Installations.setActiveInstallation();
       }
+      // Soft-launch Store: show E prompt when standing near a Store exterior.
+      Installations.updateNearbyStorePrompt?.();
       // update mini-map position
       if (!x || !y) return;
       updateGlobalPlayerPos({ x, y });

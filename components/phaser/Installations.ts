@@ -130,6 +130,7 @@ interface InstallationInterface {
   updatePlaceQueue: (id: string, action: 'EQUIP' | 'UNEQUIP' | 'CANCEL') => void;
   resetStates: () => void;
   tryInteractActive: () => boolean;
+  updateNearbyStorePrompt: () => void;
 }
 
 // Create Destroy by ID
@@ -626,6 +627,7 @@ const handleBounceGaate = (id: string): void => {
 
 const handleEnterStore = (id: string): void => {
   if (Installations.buildModeState) return;
+  if (GlobalState.UI?.state?.storeState?.open) return;
   toggleFocus(id, true);
   InputController.updateDisableKeyboard(true);
   if (!scene || !GlobalState?.UI?.dispatch) return;
@@ -640,16 +642,103 @@ const handleEnterStore = (id: string): void => {
       cartridgeId: GlobalState.USER?.state?.cartridgeId || undefined,
     },
   });
+  setStoreInteractPrompt(false);
 };
 
-/** E-key / external interact when a Store (type 9) is the active installation. */
+/** ~2 tiles from 2×2 Store center — standing on the doorstep. */
+const STORE_INTERACT_RADIUS_PX = 180;
+
+function getSelectedPlayerWorldPos(): { x: number; y: number } | null {
+  const id = Players.selectedPlayer?.id;
+  if (!id || !scene?.[id]) return null;
+  return { x: scene[id].x, y: scene[id].y };
+}
+
+/** Nearest type-9 Store within radius (play mode). */
+const getNearestStoreId = (maxDistPx = STORE_INTERACT_RADIUS_PX): string | null => {
+  const player = getSelectedPlayerWorldPos();
+  if (!player || !scene?.installationGroup) return null;
+  let bestId: string | null = null;
+  let bestDist = maxDistPx;
+  scene.installationGroup.forEach((container: Phaser.GameObjects.Container, id: string) => {
+    if (!id || !container) return;
+    const type = getTypeById(id);
+    if (Number(type?.installationType) !== 9) return;
+    const d = Phaser.Math.Distance.Between(player.x, player.y, container.x, container.y);
+    if (d <= bestDist) {
+      bestDist = d;
+      bestId = id;
+    }
+  });
+  return bestId;
+};
+
+let storePromptContainer: Phaser.GameObjects.Container | null = null;
+
+function setStoreInteractPrompt(visible: boolean, storeId?: string | null): void {
+  if (!scene) return;
+  if (!visible || !storeId) {
+    if (storePromptContainer) {
+      storePromptContainer.setVisible(false);
+      storePromptContainer.setActive(false);
+    }
+    return;
+  }
+  const store = scene.installationGroup?.get(storeId);
+  if (!store) return;
+  if (!storePromptContainer) {
+    storePromptContainer = scene.add.container(0, 0).setDepth(450);
+    const img = scene.add.image(0, 0, 'e_interact').setOrigin(0.5).setScale(0.7);
+    img.setName('e_interact');
+    img.setInteractive({ cursor: 'url(/cursors/pointer.png), auto' });
+    img.on('pointerdown', () => {
+      void Installations.tryInteractActive?.();
+    });
+    storePromptContainer.add(img);
+  }
+  // Float above the 2×2 Store footprint.
+  storePromptContainer.setPosition(store.x, store.y - 96);
+  storePromptContainer.setVisible(true);
+  storePromptContainer.setActive(true);
+}
+
+/** Call from player move — shows E prompt when standing near a Store. */
+const updateNearbyStorePrompt = (): void => {
+  if (!scene || Installations.buildModeState || scene.disableKeyboard) {
+    setStoreInteractPrompt(false);
+    return;
+  }
+  if (GlobalState.UI?.state?.storeState?.open) {
+    setStoreInteractPrompt(false);
+    return;
+  }
+  // Don't fight alchemica deposit E prompt.
+  if (scene.activeDeposit) {
+    setStoreInteractPrompt(false);
+    return;
+  }
+  const nearId = getNearestStoreId();
+  setStoreInteractPrompt(Boolean(nearId), nearId);
+};
+
+/**
+ * E-key: enter nearest Store (or active Store) → StoreModal + Colyseus StoreRoom.
+ * Returns true if handled so deposit E does not also fire.
+ */
 const tryInteractActive = (): boolean => {
-  if (Installations.buildModeState || scene.disableKeyboard || !scene.activeInstallation) return false;
-  const activeId = scene.activeInstallation.getData('id') as string;
-  if (!activeId) return false;
-  const type = getTypeById(activeId);
-  if (type?.installationType !== 9) return false;
-  handleEnterStore(activeId);
+  if (Installations.buildModeState || scene.disableKeyboard) return false;
+  if (GlobalState.UI?.state?.storeState?.open) return true;
+
+  let storeId: string | null = null;
+  const activeId = scene.activeInstallation?.data?.get('id') as string | undefined;
+  if (activeId && Number(getTypeById(activeId)?.installationType) === 9) {
+    storeId = activeId;
+  }
+  if (!storeId) storeId = getNearestStoreId();
+  if (!storeId) return false;
+
+  SFXController.playFX('click');
+  handleEnterStore(storeId);
   return true;
 };
 
@@ -2171,6 +2260,7 @@ const Installations: InstallationInterface = {
   upgradeLocalLodge,
   upgradeLocalStore,
   tryInteractActive,
+  updateNearbyStorePrompt,
 };
 
 export default Installations;

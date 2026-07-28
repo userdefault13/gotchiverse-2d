@@ -4,6 +4,7 @@ import { Button } from 'components/UI/elements';
 import { useUI } from 'contexts/UIContexts';
 import useAavegotchiSound from 'hooks/useAavegotchiSound';
 import InputController from 'components/controllers/inputController';
+import { toggleFollowGotchi } from 'helpers/phaser.helper';
 import {
   joinStoreRoom,
   leaveStoreRoom,
@@ -322,6 +323,7 @@ export const StoreModal = (): JSX.Element => {
     back();
     await leaveStoreRoom();
     InputController.updateDisableKeyboard(false);
+    toggleFollowGotchi(true);
     uiDispatch({ type: 'UPDATE_STORE_CART', storeCart: [] });
     uiDispatch({ type: 'UPDATE_STORE_SHELF_MODAL', storeShelfModal: { open: false } });
     uiDispatch({
