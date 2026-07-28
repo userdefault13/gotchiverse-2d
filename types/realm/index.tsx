@@ -332,7 +332,8 @@ export interface InstallationTypeLocal {
   height: number;
   name: string;
   type: 'INSTALLATION' | 'TILE';
-  installationType?: number;
+  /** Number for diamond types; `'0-LE'` used for early altar spritesheet keys. */
+  installationType?: number | string;
   tileType?: number;
   alchemicaType?: number;
   level?: number;
