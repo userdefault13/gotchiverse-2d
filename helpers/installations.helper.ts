@@ -52,19 +52,26 @@ export const getAllDataById = async (id: string): Promise<InstallationMetadata> 
 export const getTypeById = (id: string): InstallationTypeLocal => {
   if (!id) return;
   const installation = getInstallationIdDataById(id) as unknown as InstallationIdData;
-  return installation.type === 'INSTALLATION' ? installationTypes[installation.itemId] : tileTypes[installation.itemId];
+  const itemId = installation.itemId;
+  return installation.type === 'INSTALLATION'
+    ? installationTypes[itemId] || installationTypes[String(itemId)]
+    : tileTypes[itemId] || tileTypes[String(itemId)];
 };
 
 // Returns installationType using installation/tile index in craftBook. Uses a local replica of the types from the contract (needs to be updated from shared, each time we update the contract types)
 // second arg is 0 for installations 1 for tiles.
 export const getTypeByItemId = (itemId: number, type = 0): InstallationTypeLocal => {
-  if (!itemId) return;
-  return type === 0 ? installationTypes[itemId] : tileTypes[itemId];
+  if (itemId === undefined || itemId === null || Number.isNaN(Number(itemId))) return;
+  if (type !== 0) return tileTypes[itemId] || tileTypes[String(itemId)];
+  return installationTypes[itemId] || installationTypes[String(itemId)];
 };
 
 // Returns data based on craftingTable index including jsonData from spritesheets. Mostly used before createing the installationId.
 export const getSpriteMetadataByItemId = async (itemId: number | string): Promise<SpriteMetadata> => {
-  const typeData = { ...installationTypes[itemId] };
+  const typeData = { ...(installationTypes[itemId] || installationTypes[String(itemId)] || {}) } as InstallationTypeLocal;
+  if (!typeData?.itemId && typeData?.itemId !== 0) {
+    console.warn('@getSpriteMetadataByItemId: missing type for', itemId);
+  }
   if (typeData.installationType === 7) return await getDecorationDataByItemId(itemId);
 
   if (Number(itemId) < 10) {
@@ -77,8 +84,9 @@ export const getSpriteMetadataByItemId = async (itemId: number | string): Promis
   const numOfFramesEachAnim = animationsCount ? jsonData.tiles[0].animation?.length : 1;
   const offsets = installationsData[typeData.installationType];
 
+  const level = Math.max(1, Number(typeData.level) || 1);
   const data = {
-    frame: animationsCount ? jsonData?.tiles?.[Number(typeData.level) - 1]?.id + 1 || 0 : typeData.level - 1,
+    frame: animationsCount ? jsonData?.tiles?.[level - 1]?.id + 1 || 0 : level - 1,
     key,
     pngName: key,
     isDecoration: false,

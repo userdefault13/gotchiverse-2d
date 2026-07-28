@@ -197,9 +197,24 @@ const spawnSprite = async (installationData: InstallationMetadata, options?: Cre
     }
     // Always top-left origin on the footprint — do not use tileset originX/Y here
     // (those values break marker sizing / grid snap when non-zero, e.g. aaltar 0.3/0.6).
-    installationImage = scene.add
-      .sprite((-width * GOTCHI_SIZE.UNIT) / 2 + offset.x, (-height * GOTCHI_SIZE.UNIT) / 2 + offset.y, key, frame)
-      .setOrigin(0);
+    // Soft-launch Store (256 art on 2×2): seat like Waall so the brush is visible on the tile.
+    if (Number(installationType) === 9 || key === 'store') {
+      offset.x = -64;
+      offset.y = -128;
+    }
+    const textureOk = key && scene.textures.exists(key) && scene.textures.get(key)?.key !== '__MISSING';
+    if (textureOk) {
+      installationImage = scene.add
+        .sprite((-width * GOTCHI_SIZE.UNIT) / 2 + offset.x, (-height * GOTCHI_SIZE.UNIT) / 2 + offset.y, key, frame || 0)
+        .setOrigin(0);
+    } else {
+      // Visible fallback so build brush is never an empty green outline.
+      console.warn('@spawnSprite: missing texture, using placeholder', key, itemId);
+      const w = width * GOTCHI_SIZE.UNIT;
+      const h = height * GOTCHI_SIZE.UNIT;
+      installationImage = scene.add.rectangle(0, 0, w, h, 0xff66cc, 0.55).setStrokeStyle(2, 0xffffff);
+      installationImage.setName('sprite');
+    }
   } else {
     installationImage = await scene.dynamicAdd.image(0, 0, `Tile_LE_${itemId || 1}`, 0);
     installationImage.setOrigin(0.5).setAlpha(0.9);
@@ -213,6 +228,8 @@ const spawnSprite = async (installationData: InstallationMetadata, options?: Cre
 
   if (installationContainer.getByName('sprite') === null) {
     installationImage.setName('sprite');
+    installationContainer.add(installationImage);
+  } else if (!installationContainer.list.includes(installationImage)) {
     installationContainer.add(installationImage);
   }
 
@@ -877,12 +894,17 @@ const updateBuildMarkerPosition = (pointer: Phaser.Input.Pointer) => {
 
 const addMarkerColor = (color: number, isTint = false) => {
   if (scene.marker) {
-    const image = scene.marker.getByName('sprite') as Phaser.GameObjects.Image;
-    if (scene.outLinePlugin && image) {
+    const image = scene.marker.getByName('sprite') as Phaser.GameObjects.Image | Phaser.GameObjects.Rectangle;
+    if (!image) return;
+    if (scene.outLinePlugin && (image as Phaser.GameObjects.Image).texture) {
       scene.outLinePlugin?.remove(image);
       scene.outLinePlugin?.add(image, { thickness: 4.5, outlineColor: color });
     }
-    isTint ? image.setTint(...scene.tints.unequip) : image.clearTint();
+    if (typeof (image as Phaser.GameObjects.Image).setTint === 'function') {
+      isTint ? (image as Phaser.GameObjects.Image).setTint(...scene.tints.unequip) : (image as Phaser.GameObjects.Image).clearTint();
+    } else if ((image as Phaser.GameObjects.Rectangle).setFillStyle) {
+      (image as Phaser.GameObjects.Rectangle).setFillStyle(isTint ? 0xff4f78 : 0x63f323, 0.55);
+    }
   }
 };
 
@@ -891,20 +913,48 @@ const toggleBrush = async (installation?: InstallationTypeLocal) => {
   void setActiveInstallation();
   Installations.isActive = !!installation;
   if (Installations.isActive && scene.activeParcel && installation) {
-    // create fake installation ID to be able to use spawnSprite.
-    const installationId = createInstallationIdByData({
-      parcelId: scene.activeParcel.id,
-      itemId: installation.itemId,
-      x: 50, // just outside of the view
-      y: 50,
-      type: installation.type === 'INSTALLATION' ? '0' : '1',
-      state: 0,
-    });
+    try {
+      const itemId = Number(installation.itemId);
+      if (!itemId && itemId !== 0) {
+        console.warn('@toggleBrush: missing itemId', installation);
+        Installations.isActive = false;
+        destroyMarker(true);
+        return;
+      }
+      // Spawn near parcel center so the brush is visible without requiring a prior pointermove.
+      const parcel = scene.activeParcel;
+      const spawnX = Math.max(0, Math.floor((Number(parcel.size?.width) || 8) / 2) - 1);
+      const spawnY = Math.max(0, Math.floor((Number(parcel.size?.height) || 8) / 2) - 1);
+      const installationId = createInstallationIdByData({
+        parcelId: parcel.id,
+        itemId,
+        x: spawnX,
+        y: spawnY,
+        type: installation.type === 'INSTALLATION' ? '0' : '1',
+        state: 0,
+      });
 
-    scene.buildInstallation = await getAllDataById(installationId);
-    destroyMarker();
-    scene.marker = await spawnSprite(scene.buildInstallation);
-    setMarkerInteractives();
+      scene.buildInstallation = await getAllDataById(installationId);
+      if (!scene.buildInstallation?.typeData || !scene.buildInstallation?.spriteMetadata?.key) {
+        console.warn('@toggleBrush: incomplete installation data', itemId, scene.buildInstallation);
+        Installations.isActive = false;
+        destroyMarker(true);
+        return;
+      }
+      destroyMarker();
+      scene.marker = await spawnSprite(scene.buildInstallation);
+      setMarkerInteractives();
+      // Snap marker onto the parcel immediately (don't wait for pointermove from the inventory sidebar).
+      if (parcel.bounds) {
+        const worldX = (parcel.bounds.x + parcel.bounds.xMax) / 2;
+        const worldY = (parcel.bounds.y + parcel.bounds.yMax) / 2;
+        updateBuildMarkerPosition({ worldX, worldY } as Phaser.Input.Pointer);
+      }
+    } catch (err) {
+      console.error('@toggleBrush failed', installation, err);
+      Installations.isActive = false;
+      destroyMarker(true);
+    }
   } else {
     if (scene.buildInstallation?.isMoving) {
       createByIds([{ id: scene.buildInstallation.isMoving }], { isMove: true });

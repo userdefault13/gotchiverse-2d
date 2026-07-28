@@ -713,11 +713,24 @@ const getJsonAssets = async (key: string): Promise<AnimationConfig> => {
   const textureConfig = allTexturesConfig[key];
   if (!jsonAssets[key]) {
     try {
+      if (!textureConfig?.folder || !textureConfig?.id) {
+        console.warn('@getJsonAssets missing textureConfig:', key);
+        return jsonAssets[key];
+      }
       const { default: jsonData } = await import(`public/animations/${textureConfig.folder}/${textureConfig.id}.json`);
       jsonAssets[key] = jsonData;
-      // console.log('@getJsonAssets: LOAD.. ', key);
     } catch (error) {
-      console.warn('@getJsonAssets LOAD ERROR:', key, error);
+      // Turbopack/webpack dynamic import can miss newly added sheets — fetch public URL.
+      try {
+        const res = await fetch(`/animations/${textureConfig.folder}/${textureConfig.id}.json`);
+        if (res.ok) {
+          jsonAssets[key] = await res.json();
+        } else {
+          console.warn('@getJsonAssets LOAD ERROR:', key, error);
+        }
+      } catch (fetchErr) {
+        console.warn('@getJsonAssets LOAD ERROR:', key, error, fetchErr);
+      }
     }
   }
   return jsonAssets[key];
@@ -802,6 +815,10 @@ const loadTexture = async (texture: TextureConfig): Promise<void> => {
     if (texture.type === 'spritesheet') {
       // it's animation requires json load
       const jsonData = await getJsonAssets(texture.id);
+      if (!jsonData?.tilewidth || !jsonData?.tileheight) {
+        console.error(`@globalLoadTexture: ${texture.id}, missing spritesheet json`);
+        return;
+      }
       config = {
         frameWidth: jsonData.tilewidth,
         frameHeight: jsonData.tileheight,

@@ -42,7 +42,13 @@ export const Inventory = ({ isParcel = true }: Props): JSX.Element => {
       setActiveBrush(undefined, userDispatch);
       return;
     }
-    const installationType = getTypeByItemId(installation.id, installation.type === 'INSTALLATION' ? 0 : 1);
+    const itemId = Number(installation.itemId ?? installation.id);
+    const installationType = getTypeByItemId(itemId, installation.type === 'INSTALLATION' ? 0 : 1);
+    if (!installationType?.itemId && installationType?.itemId !== 0) {
+      console.warn('@Inventory: missing type for brush', itemId, installation);
+      oops();
+      return;
+    }
     Installations.toggleBrush(installationType);
     setActiveBrush(key, userDispatch);
   }
