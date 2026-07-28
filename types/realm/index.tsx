@@ -338,6 +338,7 @@ export interface InstallationTypeLocal {
   alchemicaType?: number;
   level?: number;
   craftTime?: number;
+  alchemicaCost?: number[];
   spillRadius?: number;
   spillRate?: number;
   prerequisites?: number[];

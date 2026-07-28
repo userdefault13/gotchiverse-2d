@@ -1,7 +1,7 @@
 import _ from 'lodash';
 import installationTypes from 'shared_code/data/installationsCatalog';
 import GlobalState from 'contexts/GlobalState';
-import { AlchemicaBalance, Installation, InstallationIdData, Recipe } from 'types';
+import { AlchemicaBalance, Installation, InstallationIdData, InstallationTypeLocal, Recipe } from 'types';
 import { getInstallationIdDataById } from 'shared_code/utils/shared.utils.installations';
 import { getTypeByItemId, setLocalInventory, getLocalInventoryItem } from './installations.helper';
 import { adjustOffchainInventoryQty, getOffchainInventory, setOffchainInventoryQty } from './offchain.store';
@@ -79,7 +79,7 @@ function ensureInventorySlot(itemId: number): Installation | undefined {
   return item;
 }
 
-function toRecipe(item: { itemId: number; name: string; alchemicaCost?: number[]; craftTime?: number; installationType: number; level: number }): Recipe {
+function toRecipe(item: InstallationTypeLocal): Recipe {
   const cost = item.alchemicaCost || [0, 0, 0, 0];
   return {
     id: item.itemId,
