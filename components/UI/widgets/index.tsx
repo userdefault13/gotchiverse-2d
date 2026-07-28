@@ -9,3 +9,4 @@ export * from './PaarcelThumbnail';
 export * from './InstallationThumbnail';
 export * from './SoftCText';
 export * from './MintHoverTip';
+export * from './MintGhostOverlay';

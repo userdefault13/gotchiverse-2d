@@ -83,10 +83,16 @@ import { updateInventory } from 'contexts/UserContext/actions';
 import Image from 'next/image';
 import GameController from 'components/controllers/GameController';
 import _ from 'lodash';
-import { GotchiSVG, MaticNeeded, SoftCText } from 'components/UI/widgets';
+import { GotchiSVG, MaticNeeded, MintGhostOverlay, SoftCText } from 'components/UI/widgets';
 import { PARCELS_BY_TOKEN_ID } from 'shared_code/models/model.realm';
 import { ClosedPortal, GotchiLoading, GotchiverseLogo, LastPositionNoBgIcon, PortalLightningBg } from 'assets';
 import { useGame } from 'contexts/GameContext';
+import { useNotification } from 'contexts/NotificationContext';
+import {
+  showTransactionNotification,
+  updateTransactionNotificationStatus,
+} from 'contexts/NotificationContext/actions';
+import { NotificationStack } from 'components/UI/hud/components';
 import { SpawnLocation } from 'components/UI/structures/SpawnLocation';
 import { SpawnSelector } from 'components/UI/sections';
 import useMediaQuery from 'hooks/useMediaQuery';
@@ -107,6 +113,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
   const [{ gameConfig }] = useGame();
   const [{ hasCartridge, cartridgeId, cartridgeHeroes, userAavegotchis, wearableInventory, ownedParcels, parcelInventory }, userDispatch] =
     useUser();
+  const [, notificationDispatch] = useNotification();
 
   const { portalOpen, sending } = useAavegotchiSound();
 
@@ -133,6 +140,8 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
   const [cartridgeSideUrls, setCartridgeSideUrls] = useState<[string, string, string, string] | null>(null);
   const [minting, setMinting] = useState(false);
   const [mintError, setMintError] = useState<string | null>(null);
+  /** Full-screen loading ghost + progress while minting cAavegotchis. */
+  const [mintGhost, setMintGhost] = useState<{ label: string; progress: number } | null>(null);
   /** cWearables manage cart — distinct source instances (by row.key). */
   const [wearableCartRows, setWearableCartRows] = useState<MintableWearableRow[]>([]);
   /** cPaarcels manage cart. */
@@ -543,10 +552,18 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
       }
       return;
     }
+    const label = selectedCollateral.maticDisplay || selectedCollateral.name;
     setMinting(true);
     setMintError(null);
+    setMintGhost({ label: `Binding ${label}…`, progress: 18 });
+    const notifId = showTransactionNotification(notificationDispatch, {
+      message: 'cAavegotchi',
+      title: `Binding ${label}`,
+      options: { sound: true },
+    });
     try {
       // $5 USDC sim not live — bind still runs without charge.
+      setMintGhost({ label: `Binding ${label}…`, progress: 55 });
       const result = await bindAarcadeStarter(currentAccount, selectedCollateral.name, {
         network: currentNetwork,
       });
@@ -554,14 +571,19 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
         const msg = result.error || 'Bind failed';
         setMintError(msg);
         toast.error(msg, { theme: 'dark' });
+        updateTransactionNotificationStatus(notificationDispatch, notifId, 'error', msg);
         return;
       }
+      setMintGhost({ label: 'Syncing cartridge…', progress: 88 });
       const heroes = await syncCartridgeFromResult(result);
-      toast.success(
+      setMintGhost({ label: 'Bound!', progress: 100 });
+      updateTransactionNotificationStatus(
+        notificationDispatch,
+        notifId,
+        'success',
         result.alreadyBound
-          ? 'cAavegotchi already bound'
-          : `Bound ${selectedCollateral.maticDisplay || selectedCollateral.name} ($5 USDC sim — not charged)`,
-        { theme: 'dark' },
+          ? 'Already bound'
+          : `Bound ${label} ($5 USDC sim — not charged)`,
       );
       resetMintFlow();
       const bound =
@@ -571,7 +593,12 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
       if (bound) {
         handleGotchiSelect(mapCartridgeHeroToGotchi(bound, currentAccount));
       }
+    } catch (e) {
+      const msg = (e as Error)?.message || 'Bind failed';
+      setMintError(msg);
+      updateTransactionNotificationStatus(notificationDispatch, notifId, 'error', msg);
     } finally {
+      setMintGhost(null);
       setMinting(false);
     }
   };
@@ -641,24 +668,27 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
       return;
     }
     const withWearables = opts?.withWearables !== false;
+    const tokenLabel = `#${selectedWalletGotchi.id}`;
     setMinting(true);
     setMintError(null);
+    setMintGhost({ label: `Minting ${tokenLabel}…`, progress: 12 });
+    const notifId = showTransactionNotification(notificationDispatch, {
+      message: 'cAavegotchi',
+      title: `Minting ${tokenLabel}`,
+      options: { sound: true },
+    });
     try {
       const result = await bindWalletGotchi(selectedWalletGotchi);
       if (!result.ok || !result.cartridgeId) {
         const msg = result.error || 'Mint failed';
         setMintError(msg);
         toast.error(msg, { theme: 'dark' });
+        updateTransactionNotificationStatus(notificationDispatch, notifId, 'error', msg);
         return;
       }
+      setMintGhost({ label: `Syncing ${tokenLabel}…`, progress: 45 });
       const heroes = await syncCartridgeFromResult(result);
       const role = selectedWalletGotchi.isLent ? 'borrower' : 'owner';
-      toast.success(
-        result.alreadyBound
-          ? `Already minted #${selectedWalletGotchi.id}`
-          : `Minted #${selectedWalletGotchi.id} free (${role})`,
-        { theme: 'dark' },
-      );
       const bound =
         heroes.find((h) => String(h.sourceTokenId) === String(selectedWalletGotchi.id)) ||
         heroes[heroes.length - 1] ||
@@ -666,26 +696,53 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
       const bindKind = selectedWalletGotchi.isLent ? 'rental' : 'owned';
       const gear = listEquippedWearableSlots(selectedWalletGotchi, bindKind);
       if (withWearables && gear.length > 0) {
-        toast.info(`Minting & equipping ${gear.length} wearable${gear.length === 1 ? '' : 's'}…`, {
-          theme: 'dark',
+        setMintGhost({
+          label: `Minting wearables for ${tokenLabel}…`,
+          progress: 68,
         });
         const wear = await importAndEquipForGotchi(selectedWalletGotchi, bound, result.cartridgeId);
         if (!wear.ok) {
           setMintError(wear.error || 'Wearable mint/equip failed');
           toast.error(wear.error || 'Wearable mint/equip failed', { theme: 'dark' });
+          updateTransactionNotificationStatus(
+            notificationDispatch,
+            notifId,
+            'error',
+            wear.error || 'Wearable mint/equip failed',
+          );
           // Gotchi minted; leave player on the hero even if gear failed.
           finishWithHero(bound);
           return;
         }
-        toast.success(
-          `Equipped ${wear.equipped} cWearable${wear.equipped === 1 ? '' : 's'}${
-            wear.imported ? ` · ${wear.imported} newly minted` : ''
-          }${wear.alreadyMinted ? ` · ${wear.alreadyMinted} already owned` : ''}`,
-          { theme: 'dark' },
+        setMintGhost({ label: 'Equipping wearables…', progress: 92 });
+        updateTransactionNotificationStatus(
+          notificationDispatch,
+          notifId,
+          'success',
+          result.alreadyBound
+            ? `Already minted ${tokenLabel}`
+            : `Minted ${tokenLabel} free (${role}) · ${wear.equipped} wearable${
+                wear.equipped === 1 ? '' : 's'
+              }`,
+        );
+      } else {
+        setMintGhost({ label: 'Minted!', progress: 100 });
+        updateTransactionNotificationStatus(
+          notificationDispatch,
+          notifId,
+          'success',
+          result.alreadyBound
+            ? `Already minted ${tokenLabel}`
+            : `Minted ${tokenLabel} free (${role})`,
         );
       }
       finishWithHero(bound);
+    } catch (e) {
+      const msg = (e as Error)?.message || 'Mint failed';
+      setMintError(msg);
+      updateTransactionNotificationStatus(notificationDispatch, notifId, 'error', msg);
     } finally {
+      setMintGhost(null);
       setMinting(false);
     }
   };
@@ -709,20 +766,33 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
 
     setMinting(true);
     setMintError(null);
+    setMintGhost({ label: `Minting owned 1/${queue.length}…`, progress: 4 });
+    const notifId = showTransactionNotification(notificationDispatch, {
+      message: 'cAavegotchi',
+      title: `Minting ${queue.length} owned`,
+      options: { sound: true },
+    });
     let okCount = 0;
     let skipCount = 0;
     let gearMinted = 0;
     let gearEquipped = 0;
     let lastHeroes: CartridgeHero[] = cartridgeHeroes || [];
+    let failed = false;
     try {
       for (let i = 0; i < queue.length; i++) {
         const gotchi = queue[i];
-        toast.info(`Minting owned ${i + 1}/${queue.length} · #${gotchi.id}`, { theme: 'dark' });
+        const stepPct = Math.round(((i + 0.35) / queue.length) * 100);
+        setMintGhost({
+          label: `Minting owned ${i + 1}/${queue.length} · #${gotchi.id}`,
+          progress: Math.min(96, Math.max(6, stepPct)),
+        });
         const result = await bindWalletGotchi(gotchi);
         if (!result.ok || !result.cartridgeId) {
           const msg = result.error || `Failed on #${gotchi.id}`;
           setMintError(msg);
           toast.error(msg, { theme: 'dark' });
+          updateTransactionNotificationStatus(notificationDispatch, notifId, 'error', msg);
+          failed = true;
           break;
         }
         lastHeroes = await syncCartridgeFromResult(result);
@@ -730,38 +800,55 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
         else okCount += 1;
 
         if (withWearables) {
+          setMintGhost({
+            label: `Wearables ${i + 1}/${queue.length} · #${gotchi.id}`,
+            progress: Math.min(98, Math.round(((i + 0.75) / queue.length) * 100)),
+          });
           const bound =
             lastHeroes.find((h) => String(h.sourceTokenId) === String(gotchi.id)) ||
             lastHeroes[lastHeroes.length - 1] ||
             null;
           const wear = await importAndEquipForGotchi(gotchi, bound, result.cartridgeId);
           if (!wear.ok) {
-            setMintError(wear.error || `Wearables failed on #${gotchi.id}`);
-            toast.error(wear.error || `Wearables failed on #${gotchi.id}`, { theme: 'dark' });
+            const msg = wear.error || `Wearables failed on #${gotchi.id}`;
+            setMintError(msg);
+            toast.error(msg, { theme: 'dark' });
+            updateTransactionNotificationStatus(notificationDispatch, notifId, 'error', msg);
+            failed = true;
             break;
           }
           gearMinted += wear.imported;
           gearEquipped += wear.equipped;
         }
       }
-      if (okCount + skipCount > 0) {
-        toast.success(
-          `Minted ${okCount} owned gotchi${okCount === 1 ? '' : 's'}${
+      if (!failed && okCount + skipCount > 0) {
+        setMintGhost({ label: 'Mint complete!', progress: 100 });
+        updateTransactionNotificationStatus(
+          notificationDispatch,
+          notifId,
+          'success',
+          `Minted ${okCount} owned${
             skipCount ? ` · ${skipCount} already on cartridge` : ''
           }${
             withWearables && gearEquipped
-              ? ` · ${gearEquipped} wearables equipped (${gearMinted} new)`
+              ? ` · ${gearEquipped} wearables (${gearMinted} new)`
               : ''
           }`,
-          { theme: 'dark' },
         );
+      } else if (!failed) {
+        updateTransactionNotificationStatus(notificationDispatch, notifId, 'error', 'Nothing minted');
       }
       if (lastHeroes.length > 0 && okCount > 0) {
         resetMintFlow();
         const last = lastHeroes[lastHeroes.length - 1];
         handleGotchiSelect(mapCartridgeHeroToGotchi(last, currentAccount));
       }
+    } catch (e) {
+      const msg = (e as Error)?.message || 'Mint failed';
+      setMintError(msg);
+      updateTransactionNotificationStatus(notificationDispatch, notifId, 'error', msg);
     } finally {
+      setMintGhost(null);
       setMinting(false);
     }
   };
@@ -1311,6 +1398,12 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
 
   return (
     <>
+      <NotificationStack />
+      <MintGhostOverlay
+        open={Boolean(mintGhost)}
+        label={mintGhost?.label}
+        progress={mintGhost?.progress}
+      />
       <ModalWrapper
         open={!!selectedGotchi}
         onClose={() => {
