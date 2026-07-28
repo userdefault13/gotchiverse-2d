@@ -15,6 +15,7 @@ import { InventoryFilter } from '../InventoryFilter';
 import { scene } from 'components/controllers/SceneController';
 import { Pointer } from 'assets';
 import { InventoryCard } from 'components/UI/component';
+import { isLocalOffchainItemId } from 'helpers/lodge.helper';
 
 interface Props {
   isParcel?: boolean;
@@ -68,7 +69,7 @@ export const Inventory = ({ isParcel = true }: Props): JSX.Element => {
       return getTypeById(id)?.installationType === 0;
     });
 
-    if (!equippedAaltar.length && installation.itemType !== 0) {
+    if (!equippedAaltar.length && installation.itemType !== 0 && !isLocalOffchainItemId(installation.id)) {
       return {
         state: true,
       };

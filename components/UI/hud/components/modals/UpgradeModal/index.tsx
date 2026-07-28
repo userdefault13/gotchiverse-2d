@@ -31,6 +31,7 @@ import {
   isLodgeInstallationId,
   isLodgeItemId,
 } from 'helpers/lodge.helper';
+import { getLocalStoreUpgradeInfo, isStoreInstallationId, isStoreItemId } from 'helpers/store.installation.helper';
 import Installations from 'components/phaser/Installations';
 
 interface CurrentUpgrade {
@@ -86,9 +87,13 @@ export const UpgradeModal = (): JSX.Element => {
   };
 
   const fetchContractRecipe = async (network: NetworkNames, provider: providers.Provider, id: number): Promise<NextUpgrade> => {
-    // Local Waalls / Lodges are not on InstallationDiamond — load from catalog.
+    // Local Waalls / Lodges / Stores are not on InstallationDiamond — load from catalog.
     if (isLocalOffchainItemId(id)) {
-      const info = isLodgeItemId(id) ? getLocalLodgeUpgradeInfo(id) : getLocalWaallUpgradeInfo(id);
+      const info = isStoreItemId(id)
+        ? getLocalStoreUpgradeInfo(id)
+        : isLodgeItemId(id)
+          ? getLocalLodgeUpgradeInfo(id)
+          : getLocalWaallUpgradeInfo(id);
       if (!info) return;
       setSelectedInstallation(info.current);
       if (!info.next) {
@@ -168,9 +173,13 @@ export const UpgradeModal = (): JSX.Element => {
     });
     let tx;
     try {
-      // Local Waall / Lodge upgrade — instant, no diamond.
+      // Local Waall / Lodge / Store upgrade — instant, no diamond.
       if (isLocalOffchainInstallationId(upgradeModal.installationId)) {
-        const label = isLodgeInstallationId(upgradeModal.installationId) ? 'Lodge' : 'Waall';
+        const label = isStoreInstallationId(upgradeModal.installationId)
+          ? 'Store'
+          : isLodgeInstallationId(upgradeModal.installationId)
+            ? 'Lodge'
+            : 'Waall';
         if (!nextUpgrade) {
           updateTransactionNotificationStatus(notificationDispatch, id, 'error', `No next ${label} level`);
           setLoading(false);
@@ -189,9 +198,11 @@ export const UpgradeModal = (): JSX.Element => {
           alpha: alchemicaBalance.alpha - Number(cost[2] || 0),
           kek: alchemicaBalance.kek - Number(cost[3] || 0),
         };
-        const result = isLodgeInstallationId(upgradeModal.installationId)
-          ? await Installations.upgradeLocalLodge(upgradeModal.installationId)
-          : await Installations.upgradeLocalWaall(upgradeModal.installationId);
+        const result = isStoreInstallationId(upgradeModal.installationId)
+          ? await Installations.upgradeLocalStore(upgradeModal.installationId)
+          : isLodgeInstallationId(upgradeModal.installationId)
+            ? await Installations.upgradeLocalLodge(upgradeModal.installationId)
+            : await Installations.upgradeLocalWaall(upgradeModal.installationId);
         if (!result.ok) {
           updateTransactionNotificationStatus(notificationDispatch, id, 'error', result.message);
           setLoading(false);

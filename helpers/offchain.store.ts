@@ -14,14 +14,15 @@ export type OffchainState = {
 
 const LEGACY_WAALL_INV = 'gotchiverse.waall.inventory.v1';
 const LEGACY_LODGE_INV = 'gotchiverse.lodge.inventory.v1';
+const LEGACY_STORE_INV = 'gotchiverse.store.inventory.v1';
 const LEGACY_PLACEMENTS = 'gotchiverse.offchain.placements.v1';
 const FLUSH_MS = 1500;
 
-/** Waall 162–170 + Lodge 171–179 — keep inline to avoid circular imports with lodge.helper. */
+/** Waall 162–170 + Lodge 171–179 + Store 180–188 — keep inline to avoid circular imports. */
 function isOffchainInstallationId(id: string): boolean {
   try {
     const itemId = Number(String(id).split('_')[1]);
-    return itemId >= 162 && itemId <= 179;
+    return (itemId >= 162 && itemId <= 179) || (itemId >= 180 && itemId <= 188);
   } catch {
     return false;
   }
@@ -65,22 +66,26 @@ function writeJson(key: string, value: unknown) {
 function mirrorLocalStorage(next: OffchainState) {
   const waall: Record<string, number> = {};
   const lodge: Record<string, number> = {};
+  const store: Record<string, number> = {};
   for (const [id, qty] of Object.entries(next.inventory)) {
     const n = Number(id);
     if (n >= 162 && n <= 170) waall[id] = qty;
     else if (n >= 171 && n <= 179) lodge[id] = qty;
+    else if (n >= 180 && n <= 188) store[id] = qty;
   }
   writeJson(LEGACY_WAALL_INV, waall);
   writeJson(LEGACY_LODGE_INV, lodge);
+  writeJson(LEGACY_STORE_INV, store);
   writeJson(LEGACY_PLACEMENTS, next.placements);
 }
 
 function seedFromLocalStorage(): OffchainState {
   const waall = readJson<Record<string, number>>(LEGACY_WAALL_INV, {});
   const lodge = readJson<Record<string, number>>(LEGACY_LODGE_INV, {});
+  const store = readJson<Record<string, number>>(LEGACY_STORE_INV, {});
   const placements = readJson<Record<string, string[]>>(LEGACY_PLACEMENTS, {});
   return {
-    inventory: { ...waall, ...lodge },
+    inventory: { ...waall, ...lodge, ...store },
     placements: placements || {},
   };
 }

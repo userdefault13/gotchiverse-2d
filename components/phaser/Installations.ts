@@ -96,7 +96,7 @@ import {
   isLocalOffchainItemId,
   syncLodgeInventoryFromScene,
 } from 'helpers/lodge.helper';
-import { isStoreItemId, syncStoreInventoryFromScene } from 'helpers/store.installation.helper';
+import { getLocalStoreUpgradeInfo, isStoreInstallationId, isStoreItemId, syncStoreInventoryFromScene } from 'helpers/store.installation.helper';
 import {
   readOffchainPlacements,
   removeOffchainPlacement,
@@ -126,6 +126,7 @@ interface InstallationInterface {
   handleBatchEquip: () => void;
   upgradeLocalWaall: (installationId: string) => Promise<{ ok: boolean; message: string; nextId?: string }>;
   upgradeLocalLodge: (installationId: string) => Promise<{ ok: boolean; message: string; nextId?: string }>;
+  upgradeLocalStore: (installationId: string) => Promise<{ ok: boolean; message: string; nextId?: string }>;
   updatePlaceQueue: (id: string, action: 'EQUIP' | 'UNEQUIP' | 'CANCEL') => void;
   resetStates: () => void;
   tryInteractActive: () => boolean;
@@ -955,6 +956,7 @@ const updatePlaceQueue = (id: string, action: 'EQUIP' | 'UNEQUIP' | 'CANCEL') =>
       setLocalInventory(isntallationData.itemId, isntallationData.type, -1);
       if (isWaallInstallationId(id)) syncWaallInventoryFromScene(isntallationData.itemId);
       if (isLodgeInstallationId(id)) syncLodgeInventoryFromScene(isntallationData.itemId);
+      if (isStoreInstallationId(id)) syncStoreInventoryFromScene(isntallationData.itemId);
       // disable activeBrush if no quantity
       scene.batchQueue = _.concat(scene.batchQueue, [{ id, action }]);
       break;
@@ -970,6 +972,7 @@ const updatePlaceQueue = (id: string, action: 'EQUIP' | 'UNEQUIP' | 'CANCEL') =>
         setLocalInventory(isntallationData.itemId, isntallationData.type, 1);
         if (isWaallInstallationId(id)) syncWaallInventoryFromScene(isntallationData.itemId);
         if (isLodgeInstallationId(id)) syncLodgeInventoryFromScene(isntallationData.itemId);
+        if (isStoreInstallationId(id)) syncStoreInventoryFromScene(isntallationData.itemId);
       }
       if (_.find(scene.batchQueue, (item) => item.id === id)?.action === 'UNEQUIP') {
         createByIds([{ id }]);
@@ -1598,6 +1601,33 @@ const upgradeLocalLodge = async (installationId: string): Promise<{ ok: boolean;
   return { ok: true, message: `Upgraded to ${info.next.name}`, nextId };
 };
 
+const upgradeLocalStore = async (installationId: string): Promise<{ ok: boolean; message: string; nextId?: string }> => {
+  if (!isStoreInstallationId(installationId)) return { ok: false, message: 'Not a Store' };
+  const data = getInstallationIdDataById(installationId) as unknown as InstallationIdData;
+  const info = getLocalStoreUpgradeInfo(data.itemId);
+  if (!info?.next) return { ok: false, message: 'Store is already max level' };
+
+  const nextId = createInstallationIdByData({
+    parcelId: data.parcelId,
+    itemId: info.next.id,
+    x: data.position.x,
+    y: data.position.y,
+    type: '0',
+    state: 0,
+  });
+
+  removeInstallationBuildModeUI(scene.installationGroup.get(installationId));
+  updateGridById(installationId);
+  destroyByIds([{ id: installationId }], true);
+  updateGridById(nextId);
+  await createByIds([{ id: nextId }]);
+  removeOffchainPlacement(installationId);
+  upsertOffchainPlacement(nextId);
+  void flushOffchainStore();
+  SFXController.playFX('send');
+  return { ok: true, message: `Upgraded to ${info.next.name}`, nextId };
+};
+
 const finalizeLocalOffchainBatchItems = (items: { id: string; action: string }[]) => {
   _.each(items, ({ id, action }) => {
     uiContainers[`${id}-cancel`]?.destroy();
@@ -2067,6 +2097,7 @@ const Installations: InstallationInterface = {
   resetStates,
   upgradeLocalWaall,
   upgradeLocalLodge,
+  upgradeLocalStore,
   tryInteractActive,
 };
 

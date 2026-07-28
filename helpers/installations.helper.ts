@@ -328,7 +328,7 @@ export const isUpgradable = (id: string): boolean => {
     installationType !== 5 &&
     installationType !== 8 &&
     installationType !== 7 &&
-    installationType !== 9 &&
+    // Soft-launch Shelf/Cashier furniture (type 10) is not parcel-upgradable.
     installationType !== 10
   );
 };
