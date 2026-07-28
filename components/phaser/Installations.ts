@@ -195,24 +195,29 @@ const spawnSprite = async (installationData: InstallationMetadata, options?: Cre
       offset.x = -32;
       offset.y = -100;
     }
+    const footprintW = width * GOTCHI_SIZE.UNIT;
+    const footprintH = height * GOTCHI_SIZE.UNIT;
+    const isStore = Number(installationType) === 9 || key === 'store';
+    // Store sheet is 256×256 on a 2×2 (128×128) pad — scale to footprint so placer outline matches the grid
+    // (Bounce Gate keeps native 256 art + tileset offset; Store cottage needs an exact pad fit).
+    if (isStore) {
+      offset.x = 0;
+      offset.y = 0;
+    }
     // Always top-left origin on the footprint — do not use tileset originX/Y here
     // (those values break marker sizing / grid snap when non-zero, e.g. aaltar 0.3/0.6).
-    // Soft-launch Store (256 art on 2×2): seat like Waall so the brush is visible on the tile.
-    if (Number(installationType) === 9 || key === 'store') {
-      offset.x = -64;
-      offset.y = -128;
-    }
     const textureOk = key && scene.textures.exists(key) && scene.textures.get(key)?.key !== '__MISSING';
     if (textureOk) {
       installationImage = scene.add
-        .sprite((-width * GOTCHI_SIZE.UNIT) / 2 + offset.x, (-height * GOTCHI_SIZE.UNIT) / 2 + offset.y, key, frame || 0)
+        .sprite(-footprintW / 2 + offset.x, -footprintH / 2 + offset.y, key, frame || 0)
         .setOrigin(0);
+      if (isStore) {
+        installationImage.setDisplaySize(footprintW, footprintH);
+      }
     } else {
       // Visible fallback so build brush is never an empty green outline.
       console.warn('@spawnSprite: missing texture, using placeholder', key, itemId);
-      const w = width * GOTCHI_SIZE.UNIT;
-      const h = height * GOTCHI_SIZE.UNIT;
-      installationImage = scene.add.rectangle(0, 0, w, h, 0xff66cc, 0.55).setStrokeStyle(2, 0xffffff);
+      installationImage = scene.add.rectangle(0, 0, footprintW, footprintH, 0xff66cc, 0.55).setStrokeStyle(2, 0xffffff);
       installationImage.setName('sprite');
     }
   } else {
@@ -239,8 +244,8 @@ const spawnSprite = async (installationData: InstallationMetadata, options?: Cre
     .setDataEnabled();
 
   // Waalls: keep a 1×1 footprint hitbox centered on the cell (same as other installs).
-  // Lodges: footprint matches type width/height (5×6) centered on the cell.
-  if ((Number(installationType) === 3 || Number(installationType) === 4) && type === 'INSTALLATION') {
+  // Lodges / Stores: footprint matches type width/height centered on the cell.
+  if ((Number(installationType) === 3 || Number(installationType) === 4 || Number(installationType) === 9) && type === 'INSTALLATION') {
     const hitW = width * GOTCHI_SIZE.UNIT;
     const hitH = height * GOTCHI_SIZE.UNIT;
     installationContainer.setSize(hitW, hitH);
