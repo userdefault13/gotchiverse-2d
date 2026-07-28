@@ -181,9 +181,10 @@ const installationList: TextureConfig[] = [
   { id: '143', preload: true },
   { id: '144', preload: true },
   { id: '145', preload: true },
-  { id: 'store', preload: true },
-  { id: 'cashier', preload: true },
-  { id: 'shelf', preload: true },
+  // Soft-launch sheets live in this app's /public — not on verse-static CDN.
+  { id: 'store', preload: true, local: true },
+  { id: 'cashier', preload: true, local: true },
+  { id: 'shelf', preload: true, local: true },
   { id: '157', preload: true },
   { id: '158', preload: true },
   { id: '159', preload: true },
@@ -748,6 +749,7 @@ interface assetLoaderInterface {
   getJsonAssets: (key) => any;
   checkTexture: (key: string, url: string, type: string) => Promise<boolean>;
   checkLocalTexture: (key: string) => Promise<boolean>;
+  ensureSpritesheet: (key: string, folder: string, frameWidth: number, frameHeight: number) => Promise<boolean>;
   loadPlugins: () => Promise<void>;
 }
 
@@ -816,16 +818,25 @@ const loadTexture = async (texture: TextureConfig): Promise<void> => {
       // it's animation requires json load
       const jsonData = await getJsonAssets(texture.id);
       if (!jsonData?.tilewidth || !jsonData?.tileheight) {
-        console.error(`@globalLoadTexture: ${texture.id}, missing spritesheet json`);
-        return;
+        // Soft-launch local sheets: still load PNG with known frame size if JSON import missed.
+        if (texture.local && (texture.id === 'store' || texture.id === 'cashier')) {
+          config = { frameWidth: 256, frameHeight: 256 };
+        } else if (texture.local && texture.id === 'shelf') {
+          config = { frameWidth: 256, frameHeight: 256 };
+        } else {
+          console.error(`@globalLoadTexture: ${texture.id}, missing spritesheet json`);
+          return;
+        }
+      } else {
+        config = {
+          frameWidth: jsonData.tilewidth,
+          frameHeight: jsonData.tileheight,
+        };
       }
-      config = {
-        frameWidth: jsonData.tilewidth,
-        frameHeight: jsonData.tileheight,
-      };
       filePath = `animations/${texture.folder}`;
     }
-    scene.load[texture.type](texture.id, `${staticAssetPrefix}${filePath}/${texture.id}.png`, config);
+    const prefix = texture.local ? '/' : staticAssetPrefix;
+    scene.load[texture.type](texture.id, `${prefix}${filePath}/${texture.id}.png`, config);
     // console.log('textureLoaded:', texture);
   } catch (error) {
     console.error(`@globalLoadTexture: ${texture.id}, could not be loaded `, error);
@@ -916,8 +927,60 @@ const checkLocalTexture = async (key: string): Promise<boolean> => {
     const onComplete = () => finish(true);
     scene.load.on(event, onComplete);
     // Avoid hanging forever if the asset 404s.
-    setTimeout(() => finish(scene.textures.exists(key)), 8000);
+    setTimeout(() => finish(scene.textures.exists(key) && scene.textures.get(key)?.key !== '__MISSING'), 8000);
   });
+};
+
+/**
+ * Force-load a spritesheet from /public when dynamic JSON import failed at preload.
+ * Used for soft-launch sheets (store/cashier/shelf) that must not fall back to a pink rect.
+ */
+const ensureSpritesheet = async (
+  key: string,
+  folder: string,
+  frameWidth: number,
+  frameHeight: number,
+): Promise<boolean> => {
+  try {
+    const tex = scene.textures.exists(key) ? scene.textures.get(key) : null;
+    if (tex && tex.key !== '__MISSING' && (tex.frameTotal ?? 0) > 0) return true;
+    if (tex) {
+      try {
+        scene.textures.remove(key);
+      } catch {
+        /* ignore */
+      }
+    }
+
+    const cfg = allTexturesConfig[key] as TextureConfig | undefined;
+    const prefix = cfg?.local ? '/' : staticAssetPrefix;
+    const url = `${prefix}animations/${folder}/${key}.png`;
+    return await new Promise((resolve) => {
+      let settled = false;
+      const finish = (ok: boolean) => {
+        if (settled) return;
+        settled = true;
+        scene.load.off(`filecomplete-spritesheet-${key}`, onOk);
+        scene.load.off('loaderror', onErr);
+        resolve(ok);
+      };
+      const onOk = () => finish(true);
+      const onErr = (file: { key?: string }) => {
+        if (!file?.key || file.key === key) finish(false);
+      };
+      scene.load.spritesheet(key, url, { frameWidth, frameHeight });
+      scene.load.once(`filecomplete-spritesheet-${key}`, onOk);
+      scene.load.once('loaderror', onErr);
+      scene.load.start();
+      setTimeout(() => {
+        const t = scene.textures.exists(key) ? scene.textures.get(key) : null;
+        finish(Boolean(t && t.key !== '__MISSING' && (t.frameTotal ?? 0) > 0));
+      }, 6000);
+    });
+  } catch (e) {
+    console.warn('@ensureSpritesheet failed', key, e);
+    return false;
+  }
 };
 
 const AssetsController: assetLoaderInterface = {
@@ -928,6 +991,7 @@ const AssetsController: assetLoaderInterface = {
   getJsonAssets,
   checkTexture,
   checkLocalTexture,
+  ensureSpritesheet,
   loadPlugins,
   jsonAssets,
   allSoundsConfig,

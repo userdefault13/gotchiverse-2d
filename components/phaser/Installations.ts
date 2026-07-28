@@ -203,10 +203,14 @@ const spawnSprite = async (installationData: InstallationMetadata, options?: Cre
     if (isStore) {
       offset.x = 0;
       offset.y = 0;
+      // Production CDN (verse-static) does not host soft-launch store.png — load from this app.
+      await AssetsController.ensureSpritesheet('store', 'installations', 256, 256);
     }
     // Always top-left origin on the footprint — do not use tileset originX/Y here
     // (those values break marker sizing / grid snap when non-zero, e.g. aaltar 0.3/0.6).
-    const textureOk = key && scene.textures.exists(key) && scene.textures.get(key)?.key !== '__MISSING';
+    let textureOk = key && scene.textures.exists(key) && scene.textures.get(key)?.key !== '__MISSING';
+    if (textureOk && (scene.textures.get(key).frameTotal ?? 0) < 1) textureOk = false;
+
     if (textureOk) {
       installationImage = scene.add
         .sprite(-footprintW / 2 + offset.x, -footprintH / 2 + offset.y, key, frame || 0)
@@ -214,8 +218,21 @@ const spawnSprite = async (installationData: InstallationMetadata, options?: Cre
       if (isStore) {
         installationImage.setDisplaySize(footprintW, footprintH);
       }
+    } else if (isStore) {
+      // Last resort: UI thumb that is already served from this app's /public.
+      const thumbKey = 'store_thumb_180';
+      if (!scene.textures.exists(thumbKey)) {
+        await AssetsController.checkTexture(thumbKey, '/images/installations/png/180.png', 'image');
+      }
+      if (scene.textures.exists(thumbKey) && scene.textures.get(thumbKey)?.key !== '__MISSING') {
+        installationImage = scene.add.image(-footprintW / 2, -footprintH / 2, thumbKey).setOrigin(0);
+        installationImage.setDisplaySize(footprintW, footprintH);
+      } else {
+        console.warn('@spawnSprite: store texture missing after local load', key, itemId);
+        installationImage = scene.add.rectangle(0, 0, footprintW, footprintH, 0xff66cc, 0.55).setStrokeStyle(2, 0xffffff);
+      }
+      installationImage.setName('sprite');
     } else {
-      // Visible fallback so build brush is never an empty green outline.
       console.warn('@spawnSprite: missing texture, using placeholder', key, itemId);
       installationImage = scene.add.rectangle(0, 0, footprintW, footprintH, 0xff66cc, 0.55).setStrokeStyle(2, 0xffffff);
       installationImage.setName('sprite');

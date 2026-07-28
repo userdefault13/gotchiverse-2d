@@ -32,6 +32,8 @@ export interface TextureConfig {
   folder?: string;
   animationConfig?: AnimConfig;
   json?: any;
+  /** Load from this app's /public (not verse-static CDN). Soft-launch sheets. */
+  local?: boolean;
 }
 
 export interface AnimConfig {
