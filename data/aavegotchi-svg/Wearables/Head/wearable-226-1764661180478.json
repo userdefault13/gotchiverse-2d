@@ -1,0 +1,61 @@
+{
+  "id": 226,
+  "name": "Red Headband",
+  "slot": 3,
+  "slotName": "Head",
+  "category": 0,
+  "description": "",
+  "author": "xibot",
+  "traitModifiers": [
+    2,
+    -1,
+    0,
+    0,
+    0,
+    0
+  ],
+  "slotPositions": [
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "allowedCollaterals": [],
+  "dimensions": {
+    "x": 15,
+    "y": 14,
+    "width": 34,
+    "height": 6
+  },
+  "svgId": 226,
+  "rarityScoreModifier": 5,
+  "minLevel": 1,
+  "rarity": "Common",
+  "ghstPrice": "100",
+  "maxQuantity": "250",
+  "totalQuantity": "250",
+  "canPurchaseWithGhst": false,
+  "canBeTransferred": true,
+  "kinshipBonus": 0,
+  "experienceBonus": 0,
+  "svgs": [
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-head\"><svg x=\"15\" y=\"14\"><path d=\"M0 0v6h34V0H0z\" fill=\"red\"/><path d=\"M0 2v2h34V2H0z\"/></svg></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-head\"><svg x=\"20\" y=\"14\"><path d=\"M0 0v6h24V0H0z\" fill=\"red\"/><path d=\"M0 2v2h24V2H0z\"/></svg></g><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M33 40v1h-1v-1h1z\"/><path d=\"M29,42v1h2v-1h1v-1h-1v1H29z\"/><path d=\"M29 43v1h-4v-1h4z\"/></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-head\"><svg x=\"20\" y=\"14\"><path d=\"M0 0v6h24V0H0z\" fill=\"red\"/><path d=\"M0 2v2h24V2H0z\"/></svg></g><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M32 40v1h-1v-1h1z\"/><path d=\"M33 42v-1h-1v1h1v1h2v-1h-2z\"/><path d=\"M39 43v1h-4v-1h4z\"/></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-head\"><svg x=\"15\" y=\"14\"><path d=\"M0 0v6h34V0H0z\" fill=\"red\"/><path d=\"M0 2v2h34V2H0z\"/></svg></g></svg>"
+  ],
+  "sleevesUp": [],
+  "sleevesDown": []
+}

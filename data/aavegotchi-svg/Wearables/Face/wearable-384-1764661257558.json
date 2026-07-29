@@ -1,0 +1,61 @@
+{
+  "id": 384,
+  "name": "Faangs",
+  "slot": 1,
+  "slotName": "Face",
+  "category": 0,
+  "description": "",
+  "author": "xibot",
+  "traitModifiers": [
+    0,
+    0,
+    5,
+    0,
+    0,
+    0
+  ],
+  "slotPositions": [
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "allowedCollaterals": [],
+  "dimensions": {
+    "x": 20,
+    "y": 31,
+    "width": 24,
+    "height": 8
+  },
+  "svgId": 384,
+  "rarityScoreModifier": 20,
+  "minLevel": 1,
+  "rarity": "Uncommon",
+  "ghstPrice": "2000",
+  "maxQuantity": "50",
+  "totalQuantity": "50",
+  "canPurchaseWithGhst": false,
+  "canBeTransferred": true,
+  "kinshipBonus": 0,
+  "experienceBonus": 0,
+  "svgs": [
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-face\"><svg x=\"20\" y=\"31\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"8\" xmlns:v=\"https://vecta.io/nano\"><path d=\"M23 1V0H1v1H0v2h1v1h1v1h1v1h1v1h4v1h8V7h4V6h1V5h1V4h1V3h1V1z\" fill=\"#ff1dff\"/><path d=\"M23 1H1v2h1v1h1v1h1v1h4v1h8V6h4V5h1V4h1V3h1z\"/><path d=\"M10 6H9v1h2V5h-1zm4-1h-1v2h2V6h-1zM7 2H6v4h2V4H7zM3 3h1v1h1V1H3zm6 1h1V1H8v2h1zm2-3h2v3h-2zm5 0h-2v3h1V3h1zm3 0v3h1V3h1V1zm-2 3h-1v2h2V2h-1z\" fill=\"#fff\"/></svg></svg></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-face\"><svg x=\"20\" y=\"31\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"5\" height=\"7\" xmlns:v=\"https://vecta.io/nano\"><path d=\"M4 0v1h1v2H4v1H3v1H2v1H1v1H0V0h4z\" fill=\"#ff1dff\"/><path d=\"M4 1v2H3v1H2v1H1v1H0V1z\"/><path d=\"M2 3H1v1H0V1h2z\" fill=\"#fff\"/></svg></svg></g><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M33 40v1h-1v-1h1z\"/><path d=\"M29,42v1h2v-1h1v-1h-1v1H29z\"/><path d=\"M29 43v1h-4v-1h4z\"/></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-face\"><svg x=\"39\" y=\"31\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"5\" height=\"7\" xmlns:v=\"https://vecta.io/nano\"><path d=\"M1 0v1H0v2h1v1h1v1h1v1h1v1h1V0H1z\" fill=\"#ff1dff\"/><path d=\"M1 1v2h1v1h1v1h1v1h1V1z\"/><path d=\"M3 3h1v1h1V1H3z\" fill=\"#fff\"/></svg></svg></g><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M32 40v1h-1v-1h1z\"/><path d=\"M33 42v-1h-1v1h1v1h2v-1h-2z\"/><path d=\"M39 43v1h-4v-1h4z\"/></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-face\"><svg x=\"0\" y=\"0\">384_Faangs</svg></g></svg>"
+  ],
+  "sleevesUp": [],
+  "sleevesDown": []
+}

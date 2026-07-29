@@ -19,8 +19,14 @@ export const CITAADEL_WIDTH = HOOD_WIDTH * HOOD_COL_COUNT; // in pixels
 export const CITAADEL_HEIGHT = HOOD_HEIGHT * HOOD_ROW_COUNT; // in pixels
 export const AARENA_WIDTH = 128 * TILE_SIZE;
 export const AARENA_HEIGHT = AARENA_WIDTH;
+/** Store interior is the entire map: 16×16 tiles. */
+export const STORE_GRID_SIZE = 16;
+export const STORE_WIDTH = STORE_GRID_SIZE * TILE_SIZE;
+export const STORE_HEIGHT = STORE_WIDTH;
 export const MAP_ID_CITAADEL = 'citaadel';
 export const MAP_ID_AARENA = 'aarena';
+export const MAP_ID_STORE = 'store';
+/** Zone servers only — store uses a secondary Colyseus room, not ENABLED_MAPS zones. */
 export const ENABLED_MAPS = [MAP_ID_CITAADEL, MAP_ID_AARENA];
 export const TOKEN_TO_ADDRESS = {
   FUD: '0x403E967b044d4Be25170310157cB1A4Bf10bdD0f',
@@ -120,6 +126,28 @@ MAP_CONFIG_BY_ID[MAP_ID_CITAADEL] = Object.assign({}, BASE_MAP_CONFIG, {
   SHOOT_MODE: 'PVE',
   ENABLE_INERTIA: true,
   RESPAWN_DELAY: 5,
+});
+
+/** Parcel store interior — whole map is one 16×16 room (1024×1024). */
+MAP_CONFIG_BY_ID[MAP_ID_STORE] = Object.assign({}, BASE_MAP_CONFIG, {
+  ID: MAP_ID_STORE,
+  WIDTH: STORE_WIDTH,
+  HEIGHT: STORE_HEIGHT,
+  AOI_COL_COUNT: 1,
+  AOI_ROW_COUNT: 1,
+  SPAWN_BOUNDS: {
+    // Door interior (tx=7, ty=14) tile center
+    top: TILE_SIZE * 14,
+    left: TILE_SIZE * 7,
+    right: TILE_SIZE * 8,
+    bottom: TILE_SIZE * 15,
+  },
+  MAX_PLAYER_CAPACITY: 8,
+  PLAYER_CONTROLS: 'arcade',
+  SHOOT_MODE: '',
+  GOTCHI_SPEED: 9,
+  ENABLE_INERTIA: false,
+  RESPAWN_DELAY: 0,
 });
 
 MAP_CONFIG_BY_ID[MAP_ID_AARENA] = Object.assign({}, BASE_MAP_CONFIG, {
@@ -747,12 +775,14 @@ export const DEFAULT_GAME_CONFIG = { ...GAME_CONFIG };
 export const DEFAULT_MAP_CONFIG = {};
 DEFAULT_MAP_CONFIG[MAP_ID_CITAADEL] = Object.assign({}, MAP_CONFIG_BY_ID[MAP_ID_CITAADEL]);
 DEFAULT_MAP_CONFIG[MAP_ID_AARENA] = Object.assign({}, MAP_CONFIG_BY_ID[MAP_ID_AARENA]);
+DEFAULT_MAP_CONFIG[MAP_ID_STORE] = Object.assign({}, MAP_CONFIG_BY_ID[MAP_ID_STORE]);
 
 // a cache of changed default proeprties to forward to newly connected FE clients so all props aren't always sent
 export const CHANGED_GAME_CONFIG_CACHE = {};
 export const CHANGED_MAP_CONFIG_CACHE = {};
 CHANGED_MAP_CONFIG_CACHE[MAP_ID_CITAADEL] = {};
 CHANGED_MAP_CONFIG_CACHE[MAP_ID_AARENA] = {};
+CHANGED_MAP_CONFIG_CACHE[MAP_ID_STORE] = {};
 
 // the redis stream and consumer group that executes alchemica pickups
 export const ALCHEMICA_TAKE_STREAM_NAME = 'alchemica-take-stream';

@@ -22,7 +22,7 @@ const staticAssetPrefix = getStaticAssetPrefix();
 
 interface MapInterface {
   initMap: (AOIConfig?) => void;
-  init: (type: 'aarena' | 'citaadel') => void;
+  init: (type: SceneType) => void;
   displayChunk: (key: string) => void;
   updateMapEvent: () => void;
   toggleMinimap: (isHide: boolean) => void;
@@ -55,7 +55,27 @@ let MAP_CONFIG: {
 
 let depositesJSON, objectsJSON;
 
-const init = (type: 'citaadel' | 'aarena'): void => {
+const init = (type: SceneType): void => {
+  if (type === 'store') {
+    // Store map is a single Phaser room — no chunk/master.json pipeline.
+    MAP_CONFIG = {
+      type: 'store',
+      mapWidth: 16 * TILE_SIZE,
+      mapHeight: 16 * TILE_SIZE,
+      AOIConfigId: 0,
+      chunkWidth: 16,
+      chunkHeight: 16,
+      chunksHorizontal: 1,
+      chunksVertical: 1,
+      lastChunkId: 0,
+      animatedTileId: 0,
+      maps: {},
+      displayedChunks: [],
+      player: null,
+      init: true,
+    };
+    return;
+  }
   const masterJson = type === 'aarena' ? aarenaMasterJson : citaadelMasterJson;
   MapController.depositesJSON = type === 'aarena' ? aarenaDepositesJSON : citaadelDepositesJSON;
   MapController.objectsJSON = type === 'aarena' ? aarenaObjectsJSON : citaadelObjectsJSON;

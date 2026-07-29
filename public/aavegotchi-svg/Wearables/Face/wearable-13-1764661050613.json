@@ -1,0 +1,61 @@
+{
+  "id": 13,
+  "name": "Sergey Beard",
+  "slot": 1,
+  "slotName": "Face",
+  "category": 0,
+  "description": "",
+  "author": "Xibot",
+  "traitModifiers": [
+    -1,
+    1,
+    0,
+    3,
+    0,
+    0
+  ],
+  "slotPositions": [
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "allowedCollaterals": [],
+  "dimensions": {
+    "x": 15,
+    "y": 6,
+    "width": 34,
+    "height": 34
+  },
+  "svgId": 13,
+  "rarityScoreModifier": 20,
+  "minLevel": 1,
+  "rarity": "Uncommon",
+  "ghstPrice": "2000",
+  "maxQuantity": "50",
+  "totalQuantity": "50",
+  "canPurchaseWithGhst": false,
+  "canBeTransferred": true,
+  "kinshipBonus": 0,
+  "experienceBonus": 0,
+  "svgs": [
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-face\"><svg x=\"15\" y=\"6\"><path d=\"M13.8,30.2v-3.5h6.5v3.5H13.8z\" fill=\"#fff\"/><g fill=\"#773e1d\"><path d=\"M15,28h4v1h-4V28z\"/><path d=\"M0 27h2v1h2v1h2v1h2v1h4v1h3v1h1v1h2v-1h1v-1h3v-1h4v-1h2v-1h2v-1h2v-1h2V8h-2V6h-2V4h-4V2h-4V0H12v2H8v2H4v2H2v2H0v19zm15 3v-1h-1v-1h1v-1h4v1h1v1h-1v1h-4zm12-5v1h-2v1h-3v-1h-1v-1h-1v-1h-6v1h-1v1h-1v1H9v-1H7v-1H3V12h1V9h1V8h3V7h4v1h3v1h4V8h3V7h4v1h3v1h1v3h1v13h-4z\"/></g></svg></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-face\"><svg x=\"19\" y=\"6\"><path d=\"M8 26H3v1H2v1H0v4h3v-1h3v-1h1v-1h2v-1h2v-1h14V8h-1V6h-2V4h-2V2h-4V0h-6v2H6v2H4v2H2v2H0v1h3V8h3v1h1v3h1z\" fill=\"#773e1d\"/></svg></g><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M33 40v1h-1v-1h1z\"/><path d=\"M29,42v1h2v-1h1v-1h-1v1H29z\"/><path d=\"M29 43v1h-4v-1h4z\"/></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-face\"><svg x=\"20\" y=\"6\"><path d=\"M17 26h5v1h1v1h2v4h-3v-1h-3v-1h-1v-1h-2v-1h-2v-1H0V8h1V6h2V4h2V2h4V0h6v2h4v2h2v2h2v2h2v1h-3V8h-3v1h-1v3h-1z\" fill=\"#773e1d\"/></svg></g><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M32 40v1h-1v-1h1z\"/><path d=\"M33 42v-1h-1v1h1v1h2v-1h-2z\"/><path d=\"M39 43v1h-4v-1h4z\"/></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-face\"><svg x=\"15\" y=\"6\"><path d=\"M0 27V8h2V6h2V4h4V2h4V0h10v2h4v2h4v2h2v2h2v19z\" fill=\"#773e1d\"/></svg></g></svg>"
+  ],
+  "sleevesUp": [],
+  "sleevesDown": []
+}

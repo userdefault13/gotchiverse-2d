@@ -1,0 +1,61 @@
+{
+  "id": 202,
+  "name": "VR Headset",
+  "slot": 2,
+  "slotName": "Eyes",
+  "category": 0,
+  "description": "",
+  "author": "xibot",
+  "traitModifiers": [
+    2,
+    3,
+    0,
+    0,
+    0,
+    0
+  ],
+  "slotPositions": [
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "allowedCollaterals": [],
+  "dimensions": {
+    "x": 14,
+    "y": 5,
+    "width": 36,
+    "height": 26
+  },
+  "svgId": 202,
+  "rarityScoreModifier": 20,
+  "minLevel": 1,
+  "rarity": "Uncommon",
+  "ghstPrice": "2000",
+  "maxQuantity": "50",
+  "totalQuantity": "50",
+  "canPurchaseWithGhst": false,
+  "canBeTransferred": true,
+  "kinshipBonus": 0,
+  "experienceBonus": 0,
+  "svgs": [
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-eyes\"><svg x=\"14\" y=\"5\"><path d=\"M35,13v-2h-2V9H21V0h-6v9H3v2H1v2H0v7h1v2h2v2h2v2h10v-2h6v2h10v-2h2v-2h2v-2h1v-7H35z\"/><path d=\"M3,11v11h2v2h10v-2h6v2h10v-2h2V11H3z\" fill=\"#ff0097\"/><path d=\"M5,13v9h10v-2h6v2h10v-9H5z\" fill=\"#ff14ff\"/><path d=\"M7 11h2v13H7V11zm20 0h2v13h-2V11zm-2 0h1v13h-1V11zm-15 0h1v13h-1V11z\" opacity=\".8\" fill=\"#fff\" enable-background=\"new\"/></svg></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-eyes\"><svg x=\"19\" y=\"6\"><path d=\"M0 8v17h7v-2h2v-2h2v-2h1v-1h14V8h-2V6h-2V4h-2V2h-2V1h-2V0h-6v1H8v1H6v2H4v2H2v2H0zm24 5H12v-1h-1v-2H9V8H6V6h2V4h2V3h2V2h2v1h2v1h2v2h2v2h2v2h2v2 1z\"/><path d=\"M9 10v11H7v2H0V10h9z\" fill=\"#ff0097\"/><path d=\"M7 12v9H0v-9h7z\" fill=\"#ff14ff\"/><path d=\"M3 10v13H1V10h2z\" opacity=\".85\" fill=\"#fff\" enable-background=\"new\"/></svg></g><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M33 40v1h-1v-1h1z\"/><path d=\"M29,42v1h2v-1h1v-1h-1v1H29z\"/><path d=\"M29 43v1h-4v-1h4z\"/></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-eyes\"><svg x=\"19\" y=\"6\"><path d=\"M24 8V6h-2V4h-2V2h-2V1h-2V0h-6v1H8v1H6v2H4v2H2v2H0v10h14v1h1v2h2v2h2v2h7V8h-2zM2 12v-2h2V8h2V6h2V4h2V3h2V2h2v1h2v1h2v2h2v2h-3v2h-2v2h-1v1H2v-1z\"/><path d=\"M17 10v11h2v2h7V10h-9z\" fill=\"#ff0097\"/><path d=\"M19 12v9h7v-9h-7z\" fill=\"#ff14ff\"/><path d=\"M23 10v13h2V10h-2z\" opacity=\".85\" fill=\"#fff\" enable-background=\"new\"/></svg></g><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M32 40v1h-1v-1h1z\"/><path d=\"M33 42v-1h-1v1h1v1h2v-1h-2z\"/><path d=\"M39 43v1h-4v-1h4z\"/></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-eyes\"><svg x=\"14\" y=\"5\"><path d=\"M35 13v1H21V0h-6v14H1v-1H0v7h1v-1h34v1h1v-7h-1z\"/></svg></g></svg>"
+  ],
+  "sleevesUp": [],
+  "sleevesDown": []
+}

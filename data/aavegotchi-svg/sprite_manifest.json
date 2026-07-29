@@ -1,0 +1,1430 @@
+{
+  "wearables": [
+    {
+      "itemId": 1,
+      "filename": "wearable_1.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 2,
+      "filename": "wearable_2.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 3,
+      "filename": "wearable_3.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 4,
+      "filename": "wearable_4.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 5,
+      "filename": "wearable_5.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 7,
+      "filename": "wearable_7.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 8,
+      "filename": "wearable_8.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 9,
+      "filename": "wearable_9.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 10,
+      "filename": "wearable_10.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 12,
+      "filename": "wearable_12.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 13,
+      "filename": "wearable_13.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 14,
+      "filename": "wearable_14.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 16,
+      "filename": "wearable_16.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 17,
+      "filename": "wearable_17.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 18,
+      "filename": "wearable_18.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 19,
+      "filename": "wearable_19.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 20,
+      "filename": "wearable_20.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 22,
+      "filename": "wearable_22.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 23,
+      "filename": "wearable_23.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 24,
+      "filename": "wearable_24.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 25,
+      "filename": "wearable_25.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 26,
+      "filename": "wearable_26.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 28,
+      "filename": "wearable_28.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 29,
+      "filename": "wearable_29.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 30,
+      "filename": "wearable_30.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 31,
+      "filename": "wearable_31.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 32,
+      "filename": "wearable_32.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 34,
+      "filename": "wearable_34.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 35,
+      "filename": "wearable_35.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 36,
+      "filename": "wearable_36.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 37,
+      "filename": "wearable_37.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 38,
+      "filename": "wearable_38.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 40,
+      "filename": "wearable_40.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 41,
+      "filename": "wearable_41.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 42,
+      "filename": "wearable_42.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 43,
+      "filename": "wearable_43.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 44,
+      "filename": "wearable_44.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 46,
+      "filename": "wearable_46.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 47,
+      "filename": "wearable_47.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 48,
+      "filename": "wearable_48.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 49,
+      "filename": "wearable_49.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 50,
+      "filename": "wearable_50.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 52,
+      "filename": "wearable_52.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 53,
+      "filename": "wearable_53.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 54,
+      "filename": "wearable_54.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 55,
+      "filename": "wearable_55.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 56,
+      "filename": "wearable_56.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 58,
+      "filename": "wearable_58.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 59,
+      "filename": "wearable_59.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 60,
+      "filename": "wearable_60.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 61,
+      "filename": "wearable_61.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 62,
+      "filename": "wearable_62.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 64,
+      "filename": "wearable_64.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 65,
+      "filename": "wearable_65.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 66,
+      "filename": "wearable_66.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 67,
+      "filename": "wearable_67.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 68,
+      "filename": "wearable_68.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 70,
+      "filename": "wearable_70.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 71,
+      "filename": "wearable_71.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 72,
+      "filename": "wearable_72.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 73,
+      "filename": "wearable_73.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 74,
+      "filename": "wearable_74.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 76,
+      "filename": "wearable_76.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 77,
+      "filename": "wearable_77.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 79,
+      "filename": "wearable_79.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 80,
+      "filename": "wearable_80.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 82,
+      "filename": "wearable_82.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 83,
+      "filename": "wearable_83.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 86,
+      "filename": "wearable_86.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 88,
+      "filename": "wearable_88.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 89,
+      "filename": "wearable_89.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 90,
+      "filename": "wearable_90.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 91,
+      "filename": "wearable_91.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 92,
+      "filename": "wearable_92.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 94,
+      "filename": "wearable_94.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 95,
+      "filename": "wearable_95.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 96,
+      "filename": "wearable_96.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 97,
+      "filename": "wearable_97.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 98,
+      "filename": "wearable_98.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 100,
+      "filename": "wearable_100.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 101,
+      "filename": "wearable_101.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 102,
+      "filename": "wearable_102.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 103,
+      "filename": "wearable_103.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 104,
+      "filename": "wearable_104.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 106,
+      "filename": "wearable_106.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 107,
+      "filename": "wearable_107.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 108,
+      "filename": "wearable_108.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 109,
+      "filename": "wearable_109.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 110,
+      "filename": "wearable_110.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 112,
+      "filename": "wearable_112.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 113,
+      "filename": "wearable_113.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 114,
+      "filename": "wearable_114.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 115,
+      "filename": "wearable_115.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 116,
+      "filename": "wearable_116.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 118,
+      "filename": "wearable_118.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 119,
+      "filename": "wearable_119.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 120,
+      "filename": "wearable_120.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 121,
+      "filename": "wearable_121.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 122,
+      "filename": "wearable_122.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 124,
+      "filename": "wearable_124.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 125,
+      "filename": "wearable_125.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 126,
+      "filename": "wearable_126.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 127,
+      "filename": "wearable_127.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 128,
+      "filename": "wearable_128.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 130,
+      "filename": "wearable_130.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 131,
+      "filename": "wearable_131.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 132,
+      "filename": "wearable_132.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 133,
+      "filename": "wearable_133.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 134,
+      "filename": "wearable_134.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 140,
+      "filename": "wearable_140.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 141,
+      "filename": "wearable_141.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 142,
+      "filename": "wearable_142.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 143,
+      "filename": "wearable_143.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 145,
+      "filename": "wearable_145.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 146,
+      "filename": "wearable_146.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 147,
+      "filename": "wearable_147.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 148,
+      "filename": "wearable_148.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 149,
+      "filename": "wearable_149.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 151,
+      "filename": "wearable_151.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 152,
+      "filename": "wearable_152.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 153,
+      "filename": "wearable_153.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 154,
+      "filename": "wearable_154.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 155,
+      "filename": "wearable_155.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 157,
+      "filename": "wearable_157.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 158,
+      "filename": "wearable_158.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 159,
+      "filename": "wearable_159.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 160,
+      "filename": "wearable_160.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 161,
+      "filename": "wearable_161.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 199,
+      "filename": "wearable_199.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 200,
+      "filename": "wearable_200.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 201,
+      "filename": "wearable_201.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 202,
+      "filename": "wearable_202.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 203,
+      "filename": "wearable_203.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 205,
+      "filename": "wearable_205.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 206,
+      "filename": "wearable_206.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 208,
+      "filename": "wearable_208.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 209,
+      "filename": "wearable_209.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 211,
+      "filename": "wearable_211.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 212,
+      "filename": "wearable_212.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 213,
+      "filename": "wearable_213.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 214,
+      "filename": "wearable_214.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 215,
+      "filename": "wearable_215.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 217,
+      "filename": "wearable_217.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 218,
+      "filename": "wearable_218.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 219,
+      "filename": "wearable_219.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 220,
+      "filename": "wearable_220.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 221,
+      "filename": "wearable_221.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 223,
+      "filename": "wearable_223.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 224,
+      "filename": "wearable_224.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 225,
+      "filename": "wearable_225.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 226,
+      "filename": "wearable_226.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 227,
+      "filename": "wearable_227.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 229,
+      "filename": "wearable_229.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 230,
+      "filename": "wearable_230.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 231,
+      "filename": "wearable_231.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 232,
+      "filename": "wearable_232.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 233,
+      "filename": "wearable_233.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 235,
+      "filename": "wearable_235.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 236,
+      "filename": "wearable_236.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 237,
+      "filename": "wearable_237.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 238,
+      "filename": "wearable_238.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 239,
+      "filename": "wearable_239.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 241,
+      "filename": "wearable_241.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 242,
+      "filename": "wearable_242.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 243,
+      "filename": "wearable_243.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 244,
+      "filename": "wearable_244.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 245,
+      "filename": "wearable_245.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 247,
+      "filename": "wearable_247.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 248,
+      "filename": "wearable_248.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 249,
+      "filename": "wearable_249.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 250,
+      "filename": "wearable_250.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 251,
+      "filename": "wearable_251.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 253,
+      "filename": "wearable_253.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 254,
+      "filename": "wearable_254.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 255,
+      "filename": "wearable_255.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 256,
+      "filename": "wearable_256.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 257,
+      "filename": "wearable_257.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 259,
+      "filename": "wearable_259.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 260,
+      "filename": "wearable_260.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 261,
+      "filename": "wearable_261.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 262,
+      "filename": "wearable_262.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 263,
+      "filename": "wearable_263.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 292,
+      "filename": "wearable_292.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 294,
+      "filename": "wearable_294.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 295,
+      "filename": "wearable_295.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 296,
+      "filename": "wearable_296.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 297,
+      "filename": "wearable_297.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 298,
+      "filename": "wearable_298.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 300,
+      "filename": "wearable_300.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 301,
+      "filename": "wearable_301.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 302,
+      "filename": "wearable_302.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 303,
+      "filename": "wearable_303.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 304,
+      "filename": "wearable_304.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 306,
+      "filename": "wearable_306.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 307,
+      "filename": "wearable_307.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 308,
+      "filename": "wearable_308.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 309,
+      "filename": "wearable_309.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 310,
+      "filename": "wearable_310.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 312,
+      "filename": "wearable_312.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 313,
+      "filename": "wearable_313.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 314,
+      "filename": "wearable_314.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 315,
+      "filename": "wearable_315.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 316,
+      "filename": "wearable_316.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 318,
+      "filename": "wearable_318.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 319,
+      "filename": "wearable_319.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 322,
+      "filename": "wearable_322.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 324,
+      "filename": "wearable_324.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 325,
+      "filename": "wearable_325.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 326,
+      "filename": "wearable_326.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 327,
+      "filename": "wearable_327.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 328,
+      "filename": "wearable_328.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 330,
+      "filename": "wearable_330.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 331,
+      "filename": "wearable_331.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 332,
+      "filename": "wearable_332.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 333,
+      "filename": "wearable_333.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 334,
+      "filename": "wearable_334.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 336,
+      "filename": "wearable_336.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 337,
+      "filename": "wearable_337.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 338,
+      "filename": "wearable_338.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 339,
+      "filename": "wearable_339.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 340,
+      "filename": "wearable_340.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 342,
+      "filename": "wearable_342.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 343,
+      "filename": "wearable_343.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 344,
+      "filename": "wearable_344.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 345,
+      "filename": "wearable_345.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 346,
+      "filename": "wearable_346.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 348,
+      "filename": "wearable_348.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 349,
+      "filename": "wearable_349.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 350,
+      "filename": "wearable_350.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 351,
+      "filename": "wearable_351.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 352,
+      "filename": "wearable_352.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 354,
+      "filename": "wearable_354.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 355,
+      "filename": "wearable_355.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 356,
+      "filename": "wearable_356.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 357,
+      "filename": "wearable_357.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 358,
+      "filename": "wearable_358.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 360,
+      "filename": "wearable_360.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 361,
+      "filename": "wearable_361.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 362,
+      "filename": "wearable_362.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 363,
+      "filename": "wearable_363.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 364,
+      "filename": "wearable_364.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 366,
+      "filename": "wearable_366.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 367,
+      "filename": "wearable_367.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 368,
+      "filename": "wearable_368.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 369,
+      "filename": "wearable_369.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 370,
+      "filename": "wearable_370.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 372,
+      "filename": "wearable_372.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 373,
+      "filename": "wearable_373.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 374,
+      "filename": "wearable_374.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 375,
+      "filename": "wearable_375.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 376,
+      "filename": "wearable_376.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 378,
+      "filename": "wearable_378.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 379,
+      "filename": "wearable_379.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 380,
+      "filename": "wearable_380.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 381,
+      "filename": "wearable_381.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 382,
+      "filename": "wearable_382.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 384,
+      "filename": "wearable_384.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 385,
+      "filename": "wearable_385.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 386,
+      "filename": "wearable_386.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 387,
+      "filename": "wearable_387.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 388,
+      "filename": "wearable_388.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 390,
+      "filename": "wearable_390.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 391,
+      "filename": "wearable_391.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 392,
+      "filename": "wearable_392.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 393,
+      "filename": "wearable_393.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 394,
+      "filename": "wearable_394.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 396,
+      "filename": "wearable_396.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 397,
+      "filename": "wearable_397.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 398,
+      "filename": "wearable_398.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 399,
+      "filename": "wearable_399.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 400,
+      "filename": "wearable_400.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 402,
+      "filename": "wearable_402.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 403,
+      "filename": "wearable_403.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 404,
+      "filename": "wearable_404.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 405,
+      "filename": "wearable_405.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 406,
+      "filename": "wearable_406.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 408,
+      "filename": "wearable_408.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 409,
+      "filename": "wearable_409.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 410,
+      "filename": "wearable_410.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 411,
+      "filename": "wearable_411.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 412,
+      "filename": "wearable_412.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 414,
+      "filename": "wearable_414.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 415,
+      "filename": "wearable_415.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 416,
+      "filename": "wearable_416.png",
+      "slotPosition": 0
+    },
+    {
+      "itemId": 417,
+      "filename": "wearable_417.png",
+      "slotPosition": 0
+    }
+  ],
+  "bodyParts": []
+}

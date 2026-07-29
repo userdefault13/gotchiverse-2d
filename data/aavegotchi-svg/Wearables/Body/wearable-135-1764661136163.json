@@ -1,0 +1,71 @@
+{
+  "id": 135,
+  "name": "Polygon Shirt",
+  "slot": 0,
+  "slotName": "Body",
+  "category": 0,
+  "description": "",
+  "author": "xibot",
+  "traitModifiers": [
+    0,
+    0,
+    0,
+    2,
+    0,
+    0
+  ],
+  "slotPositions": [
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "allowedCollaterals": [],
+  "dimensions": {
+    "x": 12,
+    "y": 32,
+    "width": 40,
+    "height": 20
+  },
+  "svgId": 135,
+  "rarityScoreModifier": 2,
+  "minLevel": 1,
+  "rarity": "Common",
+  "ghstPrice": "10",
+  "maxQuantity": "500",
+  "totalQuantity": "500",
+  "canPurchaseWithGhst": false,
+  "canBeTransferred": true,
+  "kinshipBonus": 0,
+  "experienceBonus": 0,
+  "svgs": [
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-body\"><svg x=\"12\" y=\"32\"><path d=\"M3,21h34V1h-2v1h-1v1h-1v1h-1v1h-1v1h-1v1h-8v1h-4V7h-8V6H9V5H8V4H7V3H6V2H5V1H3V21z\" fill=\"#501e87\"/><path d=\"M35,3h-1v1h-1v1h-1v1h-1v1h-1v1h-8v1h-4V8h-8V7H9V6H8V5H7V4H6V3H5V2H4v18h32V2h-1V3z\" fill=\"#824ee2\"/><path d=\"M33 11h-1V8h-1v4h3v-1h-1zm-1 2h-1v1h2v1h-2v3h3v-1h-2v-1h2v-3h-2zM7 13H6v1h2v1H6v3h3v-1H7v-1h2v-3H7zm0-2V8H6v4h3v-1H7z\" fill=\"#501e87\"/><path d=\"M27 14v-1h-1v-1h-1v-1h-3v1h-1v1h-2v1h-1v1h-3v-1h-1v-3h1v-1h3v1h1v1h1v-2h-1V9h-1V8h-3v1h-1v1h-1v1h-1v3h1v1h1v1h1v1h3v-1h1v-1h2v-1h1v-1h3v1h1v3h-1v1h-3v-1h-1v-1h-1v2h1v1h1v1h3v-1h1v-1h1v-1h1v-3h-1z\" fill=\"#fff\"/></svg></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-body\"><svg x=\"20\" y=\"33\"><g><path d=\"M7,0v1H6v1H5v1H4v1H3v1H2v1H0v14h24V0H7z\" fill=\"#501e87\"/><path d=\"M7 1v1H6v1H5v1H4v1H3v1H2v1H0v12h23V1H7zM3 14h2v-1H3v-1h3v3H4v1h2v1H3v-3zm1-7v3h2v1H3V7h1z\" fill=\"#824ee2\"/></g></svg></g><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M33 40v1h-1v-1h1z\"/><path d=\"M29,42v1h2v-1h1v-1h-1v1H29z\"/><path d=\"M29 43v1h-4v-1h4z\"/></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-body\"><svg x=\"20\" y=\"33\"><g><path d=\"M22,6V5h-1V4h-1V3h-1V2h-1V1h-1V0H0v20h24V6H22z\" fill=\"#501e87\"/><path d=\"M22 7V6h-1V5h-1V4h-1V3h-1V2h-1V1H1v18h23V7h-2zm-1 4h-3V7h1v3h2v1zm-3 3h2v-1h-2v-1h3v3h-2v1h2v1h-3v-3z\" fill=\"#824ee2\"/></g></svg></g><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M32 40v1h-1v-1h1z\"/><path d=\"M33 42v-1h-1v1h1v1h2v-1h-2z\"/><path d=\"M39 43v1h-4v-1h4z\"/></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-body\"><svg x=\"12\" y=\"32\"><g><path d=\"M3,1v20h34V1H3z\" fill=\"#501e87\"/><path d=\"M4,2v18h32V2H4z\" fill=\"#824ee2\"/><path d=\"M2,1v1H1v1H0v7h2V9h1.5V1H2z\" fill=\"#501e87\"/><path d=\"M2,2v1H1v6h1V8h1V2H2z\" fill=\"#824ee2\"/><path d=\"M38,1v1h1v1h1v7h-2V9h-1.5V1H38z\" fill=\"#501e87\"/><path d=\"M38 2v1h1v6h-1V8h-1V2h1z\" fill=\"#824ee2\"/></g></svg></g></svg>"
+  ],
+  "sleevesUp": [
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g transform=\"translate(12, 32)\"><g class=\"gotchi-sleeves gotchi-sleeves-left gotchi-sleeves-up\"><path d=\"M36.5,9H38V8h1V7h1V0h-2v1h-1.5V9z\" fill=\"#501e87\"/><path d=\"M38,7h1V1h-1v1h-1v6h1V7z\" fill=\"#824ee2\"/></g><g class=\"gotchi-sleeves gotchi-sleeves-right gotchi-sleeves-up\"><path d=\"M3.5,1H2V0H0v7h1v1h1v1h1.5V1z\" fill=\"#501e87\"/><path d=\"M2,8h1V2H2V1H1v6h1V8z\" fill=\"#824ee2\"/></g></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g transform=\"translate(20, 33)\"><g class=\"gotchi-sleeves gotchi-sleeves-left gotchi-sleeves-up\"><path d=\"M13 0H6v2h1v1h1v1h7V2h-1V1h-1V0z\" fill=\"#501e87\"/><path d=\"M13,1H7v1h1v1h1v1h5V2h-1V1z\" fill=\"#824ee2\"/></g></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g transform=\"translate(20, 33)\"><g class=\"gotchi-sleeves gotchi-sleeves-right gotchi-sleeves-up\"><path d=\"M11,1h-1v1H9v2h7V3h1V2h1V0h-7V1z\" fill=\"#501e87\"/><path d=\"M11,2h-1v2h5V3h1V2h1V1h-6V2z\" fill=\"#824ee2\"/></g></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g transform=\"translate(12, 32)\"><g class=\"gotchi-sleeves gotchi-sleeves-left gotchi-sleeves-up\"><path d=\"M2,9V8H1V7H0V0h2v1h1.5v8H2z\" fill=\"#501e87\"/><path d=\"M2,8V7H1V1h1v1h1v6H2z\" fill=\"#824ee2\"/></g><g class=\"gotchi-sleeves gotchi-sleeves-right gotchi-sleeves-up\"><path d=\"M38,9V8h1V7h1V0h-2v1h-1.5v8H38z\" fill=\"#501e87\"/><path d=\"M38 8V7h1V1h-1v1h-1v6h1z\" fill=\"#824ee2\"/></g></g></svg>"
+  ],
+  "sleevesDown": [
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g transform=\"translate(12, 32)\"><g class=\"gotchi-sleeves gotchi-sleeves-left gotchi-sleeves-down\"><path d=\"M36.5,9H38v1h2V3h-1V2h-1V1h-1.5V9z\" fill=\"#501e87\"/><path d=\"M38,2h-1v6h1v1h1V3h-1V2z\" fill=\"#824ee2\"/></g><g class=\"gotchi-sleeves gotchi-sleeves-right gotchi-sleeves-down\"><path d=\"M3.5,1H2v1H1v1H0v7h2V9h1.5V1z\" fill=\"#501e87\"/><path d=\"M2,3H1v6h1V8h1V2H2V3z\" fill=\"#824ee2\"/></g></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g transform=\"translate(20, 33)\"><g class=\"gotchi-sleeves gotchi-sleeves-left gotchi-sleeves-down\"><path d=\"M9,4v7h2v-1h1V9h1.1V2H11v1h-1v1H9z\" fill=\"#501e87\"/><path d=\"M10 4v6h1V9h1V8h1v1h.2V2H13v1h-2v1h-1z\" fill=\"#824ee2\"/></g></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g transform=\"translate(20, 33)\"><g class=\"gotchi-sleeves gotchi-sleeves-right gotchi-sleeves-down\"><path d=\"M14,4V3h-1V2h-2.1v7H12v1h1v1h2V4H14z\" fill=\"#501e87\"/><path d=\"M13 4V3h-2V2h-.2v7h.2V8h1v1h1v1h1V4h-1z\" fill=\"#824ee2\"/></g></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g transform=\"translate(12, 32)\"><g class=\"gotchi-sleeves gotchi-sleeves-left gotchi-sleeves-down\"><path d=\"M2,1v1H1v1H0v7h2V9h1.5V1H2z\" fill=\"#501e87\"/><path d=\"M2,2v1H1v6h1V8h1V2H2z\" fill=\"#824ee2\"/></g><g class=\"gotchi-sleeves gotchi-sleeves-right gotchi-sleeves-down\"><path d=\"M38,1v1h1v1h1v7h-2V9h-1.5V1H38z\" fill=\"#501e87\"/><path d=\"M38 2v1h1v6h-1V8h-1V2h1z\" fill=\"#824ee2\"/></g></g></svg>"
+  ]
+}

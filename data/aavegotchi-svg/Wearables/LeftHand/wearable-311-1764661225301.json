@@ -1,0 +1,61 @@
+{
+  "id": 311,
+  "name": "Spirit Sword",
+  "slot": 4,
+  "slotName": "LeftHand",
+  "category": 0,
+  "description": "",
+  "author": "xibot",
+  "traitModifiers": [
+    2,
+    -3,
+    0,
+    0,
+    0,
+    0
+  ],
+  "slotPositions": [
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "allowedCollaterals": [],
+  "dimensions": {
+    "x": 6,
+    "y": 10,
+    "width": 7,
+    "height": 35
+  },
+  "svgId": 311,
+  "rarityScoreModifier": 20,
+  "minLevel": 1,
+  "rarity": "Uncommon",
+  "ghstPrice": "2000",
+  "maxQuantity": "50",
+  "totalQuantity": "50",
+  "canPurchaseWithGhst": false,
+  "canBeTransferred": true,
+  "kinshipBonus": 0,
+  "experienceBonus": 0,
+  "svgs": [
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-hand wearable-hand-left\"><svg x=\"6\" y=\"10\"><path d=\"M7 27v-3H6V2H5V1H4V0H3v1H2v1H1v22H0v3h2v5H1v1h1v1h1v1h1v-1h1v-1h1v-1H5v-5z\" fill=\"#333\"/><g fill=\"gray\"><path d=\"M5 24v1H4v1H3v-1H2v-1H1v2h1v1h1v5H2v1h1v1h1v-1h1v-1H4v-5h1v-1h1v-2H5z\"/><path d=\"M3 24h1v1H3z\"/><path d=\"M3 23h1v1h1V2H4V1H3v1H2v22h1v-1z\"/></g><path d=\"M4,25v1H3v-1H2v2h3v-2H4z\" fill=\"#a0a5a9\"/><path d=\"M4 2V1H3v1H2v22h1v-1h1v1h1V2z\" fill=\"#bfbfbf\"/><path d=\"M3 32h1v1H3zm0-4h1v1H3zm0 2h1v1H3z\" fill=\"#c7c7c7\"/><path d=\"M3 24h1v1H3z\" fill=\"#f0f\"/><path d=\"M4,2V1H3v21h2V2H4z\" fill=\"#e6e6e6\"/></svg></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M33 40v1h-1v-1h1z\"/><path d=\"M29,42v1h2v-1h1v-1h-1v1H29z\"/><path d=\"M29 43v1h-4v-1h4z\"/></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-hand wearable-hand-left\"><svg x=\"34\" y=\"10\"><path d=\"M7 27v-3H6V2H5V1H4V0H3v1H2v1H1v22H0v3h2v5H1v1h1v1h1v1h1v-1h1v-1h1v-1H5v-5z\" fill=\"#333\"/><g fill=\"gray\"><path d=\"M5 24v1H4v1H3v-1H2v-1H1v2h1v1h1v5H2v1h1v1h1v-1h1v-1H4v-5h1v-1h1v-2H5z\"/><path d=\"M3 24h1v1H3z\"/><path d=\"M3 23h1v1h1V2H4V1H3v1H2v22h1v-1z\"/></g><path d=\"M4,25v1H3v-1H2v2h3v-2H4z\" fill=\"#a0a5a9\"/><path d=\"M4 2V1H3v1H2v22h1v-1h1v1h1V2z\" fill=\"#bfbfbf\"/><path d=\"M3 32h1v1H3zm0-4h1v1H3zm0 2h1v1H3z\" fill=\"#c7c7c7\"/><path d=\"M3 24h1v1H3z\" fill=\"#f0f\"/><path d=\"M4,2V1H3v21h2V2H4z\" fill=\"#e6e6e6\"/></svg></g><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M32 40v1h-1v-1h1z\"/><path d=\"M33 42v-1h-1v1h1v1h2v-1h-2z\"/><path d=\"M39 43v1h-4v-1h4z\"/></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-hand wearable-hand-left\"><svg x=\"6\" y=\"10\"><g transform=\"scale(-1, 1) translate(-52, 0)\"><path d=\"M7 27v-3H6V2H5V1H4V0H3v1H2v1H1v22H0v3h2v5H1v1h1v1h1v1h1v-1h1v-1h1v-1H5v-5z\" fill=\"#333\"/><g fill=\"gray\"><path d=\"M5 24v1H4v1H3v-1H2v-1H1v2h1v1h1v5H2v1h1v1h1v-1h1v-1H4v-5h1v-1h1v-2H5z\"/><path d=\"M3 24h1v1H3z\"/><path d=\"M3 23h1v1h1V2H4V1H3v1H2v22h1v-1z\"/></g><path d=\"M4,25v1H3v-1H2v2h3v-2H4z\" fill=\"#a0a5a9\"/><path d=\"M4 2V1H3v1H2v22h1v-1h1v1h1V2z\" fill=\"#bfbfbf\"/><path d=\"M3 32h1v1H3zm0-4h1v1H3zm0 2h1v1H3z\" fill=\"#c7c7c7\"/><path d=\"M3 24h1v1H3z\" fill=\"#f0f\"/><path d=\"M4,2V1H3v21h2V2H4z\" fill=\"#e6e6e6\"/></g></svg></g></svg>"
+  ],
+  "sleevesUp": [],
+  "sleevesDown": []
+}

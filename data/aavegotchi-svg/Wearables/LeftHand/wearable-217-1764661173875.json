@@ -1,0 +1,61 @@
+{
+  "id": 217,
+  "name": "Energy Gun",
+  "slot": 4,
+  "slotName": "LeftHand",
+  "category": 0,
+  "description": "",
+  "author": "xibot",
+  "traitModifiers": [
+    2,
+    3,
+    0,
+    0,
+    0,
+    0
+  ],
+  "slotPositions": [
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "allowedCollaterals": [],
+  "dimensions": {
+    "x": 2,
+    "y": 33,
+    "width": 13,
+    "height": 11
+  },
+  "svgId": 217,
+  "rarityScoreModifier": 20,
+  "minLevel": 1,
+  "rarity": "Uncommon",
+  "ghstPrice": "3000",
+  "maxQuantity": "50",
+  "totalQuantity": "50",
+  "canPurchaseWithGhst": false,
+  "canBeTransferred": true,
+  "kinshipBonus": 0,
+  "experienceBonus": 0,
+  "svgs": [
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-hand wearable-hand-left\"><svg x=\"2\" y=\"33\"><path d=\"M12 0v1h-1v1h-1v1H7v1H6V3H2v1H1v1H0v4h1v1h1v1h3v-1h1v1h4v-1h2V9h1V0h-1z\" fill=\"#0a040b\"/><path d=\"M1 5v4h1V5H1z\" fill=\"#0affff\"/><path d=\"M12 1v1h-1v1h-1v1H7v1h1v1h1v1h4V1h-1z\" fill=\"#323232\"/><path d=\"M9 8V7H8V6H7V5H6v5h4V9h2V8H9z\" fill=\"#c5c8cf\"/><g fill=\"#646464\"><path d=\"M3 4v6h2V4H3zm5 0h1v1H8zm4 2h1v1h-1zm-2 0h1v1h-1z\"/><path d=\"M11 5h1v1h-1z\"/><path d=\"M12 4h1v1h-1zm0-2h1v1h-1z\"/><path d=\"M11 3h1v1h-1z\"/><path d=\"M10 4h1v1h-1z\"/><path d=\"M9 5h1v1H9z\"/></g><path d=\"M8 7v3h1V7H8z\" fill=\"#0affff\"/><path d=\"M10 8h1v1h-1zM7 6v4h1V6H7z\" fill=\"#646464\"/><path d=\"M3 4v6h1V4H3z\" fill=\"#c5c8cf\"/></svg></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M33 40v1h-1v-1h1z\"/><path d=\"M29,42v1h2v-1h1v-1h-1v1H29z\"/><path d=\"M29 43v1h-4v-1h4z\"/></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M32 40v1h-1v-1h1z\"/><path d=\"M33 42v-1h-1v1h1v1h2v-1h-2z\"/><path d=\"M39 43v1h-4v-1h4z\"/></g><g class=\"gotchi-wearable wearable-hand wearable-hand-left\"><svg x=\"31\" y=\"34\"><path d=\"M13 5V4h-1V3H8v1H7V3H4V2H3V1H2V0H0v8h1v1h1v1h2v1h4v-1h1v1h3v-1h1V9h1V5h-1z\" fill=\"#0a040b\"/><g fill=\"#323232\"><path d=\"M12 5v4h1V5h-1zM6 6V5h1V4H4V3H3V2H2V1H0v6h5V6h1z\"/><path d=\"M7 6H6v1H5v1H2v1h2v1h4V5H7v1zm2-2v6h2V4H9z\"/></g><path d=\"M12 5v4h1V5h-1zM5 8v2h1V7H5v1z\" fill=\"#0affff\"/><path d=\"M4 9v1h1V8H4v1zM2 8h1v1H2zm5-2v4h1V5H7v1zm3-2v6h1V4h-1z\" fill=\"#c5c8cf\"/><g fill=\"#646464\"><path d=\"M5 4h1v1H5zM1 6h1v1H1zm2 2h1v1H3zm0-2h1v1H3z\"/><path d=\"M2 5h1v1H2z\"/><path d=\"M1 4h1v1H1zm0-2h1v1H1z\"/><path d=\"M2 3h1v1H2z\"/><path d=\"M3 4h1v1H3zm3 3v3h1V6H6v1z\"/><path d=\"M4 5h1v1H4zM0 5h1v1H0zm0-2h1v1H0zm0-2h1v1H0zm9 3v6h1V4H9z\"/></g></svg></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-hand wearable-hand-left\"><svg x=\"2\" y=\"33\"><g transform=\"scale(-1, 1) translate(-60, 0)\"><path d=\"M12 0v1h-1v1h-1v1H7v1H6V3H2v1H1v1H0v4h1v1h1v1h3v-1h1v1h4v-1h2V9h1V0h-1z\" fill=\"#0a040b\"/><path d=\"M1 5v4h1V5H1z\" fill=\"#0affff\"/><path d=\"M12 1v1h-1v1h-1v1H7v1h1v1h1v1h4V1h-1z\" fill=\"#323232\"/><path d=\"M9 8V7H8V6H7V5H6v5h4V9h2V8H9z\" fill=\"#c5c8cf\"/><g fill=\"#646464\"><path d=\"M3 4v6h2V4H3zm5 0h1v1H8zm4 2h1v1h-1zm-2 0h1v1h-1z\"/><path d=\"M11 5h1v1h-1z\"/><path d=\"M12 4h1v1h-1zm0-2h1v1h-1z\"/><path d=\"M11 3h1v1h-1z\"/><path d=\"M10 4h1v1h-1z\"/><path d=\"M9 5h1v1H9z\"/></g><path d=\"M8 7v3h1V7H8z\" fill=\"#0affff\"/><path d=\"M10 8h1v1h-1zM7 6v4h1V6H7z\" fill=\"#646464\"/><path d=\"M3 4v6h1V4H3z\" fill=\"#c5c8cf\"/></g></svg></g></svg>"
+  ],
+  "sleevesUp": [],
+  "sleevesDown": []
+}

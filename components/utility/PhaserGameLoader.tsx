@@ -110,6 +110,11 @@ const PhaserGameLoader = (props: PhaserGameLoaderProps) => {
           // @ts-ignore */
           game={gameConfig.game}
           initialize={true}
+          ref={(el: { game?: unknown } | null) => {
+            if (el?.game && typeof window !== 'undefined') {
+              (window as unknown as { game?: unknown }).game = el.game;
+            }
+          }}
         />
       </div>
     );

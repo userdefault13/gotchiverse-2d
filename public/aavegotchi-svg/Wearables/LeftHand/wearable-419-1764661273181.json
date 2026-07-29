@@ -1,0 +1,61 @@
+{
+  "id": 419,
+  "name": "Base App",
+  "slot": 4,
+  "slotName": "LeftHand",
+  "category": 0,
+  "description": "",
+  "author": "XIBOT",
+  "traitModifiers": [
+    0,
+    0,
+    0,
+    3,
+    0,
+    0
+  ],
+  "slotPositions": [
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "allowedCollaterals": [],
+  "dimensions": {
+    "x": 1,
+    "y": 31,
+    "width": 9,
+    "height": 14
+  },
+  "svgId": 419,
+  "rarityScoreModifier": 5,
+  "minLevel": 1,
+  "rarity": "Common",
+  "ghstPrice": "100",
+  "maxQuantity": "250",
+  "totalQuantity": "250",
+  "canPurchaseWithGhst": false,
+  "canBeTransferred": true,
+  "kinshipBonus": 0,
+  "experienceBonus": 0,
+  "svgs": [
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-hand wearable-hand-left\"><svg x=\"1\" y=\"31\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"9\" height=\"14\" xmlns:v=\"https://vecta.io/nano\"><path d=\"M8 1V0H1v1H0v12h1v1h7v-1h1V1H8z\" fill=\"#000064\"/><path d=\"M1 1v12h7V1H1zm1 1h1v1H2V2z\" fill=\"#00f\"/><path d=\"M3 6h3v3H3z\" fill=\"#fff\"/></svg></svg></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M33 40v1h-1v-1h1z\"/><path d=\"M29,42v1h2v-1h1v-1h-1v1H29z\"/><path d=\"M29 43v1h-4v-1h4z\"/></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-hand wearable-hand-left\"><svg x=\"38\" y=\"31\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"3\" height=\"14\" xmlns:v=\"https://vecta.io/nano\"><path d=\"M0 0h3v14H0z\" fill=\"#000064\"/><path d=\"M1 1h1v12H1z\" fill=\"#00f\"/></svg></svg></g><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M32 40v1h-1v-1h1z\"/><path d=\"M33 42v-1h-1v1h1v1h2v-1h-2z\"/><path d=\"M39 43v1h-4v-1h4z\"/></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-hand wearable-hand-left\"><svg x=\"1\" y=\"31\"><g transform=\"scale(-1, 1) translate(-62, 0)\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"9\" height=\"14\" xmlns:v=\"https://vecta.io/nano\"><path d=\"M8 1V0H1v1H0v12h1v1h7v-1h1V1H8z\" fill=\"#000064\"/><path d=\"M5 1v1H4V1H1v12h7V1H5z\" fill=\"#00f\"/><path d=\"M2,2v10h5V2H2Z\" fill=\"#fff\"/><path d=\"M4 1h1v1H4z\" fill=\"#000064\"/><path d=\"M3 5v3h3V5H3z\" fill=\"#00f\"/></svg></g></svg></g></svg>"
+  ],
+  "sleevesUp": [],
+  "sleevesDown": []
+}

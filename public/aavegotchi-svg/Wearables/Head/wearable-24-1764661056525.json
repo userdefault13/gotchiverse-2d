@@ -1,0 +1,61 @@
+{
+  "id": 24,
+  "name": "Thaave Helmet",
+  "slot": 3,
+  "slotName": "Head",
+  "category": 0,
+  "description": "",
+  "author": "Xibot",
+  "traitModifiers": [
+    2,
+    0,
+    1,
+    0,
+    0,
+    0
+  ],
+  "slotPositions": [
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "allowedCollaterals": [],
+  "dimensions": {
+    "x": 9,
+    "y": 6,
+    "width": 46,
+    "height": 24
+  },
+  "svgId": 24,
+  "rarityScoreModifier": 5,
+  "minLevel": 1,
+  "rarity": "Common",
+  "ghstPrice": "100",
+  "maxQuantity": "250",
+  "totalQuantity": "250",
+  "canPurchaseWithGhst": false,
+  "canBeTransferred": true,
+  "kinshipBonus": 0,
+  "experienceBonus": 0,
+  "svgs": [
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-head\"><svg x=\"9\" y=\"6\"><path d=\"M42 4v2h-2v2h-2V6h-2V4h-4V2h-4V0H18v2h-4v2h-4v2H8v2H6V6H4V4H0v8h2v4h2v2h2v6h4v-7h26v7h4v-6h2v-2h2v-4h2V4z\"/><path d=\"M42 6v2h-2v8h2v-4h2V6h-2zM4 8V6H2v6h2v4h2V8H4z\" fill=\"#fff\"/><g fill=\"#8e9397\"><path d=\"M34,13V6h-2v7h-6V2h-2v11h-2V2h-2v11h-6V6h-2v7H8v11h2v-7h26v7h2V13H34z\"/><path d=\"M32 4h-2v2h2V4zM16 6V4h-2v2h2z\"/></g><path d=\"M36 20v4h2v-4h-2zM8 20v4h2v-4H8z\" fill=\"#ffc500\"/></svg></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-head\"><svg x=\"20\" y=\"6\"><path d=\"M1 8V6h1V4h3V2h4V0h6v2h4v2h2v2h2v2h1v16H6v-7H0V8h1z\"/><path d=\"M2 8v5h6v11H6v-7H0V8h2z\" fill=\"#8e9397\"/><path d=\"M13 8V6h8v2h-2v2h-2v2h-2v2h-2v2h-2V8h2z\" fill=\"#fff\"/><path d=\"M8 20v4H6v-4h2z\" fill=\"#ffc500\"/></svg></g><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M33 40v1h-1v-1h1z\"/><path d=\"M29,42v1h2v-1h1v-1h-1v1H29z\"/><path d=\"M29 43v1h-4v-1h4z\"/></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-head\"><svg x=\"20\" y=\"6\"><path d=\"M23 8V6h-1V4h-3V2h-4V0H9v2H5v2H3v2H1v2H0v16h18v-7h6V8h-1z\"/><path d=\"M22 8v5h-6v11h2v-7h6V8h-2z\" fill=\"#8e9397\"/><path d=\"M11 8V6H3v2h2v2h2v2h2v2h2v2h2V8h-2z\" fill=\"#fff\"/><path d=\"M16 20v4h2v-4h-2z\" fill=\"#ffc500\"/></svg></g><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M32 40v1h-1v-1h1z\"/><path d=\"M33 42v-1h-1v1h1v1h2v-1h-2z\"/><path d=\"M39 43v1h-4v-1h4z\"/></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-head\"><svg x=\"9\" y=\"6\"><path d=\"M42 4v2h-2v2h-2V6h-2V4h-4V2h-4V0H18v2h-4v2h-4v2H8v2H6V6H4V4H0v8h2v4h2v2h2v6h34v-6h2v-2h2v-4h2V4h-4z\"/><g fill=\"#8e9397\"><path d=\"M12 6v14h2V6h-2zm20 0v14h2V6h-2z\"/><path d=\"M32 4h-2v2h2V4zm-8-2v18h2V2h-2zm-4 0v18h2V2h-2zm-6 2v2h2V4h-2z\"/></g><path d=\"M42 6v2h-2v8h2v-4h2V6h-2zM4 8V6H2v6h2v4h2V8H4z\" fill=\"#fff\"/></svg></g></svg>"
+  ],
+  "sleevesUp": [],
+  "sleevesDown": []
+}

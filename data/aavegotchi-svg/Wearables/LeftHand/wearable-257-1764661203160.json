@@ -1,0 +1,61 @@
+{
+  "id": 257,
+  "name": "Bitcoin Guitar",
+  "slot": 4,
+  "slotName": "LeftHand",
+  "category": 0,
+  "description": "",
+  "author": "xibot",
+  "traitModifiers": [
+    4,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "slotPositions": [
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "allowedCollaterals": [],
+  "dimensions": {
+    "x": 0,
+    "y": 17,
+    "width": 15,
+    "height": 38
+  },
+  "svgId": 257,
+  "rarityScoreModifier": 10,
+  "minLevel": 1,
+  "rarity": "Common",
+  "ghstPrice": "300",
+  "maxQuantity": "100",
+  "totalQuantity": "100",
+  "canPurchaseWithGhst": false,
+  "canBeTransferred": true,
+  "kinshipBonus": 0,
+  "experienceBonus": 0,
+  "svgs": [
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-hand wearable-hand-left\"><svg x=\"0\" y=\"17\"><path d=\"M14 29v-2h-1v-5h1v-4h-1v-1h-1v1h-1v2H9v-1H8V7h1V4H8V3h1V2h1V1H9V0H7v1H6v1H5v2H4v4h1v10H3v-2H2v-1H1v2H0v2h1v2h1v6H1v2H0v6h1v1h1v1h2v1h6v-1h2v-1h1v-1h1v-2h1v-4h-1z\"/><path d=\"M13,30v-3h-1v-5h1v-4h-1v3H9v-1H8v1H5v-2H4v6H3v5h1v2h5v-1h3v2h2v-3H13z\" fill=\"#e1e1e1\"/><g fill=\"#ff8700\"><path d=\"M11,24h1v1h-1V24z\"/><path d=\"M10,25v-1h1v-1h-1v-1H9v1H8v1h1v3H8v1h1v1h1v-1h1v-1h-1v-1h1v-1H10z\"/><path d=\"M11,26h1v1h-1V26z\"/></g><path d=\"M7 21H5v1h3v-1H7zm-1 2H5v2h3v-2H7 6zm0 3H5v1h3v-1H7 6zm0 3H5v1h3v-1H7 6z\" fill=\"#fff\"/><path d=\"M7 23h1v-1H5v1h1 1zm0 3h1v-1H5v1h1 1zm0 3h1v-2H5v2h1 1zm1 1H4v2h5v-2H8z\" fill=\"#7f7f7f\"/><path d=\"M9 1V0H7v2H6v2H5v3H4v1h1v13h1v-1h1v1h1V7h1V4H8V3h1V2h1V1H9zM7 19H6v-1h1v1zm0-2H6v-1h1v1zm0-2H6v-1h1v1zm0-2H6v-1h1v1zm0-2H6v-1h1v1zm0-2H6V8h1v1z\" fill=\"#eda350\"/></svg></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M33 40v1h-1v-1h1z\"/><path d=\"M29,42v1h2v-1h1v-1h-1v1H29z\"/><path d=\"M29 43v1h-4v-1h4z\"/></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-hand wearable-hand-left\"><svg x=\"33\" y=\"17\"><path d=\"M14 29v-2h-1v-5h1v-4h-1v-1h-1v1h-1v2H9v-1H8V7h1V4H8V3h1V2h1V1H9V0H7v1H6v1H5v2H4v4h1v10H3v-2H2v-1H1v2H0v2h1v2h1v6H1v2H0v6h1v1h1v1h2v1h6v-1h2v-1h1v-1h1v-2h1v-4h-1z\"/><path d=\"M13,30v-3h-1v-5h1v-4h-1v3H9v-1H8v1H5v-2H4v6H3v5h1v2h5v-1h3v2h2v-3H13z\" fill=\"#e1e1e1\"/><g fill=\"#ff8700\"><path d=\"M11,24h1v1h-1V24z\"/><path d=\"M10,25v-1h1v-1h-1v-1H9v1H8v1h1v3H8v1h1v1h1v-1h1v-1h-1v-1h1v-1H10z\"/><path d=\"M11,26h1v1h-1V26z\"/></g><path d=\"M7 21H5v1h3v-1H7zm-1 2H5v2h3v-2H7 6zm0 3H5v1h3v-1H7 6zm0 3H5v1h3v-1H7 6z\" fill=\"#fff\"/><path d=\"M7 23h1v-1H5v1h1 1zm0 3h1v-1H5v1h1 1zm0 3h1v-2H5v2h1 1zm1 1H4v2h5v-2H8z\" fill=\"#7f7f7f\"/><path d=\"M9 1V0H7v2H6v2H5v3H4v1h1v13h1v-1h1v1h1V7h1V4H8V3h1V2h1V1H9zM7 19H6v-1h1v1zm0-2H6v-1h1v1zm0-2H6v-1h1v1zm0-2H6v-1h1v1zm0-2H6v-1h1v1zm0-2H6V8h1v1z\" fill=\"#eda350\"/></svg></g><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M32 40v1h-1v-1h1z\"/><path d=\"M33 42v-1h-1v1h1v1h2v-1h-2z\"/><path d=\"M39 43v1h-4v-1h4z\"/></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-hand wearable-hand-left\"><svg x=\"0\" y=\"17\"><g transform=\"scale(-1, 1) translate(-64, 0)\"><path d=\"M0 17v2h1v2h1v6H1v2H0v6h1v1h1v1h2v1h6v-1h2v-1h1v-1h1v-2h1v-4h-1v-2h-1v-5h1v-4h-1v-1h-1v1h-1v2H9v-1H8V7h1V4H8V3h1V2h1V1H9V0H7v1H6v1H5v2H4v4h1v10H3v-2H2v-1H1v2H0z\"/><path d=\"M4 4v4h1v10h2v1h1V7h1V4H8V3h1V2h1V1H9V0H7v1H6v1H5v2H4z\" fill=\"#eda350\"/><path d=\"M4.5 29.3h-.6v3.1h.6v.6h.6v.6h3.7V33h.6v-.7h.6v-3.1h-.6v-.6h-.6V28H5.1v.6h-.6v.6.1z\" fill=\"#ff8700\"/><g fill=\"#fff\"><path d=\"M6.1 31.2h1.2v.6H6.1v.6h.6v.6h.6v-.6h1.2v-.6h-.6v-1.9h.6v-.6H7.3v-.6h-.6v.6h-.6v.6h1.2v.6H6.1v-.6h-.6v.6h.6v.7z\"/><path d=\"M6.1 31.8h-.6v-.6h.6v.6z\"/></g></g></svg></g></svg>"
+  ],
+  "sleevesUp": [],
+  "sleevesDown": []
+}

@@ -1,0 +1,61 @@
+{
+  "id": 141,
+  "name": "Gemstone Ring",
+  "slot": 4,
+  "slotName": "LeftHand",
+  "category": 0,
+  "description": "",
+  "author": "xibot",
+  "traitModifiers": [
+    0,
+    0,
+    -1,
+    1,
+    0,
+    0
+  ],
+  "slotPositions": [
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "allowedCollaterals": [],
+  "dimensions": {
+    "x": 5,
+    "y": 29,
+    "width": 8,
+    "height": 14
+  },
+  "svgId": 141,
+  "rarityScoreModifier": 2,
+  "minLevel": 1,
+  "rarity": "Common",
+  "ghstPrice": "10",
+  "maxQuantity": "500",
+  "totalQuantity": "499",
+  "canPurchaseWithGhst": false,
+  "canBeTransferred": true,
+  "kinshipBonus": 0,
+  "experienceBonus": 0,
+  "svgs": [
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-hand wearable-hand-left\"><svg x=\"5\" y=\"29\"><path d=\"M6 6V5h1V4h1V3H7V2H6V1H5V0H3v1H2v1H1v1H0v1h1v1h1v1h1v1H2v1H1v1H0v3h1v1h1v1h4v-1h1v-1h1V9H7V8H6V7H5V6h1zm0 7H2v-1H1V9h1V8h4v1h1v3H6v1z\"/><path d=\"M6 3V2H5V1H3v1H2v1H1v1h1v1h1v1h2V5h1V4h1V3z\" fill=\"#b132ff\"/><path d=\"M3 1v1H2v1H1v1h3V1z\" fill=\"#c260ff\"/><path d=\"M6 3V2H5V1H4v3h3V3z\" fill=\"#edd3fd\"/><path d=\"M5 4H4v2h1V5h1V4z\" fill=\"#d596fb\"/><g fill=\"#ffe600\"><path d=\"M2 10V9H1v3h1v-1z\"/><path d=\"M4 9h2V8H2v1h1z\"/><path d=\"M6 9v3h1V9z\"/><path d=\"M4 12H2v1h4v-1H5z\"/></g><g fill=\"#ffc03c\"><path d=\"M2 10V9H1v3h1v-1z\"/><path d=\"M4 9V8H2v1h1zm-1 4h1v-1H2v1z\"/></g></svg></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M33 40v1h-1v-1h1z\"/><path d=\"M29,42v1h2v-1h1v-1h-1v1H29z\"/><path d=\"M29 43v1h-4v-1h4z\"/></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-hand wearable-hand-left\"><svg x=\"35\" y=\"29\"><path d=\"M6 3V2H5V1H4V0H3v1H2v1H1v1H0v1h1v1h1v1h1v2H2v1H1v3h1v1h1v1h1v-1h1v-1h1V9H5V8H4V6h1V5h1V4h1V3H6zm-2 9H3V9h1v3z\"/><path d=\"M5 3V2H4V1H3v1H2v1H1v1h1v1h1v1h1V5h1V4h1V3z\" fill=\"#b132ff\"/><g fill=\"#ffc03c\"><path d=\"M3 9H2v3h1V9zm1 0v3h1V9H4z\"/><path d=\"M3 8h1v1H3zm0 4h1v1H3z\"/></g><g fill=\"#c260ff\"><path d=\"M3 4v2h1V4H3z\"/><path d=\"M3 2H2v1H1v1h2V2z\"/></g><path d=\"M5 3V2H4v2h2V3H5z\" fill=\"#edd3fd\"/><g fill=\"#dea8ff\"><path d=\"M4 1H3v3h1V1z\"/><path d=\"M4 4h1v1H4z\"/></g><path d=\"M4 9v3h1V9H4z\" fill=\"#ffe600\"/></svg></g><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M32 40v1h-1v-1h1z\"/><path d=\"M33 42v-1h-1v1h1v1h2v-1h-2z\"/><path d=\"M39 43v1h-4v-1h4z\"/></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-hand wearable-hand-left\"><svg x=\"5\" y=\"29\"><g transform=\"scale(-1, 1) translate(-54, 0)\"><path d=\"M6 6V5h1V4h1V3H7V2H6V1H5V0H3v1H2v1H1v1H0v1h1v1h1v1h1v1H2v1H1v1H0v3h1v1h1v1h4v-1h1v-1h1V9H7V8H6V7H5V6h1zm0 7H2v-1H1V9h1V8h4v1h1v3H6v1z\"/><path d=\"M6,3V2H5V1H3v1H2v1H1v1h1v1h1v1h2V5h1V4h1V3H6z\" fill=\"#b132ff\"/><path d=\"M3,1v1H2v1H1v1h3V1H3z\" fill=\"#c260ff\"/><path d=\"M6,3V2H5V1H4v3h3V3H6z\" fill=\"#edd3fd\"/><path d=\"M5,4H4v2h1V5h1V4H5z\" fill=\"#d596fb\"/><g fill=\"#ffe600\"><path d=\"M2 10V9H1v3h1v-2z\"/><path d=\"M4 9h2V8H2v1h2z\"/><path d=\"M6,9v3h1V9H6z\"/><path d=\"M4 12H2v1h4v-1H4z\"/></g><g fill=\"#ffc03c\"><path d=\"M2 10V9H1v3h1v-2z\"/><path d=\"M4 9V8H2v1h2zm-1 4h1v-1H2v1h1z\"/></g></g></svg></g></svg>"
+  ],
+  "sleevesUp": [],
+  "sleevesDown": []
+}

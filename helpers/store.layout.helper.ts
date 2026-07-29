@@ -81,6 +81,43 @@ export const STORE_BASE_SHADE_IDS: number[] = Array.from({ length: 30 }, (_, i) 
 
 export const STORE_GRID = 16;
 
+/** Bottom-center door opening (2 tiles). */
+export const STORE_DOOR_TX = [7, 8] as const;
+/** Top-wall storefront windows. */
+export const STORE_WINDOW_TX = [2, 3, 4, 11, 12, 13] as const;
+export const STORE_SPAWN_TX = 7;
+export const STORE_SPAWN_TY = STORE_GRID - 2;
+
+export type StoreStructureKind = 'floor' | 'wall' | 'door' | 'window';
+
+export function storeStructureAt(tx: number, ty: number, grid = STORE_GRID): StoreStructureKind {
+  const onEdge = tx === 0 || tx === grid - 1 || ty === 0 || ty === grid - 1;
+  if (ty === grid - 1 && (STORE_DOOR_TX as readonly number[]).includes(tx)) return 'door';
+  if (ty === 0 && (STORE_WINDOW_TX as readonly number[]).includes(tx)) return 'window';
+  if (onEdge) return 'wall';
+  return 'floor';
+}
+
+export function storeIsWalkable(tx: number, ty: number, grid = STORE_GRID): boolean {
+  if (tx < 0 || ty < 0 || tx >= grid || ty >= grid) return false;
+  const kind = storeStructureAt(tx, ty, grid);
+  return kind === 'floor' || kind === 'door';
+}
+
+export function storeInteriorFloorKeys(grid = STORE_GRID): string[] {
+  const keys: string[] = [];
+  for (let ty = 0; ty < grid; ty += 1) {
+    for (let tx = 0; tx < grid; tx += 1) {
+      if (storeStructureAt(tx, ty, grid) === 'floor') keys.push(floorKey(tx, ty));
+    }
+  }
+  return keys;
+}
+
+export function storeTileCenter(tx: number, ty: number): { x: number; y: number } {
+  return { x: tx * 64 + 32, y: ty * 64 + 32 };
+}
+
 export function floorKey(x: number, y: number): string {
   return `${x},${y}`;
 }

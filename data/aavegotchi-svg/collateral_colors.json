@@ -1,0 +1,123 @@
+{
+  "collaterals": [
+    {
+      "id": 0,
+      "name": "maUSDC",
+      "primaryColor": "#3F51B5",
+      "secondaryColor": "#7986CB",
+      "accentColor": "#C5CAE9"
+    },
+    {
+      "id": 1,
+      "name": "maDAI",
+      "primaryColor": "#FFC107",
+      "secondaryColor": "#FFD54F",
+      "accentColor": "#FFF9C4"
+    },
+    {
+      "id": 2,
+      "name": "maWETH",
+      "primaryColor": "#4CAF50",
+      "secondaryColor": "#81C784",
+      "accentColor": "#C8E6C9"
+    },
+    {
+      "id": 3,
+      "name": "maAAVE",
+      "primaryColor": "#E91E63",
+      "secondaryColor": "#F06292",
+      "accentColor": "#F8BBD9"
+    },
+    {
+      "id": 4,
+      "name": "maLINK",
+      "primaryColor": "#FF9800",
+      "secondaryColor": "#FFB74D",
+      "accentColor": "#FFE0B2"
+    },
+    {
+      "id": 5,
+      "name": "maTUSD",
+      "primaryColor": "#9C27B0",
+      "secondaryColor": "#BA68C8",
+      "accentColor": "#E1BEE7"
+    },
+    {
+      "id": 6,
+      "name": "maUNI",
+      "primaryColor": "#00BCD4",
+      "secondaryColor": "#4DD0E1",
+      "accentColor": "#B2EBF2"
+    },
+    {
+      "id": 7,
+      "name": "maYFI",
+      "primaryColor": "#795548",
+      "secondaryColor": "#A1887F",
+      "accentColor": "#D7CCC8"
+    },
+    {
+      "id": 8,
+      "name": "maSNX",
+      "primaryColor": "#607D8B",
+      "secondaryColor": "#90A4AE",
+      "accentColor": "#CFD8DC"
+    },
+    {
+      "id": 9,
+      "name": "maMKR",
+      "primaryColor": "#FF5722",
+      "secondaryColor": "#FF8A65",
+      "accentColor": "#FFCCBC"
+    },
+    {
+      "id": 10,
+      "name": "maREN",
+      "primaryColor": "#3F51B5",
+      "secondaryColor": "#7986CB",
+      "accentColor": "#C5CAE9"
+    },
+    {
+      "id": 11,
+      "name": "maKNC",
+      "primaryColor": "#8BC34A",
+      "secondaryColor": "#AED581",
+      "accentColor": "#DCEDC8"
+    },
+    {
+      "id": 12,
+      "name": "maLEND",
+      "primaryColor": "#FF9800",
+      "secondaryColor": "#FFB74D",
+      "accentColor": "#FFE0B2"
+    },
+    {
+      "id": 13,
+      "name": "maBAT",
+      "primaryColor": "#E91E63",
+      "secondaryColor": "#F06292",
+      "accentColor": "#F8BBD9"
+    },
+    {
+      "id": 14,
+      "name": "maZRX",
+      "primaryColor": "#4CAF50",
+      "secondaryColor": "#81C784",
+      "accentColor": "#C8E6C9"
+    },
+    {
+      "id": 15,
+      "name": "maENJ",
+      "primaryColor": "#9C27B0",
+      "secondaryColor": "#BA68C8",
+      "accentColor": "#E1BEE7"
+    },
+    {
+      "id": 16,
+      "name": "maCRV",
+      "primaryColor": "#00BCD4",
+      "secondaryColor": "#4DD0E1",
+      "accentColor": "#B2EBF2"
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "id": 110,
+  "name": "Jamaican Flag",
+  "slot": 4,
+  "slotName": "LeftHand",
+  "category": 0,
+  "description": "",
+  "author": "Cawito",
+  "traitModifiers": [
+    -1,
+    -2,
+    0,
+    0,
+    0,
+    0
+  ],
+  "slotPositions": [
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "allowedCollaterals": [],
+  "dimensions": {
+    "x": 2,
+    "y": 24,
+    "width": 10,
+    "height": 28
+  },
+  "svgId": 110,
+  "rarityScoreModifier": 5,
+  "minLevel": 1,
+  "rarity": "Common",
+  "ghstPrice": "100",
+  "maxQuantity": "250",
+  "totalQuantity": "249",
+  "canPurchaseWithGhst": true,
+  "canBeTransferred": true,
+  "kinshipBonus": 0,
+  "experienceBonus": 0,
+  "svgs": [
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-hand wearable-hand-left\"><svg x=\"2\" y=\"24\"><path d=\"M5 1v1H0v9h5v-1h4.5V1z\" fill=\"green\"/><path d=\"M5 1h1v9H5z\" fill=\"#2d5016\"/><g fill=\"#ffb81c\"><path d=\"M6,6h1v1H6V6z\"/><path d=\"M7,7h1v1H7V7z\"/><path d=\"M8 8h1v1H8V8zM4 6h1v1H4V6z\"/><path d=\"M3,7h1v1H3V7z\"/><path d=\"M2,8h1v1H2V8z\"/><path d=\"M1,9h1v1H1V9z\"/><path d=\"M0 10h1v1H0v-1zm6-6h1v1H6V4z\"/><path d=\"M7,3h1v1H7V3z\"/><path d=\"M8 2h1v1H8V2zM0 2h1v1H0V2zm3 3h1v1H3V5z\"/><path d=\"M2,4h1v1H2V4z\"/><path d=\"M1,3h1v1H1V3z\"/></g><path d=\"M8 3v1H7v1H6v1h1v1h1v1h1V3H8zM3 5H2V4H1V3H0v7h1V9h1V8h1V7h1V6H3V5z\"/><path d=\"M5,5h1v1H5V5z\" fill=\"#d4aa00\"/><path d=\"M9,0h1v28H9V0z\" fill=\"gray\"/><path d=\"M9,0h1v1H9V0z\" fill=\"#4d4d4d\"/></svg></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M33 40v1h-1v-1h1z\"/><path d=\"M29,42v1h2v-1h1v-1h-1v1H29z\"/><path d=\"M29 43v1h-4v-1h4z\"/></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-hand wearable-hand-left\"><svg x=\"38\" y=\"24\"><path d=\"M0 0v28h1V0H0z\" fill=\"gray\"/><path d=\"M0 0v10h1V0H0z\" fill=\"#4d4d4d\"/><path d=\"M0 1v9h1V1H0z\" fill=\"green\"/><path d=\"M0 8h1v1H0zm0-6h1v1H0z\" fill=\"#ffb81c\"/><path d=\"M0 3v5h1V3H0z\" fill=\"#28170b\"/></svg></g><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M32 40v1h-1v-1h1z\"/><path d=\"M33 42v-1h-1v1h1v1h2v-1h-2z\"/><path d=\"M39 43v1h-4v-1h4z\"/></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-hand wearable-hand-left\"><svg x=\"2\" y=\"24\"><g transform=\"scale(-1, 1) translate(-60, 0)\"><path d=\"M5,1v1H0v9h5v-1h4.5V1H5z\" fill=\"green\"/><path d=\"M5,1h1v9H5V1z\" fill=\"#2d5016\"/><g fill=\"#ffb81c\"><path d=\"M6,6h1v1H6V6z\"/><path d=\"M7,7h1v1H7V7z\"/><path d=\"M8 8h1v1H8V8zM4 6h1v1H4V6z\"/><path d=\"M3,7h1v1H3V7z\"/><path d=\"M2,8h1v1H2V8z\"/><path d=\"M1,9h1v1H1V9z\"/><path d=\"M0 10h1v1H0v-1zm6-6h1v1H6V4z\"/><path d=\"M7,3h1v1H7V3z\"/><path d=\"M8 2h1v1H8V2zM0 2h1v1H0V2zm3 3h1v1H3V5z\"/><path d=\"M2,4h1v1H2V4z\"/><path d=\"M1,3h1v1H1V3z\"/></g><path d=\"M8 3v1H7v1H6v1h1v1h1v1h1V3H8zM3 5H2V4H1V3H0v7h1V9h1V8h1V7h1V6H3V5z\"/><path d=\"M5,5h1v1H5V5z\" fill=\"#d4aa00\"/><path d=\"M9,0h1v28H9V0z\" fill=\"gray\"/><path d=\"M9,0h1v1H9V0z\" fill=\"#4d4d4d\"/></g></svg></g></svg>"
+  ],
+  "sleevesUp": [],
+  "sleevesDown": []
+}

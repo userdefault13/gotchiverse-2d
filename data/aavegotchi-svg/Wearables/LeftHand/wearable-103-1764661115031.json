@@ -1,0 +1,61 @@
+{
+  "id": 103,
+  "name": "Witchy Wand",
+  "slot": 4,
+  "slotName": "LeftHand",
+  "category": 0,
+  "description": "",
+  "author": "Xibot",
+  "traitModifiers": [
+    0,
+    2,
+    2,
+    1,
+    0,
+    0
+  ],
+  "slotPositions": [
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "allowedCollaterals": [],
+  "dimensions": {
+    "x": 3,
+    "y": 33,
+    "width": 11,
+    "height": 11
+  },
+  "svgId": 103,
+  "rarityScoreModifier": 20,
+  "minLevel": 1,
+  "rarity": "Uncommon",
+  "ghstPrice": "2000",
+  "maxQuantity": "50",
+  "totalQuantity": "50",
+  "canPurchaseWithGhst": true,
+  "canBeTransferred": true,
+  "kinshipBonus": 0,
+  "experienceBonus": 0,
+  "svgs": [
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-hand wearable-hand-left\"><svg x=\"3\" y=\"33\"><path d=\"M0 0h2v2H0z\" fill=\"#ff8700\"/><g fill=\"#ffaa4a\"><path d=\"M1,0h1v1H1V0z\"/><path d=\"M0,1h1v1H0V1z\"/></g><path d=\"M0,0h1v1H0V0z\" fill=\"#ffc88a\"/><path d=\"M6 6h1v1H6z\"/><path d=\"M5 5h1v1H5z\"/><path d=\"M4 4h1v1H4z\"/><path d=\"M3 3h1v1H3z\"/><path d=\"M2 2h1v1H2zm5 5h1v1H7z\"/><path d=\"M8 8h1v1H8z\"/><path d=\"M9 9h1v1H9z\"/><path d=\"M10 10h1v1h-1z\"/></svg></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M33 40v1h-1v-1h1z\"/><path d=\"M29,42v1h2v-1h1v-1h-1v1H29z\"/><path d=\"M29 43v1h-4v-1h4z\"/></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-hand wearable-hand-left\"><svg x=\"35\" y=\"33\"><path d=\"M11,2H9V0h2V2z\" fill=\"#ff8700\"/><g fill=\"#ffaa4a\"><path d=\"M10,1H9V0h1V1z\"/><path d=\"M11,2h-1V1h1V2z\"/></g><path d=\"M11,1h-1V0h1V1z\" fill=\"#ffc88a\"/><path d=\"M5,7H4V6h1V7z\"/><path d=\"M6,6H5V5h1V6z\"/><path d=\"M7,5H6V4h1V5z\"/><path d=\"M8,4H7V3h1V4z\"/><path d=\"M9 3H8V2h1v1zM4 8H3V7h1v1z\"/><path d=\"M3,9H2V8h1V9z\"/><path d=\"M2 10H1V9h1v1z\"/><path d=\"M1 11H0v-1h1v1z\"/></svg></g><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M32 40v1h-1v-1h1z\"/><path d=\"M33 42v-1h-1v1h1v1h2v-1h-2z\"/><path d=\"M39 43v1h-4v-1h4z\"/></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-hand wearable-hand-left\"><svg x=\"3\" y=\"33\"><g transform=\"scale(-1, 1) translate(-58, 0)\"><path d=\"M0,0h2v2H0V0z\" fill=\"#ff8700\"/><g fill=\"#ffaa4a\"><path d=\"M1,0h1v1H1V0z\"/><path d=\"M0,1h1v1H0V1z\"/></g><path d=\"M0,0h1v1H0V0z\" fill=\"#ffc88a\"/><path d=\"M6,6h1v1H6V6z\"/><path d=\"M5,5h1v1H5V5z\"/><path d=\"M4,4h1v1H4V4z\"/><path d=\"M3,3h1v1H3V3z\"/><path d=\"M2 2h1v1H2V2zm5 5h1v1H7V7z\"/><path d=\"M8,8h1v1H8V8z\"/><path d=\"M9,9h1v1H9V9z\"/><path d=\"M10,10h1v1h-1V10z\"/></g></svg></g></svg>"
+  ],
+  "sleevesUp": [],
+  "sleevesDown": []
+}

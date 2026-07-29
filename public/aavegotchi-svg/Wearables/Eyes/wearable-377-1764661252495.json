@@ -1,0 +1,61 @@
+{
+  "id": 377,
+  "name": "Lick Eyes",
+  "slot": 2,
+  "slotName": "Eyes",
+  "category": 0,
+  "description": "",
+  "author": "soju",
+  "traitModifiers": [
+    0,
+    0,
+    -2,
+    0,
+    0,
+    0
+  ],
+  "slotPositions": [
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "allowedCollaterals": [],
+  "dimensions": {
+    "x": 15,
+    "y": 22,
+    "width": 34,
+    "height": 8
+  },
+  "svgId": 377,
+  "rarityScoreModifier": 2,
+  "minLevel": 1,
+  "rarity": "Common",
+  "ghstPrice": "10",
+  "maxQuantity": "500",
+  "totalQuantity": "500",
+  "canPurchaseWithGhst": false,
+  "canBeTransferred": true,
+  "kinshipBonus": 0,
+  "experienceBonus": 0,
+  "svgs": [
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-eyes\"><svg x=\"15\" y=\"22\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"34\" height=\"8\" xmlns:v=\"https://vecta.io/nano\"><path d=\"M0 0v8h34V0H0z\" fill=\"#4d4d4d\"/><path d=\"M1 1v6h1V1H1zm31 0v6h1V1h-1zM10 1v6h3V1h-3zm11 0v6h3V1h-3z\" fill=\"#c5c5c5\"/><path d=\"M3 1v6h6V1H3zm11 0v6h6V1h-6zm11 0v6h6V1h-6z\" fill=\"#fff\"/><path d=\"M22 2v4h1V2h-1zM11 6h1V2h-1v4z\" fill=\"#e3e3e3\"/><path d=\"M4 2v4h4V2H4zm11 0v4h4V2h-4zm11 0v4h4V2h-4z\" fill=\"#faf\"/><path d=\"M5 3v2h2V3H5zm11 0v2h2V3h-2zm11 0v2h2V3h-2z\"/></svg></svg></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-eyes\"><svg x=\"20\" y=\"22\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"8\" xmlns:v=\"https://vecta.io/nano\"><path d=\"M24 0v8H0V0h24z\" fill=\"#4d4d4d\"/><path d=\"M7 1v6H1V1h6z\" fill=\"#fff\"/><path d=\"M24 1v6H8V1h16z\" fill=\"#c5c5c5\"/><path d=\"M10 2v4H9V2h1zm2 4h-1V2h1v4zm2 0h-1V2h1v4zm3-4v4h-2V2h2zm3 0v4h-2V2h2zm4 0v4h-3V2h3z\" fill=\"#e3e3e3\"/><path d=\"M6 2v4H2V2h4z\" fill=\"#faf\"/><path d=\"M5 3v2H3V3h2z\"/></svg></svg></g><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M33 40v1h-1v-1h1z\"/><path d=\"M29,42v1h2v-1h1v-1h-1v1H29z\"/><path d=\"M29 43v1h-4v-1h4z\"/></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-eyes\"><svg x=\"20\" y=\"22\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"8\" xmlns:v=\"https://vecta.io/nano\"><path d=\"M0 0v8h24V0H0z\" fill=\"#4d4d4d\"/><path d=\"M17 1v6h6V1h-6z\" fill=\"#fff\"/><path d=\"M0 1v6h16V1H0z\" fill=\"#c5c5c5\"/><path d=\"M14 2v4h1V2h-1zm-2 4h1V2h-1v4zm-2 0h1V2h-1v4zM7 2v4h2V2H7zM4 2v4h2V2H4zM0 2v4h3V2H0z\" fill=\"#e3e3e3\"/><path d=\"M18 2v4h4V2h-4z\" fill=\"#faf\"/><path d=\"M19 3v2h2V3h-2z\"/></svg></svg></g><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M32 40v1h-1v-1h1z\"/><path d=\"M33 42v-1h-1v1h1v1h2v-1h-2z\"/><path d=\"M39 43v1h-4v-1h4z\"/></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-eyes\"><svg x=\"15\" y=\"22\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"34\" height=\"8\" xmlns:v=\"https://vecta.io/nano\"><path d=\"M0 0v8h34V0H0z\" fill=\"#4d4d4d\"/><path d=\"M1 1v6h32V1H1z\" fill=\"#c5c5c5\"/><path d=\"M31 2v4h1V2h-1zm-2 4h1V2h-1v4zm-2 0h1V2h-1v4zm-3-4v4h2V2h-2zm-3 0v4h2V2h-2zm-7 0v4h6V2h-6zM2 6h1V2H2v4zm2 0h1V2H4v4zm2 0h1V2H6v4zm2-4v4h2V2H8zm3 0v4h2V2h-2z\" fill=\"#e3e3e3\"/></svg></svg></g></svg>"
+  ],
+  "sleevesUp": [],
+  "sleevesDown": []
+}

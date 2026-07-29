@@ -1,0 +1,61 @@
+{
+  "id": 142,
+  "name": "Princess Tiara",
+  "slot": 3,
+  "slotName": "Head",
+  "category": 0,
+  "description": "",
+  "author": "xibot",
+  "traitModifiers": [
+    0,
+    0,
+    -2,
+    1,
+    0,
+    0
+  ],
+  "slotPositions": [
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "allowedCollaterals": [],
+  "dimensions": {
+    "x": 15,
+    "y": 8,
+    "width": 34,
+    "height": 10
+  },
+  "svgId": 142,
+  "rarityScoreModifier": 5,
+  "minLevel": 1,
+  "rarity": "Common",
+  "ghstPrice": "100",
+  "maxQuantity": "250",
+  "totalQuantity": "250",
+  "canPurchaseWithGhst": false,
+  "canBeTransferred": true,
+  "kinshipBonus": 0,
+  "experienceBonus": 0,
+  "svgs": [
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-head\"><svg x=\"15\" y=\"8\"><path d=\"M33 8h-1V6h-2v2h-2V6h-2v2h-2V6h-2V4h-2V2h-2V0h-2v2h-2v2h-2v2h-2v2H8V6H6v2H4V6H2v2H0v2h34V8z\" fill=\"#ffc03c\"/><path d=\"M19 5V4h-1V3h-2v1h-1v1h-1v2h1v1h1v1h2V8h1V7h1V5z\" fill=\"#ffd781\"/><path d=\"M18 5V4h-2v1h-1v2h1v1h2V7h1V5z\" fill=\"#ffeabe\"/><path d=\"M17 5h-1v2h2V5z\" fill=\"#64438e\"/><path d=\"M17 5h-1v1h2V5z\" fill=\"#715398\"/></svg></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-head\"><svg x=\"19\" y=\"8\"><path d=\"M1 0v2h2v2h2v2h2v2h2V6h2v2h2V6h2v2h2V6h2v2h2V6h2v2h2V6h1v4H0V0h1z\" fill=\"#ffc03c\"/><path d=\"M1 3v1h1v1h1v2H2v1H1v1H0V3h1z\" fill=\"#ffd781\"/><path d=\"M1 4v1h1v2H1v1H0V4h1z\" fill=\"#ffeabe\"/><path d=\"M1 5v2H0V5h1z\" fill=\"#64438e\"/><path d=\"M0 5h1v1H0z\" fill=\"#715398\"/></svg></g><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M33 40v1h-1v-1h1z\"/><path d=\"M29,42v1h2v-1h1v-1h-1v1H29z\"/><path d=\"M29 43v1h-4v-1h4z\"/></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-head\"><svg x=\"19\" y=\"8\"><path d=\"M25 0v2h-2v2h-2v2h-2v2h-2V6h-2v2h-2V6h-2v2H9V6H7v2H5V6H3v2H1V6H0v4h26V0h-1z\" fill=\"#ffc03c\"/><path d=\"M25 3v1h-1v1h-1v2h1v1h1v1h1V3h-1z\" fill=\"#ffd781\"/><path d=\"M25 4v1h-1v2h1v1h1V4h-1z\" fill=\"#ffeabe\"/><path d=\"M25 5v2h1V5h-1z\" fill=\"#64438e\"/><path d=\"M25 5h1v1h-1z\" fill=\"#715398\"/></svg></g><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M32 40v1h-1v-1h1z\"/><path d=\"M33 42v-1h-1v1h1v1h2v-1h-2z\"/><path d=\"M39 43v1h-4v-1h4z\"/></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-head\"><svg x=\"15\" y=\"14\"><path d=\"M32 2V0h-2v2h-2V0h-2v2h-2V0h-2v2h-2V0h-2v2h-2V0h-2v2h-2V0h-2v2H8V0H6v2H4V0H2v2H0v2h34V2h-2z\" fill=\"#ffc03c\"/></svg></g></svg>"
+  ],
+  "sleevesUp": [],
+  "sleevesDown": []
+}

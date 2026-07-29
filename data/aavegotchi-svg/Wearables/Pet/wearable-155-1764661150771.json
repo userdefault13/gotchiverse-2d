@@ -1,0 +1,61 @@
+{
+  "id": 155,
+  "name": "Mythical Rofl",
+  "slot": 6,
+  "slotName": "Pet",
+  "category": 0,
+  "description": "",
+  "author": "xibot",
+  "traitModifiers": [
+    -2,
+    0,
+    0,
+    -3,
+    0,
+    0
+  ],
+  "slotPositions": [
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "allowedCollaterals": [],
+  "dimensions": {
+    "x": 42,
+    "y": 38,
+    "width": 20,
+    "height": 23
+  },
+  "svgId": 155,
+  "rarityScoreModifier": 20,
+  "minLevel": 1,
+  "rarity": "Uncommon",
+  "ghstPrice": "2000",
+  "maxQuantity": "50",
+  "totalQuantity": "50",
+  "canPurchaseWithGhst": false,
+  "canBeTransferred": true,
+  "kinshipBonus": 0,
+  "experienceBonus": 0,
+  "svgs": [
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-pet\"><svg x=\"42\" y=\"38\"><path d=\"M19 6V5h-1V4h-3V2h1V1h-1V0h-2v1h-2V0H9v1H7V0H5v1H4v1h1v2H2v1H1v1H0v2h1v1h1v1H1v4h1v1h1v1H2v1H1v2h1v1H1v2h4v1h3v-1h1v-1h2v1h1v1h3v-1h4v-2h-1v-1h1v-2h-1v-1h-1v-1h1v-1h1v-4h-1V9h1V8h1V6h-1z\"/><path d=\"M18 7h-1v1h-3V7h-2v1h1v1h5V8h1V7h-1zM6 7v1H3V7H1v1h1v1h5V8h1V7H6z\" fill=\"#fff\"/><g fill=\"#faaff3\"><path d=\"M17 5h-4v1h5V5h-1zm-7 4h2V8h-1V7H9v1H8v1h2zM4 6h3V5H2v1h2zm5 12v2h2v-2H9z\"/><path d=\"M16 17v-2H4v2H2v2h2v1H2v1h3v-3h1v3H5v1h3v-4h1v-1h2v1h1v4h3v-1h-1v-3h1v3h3v-1h-2v-1h2v-2h-2z\"/></g><path d=\"M17 10H2v4h16v-4h-1zm0 2v1H3v-2h14v1z\" fill=\"#ef1e26\"/><path d=\"M13 1v1h-2V1H9v1H7V1H5v1h1v2h2v2h4V4h2V2h1V1z\" fill=\"#ffc03c\"/><path d=\"M5 1v1h2V1H5zm4 0v1h2V1H9zm5 0h-1v1h2V1h-1z\" fill=\"#ffe600\"/><path d=\"M11,4H8v2h4V4H11z\" fill=\"#ff9600\"/><path d=\"M13,2H6v2h8V2H13z\" fill=\"#ffc03c\"/></svg></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M33 40v1h-1v-1h1z\"/><path d=\"M29,42v1h2v-1h1v-1h-1v1H29z\"/><path d=\"M29 43v1h-4v-1h4z\"/></g><g class=\"gotchi-wearable wearable-pet\"><svg x=\"14\" y=\"38\"><path d=\"M1 6V5h1V4h4V2H5V1h1V0h2v1h1V0h2v1h1V0h2v1h1v1h-1v2h-1v2h3v1h1v1h1v1h1v5h-1v1h-1v2h1v4h-1v1H2v-2h1v-1h2v-4H2v-1H1v-1h1v-2H1v-1h1V9H1V8H0V6h1z\"/><g fill=\"#fff\"><path d=\"M5 8V7h3v1H7v1H2V8h3z\"/><path d=\"M1 7h1v1H1z\"/></g><path d=\"M13 11H2v-1h12v4H2v-1h11v-2z\" fill=\"#ef1e26\"/><path d=\"M7 5v1H2V5h5zM5 20h1v-5h8v-1h1v-4h-1V9H8V8h1V7h7v1h1v1h1v5h-1v1h-1v2h1v4h-7v-2h3v-1h1v-1h-1v1h-3v1H9v2H3v-1h2z\" fill=\"#ff96ff\"/><path d=\"M8 1v1h1V1h2v1h1V1h2v1h-1v2h-1v2H8V4H7V2H6V1h2z\" fill=\"#ff9600\"/><path d=\"M14 1v1h-2V1h2zm-3 0v1H9V1h2zM8 1v1H6V1h2z\" fill=\"#ffe600\"/><path d=\"M13 2v2H7V2h6z\" fill=\"#ffc03c\"/></svg></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M32 40v1h-1v-1h1z\"/><path d=\"M33 42v-1h-1v1h1v1h2v-1h-2z\"/><path d=\"M39 43v1h-4v-1h4z\"/></g><g class=\"gotchi-wearable wearable-pet\"><svg x=\"31\" y=\"38\"><g/></svg></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-pet\"><svg x=\"2\" y=\"38\"><path d=\"M19 6V5h-1V4h-3V2h1V1h-1V0h-2v1h-2V0H9v1H7V0H5v1H4v1h1v2H2v1H1v1H0v2h1v1h1v1H1v4h1v1h1v1H2v1H1v2h1v1H1v2h18v-2h-1v-1h1v-2h-1v-1h-1v-1h1v-1h1v-4h-1V9h1V8h1V6h-1z\"/><path d=\"M18 7V5h-5v1h-1v1H8V6H7V5H2v2H1v1h1v1h1v1H2v4h1v1h1v2H2v2h1v1H2v1h4v-2h1v2h6v-2h1v2h4v-1h-1v-1h1v-2h-2v-2h1v-1h1v-4h-1V9h1V8h1V7h-1z\" fill=\"#ff96ff\"/><path d=\"M13 1v1h-2V1H9v1H7V1H5v1h1v2h2v2h4V4h2V2h1V1h-2z\" fill=\"#ff9600\"/><path d=\"M5 1v1h2V1H5zm4 0v1h2V1H9zm4 0v1h2V1h-2z\" fill=\"#ffe600\"/><path d=\"M6 2v2h8V2H6z\" fill=\"#ffc03c\"/></svg></g></svg>"
+  ],
+  "sleevesUp": [],
+  "sleevesDown": []
+}

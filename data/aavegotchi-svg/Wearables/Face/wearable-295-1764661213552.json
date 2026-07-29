@@ -1,0 +1,61 @@
+{
+  "id": 295,
+  "name": "Forked Beard",
+  "slot": 1,
+  "slotName": "Face",
+  "category": 0,
+  "description": "",
+  "author": "xibot",
+  "traitModifiers": [
+    0,
+    1,
+    0,
+    0,
+    0,
+    0
+  ],
+  "slotPositions": [
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "allowedCollaterals": [],
+  "dimensions": {
+    "x": 21,
+    "y": 32,
+    "width": 22,
+    "height": 11
+  },
+  "svgId": 295,
+  "rarityScoreModifier": 1,
+  "minLevel": 1,
+  "rarity": "Common",
+  "ghstPrice": "5",
+  "maxQuantity": "1000",
+  "totalQuantity": "999",
+  "canPurchaseWithGhst": false,
+  "canBeTransferred": true,
+  "kinshipBonus": 0,
+  "experienceBonus": 0,
+  "svgs": [
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-face\"><svg x=\"21\" y=\"32\"><path d=\"M21 9v1h-1V8h-1V5h-1V2h-1V1h-1V0h-3v1h-1v1h-2V1H9V0H6v1H5v1H4v3H3v3H2v2H1V9H0v2h4v-1h1V9h1V8h1V7h1V6h1V5h1V4h2v1h1v1h1v1h1v1h1v1h1v1h1v1h4V9h-1z\" fill=\"#5c2700\"/><g fill=\"#724422\"><path d=\"M5 5h1V3H5v2z\"/><path d=\"M6 2v1h2V2H6zm10 1v2h1V3h-1z\"/><path d=\"M14 2v1h2V2h-2z\"/></g></svg></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-face\"><svg x=\"19\" y=\"32\"><path d=\"M1 1V0h3v1h1v1h1v3h1v3h1v2h1V9h1v2H6v-1H5V9H4V8H3V7H2V6H1V5H0V1h1z\" fill=\"#5c2700\"/><g fill=\"#724422\"><path d=\"M5 5H4V3h1v2z\"/><path d=\"M4 2v1H2V2h2z\"/></g></svg></g><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M33 40v1h-1v-1h1z\"/><path d=\"M29,42v1h2v-1h1v-1h-1v1H29z\"/><path d=\"M29 43v1h-4v-1h4z\"/></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-face\"><svg x=\"35\" y=\"32\"><path d=\"M9 1V0H6v1H5v1H4v3H3v3H2v2H1V9H0v2h4v-1h1V9h1V8h1V7h1V6h1V5h1V1H9z\" fill=\"#5c2700\"/><g fill=\"#724422\"><path d=\"M5 5h1V3H5v2z\"/><path d=\"M6 2v1h2V2H6z\"/></g></svg></g><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M32 40v1h-1v-1h1z\"/><path d=\"M33 42v-1h-1v1h1v1h2v-1h-2z\"/><path d=\"M39 43v1h-4v-1h4z\"/></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-face\"><svg x=\"0\" y=\"0\"><g/></svg></g></svg>"
+  ],
+  "sleevesUp": [],
+  "sleevesDown": []
+}

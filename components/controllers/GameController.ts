@@ -214,22 +214,27 @@ async function socketConnect(
 
   scene.onSocketReconnect = undefined;
 
-  // Walkable MVP: Colyseus room instead of legacy zone WebSocket protocol
-  if (isColyseusNetcode()) {
-    const network = GlobalState.WEB3?.state?.currentNetwork;
-    // /combat always means aarena even if MAP was briefly stale before the page effect ran.
-    const onCombatRoute =
-      typeof window !== 'undefined' &&
-      (window.location?.pathname === '/combat' || window.location?.pathname === '/combat-rh');
-    if (onCombatRoute && GameController.MAP !== 'aarena') {
-      GameController.MAP = 'aarena';
-    }
-    const map =
-      GameController.MAP === 'aarena'
-        ? network === 'robinhood'
-          ? 'aarena-rh'
-          : 'aarena'
-        : 'citaadel';
+    // Walkable MVP: Colyseus room instead of legacy zone WebSocket protocol
+    if (isColyseusNetcode()) {
+      const network = GlobalState.WEB3?.state?.currentNetwork;
+      // /combat always means aarena even if MAP was briefly stale before the page effect ran.
+      const onCombatRoute =
+        typeof window !== 'undefined' &&
+        (window.location?.pathname === '/combat' || window.location?.pathname === '/combat-rh');
+      if (onCombatRoute && GameController.MAP !== 'aarena') {
+        GameController.MAP = 'aarena';
+      }
+      // Store map uses a secondary Colyseus room — keep citaadel/aarena socket as-is.
+      if (GameController.MAP === 'store') {
+        console.log('SocketConnect skipped while inside store map');
+        return;
+      }
+      const map =
+        GameController.MAP === 'aarena'
+          ? network === 'robinhood'
+            ? 'aarena-rh'
+            : 'aarena'
+          : 'citaadel';
     const selectedSpawnLoc =
       map === 'citaadel' && spawnId && spawnId.charAt(0) === 'C' ? spawnId : undefined;
     const cartridgeId = GlobalState.USER?.state?.cartridgeId || null;

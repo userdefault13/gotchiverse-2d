@@ -1,0 +1,61 @@
+{
+  "id": 9,
+  "name": "Walkie Talkie",
+  "slot": 4,
+  "slotName": "LeftHand",
+  "category": 0,
+  "description": "",
+  "author": "Xibot",
+  "traitModifiers": [
+    1,
+    0,
+    1,
+    1,
+    0,
+    0
+  ],
+  "slotPositions": [
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "allowedCollaterals": [],
+  "dimensions": {
+    "x": 3,
+    "y": 31,
+    "width": 7,
+    "height": 15
+  },
+  "svgId": 9,
+  "rarityScoreModifier": 5,
+  "minLevel": 1,
+  "rarity": "Common",
+  "ghstPrice": "100",
+  "maxQuantity": "300",
+  "totalQuantity": "300",
+  "canPurchaseWithGhst": false,
+  "canBeTransferred": true,
+  "kinshipBonus": 0,
+  "experienceBonus": 0,
+  "svgs": [
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-hand wearable-hand-left\"><svg x=\"3\" y=\"31\"><path d=\"M6 4V0H5v4H1v2H0v2h1v7h6V4z\"/><path d=\"M2,6v1h4V6H2z\" fill=\"#5a5a5a\"/><path d=\"M2,7v1h4V7H2z\" fill=\"#464646\"/><path d=\"M2,5v1h4V5H2z\" fill=\"#6e6e6e\"/><path d=\"M2 8h4v6H2z\" fill=\"#323232\"/><g fill=\"#1e1e1e\"><path d=\"M5 9h1v1H5V9zm0 2h1v1H5v-1z\"/><path d=\"M4 8h1v1H4V8zm0 2h1v1H4v-1zM2 8h1v1H2V8zm0 2h1v1H2v-1zm2 2h1v1H4v-1zm-2 0h1v1H2v-1z\"/><path d=\"M5 13h1v1H5v-1zM3 9h1v1H3V9zm0 2h1v1H3v-1zm0 2h1v1H3v-1z\"/></g></svg></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M33 40v1h-1v-1h1z\"/><path d=\"M29,42v1h2v-1h1v-1h-1v1H29z\"/><path d=\"M29 43v1h-4v-1h4z\"/></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-hand wearable-hand-left\"><svg x=\"37\" y=\"31\"><path d=\"M3 15H0V4h1V0h1v4h1z\"/></svg></g><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M32 40v1h-1v-1h1z\"/><path d=\"M33 42v-1h-1v1h1v1h2v-1h-2z\"/><path d=\"M39 43v1h-4v-1h4z\"/></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-hand wearable-hand-left\"><svg x=\"3\" y=\"31\"><g transform=\"scale(-1, 1) translate(-58, 0)\"><path d=\"M0 4v11h6V8h1V6H6V4H2V0H1v4z\"/></g></svg></g></svg>"
+  ],
+  "sleevesUp": [],
+  "sleevesDown": []
+}

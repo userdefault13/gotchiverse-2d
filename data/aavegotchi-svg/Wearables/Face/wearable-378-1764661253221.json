@@ -1,0 +1,61 @@
+{
+  "id": 378,
+  "name": "Lick Tongue",
+  "slot": 1,
+  "slotName": "Face",
+  "category": 0,
+  "description": "",
+  "author": "soju",
+  "traitModifiers": [
+    0,
+    0,
+    -3,
+    0,
+    0,
+    0
+  ],
+  "slotPositions": [
+    false,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "allowedCollaterals": [],
+  "dimensions": {
+    "x": 21,
+    "y": 31,
+    "width": 22,
+    "height": 8
+  },
+  "svgId": 378,
+  "rarityScoreModifier": 5,
+  "minLevel": 1,
+  "rarity": "Common",
+  "ghstPrice": "100",
+  "maxQuantity": "250",
+  "totalQuantity": "250",
+  "canPurchaseWithGhst": false,
+  "canBeTransferred": true,
+  "kinshipBonus": 0,
+  "experienceBonus": 0,
+  "svgs": [
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-face\"><svg x=\"21\" y=\"31\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"22\" height=\"8\" xmlns:v=\"https://vecta.io/nano\"><path d=\"M4 0h14v6H4z\" fill=\"#4d4d4d\"/><path d=\"M0 1v2h2V1H0zm20 0v2h2V1h-2z\" fill=\"#c294fd\"/><path d=\"M5 3v2h12V3H5z\"/><path d=\"M5 1v1h12V1H5z\" fill=\"#c5c5c5\"/><path d=\"M8 3v4h1v1h4V7h1V3z\" fill=\"#f595c5\"/><g fill=\"#b05584\"><path d=\"M10 4h1v1h-1z\"/><path d=\"M11 5h1v1h-1z\"/><path d=\"M10 6h1v1h-1z\"/></g></svg></svg></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-face\"><svg x=\"19\" y=\"31\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"5\" height=\"8\" xmlns:v=\"https://vecta.io/nano\"><path d=\"M3 0v6H1V0h2z\" fill=\"#4d4d4d\"/><path d=\"M1 4V3h1v2H1v3H0V4h1z\" fill=\"#f596c6\"/><path d=\"M1 1h1v1H1z\" fill=\"#c5c5c5\"/><path d=\"M5 1v2H3V1h2z\" fill=\"#c294fd\"/></svg></svg></g><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M33 40v1h-1v-1h1z\"/><path d=\"M29,42v1h2v-1h1v-1h-1v1H29z\"/><path d=\"M29 43v1h-4v-1h4z\"/></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-face\"><svg x=\"40\" y=\"31\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"5\" height=\"8\" xmlns:v=\"https://vecta.io/nano\"><path d=\"M2 0v6h2V0H2z\" fill=\"#4d4d4d\"/><path d=\"M4 4V3H3v2h1v3h1V4H4z\" fill=\"#f596c6\"/><path d=\"M3 1h1v1H3z\" fill=\"#c5c5c5\"/><path d=\"M0 1v2h2V1H0z\" fill=\"#c294fd\"/></svg></svg></g><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M32 40v1h-1v-1h1z\"/><path d=\"M33 42v-1h-1v1h1v1h2v-1h-2z\"/><path d=\"M39 43v1h-4v-1h4z\"/></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-face\"><svg x=\"0\" y=\"0\">378_LickTongue</svg></g></svg>"
+  ],
+  "sleevesUp": [],
+  "sleevesDown": []
+}

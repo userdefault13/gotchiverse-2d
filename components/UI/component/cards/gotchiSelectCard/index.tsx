@@ -53,12 +53,17 @@ export const GotchiSelectCard = ({ gotchi, handleSelect, isSelected }: Props): J
   const sourceTokenId = gotchi?.cartridgeSourceTokenId || undefined;
 
   useEffect(() => {
+    // cAavegotchis: local SVG pack via fetchCollateralGotchiBlobUrl (pink until ready).
     if (!isCartridgeHero || !gotchi?.cartridgeCollateral) {
-      setCartridgeBlobUrl('');
+      setCartridgeBlobUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return '';
+      });
       return;
     }
     const collateral = collateralFromSimId(gotchi.cartridgeCollateral);
     if (!collateral) return;
+
     let cancelled = false;
     let createdUrl = '';
     const equipped = equipKey ? equipKey.split(',').map((n) => Number(n) || 0) : undefined;
@@ -75,7 +80,10 @@ export const GotchiSelectCard = ({ gotchi, handleSelect, isSelected }: Props): J
         return;
       }
       createdUrl = url;
-      setCartridgeBlobUrl(url);
+      setCartridgeBlobUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return url;
+      });
     });
     return () => {
       cancelled = true;

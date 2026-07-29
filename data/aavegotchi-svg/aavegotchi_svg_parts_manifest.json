@@ -1,0 +1,37 @@
+{
+  "source": "aavegotchi/aavegotchi-base repository",
+  "downloadDate": "2025-10-10 01:01:41",
+  "totalFiles": 16,
+  "categories": {
+    "Base": [
+      "Aavegotchi-Gen0-Front-Body-ETH.svg",
+      "Aavegotchi-Gen0-Side-Views-Left-Body-ETH.svg",
+      "Aavegotchi-Gen0-Side-Views-Right-Body-ETH.svg"
+    ],
+    "Eyes": [
+      "Aavegotchi-Gen0-Front-Eyes-ETH.svg"
+    ],
+    "Collaterals": [
+      "Aavegotchi-Gen0-Front-Collateral-ETH.svg"
+    ],
+    "Hands": [
+      "Aavegotchi-Gen0-Front-Hand-Left-Open-ETH.svg",
+      "Aavegotchi-Gen0-Front-Hand-Left-Open-Up-ETH.svg",
+      "Aavegotchi-Gen0-Front-Hand-Right-Open-ETH.svg",
+      "Aavegotchi-Gen0-Front-Hand-Right-Open-Up-ETH.svg",
+      "Aavegotchi-Gen0-Front-Hands-Close-ETH.svg",
+      "Aavegotchi-Side-View-Left-Hand-Up.svg",
+      "Aavegotchi-Side-View-Left-Hand.svg",
+      "Aavegotchi-Side-View-Right-Hand-Up.svg",
+      "Aavegotchi-Side-View-Right-Hand.svg"
+    ],
+    "Mouths": [
+      "Aavegotchi-Gen0-Front-Mouth-ETH.svg"
+    ],
+    "Shadows": [
+      "Aavegotchi-Gen0-Front-Shadow.svg"
+    ],
+    "Cheeks": []
+  },
+  "description": "Individual Aavegotchi SVG parts for modular composition"
+}

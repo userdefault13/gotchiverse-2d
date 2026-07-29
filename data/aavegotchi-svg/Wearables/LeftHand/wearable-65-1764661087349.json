@@ -1,0 +1,61 @@
+{
+  "id": 65,
+  "name": "Legendary Wizard Staff",
+  "slot": 4,
+  "slotName": "LeftHand",
+  "category": 0,
+  "description": "",
+  "author": "Xibot",
+  "traitModifiers": [
+    2,
+    0,
+    0,
+    2,
+    0,
+    0
+  ],
+  "slotPositions": [
+    false,
+    false,
+    false,
+    false,
+    true,
+    true,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false,
+    false
+  ],
+  "allowedCollaterals": [],
+  "dimensions": {
+    "x": 6,
+    "y": 22,
+    "width": 9,
+    "height": 33
+  },
+  "svgId": 65,
+  "rarityScoreModifier": 10,
+  "minLevel": 1,
+  "rarity": "Common",
+  "ghstPrice": "300",
+  "maxQuantity": "125",
+  "totalQuantity": "125",
+  "canPurchaseWithGhst": true,
+  "canBeTransferred": true,
+  "kinshipBonus": 0,
+  "experienceBonus": 0,
+  "svgs": [
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-hand wearable-hand-left\"><svg x=\"6\" y=\"22\"><path d=\"M8 5V4H7V3H6V1H5V0H4v1H3v2H2v1H1v1H0v1h1v1h1v1h1v2h1v23h1V10h1V8h1V7h1V6h1V5z\" fill=\"#47289b\"/><path d=\"M3,7h3v1H3V7z\" fill=\"#cb5bff\"/><path d=\"M5,4h2v1H5V4z\" fill=\"#6f16e2\"/><g fill=\"#3a2b77\"><path d=\"M5 6h1v1H5V6zm0-5h1v2H5V1z\"/><path d=\"M6 3h1v1H6V3zm2 2h1v1H8V5z\"/><path d=\"M7 4h1v1H7V4zm0 2h1v1H7V6zM1 4h1v1H1V4zm0 2h1v1H1V6zm2 4h1V8H3v2z\"/><path d=\"M2,7h1v1H2V7z\"/></g><path d=\"M4,5h3v1H4V5z\" fill=\"#f37aff\"/><path d=\"M5,3h1v2H5V3z\" fill=\"#5d24bf\"/><g fill=\"#8000ff\"><path d=\"M3 6h2v1H3V6zm2-3h1v1H5V3z\"/><path d=\"M4,7h1v3H4V7z\"/></g><g fill=\"#b135ff\"><path d=\"M4,5h1v2H4V5z\"/><path d=\"M5,7h1v1H5V7z\"/><path d=\"M6,5h1v2H6V5z\"/></g><path d=\"M3 3v1H2v2h3V3z\" fill=\"#ffa3ff\"/><path d=\"M3,4h1v2H3V4z\" fill=\"#ffc9ff\"/><path d=\"M2 5.5h1V7H2V5.5zM6 5v1h2V5H6z\" fill=\"#cb5bff\"/><path d=\"M4 1h1v5H4z\" fill=\"#fff\"/><path d=\"M1 5h4v1H1z\" fill=\"#ffc9ff\"/><path d=\"M3 5h1v1H3z\" fill=\"#fff\"/></svg></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M33 40v1h-1v-1h1z\"/><path d=\"M29,42v1h2v-1h1v-1h-1v1H29z\"/><path d=\"M29 43v1h-4v-1h4z\"/></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-hand wearable-hand-left\"><svg x=\"34\" y=\"22\"><path d=\"M6 5V3H5V1H4V0H3v1H2v2H1v2H0v1h1v2h1v2h1v23h1V10h1V8h1V6h1V5H6z\" fill=\"#47289b\"/><path d=\"M4 3V1H2v2H1v2H0v1h1v1h1v1h1v2h2V8h1V3H4z\" fill=\"#3a2b77\"/><path d=\"M5 5V3H4V1H3v2H2v2H1v1h1v2h1v2h1V8h1V6h1V5H5z\" fill=\"#5d24bf\"/><path d=\"M5 5V3H4V1H3v2H2v1h1v1H1v1h2v1H2v1h1v2h1V8h1V6h1V5H5z\" fill=\"#8000ff\"/><path d=\"M5,3H4v1h1V3z\" fill=\"#ffa3ff\"/><path d=\"M2 5h1v1H2z\" fill=\"#f37aff\"/><path d=\"M4 7h1v1H4zM1 5h1v1H1z\" fill=\"#cb5bff\"/><g fill=\"#ffc9ff\"><path d=\"M4 4h1v1H4z\"/><path d=\"M3 5h1v1H3zm2 0h1v1H5z\"/></g><g fill=\"#fff\"><path d=\"M4 5h1v1H4z\"/><path d=\"M3 1h1v4H3z\"/></g><g fill=\"#b135ff\"><path d=\"M3 6h1v1H3z\"/><path d=\"M2 7h1v1H2z\"/></g></svg></g><g class=\"gotchi-wearable gotchi-secondary\"><path d=\"M32 40v1h-1v-1h1z\"/><path d=\"M33 42v-1h-1v1h1v1h2v-1h-2z\"/><path d=\"M39 43v1h-4v-1h4z\"/></g></svg>",
+    "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 64 64\"><g class=\"gotchi-wearable wearable-hand wearable-hand-left\"><svg x=\"6\" y=\"22\"><g transform=\"scale(-1, 1) translate(-52, 0)\"><path d=\"M0 5v1h1v1h1v1h1v2h1v23h1V10h1V8h1V7h1V6h1V5H8V4H7V3H6V1H5V0H4v1H3v2H2v1H1v1z\" fill=\"#47289b\"/><path d=\"M6,8H3V7h3V8z\" fill=\"#cb5bff\"/><path d=\"M4,5H2V4h2V5z\" fill=\"#6f16e2\"/><g fill=\"#3a2b77\"><path d=\"M4 7H3V6h1v1zm0-4H3V1h1v2z\"/><path d=\"M3 4H2V3h1v1zM1 6H0V5h1v1z\"/><path d=\"M2 5H1V4h1v1zm0 2H1V6h1v1zm6-2H7V4h1v1zm0 2H7V6h1v1zM6 8H5v2h1V8z\"/><path d=\"M7,8H6V7h1V8z\"/></g><path d=\"M5,6H2V5h3V6z\" fill=\"#f37aff\"/><path d=\"M4,5H3V3h1V5z\" fill=\"#5d24bf\"/><g fill=\"#8000ff\"><path d=\"M6 7H4V6h2v1zM4 4H3V3h1v1z\"/><path d=\"M5 10H4V7h1v3z\"/></g><g fill=\"#b135ff\"><path d=\"M5,7H4V5h1V7z\"/><path d=\"M4,8H3V7h1V8z\"/><path d=\"M3,7H2V5h1V7z\"/></g><path d=\"M4 3v3h3V4H6V3z\" fill=\"#ffa3ff\"/><path d=\"M6,6H5V4h1V6z\" fill=\"#ffc9ff\"/><path d=\"M7 7H6V5.5h1V7zM1 5v1h2V5H1z\" fill=\"#cb5bff\"/><path d=\"M4 1h1v5H4z\" fill=\"#fff\"/><path d=\"M4 5h4v1H4z\" fill=\"#ffc9ff\"/><path d=\"M5 5h1v1H5z\" fill=\"#fff\"/></g></svg></g></svg>"
+  ],
+  "sleevesUp": [],
+  "sleevesDown": []
+}

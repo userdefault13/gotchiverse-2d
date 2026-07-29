@@ -1,4 +1,5 @@
 import { defaultGotchi } from 'helpers/aavegotchi/svg';
+import { composeLocalCaavegotchiSvg } from 'helpers/aavegotchi/localSvgPack';
 import { convertInlineSVGToBlobURL, removeBG } from 'helpers/aavegotchi';
 import type { CollateralObject } from 'helpers/ethers.helper';
 import { ethers } from 'ethers';
@@ -211,8 +212,26 @@ export async function fetchCollateralGotchiSvg(
     }
   }
 
-  const cacheKey = `base:v1:${tid || addr || collateral.name}:h${hauntId}:t${traitArr.join(',')}:w${equipped.join(',')}`;
+  const cacheKey = `local:v1:${tid || addr || collateral.name}:h${hauntId}:t${traitArr.join(',')}:w${equipped.join(',')}`;
   if (svgCache.has(cacheKey)) return svgCache.get(cacheKey);
+
+  // Prefer local Paarcel SVG JSON pack (fast) for cAavegotchi card/sprite art.
+  try {
+    const localName = collateral.maticDisplay || collateral.name;
+    const localSvg = await composeLocalCaavegotchiSvg({
+      collateralName: localName,
+      side: 'front',
+      traits: traitArr,
+      equippedWearables: equipped,
+      removeBg: true,
+    });
+    if (localSvg && localSvg.length > 200) {
+      svgCache.set(cacheKey, localSvg);
+      return localSvg;
+    }
+  } catch (err) {
+    console.warn('@fetchCollateralGotchiSvg local pack', collateral.name, err);
+  }
 
   if (!addr) {
     const fallback = buildCollateralGotchiSvg(collateral);
@@ -252,8 +271,8 @@ export async function fetchCollateralGotchiBlobUrl(
 }
 
 /**
- * 4-direction sprites for a cartridge cAavegotchi:
- * front = Base previewAavegotchi (+ equipped cWearables); left/right/back = recolored default sides.
+ * 4-direction sprites for a cartridge cAavegotchi.
+ * Prefer local SVG pack for all sides; fall back to front RPC + recolored defaults.
  */
 export async function fetchCartridgeHeroSideSVGs(
   collateral: CollateralObject,
@@ -262,6 +281,29 @@ export async function fetchCartridgeHeroSideSVGs(
   traits?: number[] | Tuple<number, 6> | null,
   sourceTokenId?: string | null,
 ): Promise<[string, string, string, string]> {
+  const equipped = padEquip(equippedWearables);
+  const traitArr = padTraits(traits);
+  const localName = collateral.maticDisplay || collateral.name;
+  const sides: SideLike[] = ['front', 'left', 'right', 'back'];
+  try {
+    const composed = await Promise.all(
+      sides.map((side) =>
+        composeLocalCaavegotchiSvg({
+          collateralName: localName,
+          side,
+          traits: traitArr,
+          equippedWearables: equipped,
+          removeBg: true,
+        }),
+      ),
+    );
+    if (composed.every((s) => s && s.length > 200)) {
+      return composed as [string, string, string, string];
+    }
+  } catch (err) {
+    console.warn('@fetchCartridgeHeroSideSVGs local pack', localName, err);
+  }
+
   const front = await fetchCollateralGotchiSvg(
     collateral,
     undefined,
@@ -277,3 +319,5 @@ export async function fetchCartridgeHeroSideSVGs(
     buildCollateralGotchiSvgFromBase(defaultGotchi[3], collateral),
   ];
 }
+
+type SideLike = 'front' | 'left' | 'right' | 'back';
