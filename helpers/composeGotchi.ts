@@ -1,0 +1,380 @@
+/**
+ * Offline Aavegotchi composer from the JSON SVG library under /data/.
+ * Ported from AavegotchiQuerey `src/utils/composeGotchi.js`.
+ * Used for soft-launch cAavegotchi previews (not wallet L1 gotchis).
+ */
+
+export const VIEW_NAMES = ['Front', 'Left', 'Right', 'Back']
+export const SLOT_NAMES = [
+  'Body',
+  'Face',
+  'Eyes',
+  'Head',
+  'Left Hand',
+  'Right Hand',
+  'Pet',
+  'Background'
+]
+
+const DATA_BASE = '/data'
+
+let libraryCache = null
+
+function hexFrom0x(value) {
+  if (!value) return '#000000'
+  const s = String(value).trim()
+  if (s.startsWith('#')) return s
+  if (s.startsWith('0x') || s.startsWith('0X')) return `#${s.slice(2)}`
+  return `#${s}`
+}
+
+/** Eye color trait → fill. Common band uses collateral primary. */
+export function getEyeColorHex(eyeColorTrait, primaryColor) {
+  const v = Number(eyeColorTrait)
+  if (v >= 0 && v <= 1) return '#FF00FF'
+  if (v >= 2 && v <= 9) return '#0064FF'
+  if (v >= 10 && v <= 24) return '#5D24BF'
+  if (v >= 25 && v <= 74) return hexFrom0x(primaryColor)
+  if (v >= 75 && v <= 90) return '#36818E'
+  if (v >= 91 && v <= 97) return '#EA8C27'
+  if (v >= 98 && v <= 99) return '#51FFA8'
+  return hexFrom0x(primaryColor)
+}
+
+export async function loadLibrary() {
+  if (libraryCache) return libraryCache
+
+  const [
+    main,
+    collateralsH1,
+    collateralsH2,
+    eyeShapesH1,
+    eyeShapesH2,
+    wearables,
+    rarity
+  ] = await Promise.all([
+    fetch(`${DATA_BASE}/aavegotchi_db_main.json`).then((r) => r.json()),
+    fetch(`${DATA_BASE}/aavegotchi_db_collaterals_haunt1.json`).then((r) => r.json()),
+    fetch(`${DATA_BASE}/aavegotchi_db_collaterals_haunt2.json`).then((r) => r.json()),
+    fetch(`${DATA_BASE}/aavegotchi_db_eye_shapes_haunt1.json`).then((r) => r.json()),
+    fetch(`${DATA_BASE}/aavegotchi_db_eye_shapes_haunt2.json`).then((r) => r.json()),
+    fetch(`${DATA_BASE}/aavegotchi_db_wearables.json`).then((r) => r.json()),
+    fetch(`${DATA_BASE}/aavegotchi_db_rarity.json`).then((r) => r.json()).catch(() => null)
+  ])
+
+  libraryCache = {
+    main,
+    collaterals: {
+      1: collateralsH1.collaterals || [],
+      2: collateralsH2.collaterals || []
+    },
+    eyeShapes: {
+      1: eyeShapesH1.eyeShapes || [],
+      2: eyeShapesH2.eyeShapes || []
+    },
+    wearables: wearables.wearables || [],
+    wearablesById: new Map((wearables.wearables || []).map((w) => [Number(w.id), w])),
+    rarity
+  }
+  return libraryCache
+}
+
+export function clearLibraryCache() {
+  libraryCache = null
+}
+
+export function getCollateralsForHaunt(library, hauntId) {
+  return library.collaterals[Number(hauntId)] || []
+}
+
+export function findCollateral(library, hauntId, collateralTypeOrName) {
+  const list = getCollateralsForHaunt(library, hauntId)
+  const key = String(collateralTypeOrName || '').toLowerCase()
+  return (
+    list.find((c) => c.collateralType?.toLowerCase() === key) ||
+    list.find((c) => c.name?.toLowerCase() === key) ||
+    null
+  )
+}
+
+export function findEyeShape(library, hauntId, eyeShapeTrait) {
+  const shapes = library.eyeShapes[Number(hauntId)] || []
+  const v = Number(eyeShapeTrait)
+  return (
+    shapes.find((s) => v >= s.rangeMin && v < s.rangeMax) ||
+    shapes.find((s) => v >= s.rangeMin && v <= s.rangeMax) ||
+    null
+  )
+}
+
+export function wearablesForSlot(library, slotIndex) {
+  return (library.wearables || []).filter((w) => {
+    const slots = w.slotPositions || []
+    return !!slots[slotIndex]
+  })
+}
+
+function pickViewFragment(arr, viewIndex) {
+  if (!arr || !arr.length) return ''
+  if (arr[viewIndex] != null && arr[viewIndex] !== '') return arr[viewIndex]
+  return arr[0] || ''
+}
+
+function buildStyleBlock(collateral, eyeColorHex, hasBodyWearable) {
+  const primary = hexFrom0x(collateral.primaryColor)
+  const secondary = hexFrom0x(collateral.secondaryColor)
+  const cheek = hexFrom0x(collateral.cheekColor)
+  const open = hasBodyWearable
+  return `<style>
+.gotchi-primary{fill:${primary};}
+.gotchi-secondary{fill:${secondary};}
+.gotchi-cheek{fill:${cheek};}
+.gotchi-eyeColor{fill:${eyeColorHex};}
+.gotchi-primary-mouth{fill:${primary};}
+.gotchi-sleeves-up{display:none;}
+.gotchi-handsUp{display:none;}
+.gotchi-handsDownOpen{display:${open ? 'block' : 'none'};}
+.gotchi-handsDownClosed{display:${open ? 'none' : 'block'};}
+</style>`
+}
+
+const LEFT_HAND_SLOT = 4
+const RIGHT_HAND_SLOT = 5
+
+/** On-chain side views only show the hand facing the camera. */
+function shouldRenderHandWearable(slot, viewIndex) {
+  if (slot !== LEFT_HAND_SLOT && slot !== RIGHT_HAND_SLOT) return true
+  switch (viewIndex) {
+    case 0: return true // Front — both hands
+    case 1: return slot === RIGHT_HAND_SLOT // Left profile — RH item only
+    case 2: return slot === LEFT_HAND_SLOT // Right profile — LH item only
+    case 3: return true // Back — both (behind body)
+    default: return true
+  }
+}
+
+/**
+ * Hand wearables are authored for the left side of the canvas on Front/Back.
+ * - Front RH (slot 5): mirror across canvas
+ * - Back LH (slot 4): mirror across canvas (from behind, character left is viewer right)
+ */
+function wrapWearable(fragment, slot, viewIndex = 0) {
+  if (!fragment) return ''
+  const classBySlot = {
+    0: 'wearable-body',
+    1: 'wearable-face',
+    2: 'wearable-eyes',
+    3: 'wearable-head',
+    4: 'wearable-hand wearable-hand-left',
+    5: 'wearable-hand wearable-hand-right',
+    6: 'wearable-pet',
+    7: 'wearable-bg'
+  }
+  const cls = classBySlot[slot] || 'wearable'
+
+  let content = fragment
+  const mirrorFrontRight = slot === RIGHT_HAND_SLOT && viewIndex === 0
+  const mirrorBackLeft = slot === LEFT_HAND_SLOT && viewIndex === 3
+  if (mirrorFrontRight || mirrorBackLeft) {
+    // Match on-chain: flip across the 64px canvas so LH/RH land on the correct side
+    content = `<g transform="translate(64, 0) scale(-1, 1)">${fragment}</g>`
+  }
+
+  return `<g class="gotchi-wearable ${cls}">${content}</g>`
+}
+
+function handWearableLayers(wearables, lib, viewIndex) {
+  const layers = []
+  for (const slot of [LEFT_HAND_SLOT, RIGHT_HAND_SLOT]) {
+    if (!shouldRenderHandWearable(slot, viewIndex)) continue
+    const id = wearables[slot]
+    if (!id) continue
+    const w = lib.wearablesById.get(id)
+    if (!w) continue
+    layers.push(wrapWearable(pickViewFragment(w.svgs, viewIndex), slot, viewIndex))
+  }
+  return layers
+}
+
+function sleevesForWearable(wearable, viewIndex, hasBodyWearable) {
+  if (!wearable?.sleeves || !hasBodyWearable) return ''
+  const sleeve = pickViewFragment(wearable.sleeves, viewIndex)
+  if (!sleeve) return ''
+  // Prefer sleeves-down content when present; CSS hides sleeves-up
+  return `<g class="gotchi-wearable wearable-sleeves">${sleeve}</g>`
+}
+
+/**
+ * @param {object} input
+ * @param {number} input.hauntId
+ * @param {string} input.collateralType - address or name
+ * @param {number[]} input.numericTraits - length 6
+ * @param {number[]} input.equippedWearables - length 16 (0 = empty)
+ * @param {object} [library]
+ */
+export async function composeAllViews(input, library) {
+  const lib = library || (await loadLibrary())
+  const hauntId = Number(input.hauntId) || 1
+  const traits = (input.numericTraits || [50, 50, 50, 50, 50, 50]).map(Number)
+  const wearables = Array.from({ length: 16 }, (_, i) => Number(input.equippedWearables?.[i] || 0))
+
+  const collateral = findCollateral(lib, hauntId, input.collateralType)
+  if (!collateral) {
+    throw new Error(`Collateral not found for haunt ${hauntId}: ${input.collateralType}`)
+  }
+
+  const eyeShapeTrait = traits[4] ?? 50
+  const eyeColorTrait = traits[5] ?? 50
+  const eyeColorHex = getEyeColorHex(eyeColorTrait, collateral.primaryColor)
+  const hasBodyWearable = wearables[0] > 0
+
+  const useCollateralEyes = eyeShapeTrait >= 98
+  const eyeShape = useCollateralEyes ? null : findEyeShape(lib, hauntId, eyeShapeTrait)
+
+  const result = {}
+  for (let viewIndex = 0; viewIndex < 4; viewIndex++) {
+    result[VIEW_NAMES[viewIndex]] = composeSvgView({
+      lib,
+      collateral,
+      eyeShape,
+      useCollateralEyes,
+      eyeColorHex,
+      hasBodyWearable,
+      wearables,
+      viewIndex
+    })
+  }
+  return result
+}
+
+function composeSvgView({
+  lib,
+  collateral,
+  eyeShape,
+  useCollateralEyes,
+  eyeColorHex,
+  hasBodyWearable,
+  wearables,
+  viewIndex
+}) {
+  const main = lib.main
+  const layers = []
+
+  layers.push(buildStyleBlock(collateral, eyeColorHex, hasBodyWearable))
+
+  // Background wearable (slot 7) behind body
+  if (wearables[7] > 0) {
+    const w = lib.wearablesById.get(wearables[7])
+    if (w) layers.push(wrapWearable(pickViewFragment(w.svgs, viewIndex), 7, viewIndex))
+  }
+
+  // Body
+  layers.push(pickViewFragment(main.body, viewIndex))
+
+  // Back view: hand wearables sit behind the body (before eyes/hands)
+  if (viewIndex === 3) {
+    layers.push(...handWearableLayers(wearables, lib, viewIndex))
+  }
+
+  // Mouth (library only has front fragments; skip if empty)
+  if (viewIndex === 0) {
+    // Front body already embeds a mouth; skip extra mouth to avoid double
+  } else if (main.mouth_neutral?.[0] && viewIndex !== 3) {
+    // side mouths not in library; leave empty
+  }
+
+  // Eyes (not on back)
+  if (viewIndex !== 3) {
+    let eyeFrag = ''
+    if (useCollateralEyes && collateral.eyeShapeSvgs) {
+      eyeFrag = pickViewFragment(collateral.eyeShapeSvgs, Math.min(viewIndex, collateral.eyeShapeSvgs.length - 1))
+    } else if (eyeShape?.svgs) {
+      // eyeShapes: [front, left, right]
+      const eyeView = viewIndex === 0 ? 0 : viewIndex === 1 ? 1 : 2
+      eyeFrag = pickViewFragment(eyeShape.svgs, eyeView)
+    }
+    if (eyeFrag) layers.push(eyeFrag)
+  }
+
+  // Collateral logo (skip back — often blank/duplicate of side)
+  if (viewIndex !== 3 && collateral.svgs) {
+    const logo = pickViewFragment(collateral.svgs, viewIndex)
+    if (logo) layers.push(logo)
+  }
+
+  // Hands + hand wearables (layer order matches on-chain per view)
+  const hands = pickViewFragment(main.hands, viewIndex)
+  const handWearables = viewIndex === 3 ? [] : handWearableLayers(wearables, lib, viewIndex)
+
+  if (viewIndex === 1 || viewIndex === 2) {
+    // Side views: wearable under hand strokes
+    layers.push(...handWearables)
+    if (hands) layers.push(hands)
+  } else if (viewIndex === 0) {
+    // Front: hands then wearables on top
+    if (hands) layers.push(hands)
+    layers.push(...handWearables)
+  } else if (viewIndex === 3) {
+    // Back: hand wearables already behind body; hands on top
+    if (hands) layers.push(hands)
+  }
+
+  // Non-hand wearables (slots 0–3, 6)
+  const slotOrder = [0, 1, 2, 3, 6]
+  for (const slot of slotOrder) {
+    const id = wearables[slot]
+    if (!id) continue
+    const w = lib.wearablesById.get(id)
+    if (!w) continue
+    layers.push(wrapWearable(pickViewFragment(w.svgs, viewIndex), slot, viewIndex))
+    if (slot === 0) {
+      layers.push(sleevesForWearable(w, viewIndex, hasBodyWearable))
+    }
+  }
+
+  // Shadow (if not already in body — body front includes shadow; still ok to skip duplicate)
+  // Only add separate shadow for views where body may not include it
+  if (viewIndex !== 0) {
+    const shadow = pickViewFragment(main.shadow, viewIndex === 3 ? 0 : Math.min(viewIndex, (main.shadow || []).length - 1))
+    if (shadow && !String(pickViewFragment(main.body, viewIndex)).includes('gotchi-shadow')) {
+      layers.push(shadow)
+    }
+  }
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">${layers.filter(Boolean).join('')}</svg>`
+}
+
+/** Parse ethers previewSideAavegotchi response into string[4]. */
+export function parsePreviewSideResponse(response) {
+  let svgArray = []
+  if (!response) return svgArray
+
+  if (Array.isArray(response)) {
+    svgArray = [...response]
+  } else if (typeof response === 'object') {
+    if (typeof response.length === 'number') {
+      for (let i = 0; i < response.length; i++) {
+        if (response[i] !== undefined) svgArray.push(response[i])
+      }
+    } else if (response.ag_) {
+      const ag = response.ag_
+      if (Array.isArray(ag)) svgArray = [...ag]
+      else if (typeof ag === 'string') svgArray = [ag]
+      else if (ag && typeof ag.length === 'number') {
+        for (let i = 0; i < ag.length; i++) {
+          if (ag[i] !== undefined) svgArray.push(ag[i])
+        }
+      }
+    }
+  }
+
+  return svgArray.map((s) => (typeof s === 'string' ? s : String(s ?? '')))
+}
+
+export function previewSidesToNamed(svgArray) {
+  const named = {}
+  VIEW_NAMES.forEach((name, i) => {
+    named[name] = svgArray[i] || ''
+  })
+  return named
+}

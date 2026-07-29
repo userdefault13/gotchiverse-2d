@@ -4,6 +4,13 @@ import type { CollateralObject } from 'helpers/ethers.helper';
 import { ethers } from 'ethers';
 import type { NetworkNames, Tuple } from 'types';
 import { abis, varsForNetwork } from 'shared_code/web3/shared.const.web3';
+import { composeAllViews } from 'helpers/composeGotchi';
+
+type BaseGotchiIdentity = {
+  hauntId: number;
+  collateral: string;
+  traits: number[];
+};
 
 const svgCache = new Map<string, string>();
 const identityCache = new Map<string, BaseGotchiIdentity>();
@@ -17,17 +24,7 @@ const EMPTY_WEARABLES = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] as Tupl
  */
 export const BASE_PREVIEW_TRAITS = [50, 50, 50, 50, 50, 50] as Tuple<number, 6>;
 
-type BaseGotchiIdentity = {
-  hauntId: number;
-  collateral: string;
-  traits: number[];
-};
-
-/** Soft-launch previews always use the Base diamond (not Polygon). */
-function previewNetwork(_network?: NetworkNames | string): NetworkNames {
-  return 'base';
-}
-
+/** Soft-launch identity / preview RPC always targets Base. */
 function rpcProviderFor(network: NetworkNames): ethers.providers.JsonRpcProvider {
   if (!rpcProviders.has(network)) {
     const rpc = varsForNetwork(network).jsonRPC || 'https://mainnet.base.org';
@@ -52,6 +49,24 @@ function stripGotchiBackground(svg: string): string {
     return removeBG(svg);
   }
   return svg.replace(/<svg([^>]*)>/, '<svg$1><style>.gotchi-bg,.wearable-bg{display:none}</style>');
+}
+
+/** Prefer offline JSON compose for cAavegotchis; RPC only as last resort. */
+async function composeOfflineSvg(
+  hauntId: number,
+  collateralAddr: string,
+  traits: number[],
+  equipped: number[],
+): Promise<string> {
+  const views = await composeAllViews({
+    hauntId,
+    collateralType: collateralAddr,
+    numericTraits: traits,
+    equippedWearables: equipped,
+  });
+  const svg = views?.Front || '';
+  if (!svg || svg.length < 80) throw new Error('empty composed svg');
+  return stripGotchiBackground(svg);
 }
 
 function padEquip(equippedWearables?: number[] | Tuple<number, 16> | null): number[] {
@@ -182,18 +197,19 @@ async function previewOnBase(
 }
 
 /**
- * On-chain cAavegotchi preview on Base (body + eyes + collateral + optional wearables).
+ * cAavegotchi preview: offline JSON library compose first (fast for large rosters).
+ * Falls back to Base `previewAavegotchi` only if compose fails.
+ * Wallet L1 gotchis still use subgraph/contract SVG paths elsewhere — not this helper.
  * Pass `sourceTokenId` for wallet-bound heroes so haunt/collateral/traits match L1.
  */
 export async function fetchCollateralGotchiSvg(
   collateral: CollateralObject,
   _walletProvider?: ethers.providers.Provider,
-  network?: NetworkNames | string,
+  _network?: NetworkNames | string,
   equippedWearables?: number[] | Tuple<number, 16> | null,
   traits?: number[] | Tuple<number, 6> | null,
   sourceTokenId?: string | null,
 ): Promise<string> {
-  const net = previewNetwork(network);
   const equipped = padEquip(equippedWearables);
   const tid = String(sourceTokenId || '').trim();
   const isL1 = Boolean(tid && tid !== '0' && /^\d+$/.test(tid));
@@ -211,7 +227,7 @@ export async function fetchCollateralGotchiSvg(
     }
   }
 
-  const cacheKey = `base:v1:${tid || addr || collateral.name}:h${hauntId}:t${traitArr.join(',')}:w${equipped.join(',')}`;
+  const cacheKey = `json:v1:${tid || addr || collateral.name}:h${hauntId}:t${traitArr.join(',')}:w${equipped.join(',')}`;
   if (svgCache.has(cacheKey)) return svgCache.get(cacheKey);
 
   if (!addr) {
@@ -221,14 +237,21 @@ export async function fetchCollateralGotchiSvg(
   }
 
   try {
-    const cleaned = await previewOnBase(hauntId, addr, traitArr, equipped);
+    const cleaned = await composeOfflineSvg(hauntId, addr, traitArr, equipped);
     svgCache.set(cacheKey, cleaned);
     return cleaned;
-  } catch (err) {
-    console.warn('@fetchCollateralGotchiSvg', collateral.name, tid || '', err);
-    const fallback = buildCollateralGotchiSvg(collateral);
-    svgCache.set(cacheKey, fallback);
-    return fallback;
+  } catch (composeErr) {
+    console.warn('@fetchCollateralGotchiSvg compose', collateral.name, tid || '', composeErr);
+    try {
+      const cleaned = await previewOnBase(hauntId, addr, traitArr, equipped);
+      svgCache.set(cacheKey, cleaned);
+      return cleaned;
+    } catch (err) {
+      console.warn('@fetchCollateralGotchiSvg', collateral.name, tid || '', err);
+      const fallback = buildCollateralGotchiSvg(collateral);
+      svgCache.set(cacheKey, fallback);
+      return fallback;
+    }
   }
 }
 
@@ -252,8 +275,8 @@ export async function fetchCollateralGotchiBlobUrl(
 }
 
 /**
- * 4-direction sprites for a cartridge cAavegotchi:
- * front = Base previewAavegotchi (+ equipped cWearables); left/right/back = recolored default sides.
+ * 4-direction sprites for a cartridge cAavegotchi.
+ * Prefer offline JSON compose for all sides; fall back to front compose + recolored defaults.
  */
 export async function fetchCartridgeHeroSideSVGs(
   collateral: CollateralObject,
@@ -262,6 +285,43 @@ export async function fetchCartridgeHeroSideSVGs(
   traits?: number[] | Tuple<number, 6> | null,
   sourceTokenId?: string | null,
 ): Promise<[string, string, string, string]> {
+  const equipped = padEquip(equippedWearables);
+  const tid = String(sourceTokenId || '').trim();
+  const isL1 = Boolean(tid && tid !== '0' && /^\d+$/.test(tid));
+
+  let hauntId = 1;
+  let addr = collateralAddress(collateral);
+  let traitArr = padTraits(traits);
+
+  if (isL1) {
+    const identity = await fetchBaseGotchiIdentity(tid);
+    if (identity) {
+      hauntId = identity.hauntId;
+      addr = identity.collateral;
+      traitArr = identity.traits;
+    }
+  }
+
+  if (addr) {
+    try {
+      const views = await composeAllViews({
+        hauntId,
+        collateralType: addr,
+        numericTraits: traitArr,
+        equippedWearables: equipped,
+      });
+      const sides: [string, string, string, string] = [
+        stripGotchiBackground(views.Front || ''),
+        stripGotchiBackground(views.Left || ''),
+        stripGotchiBackground(views.Right || ''),
+        stripGotchiBackground(views.Back || ''),
+      ];
+      if (sides[0].length >= 80) return sides;
+    } catch (err) {
+      console.warn('@fetchCartridgeHeroSideSVGs compose', collateral.name, err);
+    }
+  }
+
   const front = await fetchCollateralGotchiSvg(
     collateral,
     undefined,
