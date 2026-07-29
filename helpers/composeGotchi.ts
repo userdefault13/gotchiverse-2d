@@ -125,17 +125,59 @@ function buildStyleBlock(collateral, eyeColorHex, hasBodyWearable) {
   const secondary = hexFrom0x(collateral.secondaryColor)
   const cheek = hexFrom0x(collateral.cheekColor)
   const open = hasBodyWearable
+  // Use !important so Phaser / nested <image> spritesheets keep class fills.
+  // Do NOT use `*` on eyeColor — nested `.gotchi-primary` paths inside eyes must keep primary.
   return `<style>
-.gotchi-primary{fill:${primary};}
-.gotchi-secondary{fill:${secondary};}
-.gotchi-cheek{fill:${cheek};}
-.gotchi-eyeColor{fill:${eyeColorHex};}
-.gotchi-primary-mouth{fill:${primary};}
+.gotchi-primary{fill:${primary}!important;}
+.gotchi-secondary{fill:${secondary}!important;}
+.gotchi-cheek{fill:${cheek}!important;}
+.gotchi-eyeColor{fill:${eyeColorHex}!important;}
+.gotchi-primary-mouth{fill:${primary}!important;}
 .gotchi-sleeves-up{display:none;}
 .gotchi-handsUp{display:none;}
 .gotchi-handsDownOpen{display:${open ? 'block' : 'none'};}
 .gotchi-handsDownClosed{display:${open ? 'none' : 'block'};}
 </style>`
+}
+
+/** Bake class fills onto elements so Phaser texture load keeps eye/cheek colors. */
+export function bakeGotchiSvgClassFills(svg: string): string {
+  if (!svg || typeof DOMParser === 'undefined') return svg
+  try {
+    const doc = new DOMParser().parseFromString(svg, 'image/svg+xml')
+    const styleText = doc.querySelector('style')?.textContent || ''
+    const colorFor = (cls: string): string | null => {
+      const re = new RegExp(`\\.${cls}\\s*\\{[^}]*fill:\\s*([^;!}]+)`, 'i')
+      const m = styleText.match(re)
+      return m ? m[1].trim() : null
+    }
+    const classes = [
+      'gotchi-primary',
+      'gotchi-secondary',
+      'gotchi-cheek',
+      'gotchi-eyeColor',
+      'gotchi-primary-mouth',
+    ] as const
+    for (const cls of classes) {
+      const color = colorFor(cls)
+      if (!color) continue
+      doc.querySelectorAll(`.${cls}`).forEach((el) => {
+        el.setAttribute('fill', color)
+        el.querySelectorAll('path,rect,circle,polygon,polyline,ellipse').forEach((child) => {
+          const childEl = child as Element
+          const childClass = childEl.getAttribute('class') || ''
+          if (/gotchi-(primary|secondary|cheek|eyeColor|primary-mouth)/.test(childClass)) return
+          if (!childEl.getAttribute('fill') || childEl.getAttribute('fill') === 'none') {
+            childEl.setAttribute('fill', color)
+          }
+        })
+      })
+    }
+    const root = doc.documentElement
+    return root ? new XMLSerializer().serializeToString(root) : svg
+  } catch {
+    return svg
+  }
 }
 
 const LEFT_HAND_SLOT = 4
@@ -239,16 +281,18 @@ export async function composeAllViews(
 
   const result: Record<string, string> = {}
   for (let viewIndex = 0; viewIndex < 4; viewIndex++) {
-    result[VIEW_NAMES[viewIndex]] = composeSvgView({
-      lib,
-      collateral,
-      eyeShape,
-      useCollateralEyes,
-      eyeColorHex,
-      hasBodyWearable,
-      wearables,
-      viewIndex
-    })
+    result[VIEW_NAMES[viewIndex]] = bakeGotchiSvgClassFills(
+      composeSvgView({
+        lib,
+        collateral,
+        eyeShape,
+        useCollateralEyes,
+        eyeColorHex,
+        hasBodyWearable,
+        wearables,
+        viewIndex
+      }),
+    )
   }
   return result
 }

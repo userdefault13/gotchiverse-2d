@@ -383,7 +383,7 @@ export const fetchAavegotchiSideSVGs = async (
     const equipKey = (opts?.equippedWearables || []).map((n) => Number(n) || 0).join(',');
     const traitKey = (opts?.traits || []).map((n) => Number(n) || 50).join(',');
     const sourceKey = String(opts?.sourceTokenId || '');
-    const cacheKey = `cartridge:base:${simCollateral}:src${sourceKey}:w${equipKey}:t${traitKey}`;
+    const cacheKey = `cartridge:base-sides-v2:${simCollateral}:src${sourceKey}:w${equipKey}:t${traitKey}`;
     if (GlobalState.CHAT.state.gotchiSides[cacheKey]) {
       return GlobalState.CHAT.state.gotchiSides[cacheKey];
     }

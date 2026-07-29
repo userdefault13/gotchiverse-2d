@@ -196,6 +196,30 @@ async function previewOnBase(
   return stripGotchiBackground(svg);
 }
 
+/** On-chain 4-side preview — accurate eyes/wearables for Phaser sprites. */
+async function previewSideOnBase(
+  hauntId: number,
+  collateralAddr: string,
+  traits: number[],
+  equipped: number[],
+): Promise<[string, string, string, string]> {
+  const provider = rpcProviderFor('base');
+  const diamond = varsForNetwork('base').aavegotchiDiamond;
+  if (!diamond) throw new Error('No Base aavegotchi diamond');
+  const contract = new ethers.Contract(diamond, abis.aavegotchiDiamond, provider);
+  const res = await contract.previewSideAavegotchi(hauntId, collateralAddr, traits, equipped);
+  const arr: string[] = Array.isArray(res) ? res.map(String) : [];
+  if (arr.length < 4 || arr[0].length < 100) {
+    throw new Error('empty previewSide svg');
+  }
+  return [
+    stripGotchiBackground(arr[0]),
+    stripGotchiBackground(arr[1]),
+    stripGotchiBackground(arr[2]),
+    stripGotchiBackground(arr[3]),
+  ];
+}
+
 /**
  * cAavegotchi preview: offline JSON library compose first (fast for large rosters).
  * Falls back to Base `previewAavegotchi` only if compose fails.
@@ -275,8 +299,9 @@ export async function fetchCollateralGotchiBlobUrl(
 }
 
 /**
- * 4-direction sprites for a cartridge cAavegotchi.
- * Prefer offline JSON compose for all sides; fall back to front compose + recolored defaults.
+ * 4-direction sprites for a cartridge cAavegotchi (in-game Phaser).
+ * Prefer on-chain previewSideAavegotchi so eye shapes/colors match L1 / wearables;
+ * fall back to offline JSON compose (with baked fills) if RPC fails.
  */
 export async function fetchCartridgeHeroSideSVGs(
   collateral: CollateralObject,
@@ -303,6 +328,12 @@ export async function fetchCartridgeHeroSideSVGs(
   }
 
   if (addr) {
+    try {
+      return await previewSideOnBase(hauntId, addr, traitArr, equipped);
+    } catch (err) {
+      console.warn('@fetchCartridgeHeroSideSVGs on-chain', collateral.name, err);
+    }
+
     try {
       const views = await composeAllViews({
         hauntId,
