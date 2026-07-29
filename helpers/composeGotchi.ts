@@ -267,12 +267,31 @@ function handWearableLayers(wearables, lib, viewIndex) {
   return layers
 }
 
+/** Body wearable nested <svg x y> (or previewoffsets) — sleeves use the same local space. */
+function wearableViewOffset(wearable, viewIndex): { x: string; y: string } | null {
+  const frag = pickViewFragment(wearable?.svgs, viewIndex) || ''
+  const mx = frag.match(/\bx="([^"]+)"/i)
+  const my = frag.match(/\by="([^"]+)"/i)
+  if (mx || my) {
+    return { x: mx?.[1] || '0', y: my?.[1] || '0' }
+  }
+  const off = wearable?.previewoffsets?.[viewIndex] || wearable?.previewoffsets?.[0]
+  if (off && (off.x != null || off.y != null)) {
+    return { x: String(off.x ?? 0), y: String(off.y ?? 0) }
+  }
+  return null
+}
+
 function sleevesForWearable(wearable, viewIndex, hasBodyWearable) {
   if (!wearable?.sleeves || !hasBodyWearable) return ''
   const sleeve = pickViewFragment(wearable.sleeves, viewIndex)
   if (!sleeve) return ''
+  // Sleeve path coords are local to the body wearable's nested svg (same x/y as svgs[view]).
+  // Without that offset they paint near the canvas top and white open-hands show instead.
+  const off = wearableViewOffset(wearable, viewIndex)
+  const inner = off ? `<svg x="${off.x}" y="${off.y}">${sleeve}</svg>` : sleeve
   // Prefer sleeves-down content when present; CSS hides sleeves-up
-  return `<g class="gotchi-wearable wearable-sleeves">${sleeve}</g>`
+  return `<g class="gotchi-wearable wearable-sleeves">${inner}</g>`
 }
 
 export type ComposeGotchiInput = {

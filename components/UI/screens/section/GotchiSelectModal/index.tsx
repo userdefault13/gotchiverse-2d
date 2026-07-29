@@ -107,9 +107,17 @@ interface Props {
   handleSpawnSelect: (id: string) => void;
   onBack: () => void;
   selectedGotchi: GotchiverseAavegotchi;
+  /** Eager parent update so center art switches before router.query settles. */
+  onSelectedGotchiChange?: (gotchi: GotchiverseAavegotchi) => void;
 }
 
-export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSelect, onBack }: Props): JSX.Element => {
+export const GotchiSelectModal = ({
+  selectedSpawn,
+  selectedGotchi,
+  onSelectedGotchiChange,
+  handleSpawnSelect,
+  onBack,
+}: Props): JSX.Element => {
   const [{ currentAccount, currentNetwork, globalProvider, ethersSigner }] = useWeb3();
   const [{ eventsList }, realmDispatch] = useRealm();
   const [{ gameConfig }] = useGame();
@@ -204,12 +212,14 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
       selectedGotchi.hauntId === 1 || selectedGotchi.hauntId === 2
         ? selectedGotchi.hauntId
         : undefined;
+    const collateralKey = selectedGotchi.cartridgeCollateral || '';
     return {
       equipped,
       traits,
       sourceTokenId,
       hauntId,
-      key: `${sourceTokenId}|h${hauntId ?? '?'}|${equipped.join(',')}|${traits.join(',')}`,
+      // Include hero id + collateral so switching cAavegotchis always invalidates the fetch.
+      key: `${selectedGotchi.id}|${collateralKey}|src${sourceTokenId}|h${hauntId ?? '?'}|${equipped.join(',')}|${traits.join(',')}`,
     };
   }, [selectedIsCartridgeHero, selectedGotchi]);
 
@@ -252,13 +262,17 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
     });
     if (!previewCollateral) return;
 
-    const equipped =
-      mintStep === 'caavegotchi' ? null : selectedEquipPreview?.equipped || null;
-    const traits = mintStep === 'caavegotchi' ? null : selectedEquipPreview?.traits || null;
-    const sourceTokenId =
-      mintStep === 'caavegotchi' ? null : selectedEquipPreview?.sourceTokenId || null;
-    const hauntId =
-      mintStep === 'caavegotchi' ? null : selectedEquipPreview?.hauntId ?? null;
+    // Mint gallery (different collateral than the selected hero): bare body.
+    // Play select + manage-click on an owned hero: full equipped art for all 4 sides.
+    const heroCollMatchesPreview =
+      selectedIsCartridgeHero &&
+      collateralFromSimId(selectedGotchi?.cartridgeCollateral)?.name === previewCollateral.name;
+    const useHeroEquip =
+      Boolean(selectedEquipPreview) && (mintStep !== 'caavegotchi' || heroCollMatchesPreview);
+    const equipped = useHeroEquip ? selectedEquipPreview?.equipped || null : null;
+    const traits = useHeroEquip ? selectedEquipPreview?.traits || null : null;
+    const sourceTokenId = useHeroEquip ? selectedEquipPreview?.sourceTokenId || null : null;
+    const hauntId = useHeroEquip ? selectedEquipPreview?.hauntId ?? null : null;
 
     void fetchCollateralGotchiBlobUrl(
       previewCollateral,
@@ -274,7 +288,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
       }
       setCollateralPreviewUrl(url);
     });
-    // Prefetch all sides so enter-portal can flip to back view immediately.
+    // Prefetch all 4 sides (front/left/right/back) for enter-portal + in-game spritesheet.
     void fetchCartridgeHeroSideSVGs(
       previewCollateral,
       currentNetwork,
@@ -294,7 +308,15 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
     return () => {
       cancelled = true;
     };
-  }, [previewCollateral, currentNetwork, mintStep, selectedEquipPreview?.key]);
+  }, [
+    previewCollateral,
+    currentNetwork,
+    mintStep,
+    selectedIsCartridgeHero,
+    selectedEquipPreview?.key,
+    previewArtKey,
+    selectedGotchi?.cartridgeCollateral,
+  ]);
 
   const syncCartridgeFromResult = async (result: {
     cartridgeId?: string;
@@ -537,6 +559,8 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
   const handleGotchiSelect = (gotchi: GotchiverseAavegotchi) => {
     if (gotchi) {
       resetMintFlow();
+      // Apply immediately — don't wait on router.query so center preview / sides refresh now.
+      onSelectedGotchiChange?.(gotchi);
       void router.push(
         {
           pathname: '/',
@@ -1559,7 +1583,8 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
                 }}
                 onManageCaavegotchiClick={(gotchi) => {
                   if (entering) return;
-                  // Keep manage mint rail open; center follows this cAavegotchi's collateral.
+                  // Keep manage mint rail open; center follows this cAavegotchi (eager + URL).
+                  onSelectedGotchiChange?.(gotchi);
                   void router.push(
                     {
                       pathname: '/',

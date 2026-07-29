@@ -254,7 +254,7 @@ export async function fetchCollateralGotchiSvg(
     }
   }
 
-  const cacheKey = `json:v3:${tid || addr || collateral.name}:h${hauntId}:t${traitArr.join(',')}:w${equipped.join(',')}`;
+  const cacheKey = `json:v4:${tid || addr || collateral.name}:h${hauntId}:t${traitArr.join(',')}:w${equipped.join(',')}`;
   if (svgCache.has(cacheKey)) return svgCache.get(cacheKey);
 
   if (!addr) {
@@ -356,10 +356,33 @@ export async function fetchCartridgeHeroSideSVGs(
         stripGotchiBackground(views.Right || ''),
         stripGotchiBackground(views.Back || ''),
       ];
-      if (sides[0].length >= 80) return sides;
+      // Require all 4 directional views — missing sides break enter / Phaser spritesheets.
+      if (sides.every((svg) => svg.length >= 80)) return sides;
     } catch (err) {
       console.warn('@fetchCartridgeHeroSideSVGs compose', collateral.name, err);
     }
+  }
+
+  // Last resort: still try offline compose for every view before recolored defaults.
+  try {
+    const type = addr || collateralAddress(collateral);
+    if (type) {
+      const views = await composeAllViews({
+        hauntId,
+        collateralType: type,
+        numericTraits: traitArr,
+        equippedWearables: equipped,
+      });
+      const sides: [string, string, string, string] = [
+        stripGotchiBackground(views.Front || ''),
+        stripGotchiBackground(views.Left || ''),
+        stripGotchiBackground(views.Right || ''),
+        stripGotchiBackground(views.Back || ''),
+      ];
+      if (sides.every((svg) => svg.length >= 80)) return sides;
+    }
+  } catch (err) {
+    console.warn('@fetchCartridgeHeroSideSVGs compose-fallback', collateral.name, err);
   }
 
   const front = await fetchCollateralGotchiSvg(

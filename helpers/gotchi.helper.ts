@@ -388,7 +388,7 @@ export const fetchAavegotchiSideSVGs = async (
     const traitKey = (opts?.traits || []).map((n) => traitNumber(n, 50)).join(',');
     const sourceKey = String(opts?.sourceTokenId || '');
     const hauntKey = Number(opts?.hauntId) === 2 ? 'h2' : Number(opts?.hauntId) === 1 ? 'h1' : 'h?';
-    const cacheKey = `cartridge:base-sides-v3:${simCollateral}:src${sourceKey}:${hauntKey}:w${equipKey}:t${traitKey}`;
+    const cacheKey = `cartridge:base-sides-v4:${simCollateral}:src${sourceKey}:${hauntKey}:w${equipKey}:t${traitKey}`;
     if (GlobalState.CHAT.state.gotchiSides[cacheKey]) {
       return GlobalState.CHAT.state.gotchiSides[cacheKey];
     }

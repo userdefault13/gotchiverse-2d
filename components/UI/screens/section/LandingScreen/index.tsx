@@ -61,9 +61,11 @@ export const LandingScreen = (): JSX.Element => {
     setStoredPlayerId(gotchiStored?.id || heroStored?.id || currentAccount);
   };
 
+  // Sync on query change even when userAavegotchis is still null (cAavegotchi-only wallets).
   useEffect(() => {
-    if (currentAccount && userAavegotchis) void handleQueryUpdate();
-  }, [router.query]);
+    if (!currentAccount) return;
+    void handleQueryUpdate();
+  }, [router.query, currentAccount]);
 
   const resolveGotchiFromId = (gotchiId: string): GotchiverseAavegotchi | undefined => {
     if (!gotchiId || !currentAccount) return undefined;
@@ -99,13 +101,19 @@ export const LandingScreen = (): JSX.Element => {
       }
     }
 
-    const gotchiId = queryParams?.gotchi;
+    // Prefer Next router query (updated with push) over window.search timing races.
+    const rawGotchi = router.query.gotchi;
+    const gotchiId =
+      (typeof rawGotchi === 'string' ? rawGotchi : Array.isArray(rawGotchi) ? rawGotchi[0] : null) ||
+      queryParams?.gotchi ||
+      null;
     if (gotchiId) {
-      if (gotchiId !== selectedGotchi?.id) {
+      setSelectedGotchi((prev) => {
+        if (prev?.id === gotchiId) return prev;
         const next = resolveGotchiFromId(gotchiId);
         // Keep current selection if roster hasn't loaded yet (avoids closing modal on cAavegotchi click).
-        if (next) setSelectedGotchi(next);
-      }
+        return next || prev;
+      });
     } else setSelectedGotchi(undefined);
 
     // listen for spawnId query update to select spawn location
@@ -454,6 +462,7 @@ export const LandingScreen = (): JSX.Element => {
       <GotchiSelectModal
         selectedSpawn={selectedSpawn}
         selectedGotchi={selectedGotchi}
+        onSelectedGotchiChange={setSelectedGotchi}
         handleSpawnSelect={handleSpawnSelect}
         onBack={() => {
           const query = { spawnId: router.query.spawnId };
