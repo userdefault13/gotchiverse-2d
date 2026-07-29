@@ -97,6 +97,7 @@ import {
   syncLodgeInventoryFromScene,
 } from 'helpers/lodge.helper';
 import { getLocalStoreUpgradeInfo, isStoreInstallationId, isStoreItemId, syncStoreInventoryFromScene } from 'helpers/store.installation.helper';
+import { isBounceGateItemId } from 'helpers/bounceGate.helper';
 import {
   readOffchainPlacements,
   removeOffchainPlacement,
@@ -1585,9 +1586,11 @@ const handleEquipUnequipMove = async (selectedInstallation: EquipUnequipMoveData
       removeInstallationBuildModeUI(scene.activeInstallation);
       const label = isStoreItemId(itemId)
         ? 'Store'
-        : isLodgeItemId(itemId)
-          ? 'Lodge'
-          : 'Waall';
+        : isBounceGateItemId(itemId)
+          ? 'Bounce Gate'
+          : isLodgeItemId(itemId)
+            ? 'Lodge'
+            : 'Waall';
 
       if (callMethod === 'move' && isMoving) {
         destroyMarker();
@@ -1879,8 +1882,13 @@ const handleBatchEquip = async () => {
       if (!GlobalState.WEB3.state.ethersSigner || !GlobalState.WEB3.state.currentNetwork) {
         throw new Error('Wallet not connected. Connect on Base and try Confirm again.');
       }
-      if (!batchEquipContract.gotchiId && batchEquipContract.gotchiId !== 0) {
-        throw new Error('Missing gotchi id for batch equip.');
+      if (!Number.isFinite(Number(batchEquipContract.gotchiId))) {
+        const hero = Players.selectedPlayer?.isCartridgeHero;
+        throw new Error(
+          hero
+            ? 'This cartridge hero has no L1 gotchi id. Bind an L1 Aavegotchi, or place soft-launch installs (Store / Bounce Gate) without Confirm on-chain.'
+            : 'Missing gotchi id for batch equip. Select a gotchi and try again.',
+        );
       }
       if (!batchEquipContract.realmId && batchEquipContract.realmId !== 0) {
         throw new Error('Missing parcel token id for batch equip.');

@@ -16,6 +16,7 @@ import {
   PaarcelMintGallery,
   PaarcelDetailPanel,
   PaarcelCart,
+  InstallationInventoryGallery,
 } from 'components/UI/screens/section';
 import {
   ContractParcel,
@@ -127,7 +128,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
   const [isEvent, setIsEvent] = useState(false);
   /** Right-rail modes for soft-launch mint / wearables / paarcels. */
   const [mintStep, setMintStep] = useState<
-    'cartridge' | 'caavegotchi' | 'wearables-import' | 'wearables' | 'paarcels' | null
+    'cartridge' | 'caavegotchi' | 'wearables-import' | 'wearables' | 'paarcels' | 'installations' | null
   >(null);
   const [selectedCollateral, setSelectedCollateral] = useState<CollateralObject | null>(null);
   const [selectedWalletGotchi, setSelectedWalletGotchi] = useState<GotchiverseAavegotchi | null>(null);
@@ -1011,6 +1012,21 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
     }
   };
 
+  const handleManageInstallationsClick = async () => {
+    if (entering || minting) return;
+    setMintError(null);
+    setMintStep('installations');
+    if (!currentAccount || !cartridgeId) return;
+    const result = await getCartridgePaarcels(currentAccount, cartridgeId);
+    if (result.ok) {
+      userDispatch({
+        type: 'UPDATE_USER_CARTRIDGE',
+        parcelInventory: result.parcelInventory,
+        installationInventory: result.installationInventory,
+      });
+    }
+  };
+
   const addPaarcelToCart = async (row: MintablePaarcelRow) => {
     if (!currentNetwork || !globalProvider || !currentAccount) return;
     const net = currentNetwork === 'robinhood' ? 'base' : currentNetwork;
@@ -1523,6 +1539,10 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
                   if (entering) return;
                   void handleManagePaarcelsClick();
                 }}
+                onManageInstallationsClick={() => {
+                  if (entering) return;
+                  void handleManageInstallationsClick();
+                }}
                 onManageCaavegotchisClick={() => {
                   if (entering || minting) return;
                   enterCaavegotchiStep();
@@ -1624,6 +1644,12 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
                       minting={minting}
                     />
                   )}
+                </div>
+              )}
+
+              {mintStep === 'installations' && (
+                <div className="selected-gotchi-container mint-catalog">
+                  <InstallationInventoryGallery />
                 </div>
               )}
 

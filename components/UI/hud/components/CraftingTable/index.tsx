@@ -29,6 +29,8 @@ import type { AlchemicaBalance, NetworkNames, Recipe } from 'types';
 import { craftWaallLocally, isWaallItemId } from 'helpers/waalls.helper';
 import { craftLodgeLocally, isLodgeItemId } from 'helpers/lodge.helper';
 import { craftStoreLocally, isStoreItemId } from 'helpers/store.installation.helper';
+import { craftCTileLocally, isCTileItemId } from 'helpers/ctile.helper';
+import { mintCraftedItemsToCartridge } from 'helpers/auth.helper';
 import GlobalState from 'contexts/GlobalState';
 
 interface Props {
@@ -51,7 +53,7 @@ export const CraftingTable = ({ open, onClose }: Props): JSX.Element => {
 
   const [, notificationDispatch] = useNotification();
   const [{ currentAccount, currentNetwork, globalProvider, ethersSigner }] = useWeb3();
-  const [{ alchemicaBalance }, userDispatch] = useUser();
+  const [{ alchemicaBalance, cartridgeId }, userDispatch] = useUser();
 
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe>();
   const [pending, setPending] = useState(false);
@@ -114,6 +116,39 @@ export const CraftingTable = ({ open, onClose }: Props): JSX.Element => {
     setPending(false);
   };
 
+  const mintCraftToCartridge = async (recipe: Recipe, qty: number, account: string, network: NetworkNames) => {
+    try {
+      const result = await mintCraftedItemsToCartridge(account, {
+        itemTypeId: Number(recipe.id),
+        quantity: qty,
+        kind: recipe.type === 'TILE' ? 'tile' : 'installation',
+        name: recipe.name,
+        cartridgeId: cartridgeId || undefined,
+        network,
+      });
+      if (result.minted > 0) {
+        const refreshed = await (await import('helpers/auth.helper')).getCartridgePaarcels(
+          account,
+          String(cartridgeId || ''),
+        );
+        if (refreshed.ok) {
+          userDispatch({
+            type: 'UPDATE_USER_CARTRIDGE',
+            cartridgeId: refreshed.cartridgeId || cartridgeId,
+            hasCartridge: true,
+            parcelInventory: refreshed.parcelInventory,
+            installationInventory: refreshed.installationInventory,
+          });
+        }
+      }
+      if (result.errors.length) {
+        console.warn('CraftingTable: cartridge mint partial failure', result.errors);
+      }
+    } catch (e) {
+      console.warn('CraftingTable: cartridge mint failed', e);
+    }
+  };
+
   const handleCraft = async (
     recipe: Recipe,
     config: {
@@ -125,21 +160,35 @@ export const CraftingTable = ({ open, onClose }: Props): JSX.Element => {
   ) => {
     setPending(true);
 
-    // Waalls / Lodges / Store are not on InstallationDiamond — craft into local inventory (demo / PoC).
-    // Console crafts from RecipeBook into the store furniture bag (requires a title pick).
-    if (recipe.type === 'INSTALLATION' && (isWaallItemId(recipe.id) || isLodgeItemId(recipe.id) || isStoreItemId(recipe.id))) {
+    const isSoftLocal =
+      Boolean(recipe.softLaunch) ||
+      (recipe.type === 'INSTALLATION' &&
+        (isWaallItemId(recipe.id) || isLodgeItemId(recipe.id) || isStoreItemId(recipe.id))) ||
+      (recipe.type === 'TILE' && recipe.softLaunch && isCTileItemId(recipe.id));
+
+    // Soft-launch local crafts (Waall / Lodge / Store / cTiles) — no diamond.
+    if (isSoftLocal) {
       let notificationId;
       try {
         const isLodge = isLodgeItemId(recipe.id);
         const isStore = isStoreItemId(recipe.id);
+        const isCTile = recipe.type === 'TILE' && isCTileItemId(recipe.id);
         notificationId = showTransactionNotification(notificationDispatch, {
-          message: isStore ? 'Crafting Store (local)' : isLodge ? 'Crafting Lodge (local)' : 'Crafting Waall (local)',
+          message: isCTile
+            ? 'Crafting cTile (local)'
+            : isStore
+              ? 'Crafting Store (local)'
+              : isLodge
+                ? 'Crafting Lodge (local)'
+                : 'Crafting Waall (local)',
         });
-        const result = isStore
-          ? craftStoreLocally(recipe, quanity, alchemicaBalance)
-          : isLodge
-            ? craftLodgeLocally(recipe, quanity, alchemicaBalance)
-            : craftWaallLocally(recipe, quanity, alchemicaBalance);
+        const result = isCTile
+          ? craftCTileLocally(recipe, quanity, alchemicaBalance)
+          : isStore
+            ? craftStoreLocally(recipe, quanity, alchemicaBalance)
+            : isLodge
+              ? craftLodgeLocally(recipe, quanity, alchemicaBalance)
+              : craftWaallLocally(recipe, quanity, alchemicaBalance);
         if (!result.ok) {
           updateTransactionNotificationStatus(notificationDispatch, notificationId, 'error', result.message);
           craftError();
@@ -152,6 +201,7 @@ export const CraftingTable = ({ open, onClose }: Props): JSX.Element => {
         if (GlobalState.USER?.state?.inventory) {
           userDispatch({ type: 'UPDATE_INVENTORY', inventory: [...GlobalState.USER.state.inventory] });
         }
+        void mintCraftToCartridge(recipe, quanity, config.account, config.network);
         craft();
         updateTransactionNotificationStatus(notificationDispatch, notificationId, 'success');
         setCrafting(true);
@@ -172,11 +222,8 @@ export const CraftingTable = ({ open, onClose }: Props): JSX.Element => {
     const contractType = getContractFromRecipeType(recipe.type);
     const contract = await getContract(config.network, config.signer, contractType, true);
 
-    // console.log('craftingContract', contract, 'recipe', recipe, ' contractCall', contractCall);
-
     let notificationId, tx;
     const craftItems = _.fill(Array(quanity), recipe.id);
-    // console.log('craftItems', quanity, craftItems);
 
     try {
       notificationId = showTransactionNotification(notificationDispatch, { message: 'Initiated crafting' });
@@ -188,14 +235,6 @@ export const CraftingTable = ({ open, onClose }: Props): JSX.Element => {
               { ...(await gasPriceDict(ethersSigner)) },
             )
           : await contract.craftTiles(craftItems, { ...(await gasPriceDict(ethersSigner)) });
-      // const tx =
-      //   recipe.type === 'INSTALLATION'
-      //     ? await contract.craftInstallations(
-      //         craftItems,
-      //         craftItems.map(() => 0),
-      //         { ...(await gasPriceDict(ethersSigner)) },
-      //       )
-      //     : await contract.craftTiles(craftItems, { ...(await gasPriceDict(ethersSigner)) });
       craft();
       const transaction = await tx.wait();
       if (transaction.status === 1) {
@@ -204,6 +243,7 @@ export const CraftingTable = ({ open, onClose }: Props): JSX.Element => {
         setPending(false);
 
         await fetchAndSetAlchemicaBalances(config.account, config.network, config.provider);
+        void mintCraftToCartridge(recipe, quanity, config.account, config.network);
 
         setTimeout(() => {
           craftSuccess();
@@ -242,7 +282,16 @@ export const CraftingTable = ({ open, onClose }: Props): JSX.Element => {
   }, [open, currentAccount, currentNetwork, globalProvider, ethersSigner]);
 
   useEffect(() => {
-    if (currentAccount && currentNetwork && globalProvider && selectedRecipe && !isWaallItemId(selectedRecipe.id) && !isLodgeItemId(selectedRecipe.id) && !isStoreItemId(selectedRecipe.id)) {
+    if (
+      currentAccount &&
+      currentNetwork &&
+      globalProvider &&
+      selectedRecipe &&
+      !selectedRecipe.softLaunch &&
+      !isWaallItemId(selectedRecipe.id) &&
+      !isLodgeItemId(selectedRecipe.id) &&
+      !isStoreItemId(selectedRecipe.id)
+    ) {
       void fetchAndSetAllowance(currentAccount, currentNetwork, globalProvider, selectedRecipe);
     }
   }, [selectedRecipe, currentAccount, currentNetwork, globalProvider]);
@@ -264,6 +313,7 @@ export const CraftingTable = ({ open, onClose }: Props): JSX.Element => {
 
   if (
     selectedRecipe !== undefined &&
+    !selectedRecipe.softLaunch &&
     !isWaallItemId(selectedRecipe.id) &&
     !isLodgeItemId(selectedRecipe.id) &&
     !isStoreItemId(selectedRecipe.id) &&

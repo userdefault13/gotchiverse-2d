@@ -12,6 +12,7 @@ import { GotchiTongueIcon } from 'assets';
 import {
   GotchiPlaceholderCard,
   GotchiSelectCard,
+  ManageInstallationsCard,
   ManagePaarcelsCard,
   ManageWearablesCard,
   MintCartridgeCard,
@@ -51,10 +52,11 @@ interface Props {
   storedId?: string;
   mintMode?: boolean;
   /** Soft-launch right-rail mode. */
-  mintStep?: 'cartridge' | 'caavegotchi' | 'wearables-import' | 'wearables' | 'paarcels' | null;
+  mintStep?: 'cartridge' | 'caavegotchi' | 'wearables-import' | 'wearables' | 'paarcels' | 'installations' | null;
   onMintCartridgeClick?: () => void;
   onManageWearablesClick?: () => void;
   onManagePaarcelsClick?: () => void;
+  onManageInstallationsClick?: () => void;
   /** From wearables manage mode — switch right rail back to cAavegotchi mint. */
   onManageCaavegotchisClick?: () => void;
   /** Manage mode: bound cAavegotchis open a stub manage modal instead of selecting for play. */
@@ -73,6 +75,7 @@ export const GotchiSelectPanel = ({
   onMintCartridgeClick,
   onManageWearablesClick,
   onManagePaarcelsClick,
+  onManageInstallationsClick,
   onManageCaavegotchisClick,
   onManageCaavegotchiClick,
   selectedPaarcelId,
@@ -84,7 +87,8 @@ export const GotchiSelectPanel = ({
   const [sort, setSort] = useState<SortOption>();
   const [search, setSearch] = useState<string>();
   const [searchInput, setSearchInput] = useState<string>();
-  const [{ userAavegotchis, hasCartridge, cartridgeHeroes, wearableInventory, parcelInventory }] = useUser();
+  const [{ userAavegotchis, hasCartridge, cartridgeHeroes, wearableInventory, parcelInventory, installationInventory }] =
+    useUser();
   const [{ gameConfig }] = useGame();
   const [channelReady, setChannelReady] = useState<boolean>();
   const [optionLoaded, setOptionLoaded] = useState<boolean>(false);
@@ -93,10 +97,17 @@ export const GotchiSelectPanel = ({
   const cartridgeSelectMode = currentNetwork === 'base' || currentNetwork === 'robinhood';
   const wearablesManageMode = mintStep === 'wearables';
   const paarcelsManageMode = mintStep === 'paarcels';
-  const inventoryManageMode = wearablesManageMode || paarcelsManageMode;
-  /** After Manage: show cWearables (+ Base cPaarcels) entry + keep roster. */
+  const installationsManageMode = mintStep === 'installations';
+  const inventoryManageMode = wearablesManageMode || paarcelsManageMode || installationsManageMode;
+  /** After Manage: show cWearables (+ Base cPaarcels / cInstallations) entry + keep roster. */
   const manageRailActive = Boolean(mintMode && hasCartridge);
   const showPaarcelsCard = manageRailActive && currentNetwork !== 'robinhood';
+  const showInstallationsCard = manageRailActive && currentNetwork !== 'robinhood';
+
+  const unequippedInstallCount = useMemo(
+    () => (installationInventory || []).filter((i) => !i.equippedToParcelId).length,
+    [installationInventory],
+  );
 
   const cartridgeGotchis = useMemo(() => {
     if (!currentAccount || !cartridgeHeroes?.length) return [] as GotchiverseAavegotchi[];
@@ -193,12 +204,12 @@ export const GotchiSelectPanel = ({
     (wearableStacks?.length || 0) +
     (mintedPaarcels?.length || 0);
 
-  // Freebie + Manage/Mint (+ cWearables / cPaarcels while managing) + heroes/stacks + wallet.
+  // Freebie + Manage/Mint (+ cWearables / cPaarcels / cInstallations while managing) + heroes/stacks + wallet.
   const placeholderAavegotchis = useMemo(() => {
-    const fixed = 2 + (manageRailActive ? 1 : 0) + (showPaarcelsCard ? 1 : 0);
+    const fixed = 2 + (manageRailActive ? 1 : 0) + (showPaarcelsCard ? 1 : 0) + (showInstallationsCard ? 1 : 0);
     const filled = gridItemCount + fixed;
     return Array.from({ length: Math.max((placeholderCount || 0) - filled, 0) }, (_, i) => i);
-  }, [gridItemCount, placeholderCount, manageRailActive, showPaarcelsCard]);
+  }, [gridItemCount, placeholderCount, manageRailActive, showPaarcelsCard, showInstallationsCard]);
 
   const handleCartridgeGotchiClick = (gotchi: GotchiverseAavegotchi) => {
     // Manage rail: keep mint open and sync selection; play select still works via Freebie / exit Manage.
@@ -222,6 +233,11 @@ export const GotchiSelectPanel = ({
             <>
               <span className="title-lead">Your</span>{' '}
               <SoftCText>cPaarcels</SoftCText>
+            </>
+          ) : installationsManageMode ? (
+            <>
+              <span className="title-lead">Your</span>{' '}
+              <SoftCText>cInstallations</SoftCText>
             </>
           ) : (
             'Select your Gotchi'
@@ -274,7 +290,9 @@ export const GotchiSelectPanel = ({
           <p className="wearables-caption">
             {paarcelsManageMode
               ? 'Minted cPaarcels on this cartridge. Browse / mint only (phase 1).'
-              : 'Minted stacks on this cartridge. Equip on Aarcade.'}
+              : installationsManageMode
+                ? `Unequipped bag · ${unequippedInstallCount} ready`
+                : 'Minted stacks on this cartridge. Equip on Aarcade.'}
           </p>
         )}
 
@@ -326,6 +344,17 @@ export const GotchiSelectPanel = ({
                   manageCaavegotchis={paarcelsManageMode}
                   onClick={
                     paarcelsManageMode ? onManageCaavegotchisClick : onManagePaarcelsClick
+                  }
+                />
+              </div>
+            ) : null}
+            {showInstallationsCard ? (
+              <div className="gotchi-card">
+                <ManageInstallationsCard
+                  isSelected={mintStep === 'installations'}
+                  manageCaavegotchis={installationsManageMode}
+                  onClick={
+                    installationsManageMode ? onManageCaavegotchisClick : onManageInstallationsClick
                   }
                 />
               </div>

@@ -265,6 +265,8 @@ export interface Recipe {
   id: number;
   type: 'INSTALLATION' | 'TILE';
   endDate?: Date;
+  /** Soft-launch local craft (no diamond) — cTiles, Waalls, etc. */
+  softLaunch?: boolean;
 }
 
 export type Tokens = 'fud' | 'fomo' | 'alpha' | 'kek';

@@ -79,7 +79,15 @@ export const RecipeBookModal = ({ open, onClose, children, pages, activePage, on
                         className={`page-tab-btn ${index === activePage ? 'active' : ''}`}
                         onClick={() => onPageChange(index)}
                       >
-                        {page.id === 'onchain' ? 'Installations' : page.id === 'foundry' ? 'Logistics' : page.id === 'store' ? 'Store' : page.shortLabel}
+                        {page.id === 'onchain'
+                          ? 'Installations'
+                          : page.id === 'foundry'
+                            ? 'Logistics'
+                            : page.id === 'store'
+                              ? 'Store'
+                              : page.id === 'ctiles'
+                                ? 'cTiles'
+                                : page.shortLabel}
                       </button>
                     ))}
                   </div>

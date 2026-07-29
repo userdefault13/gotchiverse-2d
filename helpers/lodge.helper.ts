@@ -6,6 +6,7 @@ import { getTypeByItemId, setLocalInventory, getLocalInventoryItem } from './ins
 import { getInstallationIdDataById } from 'shared_code/utils/shared.utils.installations';
 import { isWaallItemId, isWaallInstallationId } from './waalls.helper';
 import { isStoreInstallationId, isStoreItemId } from './store.installation.helper';
+import { isBounceGateInstallationId, isBounceGateItemId } from './bounceGate.helper';
 import { adjustOffchainInventoryQty, getOffchainInventory, setOffchainInventoryQty } from './offchain.store';
 
 /** Local-only Gotchi Lodge itemIds (not deployed on InstallationDiamond / subgraph). */
@@ -32,13 +33,13 @@ export function isLodgeInstallationId(id: string): boolean {
   }
 }
 
-/** Waall, Lodge, or Store — local off-chain parcel installs (not Shelf/Cashier/Console furniture). */
+/** Waall, Lodge, Store, or Bounce Gate — local off-chain parcel installs (not Shelf/Cashier/Console furniture). */
 export function isLocalOffchainItemId(itemId: number | string): boolean {
-  return isWaallItemId(itemId) || isLodgeItemId(itemId) || isStoreItemId(itemId);
+  return isWaallItemId(itemId) || isLodgeItemId(itemId) || isStoreItemId(itemId) || isBounceGateItemId(itemId);
 }
 
 export function isLocalOffchainInstallationId(id: string): boolean {
-  return isWaallInstallationId(id) || isLodgeInstallationId(id) || isStoreInstallationId(id);
+  return isWaallInstallationId(id) || isLodgeInstallationId(id) || isStoreInstallationId(id) || isBounceGateInstallationId(id);
 }
 
 export function adjustLocalLodgeQuantity(itemId: number, delta: number): number {

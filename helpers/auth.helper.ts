@@ -821,3 +821,133 @@ export const importCartridgeInstallations = async (
     };
   }
 };
+
+/** Soft-launch craft / drop-mint one cInstallation or cTile into the cartridge bag. */
+export const mintCartridgeInstallation = async (
+  address: string,
+  opts: {
+    itemTypeId: number;
+    kind?: 'installation' | 'tile' | string;
+    refId: string;
+    name?: string;
+    installationType?: number;
+    source?: string;
+    cartridgeId?: string | null;
+    network?: string | null;
+    gameId?: string;
+  },
+): Promise<AarcadePaarcelsResult & { minted?: unknown; alreadyMinted?: number | boolean }> => {
+  const { cartridgeGameIdForNetwork } = await import('helpers/cartridgeGameId');
+  const gameId = String(opts.gameId || cartridgeGameIdForNetwork(opts.network));
+  const wallet = String(address || '').toLowerCase();
+  if (!wallet) {
+    return {
+      ok: false,
+      wallet: '',
+      cartridgeId: '',
+      parcelInventory: [],
+      installationInventory: [],
+      error: 'Wallet required',
+    };
+  }
+  try {
+    const response = await fetch('/api/aarcade-cartridge-parcels', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        wallet,
+        gameId,
+        cartridgeId: opts.cartridgeId || undefined,
+        mode: 'mint',
+        itemTypeId: opts.itemTypeId,
+        kind: opts.kind || 'installation',
+        refId: opts.refId,
+        name: opts.name,
+        installationType: opts.installationType,
+        source: opts.source || 'craft',
+        simPay: true,
+      }),
+      cache: 'no-store',
+    });
+    const data = await response.json().catch(() => ({}));
+    const { normalizeCPaarcels, normalizeCInstallations, paarcelsFromCartridgeSnapshot } = await import(
+      'helpers/cartridgePaarcel.helper'
+    );
+    const fromSnap = paarcelsFromCartridgeSnapshot(data?.cartridge);
+    const parcelInventory =
+      normalizeCPaarcels(data?.parcelInventory).length > 0
+        ? normalizeCPaarcels(data?.parcelInventory)
+        : fromSnap.parcelInventory;
+    const installationInventory =
+      normalizeCInstallations(data?.installationInventory).length > 0
+        ? normalizeCInstallations(data?.installationInventory)
+        : fromSnap.installationInventory;
+    if (!response.ok) {
+      return {
+        ok: false,
+        wallet,
+        cartridgeId: String(data?.cartridgeId || opts.cartridgeId || ''),
+        parcelInventory,
+        installationInventory,
+        error: String(data?.error || 'Mint failed'),
+        code: data?.code ? String(data.code) : 'MINT_FAILED',
+      };
+    }
+    return {
+      ok: true,
+      wallet,
+      cartridgeId: String(data?.cartridgeId || opts.cartridgeId || ''),
+      parcelInventory,
+      installationInventory,
+      alreadyMinted: data?.alreadyMinted ? 1 : 0,
+      minted: data?.minted,
+    };
+  } catch (err) {
+    console.warn('mintCartridgeInstallation failed', err);
+    return {
+      ok: false,
+      wallet,
+      cartridgeId: String(opts.cartridgeId || ''),
+      parcelInventory: [],
+      installationInventory: [],
+      error: 'Mint request failed',
+      code: 'MINT_FAILED',
+    };
+  }
+};
+
+/** Best-effort: mint qty instances after craft (soft or onchain). Does not throw. */
+export const mintCraftedItemsToCartridge = async (
+  address: string,
+  opts: {
+    itemTypeId: number;
+    quantity: number;
+    kind?: 'installation' | 'tile' | string;
+    name?: string;
+    cartridgeId?: string | null;
+    network?: string | null;
+  },
+): Promise<{ minted: number; errors: string[] }> => {
+  const qty = Math.max(0, Math.floor(Number(opts.quantity) || 0));
+  if (!address || qty < 1 || !opts.itemTypeId) return { minted: 0, errors: [] };
+  const errors: string[] = [];
+  let minted = 0;
+  const kind = opts.kind === 'tile' ? 'tile' : 'installation';
+  for (let i = 0; i < qty; i += 1) {
+    const refId = `craft-${kind}-${opts.itemTypeId}-${String(address).toLowerCase()}-${Date.now()}-${i}-${Math.random()
+      .toString(36)
+      .slice(2, 8)}`;
+    const result = await mintCartridgeInstallation(address, {
+      itemTypeId: opts.itemTypeId,
+      kind,
+      refId,
+      name: opts.name,
+      source: 'craft',
+      cartridgeId: opts.cartridgeId,
+      network: opts.network,
+    });
+    if (result.ok) minted += 1;
+    else if (result.error) errors.push(result.error);
+  }
+  return { minted, errors };
+};

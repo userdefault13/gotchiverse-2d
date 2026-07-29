@@ -7,6 +7,12 @@ export default css`
     flex-direction: column;
     gap: 1.2rem;
     min-width: min(92vw, 72rem);
+    max-width: min(96vw, 72rem);
+    max-height: calc(100vh - 8rem);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
   }
   .store-meta {
     display: flex;
@@ -15,6 +21,7 @@ export default css`
     align-items: center;
     font-size: 1.6rem;
     color: #1a1a2e;
+    flex-shrink: 0;
   }
   .owner-badge {
     background: #6231ff;
@@ -48,6 +55,8 @@ export default css`
     display: flex;
     gap: 1.6rem;
     align-items: stretch;
+    min-height: 0;
+    flex: 1 1 auto;
   }
   .store-grid {
     display: grid;
@@ -55,22 +64,55 @@ export default css`
     gap: 1px;
     flex: 1;
     aspect-ratio: 1;
-    max-height: 56vh;
+    width: 100%;
+    max-height: min(42vh, 36rem);
     background: #1a1410;
     padding: 4px;
     image-rendering: pixelated;
   }
   .cell {
+    position: relative;
     min-height: 0;
     border: none;
     padding: 0;
     cursor: pointer;
+    overflow: hidden;
     background-color: #3d3d55;
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
     image-rendering: pixelated;
     image-rendering: crisp-edges;
+  }
+  .player-sprite {
+    position: absolute;
+    inset: 8%;
+    z-index: 2;
+    pointer-events: none;
+    background-color: #51ffa8;
+    background-size: contain;
+    background-position: center bottom;
+    background-repeat: no-repeat;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    border-radius: 2px;
+  }
+  .player-sprite.self {
+    background-color: transparent;
+  }
+  .player-sprite.self:not([style*='background-image']) {
+    background-color: #51ffa8;
+  }
+  .player-sprite.remote {
+    inset: 18%;
+    opacity: 0.85;
+    background-color: #7ec8ff;
+  }
+  .player-sprite.face-left {
+    transform: scaleX(-1);
+  }
+  .cell.self-here {
+    z-index: 2;
   }
   .cell.floor {
     background-color: #3a3a48;
@@ -114,9 +156,15 @@ export default css`
   .cell.placeable:hover {
     filter: brightness(1.15);
   }
-  .cell.floor-paint:hover {
-    outline: 2px solid #51ffa8;
-    outline-offset: -2px;
+  .store-grid.is-build {
+    outline: 2px solid #6231ff;
+    outline-offset: 2px;
+  }
+  .cell.build-mode.floor:hover {
+    filter: brightness(1.12);
+  }
+  .owner-badge.build {
+    background: #1a1a2e;
   }
   .floor-tile-bar {
     display: flex;
@@ -159,8 +207,9 @@ export default css`
     display: flex;
     flex-direction: column;
     gap: 1rem;
-    max-height: 56vh;
+    max-height: min(42vh, 36rem);
     overflow: auto;
+    flex-shrink: 0;
   }
   .cart-panel h3 {
     margin: 0;
@@ -205,6 +254,11 @@ export default css`
     justify-content: flex-end;
     gap: 1rem;
     flex-wrap: wrap;
+    flex-shrink: 0;
+    position: sticky;
+    bottom: 0;
+    padding-top: 0.8rem;
+    background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.92) 30%);
   }
   .shelf-inner {
     padding: 2.4rem 3.2rem 3.2rem;

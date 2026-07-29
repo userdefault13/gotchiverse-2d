@@ -5,6 +5,7 @@ export * from './CartridgeMintPanel';
 export * from './CollateralGotchiGallery';
 export * from './WearableImportPanel';
 export * from './WearableInventoryGallery';
+export * from './InstallationInventoryGallery';
 export * from './WearableMintGallery';
 export * from './WearableCart';
 export * from './PaarcelMintGallery';

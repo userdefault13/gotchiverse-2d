@@ -434,7 +434,18 @@ export const getConvertedBatchEquipData = () => {
 };
 
 export const getSelectedGotchiId = (): number => {
-  return Players.selectedPlayer.isSpectator ? 0 : Number(Players.selectedPlayer.id);
+  const player = Players.selectedPlayer;
+  if (!player || player.isSpectator) return 0;
+
+  // Soft-launch cAavegotchis use non-numeric ids (`starter-uni-1`). Prefer bound L1 token.
+  if (player.isCartridgeHero) {
+    const source = Number(player.cartridgeSourceTokenId);
+    if (Number.isFinite(source) && source >= 0) return source;
+    return Number.NaN;
+  }
+
+  const id = Number(player.id);
+  return Number.isFinite(id) ? id : Number.NaN;
 };
 
 // export const getFixGridStartPositions = () => {

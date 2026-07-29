@@ -28,6 +28,7 @@ import {
   getFurnitureQty,
   isStoreFurnitureItemId,
 } from 'helpers/store.layout.helper';
+import { getLocalCTileRecipes } from 'helpers/ctile.helper';
 
 interface Props {
   selectRecipe: (recipe: Recipe) => void;
@@ -137,10 +138,12 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
       : []),
     { id: 'store', label: 'STORE RECIPES', shortLabel: 'Soft-launch store & furniture' },
     { id: 'console', label: 'CONSOLE RECIPES', shortLabel: 'Craft into bag · place inside Store' },
+    { id: 'ctiles', label: 'CTILE RECIPES', shortLabel: 'Soft-launch cTiles → cartridge' },
   ];
 
   const storeRecipes = getLocalStorePageRecipes();
   const consoleRecipes = getLocalConsoleRecipes();
+  const ctileRecipes = getLocalCTileRecipes();
   const [pendingConsoleRecipe, setPendingConsoleRecipe] = useState<Recipe | null>(null);
   const onSetSortBy = (name: string, value: string, direction: 'asc' | 'desc') => {
     setSort({
@@ -333,6 +336,7 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
   const showFoundryPage = bookPages[bookPage]?.id === 'foundry';
   const showStorePage = bookPages[bookPage]?.id === 'store';
   const showConsolePage = bookPages[bookPage]?.id === 'console';
+  const showCTilesPage = bookPages[bookPage]?.id === 'ctiles';
 
   return (
     <>
@@ -386,6 +390,12 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
             title slots; L9 plays any owned cartridge.
           </div>
         ) : null}
+        {showCTilesPage ? (
+          <div className="foundry-intro">
+            Soft-launch cTiles: craft greyscale floor bases (8–37) and Ghost pack (38–47). Crafts spend sim alchemica and mint into
+            your cartridge bag.
+          </div>
+        ) : null}
         {pendingConsoleRecipe ? (
           <div className="foundry-intro console-title-pick">
             <p>
@@ -425,6 +435,11 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
             {showConsolePage
               ? consoleRecipes.map((recipe, i) => (
                   <RecipeCard onClick={handleSelectConsoleRecipe} recipe={recipe} key={`console-${recipe.id}-${i}`} />
+                ))
+              : null}
+            {showCTilesPage
+              ? ctileRecipes.map((recipe, i) => (
+                  <RecipeCard onClick={handleSelect} recipe={recipe} key={`ctile-${recipe.id}-${i}`} />
                 ))
               : null}
           </div>

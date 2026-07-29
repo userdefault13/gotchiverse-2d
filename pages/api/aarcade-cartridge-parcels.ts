@@ -204,7 +204,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(403).json({ error: gameErr, code: 'PARCELS_DISABLED' });
   }
 
-  const mode = String(req.body?.mode || 'parcels').toLowerCase() === 'installations' ? 'installations' : 'parcels';
+  const modeRaw = String(req.body?.mode || 'parcels').toLowerCase();
+  const mode =
+    modeRaw === 'installations' || modeRaw === 'mint' || modeRaw === 'equip' || modeRaw === 'unequip'
+      ? modeRaw
+      : 'parcels';
   const parcels = mode === 'parcels' ? parseParcels(req.body || {}) : [];
   const installations = mode === 'installations' ? parseInstallations(req.body || {}) : [];
   if (mode === 'parcels' && parcels.length === 0) {
@@ -212,6 +216,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
   if (mode === 'installations' && installations.length === 0) {
     return res.status(400).json({ error: 'No installations to import', code: 'EMPTY_INSTALLATIONS' });
+  }
+  if (mode === 'mint') {
+    const itemTypeId = Number(req.body?.itemTypeId);
+    const refId = String(req.body?.refId || '').trim();
+    if (!Number.isFinite(itemTypeId) || itemTypeId <= 0 || !refId) {
+      return res.status(400).json({ error: 'itemTypeId and refId required', code: 'INVALID_MINT' });
+    }
+  }
+  if (mode === 'equip') {
+    const cInstallationId = String(req.body?.cInstallationId || '').trim();
+    const cPaarcelId = String(req.body?.cPaarcelId || '').trim();
+    if (!cInstallationId || !cPaarcelId) {
+      return res.status(400).json({ error: 'cInstallationId and cPaarcelId required', code: 'INVALID_EQUIP' });
+    }
+  }
+  if (mode === 'unequip') {
+    const cInstallationId = String(req.body?.cInstallationId || '').trim();
+    if (!cInstallationId) {
+      return res.status(400).json({ error: 'cInstallationId required', code: 'INVALID_UNEQUIP' });
+    }
   }
   const simPay = req.body?.simPay !== false;
 
@@ -302,7 +326,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           : [],
         cartridge: lastCartridge,
       });
-    } else {
+    } else if (mode === 'installations') {
       const failed: Array<{ itemTypeId: number; error: string; code?: string }> = [];
       for (const inst of installations) {
         const upstream = await fetch(
@@ -360,6 +384,119 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         cartridge: lastCartridge,
       });
     }
+
+    if (mode === 'mint') {
+      const upstream = await fetch(
+        `${simBase()}/cartridges/${encodeURIComponent(cartridgeId)}/installations/mint`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({
+            itemTypeId: Number(req.body?.itemTypeId),
+            kind: req.body?.kind || 'installation',
+            refId: String(req.body?.refId || '').trim(),
+            name: req.body?.name,
+            installationType: req.body?.installationType,
+            source: req.body?.source || 'craft',
+            sessionToken: session.sessionToken,
+            simPay,
+          }),
+          cache: 'no-store',
+        },
+      );
+      const payload = await readJson(upstream);
+      if (!upstream.ok) {
+        return res.status(upstream.status >= 400 && upstream.status < 500 ? upstream.status : 502).json({
+          error: String(payload?.error || 'Failed minting installation'),
+          code: payload?.code ? String(payload.code) : 'MINT_FAILED',
+          cartridgeId,
+          parcelInventory: Array.isArray(payload?.parcelInventory) ? payload.parcelInventory : [],
+          installationInventory: Array.isArray(payload?.installationInventory)
+            ? payload.installationInventory
+            : [],
+        });
+      }
+      return res.status(payload?.alreadyMinted ? 200 : 201).json({
+        ok: true,
+        cartridgeId,
+        alreadyMinted: Boolean(payload?.alreadyMinted),
+        minted: payload?.minted,
+        parcelInventory: Array.isArray(payload?.parcelInventory) ? payload.parcelInventory : [],
+        installationInventory: Array.isArray(payload?.installationInventory)
+          ? payload.installationInventory
+          : [],
+        cartridge: payload,
+      });
+    }
+
+    if (mode === 'equip') {
+      const upstream = await fetch(
+        `${simBase()}/cartridges/${encodeURIComponent(cartridgeId)}/installations/equip`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({
+            cInstallationId: String(req.body?.cInstallationId || '').trim(),
+            cPaarcelId: String(req.body?.cPaarcelId || '').trim(),
+            x: req.body?.x,
+            y: req.body?.y,
+            sessionToken: session.sessionToken,
+          }),
+          cache: 'no-store',
+        },
+      );
+      const payload = await readJson(upstream);
+      if (!upstream.ok) {
+        return res.status(upstream.status >= 400 && upstream.status < 500 ? upstream.status : 502).json({
+          error: String(payload?.error || 'Failed equipping installation'),
+          code: payload?.code ? String(payload.code) : 'EQUIP_FAILED',
+          cartridgeId,
+        });
+      }
+      return res.status(200).json({
+        ok: true,
+        cartridgeId,
+        parcelInventory: Array.isArray(payload?.parcelInventory) ? payload.parcelInventory : [],
+        installationInventory: Array.isArray(payload?.installationInventory)
+          ? payload.installationInventory
+          : [],
+        cartridge: payload,
+      });
+    }
+
+    if (mode === 'unequip') {
+      const upstream = await fetch(
+        `${simBase()}/cartridges/${encodeURIComponent(cartridgeId)}/installations/unequip`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({
+            cInstallationId: String(req.body?.cInstallationId || '').trim(),
+            sessionToken: session.sessionToken,
+          }),
+          cache: 'no-store',
+        },
+      );
+      const payload = await readJson(upstream);
+      if (!upstream.ok) {
+        return res.status(upstream.status >= 400 && upstream.status < 500 ? upstream.status : 502).json({
+          error: String(payload?.error || 'Failed unequipping installation'),
+          code: payload?.code ? String(payload.code) : 'UNEQUIP_FAILED',
+          cartridgeId,
+        });
+      }
+      return res.status(200).json({
+        ok: true,
+        cartridgeId,
+        parcelInventory: Array.isArray(payload?.parcelInventory) ? payload.parcelInventory : [],
+        installationInventory: Array.isArray(payload?.installationInventory)
+          ? payload.installationInventory
+          : [],
+        cartridge: payload,
+      });
+    }
+
+    return res.status(400).json({ error: 'Unknown mode', code: 'INVALID_MODE' });
   } catch (err) {
     console.warn('aarcade-cartridge-parcels POST failed', err);
     return res.status(502).json({ error: 'Parcels import failed' });
