@@ -10,7 +10,12 @@ export const useSubgraph = async <T,>(query: string, uri?: string): Promise<T> =
     throw {
       status: 400,
       name: 'Subgraph error',
-      message: err instanceof ClientError ? (err.response.errors ? err.response.errors[0].message : 'Unknown error') : 'Unknown error',
+      message:
+        err instanceof ClientError
+          ? err.response.errors
+            ? err.response.errors[0].message
+            : 'Unknown error'
+          : 'Unknown error',
     };
   }
 };

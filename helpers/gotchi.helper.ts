@@ -154,16 +154,31 @@ export async function fetchAavegotchis(
     const res = await useSubgraph<{ aavegotchis: Aavegotchi[] }>(query);
     return res.aavegotchis;
   } catch (error) {
+    const network = GlobalState.WEB3.state.currentNetwork;
+    // Base soft-launch: never fall back to diamond RPC. Subgraph/proxy failures used to
+    // call allAavegotchisOfOwner + per-gotchi lending reads against public mainnet.base.org
+    // → ABI noise + 429 floods. Wallet gotchis come from subgraph / cartridge, not L1 scan.
+    if (network === 'base' || network === 'robinhood') {
+      console.error(
+        '@fetchAavegotchis:ERR (Base) — subgraph failed; skipping contract fallback to avoid RPC 429',
+        error,
+      );
+      return [];
+    }
     console.error('@fetchAavegotchis:ERR', error, 'Fetching from contract...');
     const res = await fetchContractUserAavegotchis(owner, GlobalState.WEB3.state.maticProvider);
-    return res;
+    return res ?? [];
   }
 }
 
 const fetchContractUserAavegotchis = async (owner: string, provider: ethers.providers.Provider) => {
   // fetch all contract owner aavegotchis including portals
   try {
-    const res = await useDiamondCall<AavegotchiObject[]>(provider, 'matic', {
+    const network =
+      GlobalState.WEB3.state.currentNetwork === 'base' || GlobalState.WEB3.state.currentNetwork === 'robinhood'
+        ? 'base'
+        : 'matic';
+    const res = await useDiamondCall<AavegotchiObject[]>(provider, network, {
       name: 'allAavegotchisOfOwner',
       parameters: [owner],
     });

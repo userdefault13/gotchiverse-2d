@@ -145,7 +145,7 @@ const DEFAULT_CORE_URI = 'https://subgraph.satsuma-prod.com/tWYl5n5y04oz/aavegot
 const DEFAULT_GOTCHIVERSE_URI = 'https://subgraph.satsuma-prod.com/tWYl5n5y04oz/aavegotchi/gotchiverse-matic/api';
 const DEFAULT_SVG_URI = 'https://subgraph.satsuma-prod.com/tWYl5n5y04oz/aavegotchi/aavegotchi-svg-matic/api';
 
-/** Aarcade Envio/Flux GraphQL proxy (replaces sunset Goldsky Base endpoints). */
+/** Aarcade Envio/Flux GraphQL proxy (The Graph–compat; replaces Goldsky Base). */
 const AARCADE_SUBGRAPH_HOME = (
   process.env.NEXT_PUBLIC_AARCADE_HOME ||
   process.env.AARCADE_HOME ||
@@ -171,7 +171,7 @@ function defaultSvgUri(): string {
   return DEFAULT_SVG_URI;
 }
 
-// Subgraph (env-overridable — Base defaults to Aarcade /api/subgraph/*, not Goldsky)
+// Subgraph (env-overridable — Base defaults to Aarcade /api/subgraph/*)
 export const coreURI = process.env.NEXT_PUBLIC_CORE_SUBGRAPH_URL || defaultCoreUri();
 
 export const aavegotchiRealm =
