@@ -204,15 +204,21 @@ function sleevesForWearable(wearable, viewIndex, hasBodyWearable) {
   return `<g class="gotchi-wearable wearable-sleeves">${sleeve}</g>`
 }
 
+export type ComposeGotchiInput = {
+  hauntId?: number
+  collateralType?: string
+  numericTraits?: number[]
+  equippedWearables?: number[]
+}
+
 /**
- * @param {object} input
- * @param {number} input.hauntId
- * @param {string} input.collateralType - address or name
- * @param {number[]} input.numericTraits - length 6
- * @param {number[]} input.equippedWearables - length 16 (0 = empty)
- * @param {object} [library]
+ * @param input haunt / collateral / traits / wearables
+ * @param library optional preloaded library from loadLibrary()
  */
-export async function composeAllViews(input, library) {
+export async function composeAllViews(
+  input: ComposeGotchiInput,
+  library?: any,
+): Promise<Record<string, string>> {
   const lib = library || (await loadLibrary())
   const hauntId = Number(input.hauntId) || 1
   const traits = (input.numericTraits || [50, 50, 50, 50, 50, 50]).map(Number)
@@ -231,7 +237,7 @@ export async function composeAllViews(input, library) {
   const useCollateralEyes = eyeShapeTrait >= 98
   const eyeShape = useCollateralEyes ? null : findEyeShape(lib, hauntId, eyeShapeTrait)
 
-  const result = {}
+  const result: Record<string, string> = {}
   for (let viewIndex = 0; viewIndex < 4; viewIndex++) {
     result[VIEW_NAMES[viewIndex]] = composeSvgView({
       lib,
