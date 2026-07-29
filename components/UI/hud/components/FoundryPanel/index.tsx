@@ -4,6 +4,16 @@ import { FoundryState, MaterialKey } from 'helpers/foundry/types';
 import { useEffect, useState } from 'react';
 import styles from './styles';
 
+const MINIMIZE_KEY = 'foundryPoC.minimized';
+
+function readMinimized(): boolean {
+  try {
+    return localStorage.getItem(MINIMIZE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
 export const FoundryPanel = (): JSX.Element | null => {
   const [{ gameConfig }] = useGame();
   const enabled =
@@ -14,13 +24,24 @@ export const FoundryPanel = (): JSX.Element | null => {
   const [placeMode, setPlaceMode] = useState(false);
   const [recipesOpen, setRecipesOpen] = useState(false);
   const [toast, setToast] = useState('');
+  const [minimized, setMinimized] = useState(false);
 
   useEffect(() => {
     if (!enabled) return;
     FoundryStore.setFoundryEnabled(true);
     setState(FoundryStore.getState());
+    setMinimized(readMinimized());
     return FoundryStore.subscribe(setState);
   }, [enabled]);
+
+  const setMinimizedPersist = (next: boolean) => {
+    setMinimized(next);
+    try {
+      localStorage.setItem(MINIMIZE_KEY, next ? '1' : '0');
+    } catch {
+      /* ignore */
+    }
+  };
 
   if (!enabled || !state?.enabled) return null;
 
@@ -37,11 +58,41 @@ export const FoundryPanel = (): JSX.Element | null => {
       .map(([k, v]) => `${k}×${v}`)
       .join(', ');
 
+  if (minimized) {
+    return (
+      <>
+        <style jsx>{styles}</style>
+        <button
+          type="button"
+          className="foundry-chip"
+          title="Open Parcel Foundry PoC"
+          onClick={() => setMinimizedPersist(false)}
+        >
+          <span className="chip-label">Foundry</span>
+          <strong className="chip-status" style={{ color: statusColor }}>
+            {state.netherlink.toUpperCase()}
+          </strong>
+        </button>
+      </>
+    );
+  }
+
   return (
     <>
       <style jsx>{styles}</style>
       <div className="foundry-panel">
-        <div className="foundry-title">Parcel Foundry PoC</div>
+        <div className="foundry-header">
+          <div className="foundry-title">Parcel Foundry PoC</div>
+          <button
+            type="button"
+            className="foundry-minimize"
+            title="Minimize"
+            aria-label="Minimize Parcel Foundry PoC"
+            onClick={() => setMinimizedPersist(true)}
+          >
+            −
+          </button>
+        </div>
         <div className="row">
           <span>Netherlink</span>
           <strong style={{ color: statusColor }}>{state.netherlink.toUpperCase()}</strong>

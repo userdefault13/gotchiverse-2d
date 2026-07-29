@@ -16,11 +16,68 @@ export default css`
     pointer-events: auto;
   }
 
+  .foundry-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
   .foundry-title {
     font-weight: 700;
-    margin-bottom: 8px;
     letter-spacing: 0.04em;
     color: #50dce6;
+  }
+
+  .foundry-minimize {
+    flex: 0 0 auto;
+    width: 22px;
+    height: 20px;
+    padding: 0;
+    line-height: 1;
+    font-size: 16px;
+    font-weight: 700;
+    background: #1a2838;
+    border: 1px solid #50dce6;
+    color: #50dce6;
+    cursor: pointer;
+  }
+
+  .foundry-minimize:hover {
+    background: #243848;
+  }
+
+  .foundry-chip {
+    position: fixed;
+    left: 12px;
+    bottom: 96px;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    background: rgba(12, 18, 28, 0.92);
+    border: 1px solid rgba(80, 220, 230, 0.45);
+    color: #e8f0f8;
+    font-family: monospace;
+    font-size: 11px;
+    cursor: pointer;
+    pointer-events: auto;
+  }
+
+  .foundry-chip:hover {
+    background: rgba(26, 40, 56, 0.95);
+  }
+
+  .chip-label {
+    color: #50dce6;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+
+  .chip-status {
+    font-weight: 700;
   }
 
   .row {
