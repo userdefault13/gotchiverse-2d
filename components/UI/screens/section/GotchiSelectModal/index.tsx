@@ -199,11 +199,16 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
       (n) => Number(n) || 50,
     );
     const sourceTokenId = selectedGotchi.cartridgeSourceTokenId || '';
+    const hauntId =
+      selectedGotchi.hauntId === 1 || selectedGotchi.hauntId === 2
+        ? selectedGotchi.hauntId
+        : undefined;
     return {
       equipped,
       traits,
       sourceTokenId,
-      key: `${sourceTokenId}|${equipped.join(',')}|${traits.join(',')}`,
+      hauntId,
+      key: `${sourceTokenId}|h${hauntId ?? '?'}|${equipped.join(',')}|${traits.join(',')}`,
     };
   }, [selectedIsCartridgeHero, selectedGotchi]);
 
@@ -251,6 +256,8 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
     const traits = mintStep === 'caavegotchi' ? null : selectedEquipPreview?.traits || null;
     const sourceTokenId =
       mintStep === 'caavegotchi' ? null : selectedEquipPreview?.sourceTokenId || null;
+    const hauntId =
+      mintStep === 'caavegotchi' ? null : selectedEquipPreview?.hauntId ?? null;
 
     void fetchCollateralGotchiBlobUrl(
       previewCollateral,
@@ -258,6 +265,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
       equipped,
       traits,
       sourceTokenId,
+      hauntId,
     ).then((url) => {
       if (cancelled) {
         URL.revokeObjectURL(url);
@@ -272,6 +280,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
       equipped,
       traits,
       sourceTokenId,
+      hauntId,
     ).then((sides) => {
       if (cancelled) return;
       const urls = sides.map((svg) => convertInlineSVGToBlobURL(svg)) as [string, string, string, string];

@@ -253,6 +253,7 @@ export async function fetchAavegotchiURL(gotchiData: SelectedPlayer | Player): P
     equippedWearables: selected.equippedWearables,
     traits: selected.withSetsNumericTraits,
     sourceTokenId: selected.cartridgeSourceTokenId,
+    hauntId: selected.hauntId,
   });
   return result;
 }
@@ -265,6 +266,7 @@ export async function fetchAavegotchiURLById(
     equippedWearables?: number[];
     traits?: number[];
     sourceTokenId?: string;
+    hauntId?: number;
   },
 ): Promise<GotchiUrl> {
   const cartridgeCollateral = opts?.cartridgeCollateral || parseCartridgeHeroCollateral(id);
@@ -375,6 +377,7 @@ export const fetchAavegotchiSideSVGs = async (
     equippedWearables?: number[];
     traits?: number[];
     sourceTokenId?: string;
+    hauntId?: number;
   },
 ): Promise<string[]> => {
   // Soft-launch cartridge hero — Base preview art (+ equipped cWearables).
@@ -383,7 +386,8 @@ export const fetchAavegotchiSideSVGs = async (
     const equipKey = (opts?.equippedWearables || []).map((n) => Number(n) || 0).join(',');
     const traitKey = (opts?.traits || []).map((n) => Number(n) || 50).join(',');
     const sourceKey = String(opts?.sourceTokenId || '');
-    const cacheKey = `cartridge:base-sides-v2:${simCollateral}:src${sourceKey}:w${equipKey}:t${traitKey}`;
+    const hauntKey = Number(opts?.hauntId) === 2 ? 'h2' : Number(opts?.hauntId) === 1 ? 'h1' : 'h?';
+    const cacheKey = `cartridge:base-sides-v3:${simCollateral}:src${sourceKey}:${hauntKey}:w${equipKey}:t${traitKey}`;
     if (GlobalState.CHAT.state.gotchiSides[cacheKey]) {
       return GlobalState.CHAT.state.gotchiSides[cacheKey];
     }
@@ -395,6 +399,7 @@ export const fetchAavegotchiSideSVGs = async (
         opts?.equippedWearables,
         opts?.traits,
         opts?.sourceTokenId,
+        opts?.hauntId,
       );
       GlobalState.CHAT.dispatch({
         type: 'PUSH_GOTCHI_SIDES',
@@ -478,6 +483,8 @@ export function getGotchiData(
     (isCartridgeHero ? parseCartridgeHeroCollateral(String(cartridgeHero.id || '')) : undefined) ||
     undefined;
   const cartridgeSourceTokenId = cartridgeHero.cartridgeSourceTokenId || undefined;
+  const hauntId =
+    cartridgeHero.hauntId === 1 || cartridgeHero.hauntId === 2 ? cartridgeHero.hauntId : undefined;
 
   let collateralColor;
   let rightHand;
@@ -531,6 +538,7 @@ export function getGotchiData(
     isCartridgeHero: isCartridgeHero || undefined,
     cartridgeCollateral,
     cartridgeSourceTokenId,
+    hauntId,
     equippedWearables: isCartridgeHero
       ? ((Array.isArray(equippedWearables) ? equippedWearables : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]) as number[])
       : undefined,

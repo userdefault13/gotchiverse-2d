@@ -12,6 +12,8 @@ export type CartridgeHero = {
   collateral: string;
   templateId?: string;
   sourceTokenId?: string;
+  /** Haunt 1|2 from L1 — needed for mythical eye shapes. */
+  hauntId?: number;
   traits?: number[];
   equippedWearables?: number[];
   level?: number;
@@ -102,6 +104,10 @@ export function normalizeCartridgeHeroes(raw: unknown): CartridgeHero[] {
         collateral,
         templateId: row.templateId ? String(row.templateId) : undefined,
         sourceTokenId: row.sourceTokenId != null ? String(row.sourceTokenId) : undefined,
+        hauntId: (() => {
+          const h = Number(row.hauntId);
+          return h === 1 || h === 2 ? h : undefined;
+        })(),
         traits,
         equippedWearables: padEquippedWearables(row.equippedWearables),
         level: Number(row.level) || 1,
@@ -144,6 +150,7 @@ export function mapCartridgeHeroToGotchi(
     cartridgeCollateral: hero.collateral,
     cartridgeSourceTokenId:
       hero.sourceTokenId && hero.sourceTokenId !== '0' ? String(hero.sourceTokenId) : undefined,
+    hauntId: hero.hauntId === 1 || hero.hauntId === 2 ? hero.hauntId : undefined,
     escrow: '',
     withSetsNumericTraits: traits,
     numericTraits: traits,

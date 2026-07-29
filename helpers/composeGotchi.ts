@@ -100,9 +100,18 @@ export function findCollateral(library, hauntId, collateralTypeOrName) {
 export function findEyeShape(library, hauntId, eyeShapeTrait) {
   const shapes = library.eyeShapes[Number(hauntId)] || []
   const v = Number(eyeShapeTrait)
+  // Wiki ranges are inclusive (e.g. Common 2 = 42–57). JSON often stores exclusive max.
   return (
-    shapes.find((s) => v >= s.rangeMin && v < s.rangeMax) ||
-    shapes.find((s) => v >= s.rangeMin && v <= s.rangeMax) ||
+    shapes.find((s) => {
+      const min = Number(s.rangeMin)
+      const max = Number(s.rangeMax)
+      if (!Number.isFinite(min) || !Number.isFinite(max)) return false
+      if (min === max) return v === min
+      // Prefer half-open [min, max) when max > min (library convention)
+      if (v >= min && v < max) return true
+      return false
+    }) ||
+    shapes.find((s) => v >= Number(s.rangeMin) && v <= Number(s.rangeMax)) ||
     null
   )
 }

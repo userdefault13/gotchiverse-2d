@@ -51,6 +51,8 @@ export const GotchiSelectCard = ({ gotchi, handleSelect, isSelected }: Props): J
     return t.map((n) => Number(n) || 50).join(',');
   }, [gotchi?.withSetsNumericTraits, gotchi?.numericTraits]);
   const sourceTokenId = gotchi?.cartridgeSourceTokenId || undefined;
+  const hauntId =
+    gotchi?.hauntId === 1 || gotchi?.hauntId === 2 ? gotchi.hauntId : undefined;
 
   useEffect(() => {
     if (!isCartridgeHero || !gotchi?.cartridgeCollateral) {
@@ -69,6 +71,7 @@ export const GotchiSelectCard = ({ gotchi, handleSelect, isSelected }: Props): J
       equipped,
       traits,
       sourceTokenId,
+      hauntId,
     ).then((url) => {
       if (cancelled) {
         URL.revokeObjectURL(url);
@@ -87,6 +90,7 @@ export const GotchiSelectCard = ({ gotchi, handleSelect, isSelected }: Props): J
     equipKey,
     traitsKey,
     sourceTokenId,
+    hauntId,
     currentNetwork,
   ]);
 

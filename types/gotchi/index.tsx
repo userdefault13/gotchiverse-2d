@@ -26,9 +26,11 @@ export interface SelectedPlayer {
   cartridgeCollateral?: string;
   /** L1 token id for Base previewAavegotchi identity. */
   cartridgeSourceTokenId?: string;
+  /** Haunt 1|2 — required for mythical eye shapes (wiki eye-shape). */
+  hauntId?: number;
   /** Equipped cWearable itemTypeIds (16 slots) for cartridge hero sprites. */
   equippedWearables?: number[];
-  /** Modified numeric traits [NRG,AGG,SPK,BRN,EYC,EYS] for aarena combat join. */
+  /** Modified numeric traits [NRG,AGG,SPK,BRN,EYS,EYC] (chain order). */
   withSetsNumericTraits?: [number, number, number, number, number, number];
 }
 

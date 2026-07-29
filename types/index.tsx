@@ -201,6 +201,8 @@ export interface GotchiverseAavegotchi extends Aavegotchi {
   cartridgeCollateral?: string;
   /** L1 token id bound onto this cAavegotchi (for Base preview identity). */
   cartridgeSourceTokenId?: string;
+  /** Haunt 1|2 from L1 bind — required for mythical eye shapes (wiki). */
+  hauntId?: number;
 }
 
 export enum Direction {

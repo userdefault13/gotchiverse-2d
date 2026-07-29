@@ -233,12 +233,13 @@ export async function fetchCollateralGotchiSvg(
   equippedWearables?: number[] | Tuple<number, 16> | null,
   traits?: number[] | Tuple<number, 6> | null,
   sourceTokenId?: string | null,
+  hauntIdHint?: number | null,
 ): Promise<string> {
   const equipped = padEquip(equippedWearables);
   const tid = String(sourceTokenId || '').trim();
   const isL1 = Boolean(tid && tid !== '0' && /^\d+$/.test(tid));
 
-  let hauntId = 1;
+  let hauntId = Number(hauntIdHint) === 2 ? 2 : Number(hauntIdHint) === 1 ? 1 : 1;
   let addr = collateralAddress(collateral);
   let traitArr = padTraits(traits);
 
@@ -251,7 +252,7 @@ export async function fetchCollateralGotchiSvg(
     }
   }
 
-  const cacheKey = `json:v1:${tid || addr || collateral.name}:h${hauntId}:t${traitArr.join(',')}:w${equipped.join(',')}`;
+  const cacheKey = `json:v2:${tid || addr || collateral.name}:h${hauntId}:t${traitArr.join(',')}:w${equipped.join(',')}`;
   if (svgCache.has(cacheKey)) return svgCache.get(cacheKey);
 
   if (!addr) {
@@ -286,6 +287,7 @@ export async function fetchCollateralGotchiBlobUrl(
   equippedWearables?: number[] | Tuple<number, 16> | null,
   traits?: number[] | Tuple<number, 6> | null,
   sourceTokenId?: string | null,
+  hauntId?: number | null,
 ): Promise<string> {
   const svg = await fetchCollateralGotchiSvg(
     collateral,
@@ -294,6 +296,7 @@ export async function fetchCollateralGotchiBlobUrl(
     equippedWearables,
     traits,
     sourceTokenId,
+    hauntId,
   );
   return convertInlineSVGToBlobURL(svg);
 }
@@ -302,6 +305,9 @@ export async function fetchCollateralGotchiBlobUrl(
  * 4-direction sprites for a cartridge cAavegotchi (in-game Phaser).
  * Prefer on-chain previewSideAavegotchi so eye shapes/colors match L1 / wearables;
  * fall back to offline JSON compose (with baked fills) if RPC fails.
+ *
+ * Haunt matters: EYS 0/1 are haunt-specific mythical eyes (wiki.aavegotchi.com/en/eye-shape).
+ * Haunt 2 mythical ≠ Haunt 1 mythical — wrong haunt shows the wrong eye art.
  */
 export async function fetchCartridgeHeroSideSVGs(
   collateral: CollateralObject,
@@ -309,12 +315,13 @@ export async function fetchCartridgeHeroSideSVGs(
   equippedWearables?: number[] | Tuple<number, 16> | null,
   traits?: number[] | Tuple<number, 6> | null,
   sourceTokenId?: string | null,
+  hauntIdHint?: number | null,
 ): Promise<[string, string, string, string]> {
   const equipped = padEquip(equippedWearables);
   const tid = String(sourceTokenId || '').trim();
   const isL1 = Boolean(tid && tid !== '0' && /^\d+$/.test(tid));
 
-  let hauntId = 1;
+  let hauntId = Number(hauntIdHint) === 2 ? 2 : Number(hauntIdHint) === 1 ? 1 : 1;
   let addr = collateralAddress(collateral);
   let traitArr = padTraits(traits);
 
@@ -360,6 +367,7 @@ export async function fetchCartridgeHeroSideSVGs(
     equippedWearables,
     traits,
     sourceTokenId,
+    hauntId,
   );
   return [
     front,
