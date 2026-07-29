@@ -369,7 +369,7 @@ function composeSvgView({
   // Body
   layers.push(pickViewFragment(main.body, viewIndex))
 
-  // Back view: hand wearables sit behind the body (before eyes/hands)
+  // Back view: held items sit behind the body (before eyes / clothing / hands)
   if (viewIndex === 3) {
     layers.push(...handWearableLayers(wearables, lib, viewIndex))
   }
@@ -400,34 +400,49 @@ function composeSvgView({
     if (logo) layers.push(logo)
   }
 
-  // Hands + hand wearables (layer order matches on-chain per view)
+  // On-chain front order (SvgFacet.addBodyAndWearableSvgLayers):
+  // bodyWearable → hands → face → eyes → head → sleeves → handL → handR → pet
+  // Hand items must paint after body/sleeves or suit arms cover the held gear.
+  const pushSlot = (slot: number) => {
+    const id = wearables[slot]
+    if (!id) return
+    const w = lib.wearablesById.get(id)
+    if (!w) return
+    layers.push(wrapWearable(pickViewFragment(w.svgs, viewIndex), slot, viewIndex))
+  }
+  const pushSleeves = () => {
+    const id = wearables[0]
+    if (!id) return
+    const w = lib.wearablesById.get(id)
+    if (w) layers.push(sleevesForWearable(w, viewIndex, hasBodyWearable))
+  }
+
   const hands = pickViewFragment(main.hands, viewIndex)
   const handWearables = viewIndex === 3 ? [] : handWearableLayers(wearables, lib, viewIndex)
 
-  if (viewIndex === 1 || viewIndex === 2) {
-    // Side views: wearable under hand strokes
+  if (viewIndex === 3) {
+    // Back: hand wearables already inserted behind eyes/logo; body clothing then hands on top
+    pushSlot(0)
+    for (const slot of [1, 2, 3]) pushSlot(slot)
+    pushSleeves()
+    if (hands) layers.push(hands)
+    pushSlot(6)
+  } else if (viewIndex === 1 || viewIndex === 2) {
+    // Side: clothing first; items under hand strokes (gripping look)
+    pushSlot(0)
+    for (const slot of [1, 2, 3]) pushSlot(slot)
+    pushSleeves()
     layers.push(...handWearables)
     if (hands) layers.push(hands)
-  } else if (viewIndex === 0) {
-    // Front: hands then wearables on top
+    pushSlot(6)
+  } else {
+    // Front: match SvgFacet — hand wearables last so they sit on top of hands/sleeves
+    pushSlot(0)
     if (hands) layers.push(hands)
+    for (const slot of [1, 2, 3]) pushSlot(slot)
+    pushSleeves()
     layers.push(...handWearables)
-  } else if (viewIndex === 3) {
-    // Back: hand wearables already behind body; hands on top
-    if (hands) layers.push(hands)
-  }
-
-  // Non-hand wearables (slots 0–3, 6)
-  const slotOrder = [0, 1, 2, 3, 6]
-  for (const slot of slotOrder) {
-    const id = wearables[slot]
-    if (!id) continue
-    const w = lib.wearablesById.get(id)
-    if (!w) continue
-    layers.push(wrapWearable(pickViewFragment(w.svgs, viewIndex), slot, viewIndex))
-    if (slot === 0) {
-      layers.push(sleevesForWearable(w, viewIndex, hasBodyWearable))
-    }
+    pushSlot(6)
   }
 
   // Shadow (if not already in body — body front includes shadow; still ok to skip duplicate)
