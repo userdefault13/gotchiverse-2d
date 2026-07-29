@@ -1,6 +1,8 @@
 /**
  * MAP_ID_STORE — the entire map is a 16×16 store interior (1024×1024).
+ * Client-only: import dynamically from store.scene.helper (never from SSR pages).
  */
+import Phaser from 'phaser';
 import GlobalState from 'contexts/GlobalState';
 import {
   STORE_GRID,
@@ -19,22 +21,8 @@ import {
   type StoreLayout,
 } from 'helpers/store.layout.helper';
 import { sendStoreMove, getStoreRoom } from 'helpers/colyseus.store';
+import type { StoreSceneBuildState, StoreSceneCallbacks } from 'helpers/store.scene.helper';
 import { MAP_CONFIG_BY_ID, MAP_ID_STORE, TILE_SIZE } from 'shared_code/constants/const.game';
-
-export type StoreSceneBuildState = {
-  buildMode: boolean;
-  placeBrush: number | null;
-  floorBrush: number | null;
-};
-
-export type StoreSceneCallbacks = {
-  onInteractShelf: (piece: StoreFurniturePiece) => void;
-  onInteractCashier: (piece: StoreFurniturePiece) => void;
-  onInteractConsole: (piece: StoreFurniturePiece) => void;
-  onBuildTileClick: (tx: number, ty: number) => void;
-  onLeaveDoor: () => void;
-  onSelectFurniture: (piece: StoreFurniturePiece | null) => void;
-};
 
 type RemoteSprite = {
   container: Phaser.GameObjects.Container;

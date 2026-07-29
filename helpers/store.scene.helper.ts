@@ -2,7 +2,6 @@ import GameController from 'components/controllers/GameController';
 import InputController from 'components/controllers/inputController';
 import SceneController, { scene as citaadelScene } from 'components/controllers/SceneController';
 import Players from 'components/phaser/Players';
-import { StoreScene, type StoreSceneBuildState, type StoreSceneCallbacks } from 'components/phaser/scenes/storeScene';
 import { toggleFollowGotchi } from 'helpers/phaser.helper';
 import {
   joinStoreRoom,
@@ -10,13 +9,35 @@ import {
   seedStoreLayout,
   type JoinStoreOpts,
 } from 'helpers/colyseus.store';
-import { serializeLayout, type StoreLayout } from 'helpers/store.layout.helper';
+import { serializeLayout, type StoreFurniturePiece, type StoreLayout } from 'helpers/store.layout.helper';
 import { MAP_ID_CITAADEL, MAP_ID_STORE } from 'shared_code/constants/const.game';
+
+/** Kept here (not in storeScene) so HUD can import without pulling Phaser into SSR. */
+export type StoreSceneBuildState = {
+  buildMode: boolean;
+  placeBrush: number | null;
+  floorBrush: number | null;
+};
+
+export type StoreSceneCallbacks = {
+  onInteractShelf: (piece: StoreFurniturePiece) => void;
+  onInteractCashier: (piece: StoreFurniturePiece) => void;
+  onInteractConsole: (piece: StoreFurniturePiece) => void;
+  onBuildTileClick: (tx: number, ty: number) => void;
+  onLeaveDoor: () => void;
+  onSelectFurniture: (piece: StoreFurniturePiece | null) => void;
+};
+
+type StoreSceneApi = {
+  setCallbacks: (callbacks: StoreSceneCallbacks) => void;
+  setLayout: (layout: StoreLayout | null) => void;
+  setBuildState: (build: StoreSceneBuildState) => void;
+};
 
 type PhaserGame = {
   scene: {
     getScene: (key: string) => unknown;
-    add: (key: string, scene: typeof StoreScene | StoreScene, autoStart?: boolean, data?: unknown) => void;
+    add: (key: string, scene: unknown, autoStart?: boolean, data?: unknown) => void;
     run: (key: string, data?: unknown) => void;
     pause: (key?: string) => void;
     resume: (key?: string) => void;
@@ -44,11 +65,11 @@ function getGame(): PhaserGame | null {
   return null;
 }
 
-function getStoreScene(): StoreScene | null {
+function getStoreScene(): StoreSceneApi | null {
   const game = getGame();
   if (!game) return null;
   try {
-    const s = game.scene.getScene(MAP_ID_STORE) as StoreScene | undefined;
+    const s = game.scene.getScene(MAP_ID_STORE) as StoreSceneApi | undefined;
     return s || null;
   } catch {
     return null;
@@ -123,6 +144,9 @@ export async function enterStoreMap(opts: EnterStoreMapOpts): Promise<{ ok: bool
     callbacks: opts.callbacks,
     build: { buildMode: false, placeBrush: null, floorBrush: null } as StoreSceneBuildState,
   };
+
+  // Dynamic import — StoreScene extends Phaser and must never load during Next SSR.
+  const { StoreScene } = await import('components/phaser/scenes/storeScene');
 
   if (!game.scene.getScene(MAP_ID_STORE)) {
     game.scene.add(MAP_ID_STORE, StoreScene, false);
