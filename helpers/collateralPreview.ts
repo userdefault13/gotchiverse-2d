@@ -4,7 +4,7 @@ import type { CollateralObject } from 'helpers/ethers.helper';
 import { ethers } from 'ethers';
 import type { NetworkNames, Tuple } from 'types';
 import { abis, varsForNetwork } from 'shared_code/web3/shared.const.web3';
-import { composeAllViews } from 'helpers/composeGotchi';
+import { composeAllViews, traitNumber } from 'helpers/composeGotchi';
 
 type BaseGotchiIdentity = {
   hauntId: number;
@@ -79,7 +79,8 @@ function padEquip(equippedWearables?: number[] | Tuple<number, 16> | null): numb
 
 function padTraits(traits?: number[] | Tuple<number, 6> | null): number[] {
   if (Array.isArray(traits) && traits.length >= 6) {
-    return traits.slice(0, 6).map((n) => Number(n) || 50);
+    // Keep trait 0 (Haunt mythical Single Dot) — `Number(n) || 50` would corrupt it.
+    return traits.slice(0, 6).map((n) => traitNumber(n, 50));
   }
   return [...BASE_PREVIEW_TRAITS];
 }
@@ -94,12 +95,13 @@ export function buildCollateralGotchiSvgFromBase(
   if (opts?.removeBg !== false) {
     svg = stripGotchiBackground(svg);
   }
+  // No `*` on eyeColor — nested gotchi-primary / fill="#fff" mythical dots must survive.
   const style = `<style>
     .gotchi-primary,.gotchi-primary *{fill:${collateral.primaryColor}!important}
     .gotchi-secondary,.gotchi-secondary *{fill:${collateral.secondaryColor}!important}
     .gotchi-collateral,.gotchi-collateral *{fill:${collateral.primaryColor}!important}
     .gotchi-cheek,.gotchi-cheek *{fill:${collateral.cheekColor}!important}
-    .gotchi-eyeColor,.gotchi-eyeColor *{fill:${collateral.secondaryColor}!important}
+    .gotchi-eyeColor{fill:${collateral.primaryColor}!important}
     .gotchi-primary-mouth,.gotchi-primary-mouth *{fill:${collateral.primaryColor}!important}
   </style>`;
   return svg.replace(/<svg([^>]*)>/, `<svg$1>${style}`);
@@ -165,7 +167,7 @@ export async function fetchBaseGotchiIdentity(tokenId: string): Promise<BaseGotc
     const identity: BaseGotchiIdentity = {
       hauntId: Math.min(Math.max(hauntRaw || 1, 1), 2),
       collateral: ethers.utils.getAddress(String(info.collateral || '').toLowerCase()),
-      traits: [...(info.numericTraits || [])].slice(0, 6).map((t) => Number(t) || 50),
+      traits: [...(info.numericTraits || [])].slice(0, 6).map((t) => traitNumber(t, 50)),
     };
     if (!identity.collateral || identity.traits.length < 6) return null;
     identityCache.set(tid, identity);
@@ -252,7 +254,7 @@ export async function fetchCollateralGotchiSvg(
     }
   }
 
-  const cacheKey = `json:v2:${tid || addr || collateral.name}:h${hauntId}:t${traitArr.join(',')}:w${equipped.join(',')}`;
+  const cacheKey = `json:v3:${tid || addr || collateral.name}:h${hauntId}:t${traitArr.join(',')}:w${equipped.join(',')}`;
   if (svgCache.has(cacheKey)) return svgCache.get(cacheKey);
 
   if (!addr) {

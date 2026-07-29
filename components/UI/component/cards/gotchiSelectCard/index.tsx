@@ -13,6 +13,7 @@ import { ChannelReadyToggle } from 'components/UI/elements/buttons/channelReadyT
 import { brsToRarity } from 'helpers/gotchi.helper';
 import { collateralFromSimId } from 'helpers/cartridgeHero.helper';
 import { fetchCollateralGotchiBlobUrl } from 'helpers/collateralPreview';
+import { traitNumber } from 'helpers/composeGotchi';
 import { useWeb3 } from 'contexts/Web3Context';
 
 interface Props {
@@ -48,7 +49,7 @@ export const GotchiSelectCard = ({ gotchi, handleSelect, isSelected }: Props): J
   );
   const traitsKey = useMemo(() => {
     const t = gotchi?.withSetsNumericTraits || gotchi?.numericTraits || [];
-    return t.map((n) => Number(n) || 50).join(',');
+    return t.map((n) => traitNumber(n, 50)).join(',');
   }, [gotchi?.withSetsNumericTraits, gotchi?.numericTraits]);
   const sourceTokenId = gotchi?.cartridgeSourceTokenId || undefined;
   const hauntId =
@@ -64,7 +65,7 @@ export const GotchiSelectCard = ({ gotchi, handleSelect, isSelected }: Props): J
     let cancelled = false;
     let createdUrl = '';
     const equipped = equipKey ? equipKey.split(',').map((n) => Number(n) || 0) : undefined;
-    const traits = traitsKey ? traitsKey.split(',').map((n) => Number(n) || 50) : undefined;
+    const traits = traitsKey ? traitsKey.split(',').map((n) => traitNumber(n, 50)) : undefined;
     void fetchCollateralGotchiBlobUrl(
       collateral,
       currentNetwork,

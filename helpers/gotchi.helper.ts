@@ -35,6 +35,7 @@ import {
   replaceParts,
 } from 'overrides/gotchiStyles';
 import { collateralByAddress, maxQuantityToRarity } from './ethers.helper';
+import { traitNumber } from './composeGotchi';
 import React from 'react';
 import { showNotificationWithTimeout } from 'contexts/NotificationContext/actions';
 import { secondsUntilGotchiCanChannel } from './parcels.helper';
@@ -384,7 +385,7 @@ export const fetchAavegotchiSideSVGs = async (
   const simCollateral = opts?.cartridgeCollateral || parseCartridgeHeroCollateral(id);
   if (simCollateral) {
     const equipKey = (opts?.equippedWearables || []).map((n) => Number(n) || 0).join(',');
-    const traitKey = (opts?.traits || []).map((n) => Number(n) || 50).join(',');
+    const traitKey = (opts?.traits || []).map((n) => traitNumber(n, 50)).join(',');
     const sourceKey = String(opts?.sourceTokenId || '');
     const hauntKey = Number(opts?.hauntId) === 2 ? 'h2' : Number(opts?.hauntId) === 1 ? 'h1' : 'h?';
     const cacheKey = `cartridge:base-sides-v3:${simCollateral}:src${sourceKey}:${hauntKey}:w${equipKey}:t${traitKey}`;
@@ -511,12 +512,12 @@ export function getGotchiData(
   const withSetsNumericTraits: SelectedPlayer['withSetsNumericTraits'] =
     Array.isArray(rawTraits) && rawTraits.length >= 4
       ? [
-          Number(rawTraits[0]) || 50,
-          Number(rawTraits[1]) || 50,
-          Number(rawTraits[2]) || 50,
-          Number(rawTraits[3]) || 50,
-          Number(rawTraits[4]) || 50,
-          Number(rawTraits[5]) || 50,
+          traitNumber(rawTraits[0], 50),
+          traitNumber(rawTraits[1], 50),
+          traitNumber(rawTraits[2], 50),
+          traitNumber(rawTraits[3], 50),
+          traitNumber(rawTraits[4], 50),
+          traitNumber(rawTraits[5], 50),
         ]
       : isCartridgeHero || Boolean(gotchi.isSpectator)
         ? [50, 50, 50, 50, 50, 50]

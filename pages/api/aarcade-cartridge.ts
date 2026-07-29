@@ -1,4 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
+import { traitNumber } from 'helpers/composeGotchi';
 
 type CartridgeRecord = {
   cartridgeId?: string;
@@ -53,7 +54,7 @@ function extractHeroes(match: CartridgeRecord | null): {
         .toLowerCase() || 'dai';
     if (!id) continue;
     const traits = Array.isArray(row.traits)
-      ? row.traits.map((n) => Number(n) || 50).slice(0, 6)
+      ? row.traits.map((n) => traitNumber(n, 50)).slice(0, 6)
       : [50, 50, 50, 50, 50, 50];
     const equippedWearables = Array.isArray(row.equippedWearables)
       ? row.equippedWearables.map((n) => Number(n) || 0).slice(0, 16)

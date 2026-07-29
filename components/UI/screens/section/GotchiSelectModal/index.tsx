@@ -34,6 +34,7 @@ import router from 'next/router';
 import { toast } from 'react-toastify';
 import { collateralByAddress, getMintableCollaterals, type CollateralObject } from 'helpers/ethers.helper';
 import { fetchCartridgeHeroSideSVGs, fetchCollateralGotchiBlobUrl } from 'helpers/collateralPreview';
+import { traitNumber } from 'helpers/composeGotchi';
 import { convertInlineSVGToBlobURL } from 'helpers/aavegotchi';
 import { useUser } from 'contexts/UserContext';
 import {
@@ -196,7 +197,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
     if (!selectedIsCartridgeHero || !selectedGotchi) return null;
     const equipped = (selectedGotchi.equippedWearables || []).map((n) => Number(n) || 0);
     const traits = (selectedGotchi.withSetsNumericTraits || selectedGotchi.numericTraits || []).map(
-      (n) => Number(n) || 50,
+      (n) => traitNumber(n, 50),
     );
     const sourceTokenId = selectedGotchi.cartridgeSourceTokenId || '';
     const hauntId =

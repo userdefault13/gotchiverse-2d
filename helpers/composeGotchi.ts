@@ -28,6 +28,15 @@ function hexFrom0x(value) {
   return `#${s}`
 }
 
+/**
+ * Trait values are 0–99. Mythical eye shape is 0 — never use `Number(n) || 50`
+ * (that silently turns Single Dot into Common rectangles).
+ */
+export function traitNumber(value: unknown, fallback = 50): number {
+  const n = Number(value)
+  return Number.isFinite(n) ? n : fallback
+}
+
 /** Eye color trait → fill. Common band uses collateral primary. */
 export function getEyeColorHex(eyeColorTrait, primaryColor) {
   const v = Number(eyeColorTrait)
@@ -154,7 +163,8 @@ export function bakeGotchiSvgClassFills(svg: string): string {
   if (!svg || typeof DOMParser === 'undefined') return svg
   try {
     const doc = new DOMParser().parseFromString(svg, 'image/svg+xml')
-    const styleText = doc.querySelector('style')?.textContent || ''
+    const styleEl = doc.querySelector('style')
+    const styleText = styleEl?.textContent || ''
     const colorFor = (cls: string): string | null => {
       const re = new RegExp(`\\.${cls}\\s*\\{[^}]*fill:\\s*([^;!}]+)`, 'i')
       const m = styleText.match(re)
@@ -176,11 +186,21 @@ export function bakeGotchiSvgClassFills(svg: string): string {
           const childEl = child as Element
           const childClass = childEl.getAttribute('class') || ''
           if (/gotchi-(primary|secondary|cheek|eyeColor|primary-mouth)/.test(childClass)) return
-          if (!childEl.getAttribute('fill') || childEl.getAttribute('fill') === 'none') {
-            childEl.setAttribute('fill', color)
-          }
+          const existing = childEl.getAttribute('fill')
+          // Keep explicit fills (Haunt 2 mythical eyes use fill="#fff" for the dot/hole).
+          if (existing && existing !== 'none') return
+          childEl.setAttribute('fill', color)
         })
       })
+    }
+    // Drop class fill rules after baking so !important CSS cannot override #fff eye holes.
+    if (styleEl) {
+      styleEl.textContent = styleText
+        .replace(
+          /\.gotchi-(?:primary|secondary|cheek|eyeColor|primary-mouth)\s*\{[^}]*\}/gi,
+          '',
+        )
+        .replace(/\n{2,}/g, '\n')
     }
     const root = doc.documentElement
     return root ? new XMLSerializer().serializeToString(root) : svg

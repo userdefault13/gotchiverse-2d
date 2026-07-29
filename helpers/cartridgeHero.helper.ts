@@ -5,6 +5,7 @@ import {
   resolveHeroEquippedWearables,
   type CWearable,
 } from 'helpers/cartridgeWearable.helper';
+import { traitNumber } from 'helpers/composeGotchi';
 
 export type CartridgeHero = {
   id: string;
@@ -93,9 +94,9 @@ export function normalizeCartridgeHeroes(raw: unknown): CartridgeHero[] {
           .toLowerCase() || 'dai';
       if (!id) return null;
       const traits = Array.isArray(row.traits)
-        ? row.traits.map((n) => Number(n) || 50).slice(0, 6)
+        ? row.traits.map((n) => traitNumber(n, 50)).slice(0, 6)
         : Array.isArray(row.modifiedTraits)
-        ? (row.modifiedTraits as unknown[]).map((n) => Number(n) || 50).slice(0, 6)
+        ? (row.modifiedTraits as unknown[]).map((n) => traitNumber(n, 50)).slice(0, 6)
         : [50, 50, 50, 50, 50, 50];
       while (traits.length < 6) traits.push(50);
       return {
