@@ -6,12 +6,21 @@ export const NewsList = (): JSX.Element => {
   const [newsList, setNewsList] = useState([]);
   useEffect(() => {
     const fetchNews = async () => {
+      const key = process.env.GHOST_API_KEY;
+      if (!key) {
+        setNewsList([]);
+        return;
+      }
       try {
         const res = await fetch(
-          `https://aavegotchi.ghost.io/ghost/api/content/posts/?key=${process.env.GHOST_API_KEY}&limit=4&order=published_at%20desc`,
+          `https://aavegotchi.ghost.io/ghost/api/content/posts/?key=${key}&limit=4&order=published_at%20desc`,
         );
+        if (!res.ok) {
+          setNewsList([]);
+          return;
+        }
         const { posts } = await res.json();
-        setNewsList(posts);
+        setNewsList(posts ?? []);
       } catch (e) {
         console.error('Failed to fetch news: ', e);
         setNewsList([]);

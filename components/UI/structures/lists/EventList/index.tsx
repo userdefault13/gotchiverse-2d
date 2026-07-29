@@ -176,7 +176,7 @@ export const EventList = ({
                   max={HOOD_ROW_COUNT * HOOD_COL_COUNT}
                   type="number"
                   placeholder="all"
-                  value={!eventFilter.districtInput ? 'All' : eventFilter.districtInput.toString()}
+                  value={!eventFilter.districtInput ? '' : eventFilter.districtInput.toString()}
                   label="District"
                   isParcel={true}
                   onChange={(e) => setEventFilter({ ...eventFilter, districtInput: Number(e.target.value) })}

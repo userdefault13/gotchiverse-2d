@@ -46,6 +46,34 @@ interface OtherDiamondCalls {
   parameters?: any;
 }
 
+/** Drop duplicate event/function fragments so ethers stops logging "duplicate definition". */
+function sanitizeAbi(abi: unknown): unknown {
+  if (!Array.isArray(abi)) return abi;
+  const out: unknown[] = [];
+  const fnSigs = new Set<string>();
+  const eventNames = new Set<string>();
+  for (const item of abi) {
+    if (!item || typeof item !== 'object') {
+      out.push(item);
+      continue;
+    }
+    const frag = item as { type?: string; name?: string; inputs?: Array<{ type?: string }> };
+    if (frag.type === 'function' && frag.name) {
+      const sig = `${frag.name}(${(frag.inputs || []).map((i) => i.type || '').join(',')})`;
+      if (fnSigs.has(sig)) continue;
+      fnSigs.add(sig);
+      out.push(item);
+    } else if (frag.type === 'event' && frag.name) {
+      if (eventNames.has(frag.name)) continue;
+      eventNames.add(frag.name);
+      out.push(item);
+    } else {
+      out.push(item);
+    }
+  }
+  return out;
+}
+
 export const useDiamondCall = async <R extends unknown>(
   provider: ethers.Signer | ethers.providers.Provider,
   network: string,
@@ -56,7 +84,9 @@ export const useDiamondCall = async <R extends unknown>(
   if (!provider || !network) return;
   const vars = varsForNetwork(network);
   const contracts = useSigner ? unsignedcontracts : signedContracts;
-  if (!contracts[diamondName]) contracts[diamondName] = new ethers.Contract(vars[diamondName], abis[diamondName], provider);
+  if (!contracts[diamondName]) {
+    contracts[diamondName] = new ethers.Contract(vars[diamondName], sanitizeAbi(abis[diamondName]) as any, provider);
+  }
   // console.log(diamondName, contracts[diamondName]);
   const { name, parameters } = method;
   const res = await (parameters ? contracts[diamondName][name](...parameters) : contracts[diamondName][name]());
@@ -70,14 +100,14 @@ export const getContract = (
   useSigner?: boolean,
 ) => {
   const vars = varsForNetwork(network);
-  const abi = abis[contractName] || abis.erc20;
+  const abi = sanitizeAbi(abis[contractName] || abis.erc20);
 
   // Signer-backed contracts must not be cached across wallet reconnects — a stale signer
   // makes writes (channel / equip / claim) fail mysteriously until a full reload.
   if (useSigner) {
     try {
       if (!vars[contractName]) return undefined;
-      return new ethers.Contract(vars[contractName], abi, provider);
+      return new ethers.Contract(vars[contractName], abi as any, provider);
     } catch (err) {
       console.log("Can't fetch contract with err:", err);
       return undefined;
@@ -90,7 +120,7 @@ export const getContract = (
   if (!contracts[cacheKey]) {
     try {
       if (!vars[contractName]) return undefined;
-      contracts[cacheKey] = new ethers.Contract(vars[contractName], abi, provider);
+      contracts[cacheKey] = new ethers.Contract(vars[contractName], abi as any, provider);
     } catch (err) {
       console.log("Can't fetch contract with err:", err);
     }

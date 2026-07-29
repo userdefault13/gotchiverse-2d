@@ -277,7 +277,7 @@ export const SpawnOnParcel = ({ spawnParcelId, handleSpawnSelect }: Props): JSX.
                 max={HOOD_ROW_COUNT * HOOD_COL_COUNT}
                 type="number"
                 placeholder="all"
-                value={districtInput ? districtInput.toString() : 'All'}
+                value={districtInput ? districtInput.toString() : ''}
                 label="District"
                 color="info"
                 isParcel

@@ -289,10 +289,8 @@ export const fetchContractOwnedParcels = async (owner: string, provider: Provide
 
 /**
  * Wallet-owned parcels for soft-launch mint/spawn.
- * Prefers Realm `tokenIdsOfOwner` on Base until Aarcade production
- * `/api/subgraph` is confirmed on the GraphQL **compat** proxy (The Graph owner
- * filters). Note: compat `_meta.block` is a stub (often 0) — use Hasura
- * `chain_metadata` for sync progress, not `_meta`.
+ * Prefer Aarcade GraphQL compat (subgraph) — Base public RPC is rate-limited and the
+ * old contract-first path caused mainnet.base.org 429 storms + ABI noise.
  */
 export const fetchSubgraphOwnedParcel = async (
   owner: string,
@@ -301,31 +299,25 @@ export const fetchSubgraphOwnedParcel = async (
 ): Promise<GotchiverseParcel[]> => {
   let parcels: GotchiverseParcel[];
 
-  // Soft-launch Base: contract ownership until prod Aarcade serves Graph dialect.
-  if (network === 'base' || network === 'matic') {
-    try {
-      const contractParcels = await fetchContractOwnedParcels(owner, provider, network);
-      parcels = await mapInGotchiverseParcelData(contractParcels || []);
-      return normalizeParcels(parcels);
-    } catch (error) {
-      console.warn('@fetchSubgraphOwnedParcel contract path failed, trying subgraph', error);
-    }
-  }
-
   if (PARCEL_SUBGRAPH_NETWORKS.includes(network)) {
     const query = getUsersParcels([owner]);
     try {
       const res = await useSubgraph<{ parcels: GotchiverseParcel[] }>(query, gotchiverseSubgraph);
-      parcels = normalizeParcels(res.parcels);
+      return normalizeParcels(res.parcels);
     } catch (error) {
+      console.warn('@fetchSubgraphOwnedParcel subgraph failed', error);
+      // Base/robinhood: do not fall back to public RPC (429). Polygon may still try diamond.
+      if (network === 'base' || network === 'robinhood') {
+        return [];
+      }
       parcels = await fetchContractOwnedParcels(owner, provider, network);
       parcels = await mapInGotchiverseParcelData(parcels || []);
+      return normalizeParcels(parcels);
     }
-  } else {
-    parcels = await fetchContractOwnedParcels(owner, provider, network);
-    parcels = await mapInGotchiverseParcelData(parcels || []);
   }
 
+  parcels = await fetchContractOwnedParcels(owner, provider, network);
+  parcels = await mapInGotchiverseParcelData(parcels || []);
   return normalizeParcels(parcels);
 };
 
@@ -375,13 +367,18 @@ export const fetchAndSetGlobalParcels = async (
   }
 
   if (!fetchedParcels) {
-    const contractParcels = await fetchContractOwnedParcels(
-      GlobalState.WEB3.state.currentAccount,
-      GlobalState.WEB3.state.globalProvider,
-      network,
-    );
-    fetchedParcels = await mapInGotchiverseParcelData(contractParcels || []);
-    fetchedParcels = normalizeParcels(fetchedParcels);
+    if (network === 'base' || network === 'robinhood') {
+      console.warn('@fetchAndSetGlobalParcels: no subgraph parcels; skipping Base contract fallback');
+      fetchedParcels = [];
+    } else {
+      const contractParcels = await fetchContractOwnedParcels(
+        GlobalState.WEB3.state.currentAccount,
+        GlobalState.WEB3.state.globalProvider,
+        network,
+      );
+      fetchedParcels = await mapInGotchiverseParcelData(contractParcels || []);
+      fetchedParcels = normalizeParcels(fetchedParcels);
+    }
   }
 
   GlobalState.USER.dispatch({

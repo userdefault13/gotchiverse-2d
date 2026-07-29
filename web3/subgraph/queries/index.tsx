@@ -119,7 +119,9 @@ export const getUsersParcels = (accounts: string[], filter?: { district?: number
         parcelHash
         district
         size
-        owner
+        owner {
+          id
+        }
         lastChanneledAlchemica
         equippedInstallations {
           id
@@ -179,7 +181,9 @@ export const getParcelLastChanneled = (ids: number[]): string => {
       first: ${ids.length !== 0 ? ids.length : 1}
     ) {
       id
-      owner
+      owner {
+        id
+      }
       lastChanneledAlchemica
       equippedInstallations {
         id
