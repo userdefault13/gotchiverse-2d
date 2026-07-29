@@ -302,6 +302,10 @@ function wearableViewOffset(wearable, viewIndex): { x: string; y: string } | nul
 
 function sleevesForWearable(wearable, viewIndex, hasBodyWearable) {
   if (!wearable?.sleeves || !hasBodyWearable) return ''
+  // Back body SVGs already embed sleeve groups — layering sleeves again doubles them
+  // (enter portal + Phaser back frame). Front/side keep separate sleeve fragments.
+  const bodyFrag = pickViewFragment(wearable?.svgs, viewIndex) || ''
+  if (bodyFrag.includes('gotchi-sleeves')) return ''
   const sleeve = pickViewFragment(wearable.sleeves, viewIndex)
   if (!sleeve) return ''
   // Sleeve path coords are local to the body wearable's nested svg (same x/y as svgs[view]).
