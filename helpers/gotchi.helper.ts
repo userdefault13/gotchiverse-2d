@@ -71,8 +71,21 @@ export async function fetchAndSetGlobalAavegotchis(
   // console.log('@fetchAavegotchis: res', res);
 
   if (!res) return;
-  const gotchiverseQuery = getAavegotchiLastChanneled(res.map((gotchi) => Number(gotchi.id)));
-  const gotchiverseRes = await useSubgraph<{ gotchis: Array<{ lastChanneledAlchemica: string; id: string }> }>(gotchiverseQuery, gotchiverseSubgraph);
+
+  // Gotchiverse Envio indexes lastChanneledAlchemica on parcels, not gotchis yet.
+  // Soft-fail so wallet gotchi list still loads without channel enrichment.
+  let gotchiverseRes: { gotchis?: Array<{ lastChanneledAlchemica: string; id: string }> } = { gotchis: [] };
+  if (res.length) {
+    try {
+      const gotchiverseQuery = getAavegotchiLastChanneled(res.map((gotchi) => Number(gotchi.id)));
+      gotchiverseRes = await useSubgraph<{ gotchis: Array<{ lastChanneledAlchemica: string; id: string }> }>(
+        gotchiverseQuery,
+        gotchiverseSubgraph,
+      );
+    } catch (error) {
+      console.warn('@fetchAndSetGlobalAavegotchis: gotchi channel enrichment skipped', error);
+    }
+  }
   const gotchis = [];
 
   const gotchiTraits = await getGotchiCombatTraits(GlobalState.WEB3.state.currentAccount);
