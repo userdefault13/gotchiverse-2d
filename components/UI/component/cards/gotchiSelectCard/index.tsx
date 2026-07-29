@@ -12,7 +12,8 @@ import { useGame } from 'contexts/GameContext';
 import { ChannelReadyToggle } from 'components/UI/elements/buttons/channelReadyToggle';
 import { brsToRarity } from 'helpers/gotchi.helper';
 import { collateralFromSimId } from 'helpers/cartridgeHero.helper';
-import { fetchCollateralGotchiBlobUrl } from 'helpers/collateralPreview';
+import { buildCollateralGotchiSvg, fetchCollateralGotchiBlobUrl } from 'helpers/collateralPreview';
+import { convertInlineSVGToBlobURL } from 'helpers/aavegotchi';
 import { traitNumber } from 'helpers/composeGotchi';
 import { useWeb3 } from 'contexts/Web3Context';
 
@@ -73,14 +74,22 @@ export const GotchiSelectCard = ({ gotchi, handleSelect, isSelected }: Props): J
       traits,
       sourceTokenId,
       hauntId,
-    ).then((url) => {
-      if (cancelled) {
-        URL.revokeObjectURL(url);
-        return;
-      }
-      createdUrl = url;
-      setCartridgeBlobUrl(url);
-    });
+    )
+      .then((url) => {
+        if (cancelled) {
+          URL.revokeObjectURL(url);
+          return;
+        }
+        createdUrl = url;
+        setCartridgeBlobUrl(url);
+      })
+      .catch((err) => {
+        console.warn('@GotchiSelectCard cartridge preview', gotchi?.name, err);
+        if (cancelled) return;
+        const fallback = convertInlineSVGToBlobURL(buildCollateralGotchiSvg(collateral));
+        createdUrl = fallback;
+        setCartridgeBlobUrl(fallback);
+      });
     return () => {
       cancelled = true;
       if (createdUrl) URL.revokeObjectURL(createdUrl);

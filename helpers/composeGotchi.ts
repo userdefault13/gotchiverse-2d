@@ -106,6 +106,24 @@ export function findCollateral(library, hauntId, collateralTypeOrName) {
   )
 }
 
+/**
+ * Soft-mint gallery mixes haunt-1 aTokens (aUSDC) and haunt-2 amTokens (amWBTC).
+ * Resolve collateral in the requested haunt first, then the other.
+ */
+export function findCollateralAnyHaunt(
+  library,
+  hauntId,
+  collateralTypeOrName,
+): { collateral: any; hauntId: number } | null {
+  const preferred = Number(hauntId) === 2 ? 2 : 1
+  const other = preferred === 2 ? 1 : 2
+  const inPreferred = findCollateral(library, preferred, collateralTypeOrName)
+  if (inPreferred) return { collateral: inPreferred, hauntId: preferred }
+  const inOther = findCollateral(library, other, collateralTypeOrName)
+  if (inOther) return { collateral: inOther, hauntId: other }
+  return null
+}
+
 export function findEyeShape(library, hauntId, eyeShapeTrait) {
   const shapes = library.eyeShapes[Number(hauntId)] || []
   const v = Number(eyeShapeTrait)
@@ -310,14 +328,15 @@ export async function composeAllViews(
   library?: any,
 ): Promise<Record<string, string>> {
   const lib = library || (await loadLibrary())
-  const hauntId = Number(input.hauntId) || 1
+  const requestedHaunt = Number(input.hauntId) || 1
   const traits = (input.numericTraits || [50, 50, 50, 50, 50, 50]).map(Number)
   const wearables = Array.from({ length: 16 }, (_, i) => Number(input.equippedWearables?.[i] || 0))
 
-  const collateral = findCollateral(lib, hauntId, input.collateralType)
-  if (!collateral) {
-    throw new Error(`Collateral not found for haunt ${hauntId}: ${input.collateralType}`)
+  const resolved = findCollateralAnyHaunt(lib, requestedHaunt, input.collateralType)
+  if (!resolved) {
+    throw new Error(`Collateral not found for haunt ${requestedHaunt}: ${input.collateralType}`)
   }
+  const { collateral, hauntId } = resolved
 
   const eyeShapeTrait = traits[4] ?? 50
   const eyeColorTrait = traits[5] ?? 50

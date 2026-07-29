@@ -16,6 +16,25 @@ const svgCache = new Map<string, string>();
 const identityCache = new Map<string, BaseGotchiIdentity>();
 const rpcProviders = new Map<string, ethers.providers.JsonRpcProvider>();
 
+/** Soft-mint card thumbs must not hang on public Base RPC forever. */
+const PREVIEW_RPC_TIMEOUT_MS = 4000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const t = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+    promise.then(
+      (v) => {
+        clearTimeout(t);
+        resolve(v);
+      },
+      (e) => {
+        clearTimeout(t);
+        reject(e);
+      },
+    );
+  });
+}
+
 const EMPTY_WEARABLES = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0] as Tuple<number, 16>;
 
 /**
@@ -246,11 +265,19 @@ export async function fetchCollateralGotchiSvg(
   let traitArr = padTraits(traits);
 
   if (isL1) {
-    const identity = await fetchBaseGotchiIdentity(tid);
-    if (identity) {
-      hauntId = identity.hauntId;
-      addr = identity.collateral;
-      traitArr = identity.traits;
+    try {
+      const identity = await withTimeout(
+        fetchBaseGotchiIdentity(tid),
+        PREVIEW_RPC_TIMEOUT_MS,
+        'getAavegotchi',
+      );
+      if (identity) {
+        hauntId = identity.hauntId;
+        addr = identity.collateral;
+        traitArr = identity.traits;
+      }
+    } catch (err) {
+      console.warn('@fetchCollateralGotchiSvg identity', tid, err);
     }
   }
 
@@ -270,7 +297,11 @@ export async function fetchCollateralGotchiSvg(
   } catch (composeErr) {
     console.warn('@fetchCollateralGotchiSvg compose', collateral.name, tid || '', composeErr);
     try {
-      const cleaned = await previewOnBase(hauntId, addr, traitArr, equipped);
+      const cleaned = await withTimeout(
+        previewOnBase(hauntId, addr, traitArr, equipped),
+        PREVIEW_RPC_TIMEOUT_MS,
+        'previewAavegotchi',
+      );
       svgCache.set(cacheKey, cleaned);
       return cleaned;
     } catch (err) {
@@ -328,17 +359,29 @@ export async function fetchCartridgeHeroSideSVGs(
   let traitArr = padTraits(traits);
 
   if (isL1) {
-    const identity = await fetchBaseGotchiIdentity(tid);
-    if (identity) {
-      hauntId = identity.hauntId;
-      addr = identity.collateral;
-      traitArr = identity.traits;
+    try {
+      const identity = await withTimeout(
+        fetchBaseGotchiIdentity(tid),
+        PREVIEW_RPC_TIMEOUT_MS,
+        'getAavegotchi',
+      );
+      if (identity) {
+        hauntId = identity.hauntId;
+        addr = identity.collateral;
+        traitArr = identity.traits;
+      }
+    } catch (err) {
+      console.warn('@fetchCollateralGotchiSvg identity', tid, err);
     }
   }
 
   if (addr) {
     try {
-      return await previewSideOnBase(hauntId, addr, traitArr, equipped);
+      return await withTimeout(
+        previewSideOnBase(hauntId, addr, traitArr, equipped),
+        PREVIEW_RPC_TIMEOUT_MS,
+        'previewSideAavegotchi',
+      );
     } catch (err) {
       console.warn('@fetchCartridgeHeroSideSVGs on-chain', collateral.name, err);
     }
