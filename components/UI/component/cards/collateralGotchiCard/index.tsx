@@ -21,7 +21,6 @@ export const CollateralGotchiCard = ({ collateral, isSelected, onSelect }: Props
   useEffect(() => {
     let cancelled = false;
     let createdUrl = '';
-    setBlobUrl('');
     void fetchCollateralGotchiBlobUrl(collateral, currentNetwork).then((url) => {
       if (cancelled) {
         URL.revokeObjectURL(url);

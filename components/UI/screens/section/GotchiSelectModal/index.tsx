@@ -33,10 +33,7 @@ import useResizeObserver from 'hooks/useResizeObserver';
 import router from 'next/router';
 import { toast } from 'react-toastify';
 import { collateralByAddress, getMintableCollaterals, type CollateralObject } from 'helpers/ethers.helper';
-import {
-  fetchCartridgeHeroSideSVGs,
-  fetchCollateralGotchiBlobUrl,
-} from 'helpers/collateralPreview';
+import { fetchCartridgeHeroSideSVGs, fetchCollateralGotchiBlobUrl } from 'helpers/collateralPreview';
 import { convertInlineSVGToBlobURL } from 'helpers/aavegotchi';
 import { useUser } from 'contexts/UserContext';
 import {
@@ -266,10 +263,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
         URL.revokeObjectURL(url);
         return;
       }
-      setCollateralPreviewUrl((prev) => {
-        if (prev) URL.revokeObjectURL(prev);
-        return url;
-      });
+      setCollateralPreviewUrl(url);
     });
     // Prefetch all sides so enter-portal can flip to back view immediately.
     void fetchCartridgeHeroSideSVGs(
@@ -285,10 +279,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
         urls.forEach((u) => URL.revokeObjectURL(u));
         return;
       }
-      setCartridgeSideUrls((prev) => {
-        if (prev) prev.forEach((u) => URL.revokeObjectURL(u));
-        return urls;
-      });
+      setCartridgeSideUrls(urls);
     });
     return () => {
       cancelled = true;
@@ -1772,17 +1763,7 @@ export const GotchiSelectModal = ({ selectedSpawn, selectedGotchi, handleSpawnSe
                   onClick={async () => await handleGameStart()}
                 >
                   <div className="gotchi">
-                    {selectedIsCartridgeHero &&
-                    selectedGotchi?.cartridgeSourceTokenId &&
-                    /^\d+$/.test(String(selectedGotchi.cartridgeSourceTokenId).trim()) ? (
-                      <GotchiSVG
-                        key={`${previewArtKey}-${enterPortal ? 'back' : 'front'}`}
-                        tokenId={String(selectedGotchi.cartridgeSourceTokenId)}
-                        side={enterPortal ? 3 : 0}
-                        options={{ removeBg: true, animate: !enterPortal }}
-                        height={selectedGotchiHeight}
-                      />
-                    ) : selectedIsCartridgeHero ? (
+                    {selectedIsCartridgeHero ? (
                       <div
                         className="collateral-preview-svg"
                         style={{
