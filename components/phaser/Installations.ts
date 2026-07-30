@@ -200,12 +200,20 @@ const spawnSprite = async (installationData: InstallationMetadata, options?: Cre
     const footprintW = width * GOTCHI_SIZE.UNIT;
     const footprintH = height * GOTCHI_SIZE.UNIT;
     const isStore = Number(installationType) === 9 || key === 'store';
+    const isLodge = Number(installationType) === 4 || key === 'lodge';
     // Store sheet is 256×256 on a 2×2 (128×128) pad — scale to footprint.
     // Console is Store furniture (not a parcel installation).
     if (isStore) {
       offset.x = 0;
       offset.y = 0;
       await AssetsController.ensureSpritesheet('store', 'installations', 256, 256);
+    }
+    // Lodge sheet is 320×384 with a fully transparent top tile row. Footprint is 5×5 —
+    // bottom-align the 384px art so the empty row hangs above the walkable collision.
+    if (isLodge) {
+      offset.x = 0;
+      offset.y = -(384 - footprintH);
+      await AssetsController.ensureSpritesheet('lodge', 'installations', 320, 384);
     }
     // Always top-left origin on the footprint — do not use tileset originX/Y here
     // (those values break marker sizing / grid snap when non-zero, e.g. aaltar 0.3/0.6).

@@ -16,6 +16,8 @@ const LEGACY_WAALL_INV = 'gotchiverse.waall.inventory.v1';
 const LEGACY_LODGE_INV = 'gotchiverse.lodge.inventory.v1';
 const LEGACY_STORE_INV = 'gotchiverse.store.inventory.v1';
 const LEGACY_PLACEMENTS = 'gotchiverse.offchain.placements.v1';
+/** One-shot: Lodge footprint shrank 5×6 → 5×5 (empty top art row). Shift Y +1 so collision matches content. */
+const LODGE_FOOTPRINT_V2 = 'gotchiverse.lodge.footprint.v2';
 const FLUSH_MS = 1500;
 
 /** Waall 162–170 + Lodge 171–179 + Store 180–188 — keep inline to avoid circular imports.
@@ -30,6 +32,43 @@ function isOffchainInstallationId(id: string): boolean {
   } catch {
     return false;
   }
+}
+
+/**
+ * Lodge art is 5×6 with a blank top tile. Footprint is now 5×5 — nudge placed lodges
+ * down one tile so the empty row is no longer a walk blocker / selection pad.
+ * Id shape: parcelId_itemId_x_y_…
+ */
+function migrateLodgeFootprintV2(placements: Record<string, string[]>): {
+  placements: Record<string, string[]>;
+  changed: boolean;
+} {
+  if (typeof window !== 'undefined' && localStorage.getItem(LODGE_FOOTPRINT_V2) === '1') {
+    return { placements, changed: false };
+  }
+  let changed = false;
+  const next: Record<string, string[]> = {};
+  for (const [parcelId, ids] of Object.entries(placements || {})) {
+    next[parcelId] = (ids || []).map((id) => {
+      const parts = String(id).split('_');
+      if (parts.length < 4) return id;
+      const itemId = Number(parts[1]);
+      if (itemId < 171 || itemId > 179) return id;
+      const y = Number(parts[3]);
+      if (!Number.isFinite(y)) return id;
+      parts[3] = String(y + 1);
+      changed = true;
+      return parts.join('_');
+    });
+  }
+  if (typeof window !== 'undefined') {
+    try {
+      localStorage.setItem(LODGE_FOOTPRINT_V2, '1');
+    } catch {
+      /* ignore */
+    }
+  }
+  return { placements: next, changed };
 }
 
 let wallet: string | null = null;
@@ -223,6 +262,11 @@ export async function hydrateOffchainStore(account: string | null | undefined): 
       inventory: { ...(loaded?.inventory || {}) },
       placements: { ...(loaded?.placements || {}) },
     };
+    const migrated = migrateLodgeFootprintV2(state.placements);
+    if (migrated.changed) {
+      state.placements = migrated.placements;
+      dirty = true;
+    }
     mirrorLocalStorage(state);
     hydrated = true;
     if (dirty) scheduleFlush();
