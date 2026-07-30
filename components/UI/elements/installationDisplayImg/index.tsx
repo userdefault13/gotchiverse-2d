@@ -78,13 +78,15 @@ export const InstallationDisplayImg = ({ type, itemId, installationScale = 0.5, 
       scale = 150 / Math.max(tilewidth, effectiveHeight);
     }
 
-    // Soft-launch Store / Cashier / Shelf / Terminal sheets — fit the card.
+    // Soft-launch Store / Cashier / Shelf / Terminal / Broadcaster sheets — fit the card.
     if (
       spriteMetadata?.key === 'store' ||
       spriteMetadata?.key === 'cashier' ||
       spriteMetadata?.key === 'shelf' ||
       spriteMetadata?.key === 'terminal' ||
-      Number(itemType?.installationType) === 9
+      spriteMetadata?.key === 'broadcaster' ||
+      Number(itemType?.installationType) === 9 ||
+      Number(itemType?.installationType) === 10
     ) {
       scale = 150 / Math.max(tilewidth, tileheight);
     }

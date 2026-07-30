@@ -172,10 +172,25 @@ export function calculateChannellingResults({ altarId, playerId }: { altarId?: s
     throw new Error('Aaltar type not found for channeling preview');
   }
 
-  const gotchis = GlobalState.USER?.state?.userAavegotchis || [];
-  const byId = _.keyBy(gotchis, (g) => String(g.id));
-  const gotchi = byId[String(playerId)] || gotchis.find((g) => Number(g.id) === Number(playerId));
-  const kinship = Number(gotchi?.kinship ?? 0);
+  const pid = String(playerId ?? '');
+  const selected = GlobalState.REALM?.state?.selectedPlayer;
+  const userGotchis = GlobalState.USER?.state?.userAavegotchis || [];
+  const cartridgeHeroes = GlobalState.USER?.state?.cartridgeHeroes || [];
+
+  const fromUser =
+    userGotchis.find((g) => String(g.id) === pid) ||
+    userGotchis.find((g) => Number.isFinite(Number(pid)) && Number(g.id) === Number(pid));
+  const fromHero = cartridgeHeroes.find((h) => String(h.id) === pid);
+  const isCartridgeHero =
+    Boolean(selected?.isCartridgeHero && String(selected.id) === pid) || Boolean(fromHero);
+
+  let kinship = Number(
+    fromUser?.kinship ?? fromHero?.kinship ?? (String(selected?.id) === pid ? (selected as { kinship?: string })?.kinship : undefined) ?? 0,
+  );
+  // Soft-mint starters often ship with kinship 0 — floor at base channel amount (kin=50 → 20 FUD).
+  if (isCartridgeHero && (!Number.isFinite(kinship) || kinship <= 0)) {
+    kinship = 50;
+  }
   if (!Number.isFinite(kinship) || kinship < 0) {
     throw new Error('Gotchi kinship unavailable — reselect your Aavegotchi and try again');
   }

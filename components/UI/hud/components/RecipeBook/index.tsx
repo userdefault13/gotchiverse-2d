@@ -29,10 +29,6 @@ import {
   isStoreFurnitureItemId,
   isTerminalItemId,
 } from 'helpers/store.layout.helper';
-import {
-  craftLodgeFurniture,
-  getLodgeFurnitureQty,
-} from 'helpers/lodge.layout.helper';
 import { isBroadcasterItemId } from 'helpers/broadcaster.installation.helper';
 import { getLocalTilePageRecipes } from 'helpers/ctile.helper';
 import { getLocalOnchainRecipes, getLocalDecorationRecipes, isOriginalMintableRecipe } from 'helpers/recipeBook.local.helper';
@@ -362,12 +358,10 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
 
   const handleSelectLodgeRecipe = (recipe: Recipe) => {
     click();
-    // Broadcaster → lodge furniture bag (place inside Lodge).
+    // Broadcaster → Crafting Table (sprite in output slot), then lodge furniture bag on Craft.
     if (isBroadcasterItemId(recipe.id)) {
-      const result = craftLodgeFurniture(Number(recipe.id), 1);
-      const qty = getLodgeFurnitureQty(Number(recipe.id));
-      setCraftToast(result.ok ? `${result.message} (lodge bag: ${qty})` : result.message);
-      window.setTimeout(() => setCraftToast(''), 2500);
+      selectRecipe(recipe);
+      setOpen(false);
       return;
     }
     // Exterior Lodge → CraftingTable / local off-chain craft.
@@ -459,8 +453,8 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
         ) : null}
         {showLodgePage ? (
           <div className="foundry-intro">
-            Soft-launch lodge: craft a Lodge for your parcel, and a Broadcaster into your lodge furniture bag — then place the
-            Broadcaster inside the Lodge.
+            Soft-launch lodge: craft a Lodge for your parcel, and a Broadcaster via the Crafting Table into your lodge furniture
+            bag — then place the Broadcaster inside the Lodge.
           </div>
         ) : null}
         {showConsolePage ? (

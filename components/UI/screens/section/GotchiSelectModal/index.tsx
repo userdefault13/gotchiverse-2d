@@ -66,6 +66,7 @@ import {
 } from 'helpers/cartridgeWearable.helper';
 import type { MintableInstallationRow, MintablePaarcelRow } from 'helpers/cartridgePaarcel.helper';
 import {
+  cPaarcelsToGotchiverseParcels,
   enrichMintablePaarcelWithOnChainEquips,
   enrichMintablePaarcelsWithOnChainEquips,
   filterMintablePaarcelsOwnedByWallet,
@@ -1428,6 +1429,31 @@ export const GotchiSelectModal = ({
     let lenderParcels: ContractParcel[] = [];
     let ownedParcels = await fetchContractOwnedParcels(currentAccount, globalProvider, currentNetwork);
     _.map(ownedParcels, (parcel) => _.assign(parcel, { owner: currentAccount }));
+
+    // Soft-launch: union minted cPaarcels so build rights work even if diamond ownership fetch misses them.
+    const cPaarcelOwned = cPaarcelsToGotchiverseParcels(parcelInventory, currentAccount || undefined);
+    if (cPaarcelOwned.length) {
+      const seen = new Set(
+        (ownedParcels || []).map((p) => String(p.tokenId ?? p.id ?? '')).filter(Boolean),
+      );
+      const extras: ContractParcel[] = [];
+      for (const c of cPaarcelOwned) {
+        const tid = String(c.tokenId ?? c.id ?? '');
+        if (!tid || seen.has(tid)) continue;
+        seen.add(tid);
+        extras.push({
+          id: tid,
+          tokenId: tid,
+          parcelId: String(c.parcelId || ''),
+          parcelHash: c.parcelHash,
+          district: Number(c.district) || 0,
+          owner: currentAccount,
+        });
+      }
+      if (extras.length) {
+        ownedParcels = _.concat(ownedParcels || [], extras);
+      }
+    }
 
     if (isAavegotchiLent && (currentNetwork === 'matic' || currentNetwork === 'base')) {
       lenderParcels = await fetchContractOwnedParcels(gotchi.originalOwner.id, globalProvider, currentNetwork);

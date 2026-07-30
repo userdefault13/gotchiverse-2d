@@ -26,6 +26,12 @@ import {
   secondsUntilParcelCanClaim,
   surveyParcel,
 } from 'helpers/parcels.helper';
+import {
+  channelAlchemicaLocally,
+  getSoftGotchiLastChanneled,
+  getSoftParcelLastChanneled,
+  isSoftLaunchChannel,
+} from 'helpers/softChannel.helper';
 import { useEffect, useState } from 'react';
 import { getInstallationIdDataById, getInstallationTypeById } from 'shared_code/utils/shared.utils.installations';
 import installationTypes from 'shared_code/data/installations.json';
@@ -44,6 +50,7 @@ import { getContract } from 'web3/contract';
 import GameController from 'components/controllers/GameController';
 import { AlchemicaBalances, AlchemicaStats, InstallationCard, Modal } from 'components/UI/component';
 import { useGame } from 'contexts/GameContext';
+import { useUser } from 'contexts/UserContext';
 import GlobalState from 'contexts/GlobalState';
 import { FoundryStore } from 'helpers/foundry';
 let channelInterval;
@@ -57,6 +64,7 @@ export const ParcelDashboard = (): JSX.Element => {
   const [{ parcelDashboardState, accessRightsState }, uiDispatch] = useUI();
   const [{ ethersSigner, currentNetwork, globalProvider }] = useWeb3();
   const [{ selectedPlayer, ownedParcels }, realmDispatch] = useRealm();
+  const [{ alchemicaBalance }, userDispatch] = useUser();
   const [, notificationDispatch] = useNotification();
   const [{ scene }, phaserDispatch] = usePhaser();
   const { oops } = useAavegotchiSound();
@@ -237,7 +245,10 @@ export const ParcelDashboard = (): JSX.Element => {
   const getSetChannelTime = async (realmId: number, installationId: number) => {
     if (!installationId || !realmId) return;
 
-    const parcelLastChannel = await getContractParcelLastChannel(globalProvider, currentNetwork, realmId);
+    const soft = isSoftLaunchChannel(realmId);
+    const parcelLastChannel = soft
+      ? getSoftParcelLastChanneled(realmId)
+      : await getContractParcelLastChannel(globalProvider, currentNetwork, realmId);
     const lastChanneledStr = parcelLastChannel != null ? parcelLastChannel.toString() : '0';
     const parcelSeconds = secondsUntilParcelCanChannel(lastChanneledStr, installationId.toString()) || 0;
     setSecondsUntilParcelChannel(parcelSeconds);
@@ -256,7 +267,15 @@ export const ParcelDashboard = (): JSX.Element => {
   };
 
   const getSetGotchiChannelTime = async (gotchiId: string | number) => {
-    if (!globalProvider || !currentNetwork || gotchiId == null || gotchiId === '') return;
+    if (gotchiId == null || gotchiId === '') return;
+    const soft = isSoftLaunchChannel(realmId) || Boolean(selectedPlayer?.isCartridgeHero);
+    if (soft) {
+      const gotchiLast = getSoftGotchiLastChanneled(gotchiId);
+      setGotchiLastChanneledStr(gotchiLast);
+      setSecondsUntilGotchiChannel(secondsUntilGotchiCanChannel(gotchiLast) || 0);
+      return;
+    }
+    if (!globalProvider || !currentNetwork) return;
     const gotchiLast = await getContractGotchiLastChannel(globalProvider, currentNetwork, gotchiId);
     setGotchiLastChanneledStr(gotchiLast);
     setSecondsUntilGotchiChannel(secondsUntilGotchiCanChannel(gotchiLast) || 0);
@@ -287,24 +306,29 @@ export const ParcelDashboard = (): JSX.Element => {
 
   // CALLS
   const handleChannel = async () => {
-    if (!ethersSigner || !currentNetwork) {
-      oops();
-      showNotificationWithTimeout(notificationDispatch, {
-        type: 'error',
-        message: 'Wallet not connected. Connect on Base and try again.',
-        options: { sound: true },
-      });
-      return;
+    const soft = isSoftLaunchChannel(realmId) || Boolean(selectedPlayer?.isCartridgeHero);
+
+    if (!soft) {
+      if (!ethersSigner || !currentNetwork) {
+        oops();
+        showNotificationWithTimeout(notificationDispatch, {
+          type: 'error',
+          message: 'Wallet not connected. Connect on Base and try again.',
+          options: { sound: true },
+        });
+        return;
+      }
+      if (currentNetwork !== 'base' && currentNetwork !== 'mumbai' && currentNetwork !== 'matic') {
+        oops();
+        showNotificationWithTimeout(notificationDispatch, {
+          type: 'error',
+          message: `Wrong network (${currentNetwork}). Switch to Base and try again.`,
+          options: { sound: true },
+        });
+        return;
+      }
     }
-    if (currentNetwork !== 'base' && currentNetwork !== 'mumbai' && currentNetwork !== 'matic') {
-      oops();
-      showNotificationWithTimeout(notificationDispatch, {
-        type: 'error',
-        message: `Wrong network (${currentNetwork}). Switch to Base and try again.`,
-        options: { sound: true },
-      });
-      return;
-    }
+
     if (selectedPlayer?.id == null || selectedPlayer?.id === '') {
       oops();
       showNotificationWithTimeout(notificationDispatch, {
@@ -324,10 +348,6 @@ export const ParcelDashboard = (): JSX.Element => {
       return;
     }
 
-    const channelContract: ChannelData = {
-      realmId: realmId,
-      gotchiId: Number(selectedPlayer.id),
-    };
     setChannelLoading(true);
     let results;
     try {
@@ -348,11 +368,54 @@ export const ParcelDashboard = (): JSX.Element => {
     }
 
     const id = showTransactionNotification(notificationDispatch, {
-      message: 'Channeling Alchemica',
+      message: soft ? 'Channeling Alchemica (soft-launch)' : 'Channeling Alchemica',
     });
 
     try {
       await Installations.addFlamesToAaltar(parcelDashboardState.altarId, true);
+
+      if (soft) {
+        const softTx = channelAlchemicaLocally({
+          altarId: parcelDashboardState.altarId,
+          realmId,
+          playerId: selectedPlayer.id,
+          alchemicaBalance,
+        });
+        if (softTx?.status) {
+          userDispatch({ type: 'UPDATE_ALCHEMICA_BALANCE', alchemicaBalance: softTx.nextBalance });
+          GameController.handleToastNotification({
+            message: `Channeled (soft-launch): ${results.fud.toFixed(3)} FUD, ${results.fomo.toFixed(3)} FOMO, ${results.alpha.toFixed(
+              3,
+            )} ALPHA and ${results.kek.toFixed(3)} KEK!`,
+            autoClose: true,
+            type: 'success',
+          });
+          SFXController.playFX('channeling_end');
+          await getSetChannelTime(realmId, installationId);
+          if (selectedPlayer?.id != null) await getSetGotchiChannelTime(selectedPlayer.id);
+          updateTransactionNotificationStatus(notificationDispatch, id, 'success');
+          const channeledNum = Number(selectedPlayer.id);
+          if (Number.isFinite(channeledNum)) {
+            realmDispatch({
+              type: 'UPDATE_CHANNEL_ID',
+              lastChanneledId: channeledNum,
+            });
+          }
+          if ((gameConfig as { enableParcelFoundryPoC?: boolean })?.enableParcelFoundryPoC || process.env.NEXT_PUBLIC_ENABLE_FOUNDRY_POC === 'true') {
+            FoundryStore.setFoundryEnabled(true);
+            FoundryStore.addPollution(1 + Math.min(5, Math.floor((results.fud + results.fomo) / 10)));
+          }
+        } else {
+          oops();
+          updateTransactionNotificationStatus(notificationDispatch, id, 'error', 'Soft-launch channel failed');
+        }
+        return;
+      }
+
+      const channelContract: ChannelData = {
+        realmId: realmId,
+        gotchiId: Number(selectedPlayer.id),
+      };
       const tx = await channelAlchemica(ethersSigner, currentNetwork, channelContract);
       // console.log('@handleChannel TX:', tx);
 
@@ -393,6 +456,17 @@ export const ParcelDashboard = (): JSX.Element => {
   };
 
   const handleClaim = async () => {
+    const soft = isSoftLaunchChannel(realmId) || Boolean(selectedPlayer?.isCartridgeHero);
+    if (soft) {
+      oops();
+      showNotificationWithTimeout(notificationDispatch, {
+        type: 'error',
+        message: 'Reservoir claim is not available in soft-launch. Channel Alchemica instead.',
+        options: { sound: true },
+      });
+      return;
+    }
+
     const channelContract: ChannelData = {
       realmId: realmId,
       gotchiId: Number(selectedPlayer.id),

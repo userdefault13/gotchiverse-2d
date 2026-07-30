@@ -66,7 +66,7 @@ export const LodgeInventory = ({ placeBrush, invTick, onSelectBrush, onExit }: P
   return (
     <>
       <div className="content">
-        <p className="store-inv-hint">Broadcaster — craft in Recipe Book (Lodges), then place here</p>
+        <p className="store-inv-hint">Broadcaster — craft via Recipe Book → Crafting Table, then place here</p>
         <div className="divider"></div>
         <div className="scroll-wrapper">
           <div className="scroll-cantainer-wrapper scrollable info">

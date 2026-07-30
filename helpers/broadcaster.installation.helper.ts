@@ -39,6 +39,7 @@ function toRecipe(item: InstallationTypeLocal): Recipe {
     deprecated: false,
     level: Number(item.level) || 1,
     endDate: undefined,
+    softLaunch: true,
   };
 }
 
