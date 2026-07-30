@@ -4,7 +4,7 @@ import type { CollateralObject } from 'helpers/ethers.helper';
 import { ethers } from 'ethers';
 import type { NetworkNames, Tuple } from 'types';
 import { abis, varsForNetwork } from 'shared_code/web3/shared.const.web3';
-import { composeAllViews, traitNumber } from 'helpers/composeGotchi';
+import { bakeGotchiSvgClassFills, composeAllViews, traitNumber } from 'helpers/composeGotchi';
 
 type BaseGotchiIdentity = {
   hauntId: number;
@@ -18,6 +18,27 @@ const rpcProviders = new Map<string, ethers.providers.JsonRpcProvider>();
 
 /** Soft-mint card thumbs must not hang on public Base RPC forever. */
 const PREVIEW_RPC_TIMEOUT_MS = 4000;
+/** Offline JSON compose can stall on a hung /data fetch — never block thumbs forever. */
+const COMPOSE_TIMEOUT_MS = 8000;
+
+/**
+ * Haunt-2-only gallery collaterals (amWBTC, amWMATIC). Soft-mint defaults haunt to 1,
+ * which breaks Base previewSideAavegotchi and used to leave cards on GotchiLoading.
+ */
+const HAUNT2_ONLY_COLLATERAL_NAMES = new Set(['amwbtc', 'amwmatic']);
+
+export function inferCollateralHauntId(
+  collateral: CollateralObject | null | undefined,
+  hauntIdHint?: number | null,
+): number {
+  if (Number(hauntIdHint) === 2) return 2;
+  if (Number(hauntIdHint) === 1) return 1;
+  const name = String(collateral?.name || collateral?.maticDisplay || '')
+    .trim()
+    .toLowerCase();
+  if (HAUNT2_ONLY_COLLATERAL_NAMES.has(name) || name.startsWith('am')) return 2;
+  return 1;
+}
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return new Promise<T>((resolve, reject) => {
@@ -127,9 +148,9 @@ export function buildCollateralGotchiSvgFromBase(
 }
 
 /**
- * SVG spritesheet that embeds each side as a self-contained data-URI <image>.
- * Nesting frame markup (like `_aavegotchiSpriteSVG`) shares one CSS scope and drops
- * class-based body fills; per-frame data URIs keep each side's <style> intact.
+ * Phaser-safe SVG spritesheet: nest each side's markup (after baking class fills).
+ * Nested `<image href="data:image/svg+xml…">` sheets decode as Phaser `__MISSING`
+ * (magenta bars) — bake fills, then inline like `_aavegotchiSpriteSVG`.
  */
 export function svgSidesToSvgSpritesheet(
   svgs: string[],
@@ -143,21 +164,13 @@ export function svgSidesToSvgSpritesheet(
 
   const frames = svgs
     .map((svg, i) => {
-      let src = String(svg || '').trim();
-      if (!src) return '';
-      if (!src.includes('xmlns=')) {
-        src = src.replace(/<svg\b/i, '<svg xmlns="http://www.w3.org/2000/svg"');
-      }
-      if (!/viewBox=/i.test(src)) {
-        src = src.replace(/<svg\b([^>]*)>/i, '<svg$1 viewBox="0 0 64 64">');
-      }
-      if (!/\swidth=/i.test(src)) {
-        src = src.replace(/<svg\b([^>]*)>/i, `<svg$1 width="${frameSize}" height="${frameSize}">`);
-      }
-      const href = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(src)}`;
+      const baked = bakeGotchiSvgClassFills(String(svg || '').trim());
+      if (!baked) return '';
+      // Prefer inner markup of a root <svg>; fall back to full fragment.
+      const inner = baked.replace(/^[\s\S]*?<svg\b[^>]*>/i, '').replace(/<\/svg>\s*$/i, '') || baked;
       const x = (i % columns) * frameSize;
       const y = Math.floor(i / columns) * frameSize;
-      return `<image x="${x}" y="${y}" width="${frameSize}" height="${frameSize}" href="${href}" />`;
+      return `<svg x="${x}" y="${y}" width="${frameSize}" height="${frameSize}" viewBox="0 0 64 64">${inner}</svg>`;
     })
     .join('');
 
@@ -260,7 +273,7 @@ export async function fetchCollateralGotchiSvg(
   const tid = String(sourceTokenId || '').trim();
   const isL1 = Boolean(tid && tid !== '0' && /^\d+$/.test(tid));
 
-  let hauntId = Number(hauntIdHint) === 2 ? 2 : Number(hauntIdHint) === 1 ? 1 : 1;
+  let hauntId = inferCollateralHauntId(collateral, hauntIdHint);
   let addr = collateralAddress(collateral);
   let traitArr = padTraits(traits);
 
@@ -281,7 +294,7 @@ export async function fetchCollateralGotchiSvg(
     }
   }
 
-  const cacheKey = `json:v9:${tid || addr || collateral.name}:h${hauntId}:t${traitArr.join(',')}:w${equipped.join(',')}`;
+  const cacheKey = `json:v10:${tid || addr || collateral.name}:h${hauntId}:t${traitArr.join(',')}:w${equipped.join(',')}`;
   if (svgCache.has(cacheKey)) return svgCache.get(cacheKey);
 
   if (!addr) {
@@ -291,7 +304,11 @@ export async function fetchCollateralGotchiSvg(
   }
 
   try {
-    const cleaned = await composeOfflineSvg(hauntId, addr, traitArr, equipped);
+    const cleaned = await withTimeout(
+      composeOfflineSvg(hauntId, addr, traitArr, equipped),
+      COMPOSE_TIMEOUT_MS,
+      'composeOfflineSvg',
+    );
     svgCache.set(cacheKey, cleaned);
     return cleaned;
   } catch (composeErr) {
@@ -336,8 +353,8 @@ export async function fetchCollateralGotchiBlobUrl(
 
 /**
  * 4-direction sprites for a cartridge cAavegotchi (in-game Phaser).
- * Prefer on-chain previewSideAavegotchi so eye shapes/colors match L1 / wearables;
- * fall back to offline JSON compose (with baked fills) if RPC fails.
+ * Soft-mint: offline JSON compose first (correct haunt for amWBTC / amWMATIC).
+ * L1-bound: prefer on-chain previewSideAavegotchi so eye shapes match the token.
  *
  * Haunt matters: EYS 0/1 are haunt-specific mythical eyes (wiki.aavegotchi.com/en/eye-shape).
  * Haunt 2 mythical ≠ Haunt 1 mythical — wrong haunt shows the wrong eye art.
@@ -354,7 +371,7 @@ export async function fetchCartridgeHeroSideSVGs(
   const tid = String(sourceTokenId || '').trim();
   const isL1 = Boolean(tid && tid !== '0' && /^\d+$/.test(tid));
 
-  let hauntId = Number(hauntIdHint) === 2 ? 2 : Number(hauntIdHint) === 1 ? 1 : 1;
+  let hauntId = inferCollateralHauntId(collateral, hauntIdHint);
   let addr = collateralAddress(collateral);
   let traitArr = padTraits(traits);
 
@@ -371,8 +388,42 @@ export async function fetchCartridgeHeroSideSVGs(
         traitArr = identity.traits;
       }
     } catch (err) {
-      console.warn('@fetchCollateralGotchiSvg identity', tid, err);
+      console.warn('@fetchCartridgeHeroSideSVGs identity', tid, err);
     }
+  }
+
+  const tryComposeSides = async (): Promise<[string, string, string, string] | null> => {
+    const type = addr || collateralAddress(collateral);
+    if (!type) return null;
+    try {
+      const views = await withTimeout(
+        composeAllViews({
+          hauntId,
+          collateralType: type,
+          numericTraits: traitArr,
+          equippedWearables: equipped,
+        }),
+        COMPOSE_TIMEOUT_MS,
+        'composeAllViews',
+      );
+      const sides: [string, string, string, string] = [
+        stripGotchiBackground(views.Front || ''),
+        stripGotchiBackground(views.Left || ''),
+        stripGotchiBackground(views.Right || ''),
+        stripGotchiBackground(views.Back || ''),
+      ];
+      // Require all 4 directional views — missing sides break enter / Phaser spritesheets.
+      if (sides.every((svg) => svg.length >= 80)) return sides;
+    } catch (err) {
+      console.warn('@fetchCartridgeHeroSideSVGs compose', collateral.name, err);
+    }
+    return null;
+  };
+
+  // Soft-mint / no L1 token: compose first so haunt-2 collaterals never hit haunt-1 RPC.
+  if (!isL1) {
+    const composed = await tryComposeSides();
+    if (composed) return composed;
   }
 
   if (addr) {
@@ -386,46 +437,14 @@ export async function fetchCartridgeHeroSideSVGs(
       console.warn('@fetchCartridgeHeroSideSVGs on-chain', collateral.name, err);
     }
 
-    try {
-      const views = await composeAllViews({
-        hauntId,
-        collateralType: addr,
-        numericTraits: traitArr,
-        equippedWearables: equipped,
-      });
-      const sides: [string, string, string, string] = [
-        stripGotchiBackground(views.Front || ''),
-        stripGotchiBackground(views.Left || ''),
-        stripGotchiBackground(views.Right || ''),
-        stripGotchiBackground(views.Back || ''),
-      ];
-      // Require all 4 directional views — missing sides break enter / Phaser spritesheets.
-      if (sides.every((svg) => svg.length >= 80)) return sides;
-    } catch (err) {
-      console.warn('@fetchCartridgeHeroSideSVGs compose', collateral.name, err);
+    if (isL1) {
+      const composed = await tryComposeSides();
+      if (composed) return composed;
     }
-  }
-
-  // Last resort: still try offline compose for every view before recolored defaults.
-  try {
-    const type = addr || collateralAddress(collateral);
-    if (type) {
-      const views = await composeAllViews({
-        hauntId,
-        collateralType: type,
-        numericTraits: traitArr,
-        equippedWearables: equipped,
-      });
-      const sides: [string, string, string, string] = [
-        stripGotchiBackground(views.Front || ''),
-        stripGotchiBackground(views.Left || ''),
-        stripGotchiBackground(views.Right || ''),
-        stripGotchiBackground(views.Back || ''),
-      ];
-      if (sides.every((svg) => svg.length >= 80)) return sides;
-    }
-  } catch (err) {
-    console.warn('@fetchCartridgeHeroSideSVGs compose-fallback', collateral.name, err);
+  } else {
+    // Soft-mint already tried compose once; one more pass if addr was missing earlier.
+    const composed = await tryComposeSides();
+    if (composed) return composed;
   }
 
   const front = await fetchCollateralGotchiSvg(

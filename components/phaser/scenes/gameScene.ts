@@ -101,7 +101,8 @@ export const getGameScene = (type: SceneType, loadedCallback: () => void) => {
           frameHeight: 64,
         });
       }
-      if (GlobalState.GAME.state.gameConfig.enableNakedGotchis) {
+      // Always have a body fallback — cartridge SVG sheets can fail as Phaser __MISSING.
+      if (!this.textures.exists('defaultGotchi')) {
         this.load.spritesheet('defaultGotchi', getDefaultGotchiURL(), {
           frameWidth: 64,
           frameHeight: 64,

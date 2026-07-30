@@ -144,6 +144,19 @@ export function mapCartridgeHeroToGotchi(
     wearableInventory,
     hero.equippedWearables,
   ) as Tuple<number, 16>;
+  const hauntId =
+    hero.hauntId === 1 || hero.hauntId === 2
+      ? hero.hauntId
+      : // Haunt-2-only starters (amWBTC) must not default to haunt 1.
+        (() => {
+          const name = String(coll?.name || coll?.maticDisplay || hero.collateral || '')
+            .trim()
+            .toLowerCase();
+          if (name === 'amwbtc' || name === 'amwmatic' || name.startsWith('am') || name === 'wbtc' || name === 'matic') {
+            return 2 as const;
+          }
+          return undefined;
+        })();
 
   return {
     id: hero.id,
@@ -151,7 +164,7 @@ export function mapCartridgeHeroToGotchi(
     cartridgeCollateral: hero.collateral,
     cartridgeSourceTokenId:
       hero.sourceTokenId && hero.sourceTokenId !== '0' ? String(hero.sourceTokenId) : undefined,
-    hauntId: hero.hauntId === 1 || hero.hauntId === 2 ? hero.hauntId : undefined,
+    hauntId,
     escrow: '',
     withSetsNumericTraits: traits,
     numericTraits: traits,

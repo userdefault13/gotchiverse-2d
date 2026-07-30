@@ -186,8 +186,15 @@ const displayPlayer = (player: Player): void => {
     // setup sprite — start visible. Spawn VFX overlays; never leave the body stuck hidden
     // if reveal/anim fails (citaadel Colyseus used to keep gotchi_sprite invisible forever).
     if (!isTrueSpectator(isSpectator)) {
+      const preferredKey = isNaked(isSpectator) ? 'defaultGotchi' : id;
+      const texOk =
+        scene.textures.exists(preferredKey) && scene.textures.get(preferredKey)?.key !== '__MISSING';
+      const fallbackOk =
+        scene.textures.exists('defaultGotchi') && scene.textures.get('defaultGotchi')?.key !== '__MISSING';
+      // Cartridge SVG sheets that fail to decode show Phaser magenta __MISSING bars.
+      const textureKey = texOk ? preferredKey : fallbackOk ? 'defaultGotchi' : preferredKey;
       playerSprite = scene.add
-        .sprite(0, 0, isNaked(isSpectator) ? 'defaultGotchi' : id, 0)
+        .sprite(0, 0, textureKey, 0)
         .setName('gotchi_sprite')
         .setVisible(true);
       playerSprite.displayWidth = 64;

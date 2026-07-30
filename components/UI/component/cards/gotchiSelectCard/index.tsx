@@ -63,8 +63,10 @@ export const GotchiSelectCard = ({ gotchi, handleSelect, isSelected }: Props): J
     }
     const collateral = collateralFromSimId(gotchi.cartridgeCollateral);
     if (!collateral) return;
+    // Instant recolor so haunt-2 cards never sit on GotchiLoading while compose/RPC runs.
+    let createdUrl = convertInlineSVGToBlobURL(buildCollateralGotchiSvg(collateral));
+    setCartridgeBlobUrl(createdUrl);
     let cancelled = false;
-    let createdUrl = '';
     const equipped = equipKey ? equipKey.split(',').map((n) => Number(n) || 0) : undefined;
     const traits = traitsKey ? traitsKey.split(',').map((n) => traitNumber(n, 50)) : undefined;
     void fetchCollateralGotchiBlobUrl(
@@ -80,15 +82,12 @@ export const GotchiSelectCard = ({ gotchi, handleSelect, isSelected }: Props): J
           URL.revokeObjectURL(url);
           return;
         }
+        if (createdUrl) URL.revokeObjectURL(createdUrl);
         createdUrl = url;
         setCartridgeBlobUrl(url);
       })
       .catch((err) => {
         console.warn('@GotchiSelectCard cartridge preview', gotchi?.name, err);
-        if (cancelled) return;
-        const fallback = convertInlineSVGToBlobURL(buildCollateralGotchiSvg(collateral));
-        createdUrl = fallback;
-        setCartridgeBlobUrl(fallback);
       });
     return () => {
       cancelled = true;

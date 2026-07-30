@@ -351,14 +351,63 @@ export const getOrFetchAavegotchiURL = async (playerId: string, callback): Promi
     callback(scene.textures.get(playerId));
   } else {
     try {
-      const playerUrl = await fetchAavegotchiURLById(playerId);
-      scene.load.spritesheet(playerId, playerUrl.sprite, {
+      const selected = GlobalState.REALM?.state?.selectedPlayer;
+      const sameAsSelected = selected && String(selected.id) === String(playerId);
+      const playerUrl = await fetchAavegotchiURLById(
+        playerId,
+        sameAsSelected
+          ? {
+              cartridgeCollateral: selected.cartridgeCollateral || parseCartridgeHeroCollateral(playerId),
+              network: selected.network as NetworkNames | undefined,
+              equippedWearables: selected.equippedWearables,
+              traits: selected.withSetsNumericTraits,
+              sourceTokenId: selected.cartridgeSourceTokenId,
+              hauntId: selected.hauntId,
+            }
+          : {
+              cartridgeCollateral: parseCartridgeHeroCollateral(playerId) || undefined,
+            },
+      );
+      const spriteUrl = playerUrl?.sprite || getDefaultGotchiURL();
+      scene.load.spritesheet(playerId, spriteUrl, {
         frameWidth: 64,
         frameHeight: 64,
       });
-      scene.load.on(`filecomplete-spritesheet-${playerId}`, (key, type, data) => {
-        callback(scene.textures.get(playerId));
-      });
+      let settled = false;
+      const finish = (tex) => {
+        if (settled) return;
+        settled = true;
+        scene.load.off(`filecomplete-spritesheet-${playerId}`, onDone);
+        scene.load.off(`loaderror`, onErr);
+        callback(tex);
+      };
+      const useDefault = () => {
+        console.warn('getOrFetchAavegotchiURL: spritesheet failed, using defaultGotchi', playerId);
+        if (scene.textures.exists('defaultGotchi') && scene.textures.get('defaultGotchi')?.key !== '__MISSING') {
+          finish(scene.textures.get('defaultGotchi'));
+          return;
+        }
+        scene.load.spritesheet('defaultGotchi', getDefaultGotchiURL(), {
+          frameWidth: 64,
+          frameHeight: 64,
+        });
+        scene.load.once('complete', () => finish(scene.textures.get('defaultGotchi')));
+        scene.load.start();
+      };
+      const onDone = () => {
+        const tex = scene.textures.get(playerId);
+        if (!tex || tex.key === '__MISSING') {
+          useDefault();
+          return;
+        }
+        finish(tex);
+      };
+      const onErr = (file?: { key?: string }) => {
+        if (file?.key && file.key !== playerId) return;
+        useDefault();
+      };
+      scene.load.on(`filecomplete-spritesheet-${playerId}`, onDone);
+      scene.load.on('loaderror', onErr);
       scene.load.start();
     } catch (err) {
       console.error('getOrFetchAavegotchiURL:ERR', err);
@@ -416,7 +465,7 @@ export const fetchAavegotchiSideSVGs = async (
     const traitKey = (opts?.traits || []).map((n) => traitNumber(n, 50)).join(',');
     const sourceKey = String(opts?.sourceTokenId || '');
     const hauntKey = Number(opts?.hauntId) === 2 ? 'h2' : Number(opts?.hauntId) === 1 ? 'h1' : 'h?';
-    const cacheKey = `cartridge:base-sides-v9:${simCollateral}:src${sourceKey}:${hauntKey}:w${equipKey}:t${traitKey}`;
+    const cacheKey = `cartridge:base-sides-v10:${simCollateral}:src${sourceKey}:${hauntKey}:w${equipKey}:t${traitKey}`;
     if (GlobalState.CHAT.state.gotchiSides[cacheKey]) {
       return GlobalState.CHAT.state.gotchiSides[cacheKey];
     }
@@ -513,7 +562,26 @@ export function getGotchiData(
     undefined;
   const cartridgeSourceTokenId = cartridgeHero.cartridgeSourceTokenId || undefined;
   const hauntId =
-    cartridgeHero.hauntId === 1 || cartridgeHero.hauntId === 2 ? cartridgeHero.hauntId : undefined;
+    cartridgeHero.hauntId === 1 || cartridgeHero.hauntId === 2
+      ? cartridgeHero.hauntId
+      : (() => {
+          if (!isCartridgeHero) return undefined;
+          const name = String(
+            collateralFromSimId(cartridgeCollateral)?.name || cartridgeCollateral || '',
+          )
+            .trim()
+            .toLowerCase();
+          if (
+            name === 'amwbtc' ||
+            name === 'amwmatic' ||
+            name.startsWith('am') ||
+            name === 'wbtc' ||
+            name === 'matic'
+          ) {
+            return 2;
+          }
+          return undefined;
+        })();
 
   let collateralColor;
   let rightHand;
