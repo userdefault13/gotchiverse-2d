@@ -137,10 +137,9 @@ export function channelAlchemicaLocally(params: {
     throw new Error('No Aavegotchi selected.');
   }
 
-  const balance = params.alchemicaBalance || GlobalState.USER?.state?.alchemicaBalance;
-  if (!balance) {
-    throw new Error('Alchemica balance unavailable — reconnect and try again.');
-  }
+  // Soft-launch sessions often never open Crafting/Wallet, so balance may be unset — start from 0.
+  const EMPTY: AlchemicaBalance = { fud: 0, fomo: 0, alpha: 0, kek: 0 };
+  const balance: AlchemicaBalance = params.alchemicaBalance || GlobalState.USER?.state?.alchemicaBalance || EMPTY;
 
   const parcelLast = getSoftParcelLastChanneled(realmId);
   const gotchiLast = getSoftGotchiLastChanneled(playerId);

@@ -51,6 +51,7 @@ import GameController from 'components/controllers/GameController';
 import { AlchemicaBalances, AlchemicaStats, InstallationCard, Modal } from 'components/UI/component';
 import { useGame } from 'contexts/GameContext';
 import { useUser } from 'contexts/UserContext';
+import { getUserAlchemicaBalances } from 'helpers/gotchi.helper';
 import GlobalState from 'contexts/GlobalState';
 import { FoundryStore } from 'helpers/foundry';
 let channelInterval;
@@ -375,11 +376,27 @@ export const ParcelDashboard = (): JSX.Element => {
       await Installations.addFlamesToAaltar(parcelDashboardState.altarId, true);
 
       if (soft) {
+        // Seed session balance from chain when missing (Crafting may never have loaded it).
+        let seededBalance = alchemicaBalance || GlobalState.USER?.state?.alchemicaBalance;
+        const account = GlobalState.WEB3?.state?.currentAccount;
+        if (!seededBalance && account && currentNetwork && (globalProvider || ethersSigner)) {
+          try {
+            const provider = globalProvider || ethersSigner.provider;
+            const results = await getUserAlchemicaBalances(account, currentNetwork, provider);
+            if (results) {
+              seededBalance = { fud: results[0], fomo: results[1], alpha: results[2], kek: results[3] };
+              userDispatch({ type: 'UPDATE_ALCHEMICA_BALANCE', alchemicaBalance: seededBalance });
+            }
+          } catch (e) {
+            console.warn('@handleChannel soft balance fetch', e);
+          }
+        }
+        seededBalance = seededBalance || { fud: 0, fomo: 0, alpha: 0, kek: 0 };
         const softTx = channelAlchemicaLocally({
           altarId: parcelDashboardState.altarId,
           realmId,
           playerId: selectedPlayer.id,
-          alchemicaBalance,
+          alchemicaBalance: seededBalance,
         });
         if (softTx?.status) {
           userDispatch({ type: 'UPDATE_ALCHEMICA_BALANCE', alchemicaBalance: softTx.nextBalance });
