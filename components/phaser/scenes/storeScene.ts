@@ -8,6 +8,7 @@ import {
   STORE_GRID,
   STORE_SPAWN_TX,
   STORE_SPAWN_TY,
+  CASHIER_ITEM_ID_END,
   floorCellUrl,
   floorKey,
   furnitureAt,
@@ -21,6 +22,7 @@ import {
   type StoreFurniturePiece,
   type StoreLayout,
 } from 'helpers/store.layout.helper';
+import { getLocalConsoleUpgradeInfo } from 'helpers/console.installation.helper';
 import { sendStoreMove, getStoreRoom } from 'helpers/colyseus.store';
 import type { StoreSceneBuildState, StoreSceneCallbacks } from 'helpers/store.scene.helper';
 import { MAP_CONFIG_BY_ID, MAP_ID_STORE, TILE_SIZE } from 'shared_code/constants/const.game';
@@ -35,11 +37,14 @@ const WINDOW_COLOR = 0x88ccee;
 const DOOR_COLOR = 0xa8d4ff;
 const FLOOR_FALLBACK = 0x3a3a48;
 const PLAYER_SPEED = 220;
+/** Mint neon green — store build selection outline. */
+const SELECT_MINT = 0x00f470;
+const SELECT_PINK = 0xff2bd6;
 
 export class StoreScene extends Phaser.Scene {
   private layout: StoreLayout | null = null;
   private callbacks: StoreSceneCallbacks | null = null;
-  private build: StoreSceneBuildState = { buildMode: false, placeBrush: null, floorBrush: null };
+  private build: StoreSceneBuildState = { buildMode: false, placeBrush: null, floorBrush: null, pendingPlace: null };
 
   private tileLayer: Phaser.GameObjects.Container | null = null;
   private furnitureLayer: Phaser.GameObjects.Container | null = null;
@@ -54,6 +59,16 @@ export class StoreScene extends Phaser.Scene {
   private remotes = new Map<string, RemoteSprite>();
   private doorCooldownUntil = 0;
   private gotchiTextureKey = '';
+  /** Ghost sprite that follows the cursor while a place brush is active. */
+  private placePreview: Phaser.GameObjects.Sprite | Phaser.GameObjects.Rectangle | null = null;
+  private placePreviewItemId: number | null = null;
+  private hoverTx = -1;
+  private hoverTy = -1;
+  /** piece.id → world sprite (for selection chrome). */
+  private furnitureSprites = new Map<string, Phaser.GameObjects.GameObject>();
+  private selectedPieceId: string | null = null;
+  private selectUi: Phaser.GameObjects.Container | null = null;
+  private selectHighlight: Phaser.GameObjects.GameObject | null = null;
 
   constructor() {
     super({ key: MAP_ID_STORE });
@@ -151,9 +166,23 @@ export class StoreScene extends Phaser.Scene {
       const tx = Math.floor(wx / TILE_SIZE);
       const ty = Math.floor(wy / TILE_SIZE);
       if (this.build.buildMode) {
+        // Selection chrome when no brush — click furniture to show UPGRADE/MOVE/REMOVE.
+        if (this.build.placeBrush == null && this.build.floorBrush == null) {
+          const piece = this.layout ? furnitureAt(this.layout, tx, ty) : null;
+          if (piece) {
+            this.setSelectedFurniture(piece);
+            this.callbacks?.onSelectFurniture(piece);
+            return;
+          }
+          this.clearSelectedFurniture();
+          this.callbacks?.onSelectFurniture(null);
+        } else {
+          this.clearSelectedFurniture();
+        }
         this.callbacks?.onBuildTileClick(tx, ty);
         return;
       }
+      this.clearSelectedFurniture();
       const piece = this.layout ? furnitureAt(this.layout, tx, ty) : null;
       this.callbacks?.onSelectFurniture(piece || null);
       if (piece && isShelfItemId(piece.itemId)) this.callbacks?.onInteractShelf(piece);
@@ -162,12 +191,19 @@ export class StoreScene extends Phaser.Scene {
       if (piece && isTerminalItemId(piece.itemId)) this.callbacks?.onInteractTerminal(piece);
     });
 
+    this.input.on('pointermove', (pointer: Phaser.Input.Pointer) => {
+      this.updatePlacePreview(pointer);
+    });
+
     sendStoreMove(spawn.x, spawn.y);
   }
 
   update(_t: number, dt: number) {
     if (!this.player) return;
     this.syncRemotes();
+    if (this.build.buildMode && this.build.placeBrush != null && this.input.activePointer) {
+      this.updatePlacePreview(this.input.activePointer);
+    }
 
     let vx = 0;
     let vy = 0;
@@ -206,10 +242,37 @@ export class StoreScene extends Phaser.Scene {
   setLayout(layout: StoreLayout | null) {
     this.layout = layout;
     if (this.tileLayer) this.rebuildWorld();
+    // Preview sits above furniture — refresh validity after layout changes.
+    if (this.build.placeBrush != null && this.input?.activePointer) {
+      this.updatePlacePreview(this.input.activePointer);
+    }
   }
 
   setBuildState(build: StoreSceneBuildState) {
-    this.build = { ...build };
+    this.build = { pendingPlace: null, ...build };
+    if (!build.buildMode) {
+      this.clearSelectedFurniture();
+      this.clearPlacePreview();
+      return;
+    }
+    if (build.placeBrush == null) {
+      this.clearPlacePreview();
+      return;
+    }
+    this.clearSelectedFurniture();
+    this.ensurePlacePreview(build.placeBrush);
+    if (build.pendingPlace) {
+      this.pinPlacePreview(build.pendingPlace.tx, build.pendingPlace.ty);
+      return;
+    }
+    const pointer = this.input?.activePointer;
+    if (pointer) {
+      this.updatePlacePreview(pointer);
+      // Cursor over HUD — hide ghost (don't park on a random floor tile in the middle).
+      if (this.hoverTx < 0 || this.hoverTx >= STORE_GRID || this.hoverTy < 0 || this.hoverTy >= STORE_GRID) {
+        this.placePreview?.setVisible(false);
+      }
+    }
   }
 
   setCallbacks(callbacks: StoreSceneCallbacks) {
@@ -223,7 +286,116 @@ export class StoreScene extends Phaser.Scene {
     };
   }
 
+  private textureKeyForItemId(itemId: number): string {
+    if (isCashierItemId(itemId)) return 'cashier';
+    if (isConsoleItemId(itemId)) return 'console';
+    if (isTerminalItemId(itemId)) return 'terminal';
+    return 'shelf';
+  }
+
+  private fallbackColorForItemId(itemId: number): number {
+    if (isShelfItemId(itemId)) return 0xc4a574;
+    if (isCashierItemId(itemId)) return 0x6bcb77;
+    if (isTerminalItemId(itemId)) return 0x75fb92;
+    return 0x4d96ff;
+  }
+
+  private canPlaceAt(tx: number, ty: number): boolean {
+    if (tx < 0 || ty < 0 || tx >= STORE_GRID || ty >= STORE_GRID) return false;
+    if (storeStructureAt(tx, ty) !== 'floor') return false;
+    if (this.layout && furnitureAt(this.layout, tx, ty)) return false;
+    return true;
+  }
+
+  private clearPlacePreview() {
+    this.placePreview?.destroy();
+    this.placePreview = null;
+    this.placePreviewItemId = null;
+    this.hoverTx = -1;
+    this.hoverTy = -1;
+  }
+
+  private ensurePlacePreview(itemId: number) {
+    if (this.placePreview && this.placePreviewItemId === itemId) return;
+    this.clearPlacePreview();
+    const key = this.textureKeyForItemId(itemId);
+    if (this.textures.exists(key)) {
+      const spr = this.add.sprite(0, 0, key, 0).setDisplaySize(TILE_SIZE * 0.95, TILE_SIZE * 0.95);
+      spr.setDepth(25);
+      spr.setAlpha(0.55);
+      this.placePreview = spr;
+    } else {
+      const rect = this.add.rectangle(0, 0, TILE_SIZE * 0.8, TILE_SIZE * 0.8, this.fallbackColorForItemId(itemId), 0.55);
+      rect.setDepth(25);
+      this.placePreview = rect;
+    }
+    this.placePreviewItemId = itemId;
+  }
+
+  private pinPlacePreview(tx: number, ty: number) {
+    this.ensurePlacePreview(this.build.placeBrush!);
+    const preview = this.placePreview;
+    if (!preview) return;
+    const cx = tx * TILE_SIZE + TILE_SIZE / 2;
+    const cy = ty * TILE_SIZE + TILE_SIZE / 2;
+    this.hoverTx = tx;
+    this.hoverTy = ty;
+    preview.setPosition(cx, cy);
+    preview.setVisible(true);
+    const valid = this.canPlaceAt(tx, ty);
+    if (preview instanceof Phaser.GameObjects.Sprite) {
+      if (valid) preview.clearTint();
+      else preview.setTint(0xff4f78);
+      preview.setAlpha(valid ? 0.85 : 0.45);
+    } else if (preview instanceof Phaser.GameObjects.Rectangle) {
+      preview.setFillStyle(valid ? 0x63f323 : 0xff4f78, valid ? 0.7 : 0.4);
+    }
+  }
+
+  private updatePlacePreview(pointer: Phaser.Input.Pointer) {
+    if (!this.build.buildMode || this.build.placeBrush == null) {
+      this.clearPlacePreview();
+      return;
+    }
+    // Locked target from click — stay put until Confirm / cancel.
+    if (this.build.pendingPlace) {
+      this.pinPlacePreview(this.build.pendingPlace.tx, this.build.pendingPlace.ty);
+      return;
+    }
+    this.ensurePlacePreview(this.build.placeBrush);
+
+    const world = this.cameras.main.getWorldPoint(pointer.x, pointer.y);
+    const tx = Math.floor(world.x / TILE_SIZE);
+    const ty = Math.floor(world.y / TILE_SIZE);
+    this.hoverTx = tx;
+    this.hoverTy = ty;
+
+    const preview = this.placePreview;
+    if (!preview) return;
+
+    if (tx < 0 || ty < 0 || tx >= STORE_GRID || ty >= STORE_GRID) {
+      preview.setVisible(false);
+      return;
+    }
+
+    const cx = tx * TILE_SIZE + TILE_SIZE / 2;
+    const cy = ty * TILE_SIZE + TILE_SIZE / 2;
+    preview.setPosition(cx, cy);
+    preview.setVisible(true);
+
+    const valid = this.canPlaceAt(tx, ty);
+    if (preview instanceof Phaser.GameObjects.Sprite) {
+      if (valid) preview.clearTint();
+      else preview.setTint(0xff4f78);
+      preview.setAlpha(valid ? 0.65 : 0.45);
+    } else if (preview instanceof Phaser.GameObjects.Rectangle) {
+      preview.setFillStyle(valid ? 0x63f323 : 0xff4f78, valid ? 0.55 : 0.4);
+    }
+  }
+
   private rebuildWorld() {
+    this.clearSelectedFurniture();
+    this.furnitureSprites.clear();
     this.tileLayer?.removeAll(true);
     this.furnitureLayer?.removeAll(true);
     this.blocked.clear();
@@ -281,8 +453,139 @@ export class StoreScene extends Phaser.Scene {
         spr = this.add.rectangle(cx, cy, TILE_SIZE * 0.8, TILE_SIZE * 0.8, color);
       }
       this.furnitureLayer?.add(spr);
+      this.furnitureSprites.set(piece.id, spr);
       this.blocked.add(`${piece.x},${piece.y}`);
     });
+  }
+
+  private canUpgradePiece(piece: StoreFurniturePiece): boolean {
+    if (isConsoleItemId(piece.itemId)) {
+      return Boolean(getLocalConsoleUpgradeInfo(piece.itemId)?.next);
+    }
+    if (isCashierItemId(piece.itemId)) {
+      return Number(piece.itemId) < CASHIER_ITEM_ID_END;
+    }
+    return false;
+  }
+
+  private clearSelectedFurniture() {
+    this.selectedPieceId = null;
+    this.selectUi?.destroy(true);
+    this.selectUi = null;
+    this.selectHighlight?.destroy();
+    this.selectHighlight = null;
+  }
+
+  private setSelectedFurniture(piece: StoreFurniturePiece) {
+    this.clearSelectedFurniture();
+    this.selectedPieceId = piece.id;
+    const spr = this.furnitureSprites.get(piece.id);
+    if (!spr || !('x' in spr) || !('y' in spr)) return;
+
+    const x = (spr as Phaser.GameObjects.Sprite).x;
+    const y = (spr as Phaser.GameObjects.Sprite).y;
+
+    // Pink plate + mint border with furniture preview on top (parcel selection look).
+    const frame = this.add.container(x, y).setDepth(25);
+    const plate = this.add.rectangle(0, 0, TILE_SIZE * 0.98, TILE_SIZE * 0.98, SELECT_PINK, 0.92);
+    plate.setStrokeStyle(5, SELECT_MINT, 1);
+    frame.add(plate);
+    const texKey = this.textureKeyForItemId(piece.itemId);
+    if (this.textures.exists(texKey)) {
+      const preview = this.add.sprite(0, 0, texKey, 0).setDisplaySize(TILE_SIZE * 0.85, TILE_SIZE * 0.85);
+      frame.add(preview);
+    }
+    this.selectHighlight = frame;
+
+    const ui = this.add.container(x, y + TILE_SIZE * 0.55).setDepth(40);
+    this.selectUi = ui;
+
+    let yOff = 0;
+    if (this.canUpgradePiece(piece) && this.textures.exists('upgradeBtn')) {
+      const upgradeBtn = this.add
+        .image(0, yOff, this.textures.exists('upgradeBtnIcon') ? 'upgradeBtnIcon' : 'upgradeBtn')
+        .setOrigin(0.5, 0)
+        .setInteractive({ cursor: 'url(/cursors/pointer.png), auto' });
+      upgradeBtn.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+        pointer.event?.stopPropagation?.();
+        this.callbacks?.onUpgradeFurniture?.(piece);
+        this.clearSelectedFurniture();
+      });
+      ui.add(upgradeBtn);
+      yOff += upgradeBtn.displayHeight + 6;
+    } else if (this.canUpgradePiece(piece)) {
+      const upgradeBtn = this.add
+        .rectangle(0, yOff + 16, 110, 32, 0x00bfa5)
+        .setInteractive({ cursor: 'url(/cursors/pointer.png), auto' });
+      const upgradeLabel = this.add
+        .text(0, yOff + 16, 'UPGRADE', { fontFamily: 'Pixelar', fontSize: '18px', color: '#ffffff' })
+        .setOrigin(0.5);
+      upgradeBtn.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+        pointer.event?.stopPropagation?.();
+        this.callbacks?.onUpgradeFurniture?.(piece);
+        this.clearSelectedFurniture();
+      });
+      ui.add(upgradeBtn);
+      ui.add(upgradeLabel);
+      yOff += 40;
+    }
+
+    const rowY = yOff + 20;
+    if (this.textures.exists('moveBtn')) {
+      const moveBtn = this.add
+        .image(-28, rowY, 'moveBtn')
+        .setOrigin(0.5)
+        .setDisplaySize(80, 40)
+        .setInteractive({ cursor: 'url(/cursors/pointer.png), auto' });
+      moveBtn.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+        pointer.event?.stopPropagation?.();
+        this.callbacks?.onMoveFurniture?.(piece);
+        this.clearSelectedFurniture();
+      });
+      ui.add(moveBtn);
+    } else {
+      const moveBtn = this.add
+        .rectangle(-28, rowY, 72, 36, 0x7b5cff)
+        .setInteractive({ cursor: 'url(/cursors/pointer.png), auto' });
+      const moveLabel = this.add
+        .text(-28, rowY, 'MOVE', { fontFamily: 'Pixelar', fontSize: '16px', color: '#ffffff' })
+        .setOrigin(0.5);
+      moveBtn.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+        pointer.event?.stopPropagation?.();
+        this.callbacks?.onMoveFurniture?.(piece);
+        this.clearSelectedFurniture();
+      });
+      ui.add(moveBtn);
+      ui.add(moveLabel);
+    }
+
+    if (this.textures.exists('removeBtn')) {
+      const removeBtn = this.add
+        .image(40, rowY, 'removeBtn')
+        .setOrigin(0.5)
+        .setDisplaySize(40, 40)
+        .setInteractive({ cursor: 'url(/cursors/pointer.png), auto' });
+      removeBtn.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+        pointer.event?.stopPropagation?.();
+        this.callbacks?.onRemoveFurniture?.(piece);
+        this.clearSelectedFurniture();
+      });
+      ui.add(removeBtn);
+    } else {
+      const removeBtn = this.add
+        .rectangle(40, rowY, 36, 36, 0xe53935)
+        .setInteractive({ cursor: 'url(/cursors/pointer.png), auto' });
+      const removeLabel = this.add
+        .text(40, rowY, '✕', { fontFamily: 'Pixelar', fontSize: '20px', color: '#ffffff' })
+        .setOrigin(0.5);
+      removeBtn.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+        pointer.event?.stopPropagation?.();
+        this.callbacks?.onRemoveFurniture?.(piece);
+        this.clearSelectedFurniture();
+      });
+      ui.add(removeBtn);
+      ui.add(removeLabel);
+    }
   }
 
   private resolveMove(fromX: number, fromY: number, toX: number, toY: number): { x: number; y: number } {

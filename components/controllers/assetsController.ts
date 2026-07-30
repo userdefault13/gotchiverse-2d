@@ -230,7 +230,7 @@ const spriteList: TextureConfig[] = [
   // { id: 'shoot_skull', preload: true, animationConfig: { isLoop: true, hide: false } },
   // { id: 'shoot_bone', preload: true, animationConfig: { isLoop: true, hide: false } },
   { id: 'death', map: 'aarena', preload: true, animationConfig: { hide: true, isLoop: false } },
-  { id: 'gotchi_spawn', map: 'aarena', preload: true, animationConfig: { isLoop: false, hide: true } },
+  { id: 'gotchi_spawn', preload: true, animationConfig: { isLoop: false, hide: true } },
   { id: 'spillover', preload: true, map: 'aarena', animationConfig: { isLoop: false, hide: true } },
   { id: 'sprint', map: 'aarena', preload: true, animationConfig: { isLoop: true, hide: false } },
 

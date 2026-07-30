@@ -11,10 +11,6 @@ import {
   setStoreSceneCallbacks,
 } from 'helpers/store.scene.helper';
 import {
-  SHELF_ITEM_ID,
-  CASHIER_ITEM_ID,
-  CONSOLE_ITEM_ID,
-  TERMINAL_ITEM_ID,
   StoreLayout,
   StoreFurniturePiece,
   StoreListingBind,
@@ -22,17 +18,18 @@ import {
   saveStoreLayout,
   serializeLayout,
   parseLayoutJson,
-  craftStoreFurniture,
   placeFurniture,
   removeFurniture,
   bindListingToShelf,
   furnitureAt,
-  getFurnitureQty,
-  getConsoleBagCount,
   makeDemoListing,
   isShelfItemId,
   isCashierItemId,
   isConsoleItemId,
+  isTerminalItemId,
+  upgradeConsoleFurniture,
+  upgradeCashierFurniture,
+  CONSOLE_ITEM_ID,
   buildRandomFloorMap,
   ensureStoreFloor,
   setFloorTile,
@@ -43,43 +40,43 @@ import {
 import { consoleLevelFromItemId } from 'helpers/console.installation.helper';
 import { useUser } from 'contexts/UserContext';
 import {
-  subscribeStoreOccupancy,
   subscribeStoreLayout,
   seedStoreLayout,
   publishStoreLayout,
 } from 'helpers/colyseus.store';
 import styles from './styles';
+import { StoreBuildHud } from '../../storeBuildHud';
+import type { StoreFurnitureBrush } from '../../storeBuildHud/StoreInventory';
 
-const STORE_MAX = 8;
-
-type FurnitureBrush = typeof SHELF_ITEM_ID | typeof CASHIER_ITEM_ID | typeof CONSOLE_ITEM_ID | typeof TERMINAL_ITEM_ID;
-type PlaceBrush = FurnitureBrush | null;
+type PlaceBrush = StoreFurnitureBrush | null;
 
 export const StoreModal = (): JSX.Element => {
   const [{ storeState, storeCart, storeShelfModal, consoleState }, uiDispatch] = useUI();
   const [{ inventory }] = useUser();
   const { back, click } = useAavegotchiSound();
-  const [occupancy, setOccupancy] = useState(0);
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
-  const [buildMode, setBuildMode] = useState(false);
   const [layout, setLayout] = useState<StoreLayout | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [placeBrush, setPlaceBrush] = useState<PlaceBrush>(null);
   const [floorBrush, setFloorBrush] = useState<number | null>(null);
-  const [shelfQty, setShelfQty] = useState(0);
-  const [cashierQty, setCashierQty] = useState(0);
-  const [terminalQty, setTerminalQty] = useState(0);
-  const [consoleQty, setConsoleQty] = useState(0);
+  const [pendingPlace, setPendingPlace] = useState<{ tx: number; ty: number } | null>(null);
+  const [invTick, setInvTick] = useState(0);
   const [showCart, setShowCart] = useState(false);
   const [bindForm, setBindForm] = useState<StoreListingBind | null>(null);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const layoutRef = useRef<StoreLayout | null>(null);
-  const buildRef = useRef({ buildMode: false, placeBrush: null as PlaceBrush, floorBrush: null as number | null });
+  const buildRef = useRef({
+    buildMode: false,
+    placeBrush: null as PlaceBrush,
+    floorBrush: null as number | null,
+    pendingPlace: null as { tx: number; ty: number } | null,
+  });
 
   const open = Boolean(storeState?.open);
   const installationId = storeState?.installationId;
   const isOwner = Boolean(storeState?.isOwner);
+  const buildMode = Boolean(storeState?.buildMode && isOwner);
 
   const walletFloorTiles = useMemo(() => {
     return (inventory || [])
@@ -93,10 +90,7 @@ export const StoreModal = (): JSX.Element => {
   }, [inventory]);
 
   const refreshInv = () => {
-    setShelfQty(getFurnitureQty(SHELF_ITEM_ID));
-    setCashierQty(getFurnitureQty(CASHIER_ITEM_ID));
-    setTerminalQty(getFurnitureQty(TERMINAL_ITEM_ID));
-    setConsoleQty(getConsoleBagCount());
+    setInvTick((n) => n + 1);
   };
 
   const applyLayout = useCallback(
@@ -116,9 +110,9 @@ export const StoreModal = (): JSX.Element => {
   const handleClose = useCallback(async () => {
     back();
     await leaveStoreMap();
-    setBuildMode(false);
     setPlaceBrush(null);
     setFloorBrush(null);
+    setPendingPlace(null);
     setShowCart(false);
     setBindForm(null);
     setLayout(null);
@@ -131,7 +125,7 @@ export const StoreModal = (): JSX.Element => {
     });
     uiDispatch({
       type: 'UPDATE_STORE_MODAL',
-      storeState: { open: false, installationId: undefined, isOwner: false },
+      storeState: { open: false, installationId: undefined, isOwner: false, buildMode: false },
     });
   }, [back, uiDispatch]);
 
@@ -193,19 +187,13 @@ export const StoreModal = (): JSX.Element => {
           setStatusMsg('Furniture goes on the floor');
           return;
         }
-        const result = placeFurniture(current, pb, tx, ty);
-        setStatusMsg(result.message);
-        refreshInv();
-        if (result.ok) {
-          applyLayout(result.layout, true);
-          setPlaceBrush(null);
-          buildRef.current.placeBrush = null;
-          setStoreSceneBuildState({
-            buildMode: true,
-            placeBrush: null,
-            floorBrush: buildRef.current.floorBrush,
-          });
+        if (furnitureAt(current, tx, ty)) {
+          setStatusMsg('That tile already has furniture');
+          return;
         }
+        // Pin ghost — Confirm commits the place.
+        setPendingPlace({ tx, ty });
+        setStatusMsg(`Ready at (${tx}, ${ty}) — hit Confirm`);
         return;
       }
 
@@ -217,7 +205,9 @@ export const StoreModal = (): JSX.Element => {
             ? 'Selected shelf — bind listing or Remove'
             : isCashierItemId(piece.itemId)
               ? 'Selected cashier — Remove to return to bag'
-              : 'Selected console — Remove to return to bag',
+              : isTerminalItemId(piece.itemId)
+                ? 'Selected terminal — Remove to return to bag'
+                : 'Selected console — Remove to return to bag',
         );
         return;
       }
@@ -226,14 +216,126 @@ export const StoreModal = (): JSX.Element => {
     [applyLayout, click, installationId, isOwner, walletFloorTiles],
   );
 
+  const handleConfirmPlace = useCallback(() => {
+    const current = layoutRef.current;
+    const pending = buildRef.current.pendingPlace;
+    const pb = buildRef.current.placeBrush;
+    if (!current || !installationId || !isOwner || pb == null || !pending) return;
+    click();
+    const result = placeFurniture(current, pb, pending.tx, pending.ty);
+    setStatusMsg(result.message);
+    refreshInv();
+    if (result.ok) {
+      applyLayout(result.layout, true);
+      setPlaceBrush(null);
+      setPendingPlace(null);
+      buildRef.current.placeBrush = null;
+      buildRef.current.pendingPlace = null;
+      setStoreSceneBuildState({
+        buildMode: true,
+        placeBrush: null,
+        floorBrush: buildRef.current.floorBrush,
+        pendingPlace: null,
+      });
+    }
+  }, [applyLayout, click, installationId, isOwner]);
+
+  const handleUpgradeFurniture = useCallback(
+    (piece: StoreFurniturePiece) => {
+      const current = layoutRef.current;
+      if (!current || !isOwner) return;
+      click();
+      if (isConsoleItemId(piece.itemId)) {
+        const r = upgradeConsoleFurniture(current, piece.id);
+        setStatusMsg(r.message);
+        if (r.ok) {
+          applyLayout(r.layout, true);
+          refreshInv();
+        }
+        return;
+      }
+      if (isCashierItemId(piece.itemId)) {
+        const r = upgradeCashierFurniture(current, piece.id);
+        setStatusMsg(r.message);
+        if (r.ok) {
+          applyLayout(r.layout, true);
+          refreshInv();
+        }
+        return;
+      }
+      setStatusMsg('This store installation cannot be upgraded');
+    },
+    [applyLayout, click, isOwner],
+  );
+
+  const handleMoveFurniture = useCallback(
+    (piece: StoreFurniturePiece) => {
+      const current = layoutRef.current;
+      if (!current || !isOwner) return;
+      click();
+      const r = removeFurniture(current, piece.id);
+      if (!r.ok) {
+        setStatusMsg('Could not pick up furniture');
+        return;
+      }
+      applyLayout(r.layout, true);
+      setSelectedId(null);
+      setFloorBrush(null);
+      setPendingPlace(null);
+      const brush = (isConsoleItemId(piece.itemId) ? CONSOLE_ITEM_ID : piece.itemId) as PlaceBrush;
+      setPlaceBrush(brush);
+      setStatusMsg('Moving — click a floor tile, then Confirm');
+      refreshInv();
+    },
+    [applyLayout, click, isOwner],
+  );
+
+  const handleRemoveFurniture = useCallback(
+    (piece: StoreFurniturePiece) => {
+      const current = layoutRef.current;
+      if (!current || !isOwner) return;
+      click();
+      const r = removeFurniture(current, piece.id);
+      if (r.ok) {
+        applyLayout(r.layout, true);
+        setSelectedId(null);
+        setStatusMsg('Furniture returned to bag');
+        refreshInv();
+      } else {
+        setStatusMsg('Could not remove furniture');
+      }
+    },
+    [applyLayout, click, isOwner],
+  );
+
+  const upgradeFurnitureRef = useRef(handleUpgradeFurniture);
+  const moveFurnitureRef = useRef(handleMoveFurniture);
+  const removeFurnitureRef = useRef(handleRemoveFurniture);
+  upgradeFurnitureRef.current = handleUpgradeFurniture;
+  moveFurnitureRef.current = handleMoveFurniture;
+  removeFurnitureRef.current = handleRemoveFurniture;
+
   useEffect(() => {
     layoutRef.current = layout;
   }, [layout]);
 
   useEffect(() => {
-    buildRef.current = { buildMode, placeBrush, floorBrush };
-    setStoreSceneBuildState({ buildMode, placeBrush, floorBrush });
-  }, [buildMode, placeBrush, floorBrush]);
+    buildRef.current = { buildMode, placeBrush, floorBrush, pendingPlace };
+    setStoreSceneBuildState({ buildMode, placeBrush, floorBrush, pendingPlace });
+  }, [buildMode, placeBrush, floorBrush, pendingPlace]);
+
+  // Sync when PlayHud mint Build Mode button toggles storeState.buildMode
+  useEffect(() => {
+    if (!open || !isOwner) return;
+    if (buildMode) {
+      refreshInv();
+      setStatusMsg((msg) => msg || 'Build mode — craft furniture in Recipe Book (Store), then place here');
+    } else {
+      setPlaceBrush(null);
+      setFloorBrush(null);
+      setPendingPlace(null);
+    }
+  }, [buildMode, open, isOwner]);
 
   useEffect(() => {
     if (!open || !installationId) return;
@@ -243,7 +345,7 @@ export const StoreModal = (): JSX.Element => {
     setSelectedId(null);
     setPlaceBrush(null);
     setFloorBrush(null);
-    setBuildMode(false);
+    setPendingPlace(null);
     setShowCart(false);
     setBindForm(null);
     refreshInv();
@@ -273,6 +375,9 @@ export const StoreModal = (): JSX.Element => {
       onSelectFurniture: (piece: StoreFurniturePiece | null) => {
         setSelectedId(piece?.id || null);
       },
+      onUpgradeFurniture: (piece: StoreFurniturePiece) => upgradeFurnitureRef.current(piece),
+      onMoveFurniture: (piece: StoreFurniturePiece) => moveFurnitureRef.current(piece),
+      onRemoveFurniture: (piece: StoreFurniturePiece) => removeFurnitureRef.current(piece),
     };
 
     void (async () => {
@@ -294,7 +399,6 @@ export const StoreModal = (): JSX.Element => {
       seedStoreLayout(serializeLayout(local));
     })();
 
-    const unsubOcc = subscribeStoreOccupancy(setOccupancy);
     const unsubLayout = subscribeStoreLayout((json) => {
       if (!json || !installationId) return;
       const parsed = withFloor(parseLayoutJson(json, installationId));
@@ -305,7 +409,6 @@ export const StoreModal = (): JSX.Element => {
 
     return () => {
       cancelled = true;
-      unsubOcc();
       unsubLayout();
       void leaveStoreMap();
     };
@@ -325,22 +428,25 @@ export const StoreModal = (): JSX.Element => {
 
   const setStoreBuildMode = (next: boolean) => {
     click();
-    setBuildMode(next);
     if (!next) {
       setPlaceBrush(null);
       setFloorBrush(null);
+      setPendingPlace(null);
       setStatusMsg(null);
     } else {
       refreshInv();
-      setStatusMsg('Build mode — click tiles in the store to place / paint');
+      setStatusMsg('Build mode — craft furniture in Recipe Book (Store), then place here');
     }
-  };
-
-  const handleCraft = (itemId: typeof SHELF_ITEM_ID | typeof CASHIER_ITEM_ID | typeof TERMINAL_ITEM_ID) => {
-    const r = craftStoreFurniture(itemId, 1);
-    setStatusMsg(r.message);
-    refreshInv();
-    click();
+    uiDispatch({
+      type: 'UPDATE_STORE_MODAL',
+      storeState: {
+        ...storeState,
+        open: true,
+        installationId,
+        isOwner,
+        buildMode: next,
+      },
+    });
   };
 
   const handleRemoveSelected = () => {
@@ -440,140 +546,18 @@ export const StoreModal = (): JSX.Element => {
 
   return (
     <>
-      <div className="store-hud" aria-label="Store HUD">
-        <div className="store-hud-top hud-panel">
-          <span>
-            Shoppers {occupancy}/{STORE_MAX}
-          </span>
-          {isOwner ? <span className="owner-badge">Owner</span> : null}
-          {isOwner && buildMode ? <span className="owner-badge build">Build Mode</span> : null}
-          {joining ? <span>Entering store…</span> : null}
-          {joinError ? <span className="err">{joinError}</span> : null}
-          {isOwner ? (
-            <Button size={2} secondary={!buildMode} onClick={() => setStoreBuildMode(!buildMode)}>
-              {buildMode ? 'Exit Build Mode' : 'Build Mode'}
-            </Button>
-          ) : null}
-          <span className="cart-chip" onClick={() => setShowCart((v) => !v)}>
-            Cart {storeCart.reduce((n, l) => n + l.quantity, 0)}
-          </span>
-        </div>
-
-        {isOwner && buildMode ? (
-          <div className="store-hud-build hud-panel">
-            <Button size={2} onClick={() => handleCraft(SHELF_ITEM_ID)}>
-              Craft Shelf ({shelfQty})
-            </Button>
-            <Button size={2} onClick={() => handleCraft(CASHIER_ITEM_ID)}>
-              Craft Cashier ({cashierQty})
-            </Button>
-            <Button size={2} onClick={() => handleCraft(TERMINAL_ITEM_ID)}>
-              Craft Terminal ({terminalQty})
-            </Button>
-            <Button
-              size={2}
-              secondary={placeBrush !== SHELF_ITEM_ID}
-              onClick={() => {
-                setFloorBrush(null);
-                setPlaceBrush(placeBrush === SHELF_ITEM_ID ? null : SHELF_ITEM_ID);
-              }}
-            >
-              Place Shelf
-            </Button>
-            <Button
-              size={2}
-              secondary={placeBrush !== CASHIER_ITEM_ID}
-              onClick={() => {
-                setFloorBrush(null);
-                setPlaceBrush(placeBrush === CASHIER_ITEM_ID ? null : CASHIER_ITEM_ID);
-              }}
-            >
-              Place Cashier
-            </Button>
-            <Button
-              size={2}
-              secondary={placeBrush !== TERMINAL_ITEM_ID}
-              onClick={() => {
-                setFloorBrush(null);
-                setPlaceBrush(placeBrush === TERMINAL_ITEM_ID ? null : TERMINAL_ITEM_ID);
-              }}
-            >
-              Place Terminal
-            </Button>
-            <Button
-              size={2}
-              secondary={placeBrush !== CONSOLE_ITEM_ID}
-              onClick={() => {
-                setFloorBrush(null);
-                setPlaceBrush(placeBrush === CONSOLE_ITEM_ID ? null : CONSOLE_ITEM_ID);
-              }}
-              disabled={consoleQty < 1}
-            >
-              Place Console ({consoleQty})
-            </Button>
-            <Button size={2} secondary onClick={handleRandomizeFloor}>
-              Randomize floor
-            </Button>
-            {selectedId ? (
-              <>
-                {layout?.furniture.some((f) => f.id === selectedId && isShelfItemId(f.itemId)) ? (
-                  <Button
-                    size={2}
-                    secondary
-                    onClick={() => {
-                      const piece = layout?.furniture.find((f) => f.id === selectedId);
-                      if (piece) openShelf(piece);
-                    }}
-                  >
-                    Bind listing
-                  </Button>
-                ) : null}
-                <Button size={2} onClick={handleRemoveSelected}>
-                  Remove selected
-                </Button>
-              </>
-            ) : null}
-            <div className="floor-tile-bar">
-              <span className="floor-tile-label">Wallet tiles</span>
-              {!walletFloorTiles.length ? (
-                <span className="muted">None in wallet</span>
-              ) : (
-                <div className="floor-tile-list">
-                  {walletFloorTiles.map((t) => (
-                    <button
-                      type="button"
-                      key={t.itemId}
-                      className={`floor-tile-chip${floorBrush === t.itemId ? ' active' : ''}`}
-                      title={`${t.name} ×${t.quantity}`}
-                      style={{ backgroundImage: `url(/images/tiles/Tile_LE_${t.itemId}.png)` }}
-                      onClick={() => {
-                        click();
-                        setPlaceBrush(null);
-                        setFloorBrush(floorBrush === t.itemId ? null : t.itemId);
-                      }}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
+      <div className={`store-hud${buildMode ? ' build-active' : ''}`} aria-label="Store HUD">
+        {joining || joinError || (statusMsg && buildMode) ? (
+          <div className="store-hud-top hud-panel minimal">
+            {joining ? <span>Entering store…</span> : null}
+            {joinError ? <span className="err">{joinError}</span> : null}
+            {statusMsg && buildMode ? <span className="build-status">{statusMsg}</span> : null}
           </div>
         ) : null}
 
-        {statusMsg ? <p className="status hud-panel">{statusMsg}</p> : null}
+        {statusMsg && !buildMode ? <p className="status hud-panel">{statusMsg}</p> : null}
 
-        <div className="store-hud-bottom hud-panel">
-          <p className="hint">WASD / arrows move · E / Enter interact · walk out the door to leave</p>
-          <div className="actions">
-            <Button size={2} secondary onClick={() => setShowCart(true)}>
-              Show cart
-            </Button>
-            <Button size={2} onClick={() => void handleClose()}>
-              Leave Store
-            </Button>
-          </div>
-        </div>
-
-        {showCart ? (
+        {showCart && !buildMode ? (
           <div className="cart-panel hud-panel">
             <h3>Cart</h3>
             {!storeCart.length ? <p className="hint">Empty — walk to a shelf and press E / Enter.</p> : null}
@@ -606,6 +590,50 @@ export const StoreModal = (): JSX.Element => {
           </div>
         ) : null}
       </div>
+
+      {isOwner && buildMode ? (
+        <StoreBuildHud
+          placeBrush={placeBrush}
+          floorBrush={floorBrush}
+          invTick={invTick}
+          selectedId={selectedId}
+          pendingPlace={pendingPlace}
+          walletFloorTiles={walletFloorTiles}
+          onSelectBrush={(id) => {
+            setFloorBrush(null);
+            setPendingPlace(null);
+            setPlaceBrush(id);
+            if (id == null) {
+              setStatusMsg(null);
+              return;
+            }
+            if (isTerminalItemId(id)) {
+              setStatusMsg('Terminal selected — click a floor tile, then Confirm');
+            } else if (isShelfItemId(id)) {
+              setStatusMsg('Shelf selected — click a floor tile, then Confirm');
+            } else if (isCashierItemId(id)) {
+              setStatusMsg('Cashier selected — click a floor tile, then Confirm');
+            } else {
+              setStatusMsg('Console selected — click a floor tile, then Confirm');
+            }
+          }}
+          onSelectFloor={(tileId) => {
+            setPlaceBrush(null);
+            setPendingPlace(null);
+            setFloorBrush(tileId);
+            setStatusMsg(tileId != null ? `Floor brush #${tileId} — click a floor tile` : null);
+          }}
+          onRandomizeFloor={handleRandomizeFloor}
+          onConfirmPlace={handleConfirmPlace}
+          onRemoveSelected={handleRemoveSelected}
+          canBindListing={Boolean(layout?.furniture.some((f) => f.id === selectedId && isShelfItemId(f.itemId)))}
+          onBindListing={() => {
+            const piece = layout?.furniture.find((f) => f.id === selectedId);
+            if (piece) openShelf(piece);
+          }}
+          onExit={() => setStoreBuildMode(false)}
+        />
+      ) : null}
 
       <Modal
         title={

@@ -128,7 +128,7 @@ export default css`
 
   .text-button-inner {
     position: absolute;
-    background-color: var(--col-info-400);
+    background-color: var(--color);
     width: calc(100% + 0.2em);
     height: calc(100% - 0.2em);
     top: 50%;
@@ -354,6 +354,7 @@ export default css`
     font-size: 3.6rem;
     margin-left: 8.5rem;
     line-height: 2.5rem;
+    color: var(--color);
   }
   h2.halloween {
     color: var(--col-halloween-400);

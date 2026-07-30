@@ -263,8 +263,8 @@ async function socketConnect(
           }
         : { x: 4096, y: 4096 };
 
-    // Prefer live sprite (mid-session reconnect), then selected parcel (citaadel),
-    // then server spawn, then map default — never yank aarena to plaza center if we already moved.
+    // Prefer selected parcel when entering from spawn picker — must override last/live position.
+    // Mid-session reconnect (no spawnLocId) keeps live sprite / room position.
     const liveSprite =
       selectedPlayer?.id != null && scene?.[selectedPlayer.id]
         ? scene[selectedPlayer.id]
@@ -275,8 +275,8 @@ async function socketConnect(
         : null;
     const parcelSpawn = map === 'citaadel' ? colyseusSpawnFromSelectedParcel(selectedSpawnLoc) : null;
     const spawn =
-      livePos ||
       parcelSpawn ||
+      livePos ||
       colyseusLocalSpawn() ||
       (map === 'aarena' || map === 'aarena-rh' ? aarenaFallback : { x: 42 * 64 + 10 * 64, y: 52 * 64 + 10 * 64 });
     let previewMaxHp = 1000;
@@ -319,8 +319,10 @@ async function socketConnect(
     }
 
     // Snap server position to selected parcel when the room ignored spawnLocId.
+    // Clear spawnId so mid-session reconnect keeps walked position (not re-snap to parcel).
     if (parcelSpawn) {
       colyseusSendMove(parcelSpawn.x, parcelSpawn.y);
+      spawnId = '';
     }
 
     if (map === 'citaadel') {

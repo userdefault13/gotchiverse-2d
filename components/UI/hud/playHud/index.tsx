@@ -50,7 +50,7 @@ export const PlayHud = () => {
   const [{ roundTime, minigameIntroAnimation }, phaserDispatch] = usePhaser();
   const [{ gameConfig }] = useGame();
 
-  const [{ inMenu }, uiDispatch] = useUI();
+  const [{ inMenu, storeState }, uiDispatch] = useUI();
 
   const [totalTimeLeft, setTotalTimeLeft] = useState(0);
   const [minutes, setMinutes] = useState('00');
@@ -167,7 +167,28 @@ export const PlayHud = () => {
     showStarfield(false);
     MapController.toggleMinimap(false);
   };
+
+  const toggleStoreBuildMode = () => {
+    if (!storeState?.open || !storeState?.isOwner) return;
+    click();
+    const next = !storeState.buildMode;
+    uiDispatch({
+      type: 'UPDATE_STORE_MODAL',
+      storeState: {
+        ...storeState,
+        buildMode: next,
+      },
+    });
+  };
+
+  const inStore = Boolean(storeState?.open);
+  const storeOwner = Boolean(storeState?.isOwner);
   const blockPropagation = (e) => e.stopPropagation();
+
+  useEffect(() => {
+    if (inStore && itemShopOpen) setItemShopOpen(false);
+    if (inStore && craftTableOpen) setCraftTableOpen(false);
+  }, [inStore]);
 
   return (
     <>
@@ -192,7 +213,7 @@ export const PlayHud = () => {
       <NotificationStack />
       <ZoneAlert district={currentDistrict} />
       <GameAlert />
-      <GameNav />
+      {!inStore ? <GameNav /> : null}
 
       {/* <div className="minimap-container" onClick={blockPropagation} onMouseDown={blockPropagation}>
         <div className={'clickable icon'} onClick={handleMapIconClick}>
@@ -257,22 +278,38 @@ export const PlayHud = () => {
         <DebugConsole />
       </div>
 
-      {gameConfig.enableItemShop && (
+      {gameConfig.enableItemShop && !inStore && (
         <div className={`item-shop-button-container ${itemShopOpen ? 'open' : ''}`}>
           <ItemShopButton open={itemShopOpen} toggle={() => setItemShopOpen(!itemShopOpen)} />
         </div>
       )}
 
       <div className="right-container" onClick={blockPropagation} onMouseDown={blockPropagation}>
-        {itemShopOpen && <ItemShop open={itemShopOpen} onClose={() => setItemShopOpen(false)} />}
+        {itemShopOpen && !inStore && <ItemShop open={itemShopOpen} onClose={() => setItemShopOpen(false)} />}
       </div>
 
       <div className="bottom-right-container">
         <ZoomSlider color="purple" />
       </div>
       <div className="action-button-container flex flex-row space-between translate-x-4">
-        <ActionButton color="pink" img={CraftIcon} onClick={() => setCraftTableOpen(true)} />
-        <ActionButton color="info" img={BuildMode} onClick={toggleBuildMode} disableSound text="BUILD MODE" />
+        {!inStore ? (
+          <>
+            <ActionButton color="pink" img={CraftIcon} onClick={() => setCraftTableOpen(true)} />
+            <ActionButton color="info" img={BuildMode} onClick={toggleBuildMode} disableSound text="BUILD MODE" />
+          </>
+        ) : storeOwner ? (
+          <ActionButton
+            color="success"
+            colorVariant="300"
+            hoverColor="success"
+            hoverColorVariant="200"
+            img={BuildMode}
+            onClick={toggleStoreBuildMode}
+            disableSound
+            text="BUILD MODE"
+            active={Boolean(storeState?.buildMode)}
+          />
+        ) : null}
       </div>
 
       <div className="left-container">
@@ -281,9 +318,11 @@ export const PlayHud = () => {
         </div>
       </div>
 
-      <div className="bottom-left-container">
-        <PlayerDashboard />
-      </div>
+      {!inStore ? (
+        <div className="bottom-left-container">
+          <PlayerDashboard />
+        </div>
+      ) : null}
 
       {/* {Boolean(totalTimeLeft) && (
         <div className="topContainer">

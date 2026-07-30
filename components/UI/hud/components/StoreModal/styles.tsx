@@ -11,6 +11,10 @@ export default css`
     justify-content: space-between;
     padding: 1.2rem 1.6rem 1.6rem;
   }
+  .store-hud.build-active {
+    z-index: 47;
+    justify-content: flex-start;
+  }
   .hud-panel {
     pointer-events: auto;
   }
@@ -27,6 +31,10 @@ export default css`
     color: #f5f0ff;
     font-size: 1.4rem;
   }
+  .store-hud-top.minimal {
+    align-self: flex-start;
+    max-width: min(96vw, 48rem);
+  }
   .store-hud-build {
     margin-top: 0.8rem;
     max-width: min(96vw, 72rem);
@@ -39,7 +47,13 @@ export default css`
     text-transform: uppercase;
   }
   .owner-badge.build {
-    background: #00b9e1;
+    background: var(--col-success-300);
+    color: #042012;
+  }
+  .build-status {
+    font-size: 1.2rem;
+    color: var(--col-success-300);
+    max-width: 36rem;
   }
   .cart-chip {
     margin-left: auto;

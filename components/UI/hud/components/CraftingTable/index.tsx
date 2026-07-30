@@ -29,6 +29,7 @@ import type { AlchemicaBalance, NetworkNames, Recipe } from 'types';
 import { craftWaallLocally, isWaallItemId } from 'helpers/waalls.helper';
 import { craftLodgeLocally, isLodgeItemId } from 'helpers/lodge.helper';
 import { craftStoreLocally, isStoreItemId } from 'helpers/store.installation.helper';
+import { craftStoreFurniture, isStoreFurnitureItemId, isTerminalItemId } from 'helpers/store.layout.helper';
 import { craftCTileLocally, isCTileItemId } from 'helpers/ctile.helper';
 import { mintCraftedItemsToCartridge } from 'helpers/auth.helper';
 import GlobalState from 'contexts/GlobalState';
@@ -163,32 +164,45 @@ export const CraftingTable = ({ open, onClose }: Props): JSX.Element => {
     const isSoftLocal =
       Boolean(recipe.softLaunch) ||
       (recipe.type === 'INSTALLATION' &&
-        (isWaallItemId(recipe.id) || isLodgeItemId(recipe.id) || isStoreItemId(recipe.id))) ||
+        (isWaallItemId(recipe.id) ||
+          isLodgeItemId(recipe.id) ||
+          isStoreItemId(recipe.id) ||
+          isStoreFurnitureItemId(recipe.id))) ||
       (recipe.type === 'TILE' && recipe.softLaunch && isCTileItemId(recipe.id));
 
-    // Soft-launch local crafts (Waall / Lodge / Store / cTiles) — no diamond.
+    // Soft-launch local crafts (Waall / Lodge / Store / Terminal furniture / cTiles) — no diamond.
     if (isSoftLocal) {
       let notificationId;
       try {
         const isLodge = isLodgeItemId(recipe.id);
         const isStore = isStoreItemId(recipe.id);
+        const isFurniture = isStoreFurnitureItemId(recipe.id);
         const isCTile = recipe.type === 'TILE' && isCTileItemId(recipe.id);
         notificationId = showTransactionNotification(notificationDispatch, {
           message: isCTile
             ? 'Crafting cTile (local)'
-            : isStore
-              ? 'Crafting Store (local)'
-              : isLodge
-                ? 'Crafting Lodge (local)'
-                : 'Crafting Waall (local)',
+            : isFurniture
+              ? isTerminalItemId(recipe.id)
+                ? 'Crafting Terminal (local)'
+                : 'Crafting store furniture (local)'
+              : isStore
+                ? 'Crafting Store (local)'
+                : isLodge
+                  ? 'Crafting Lodge (local)'
+                  : 'Crafting Waall (local)',
         });
         const result = isCTile
           ? craftCTileLocally(recipe, quanity, alchemicaBalance)
-          : isStore
-            ? craftStoreLocally(recipe, quanity, alchemicaBalance)
-            : isLodge
-              ? craftLodgeLocally(recipe, quanity, alchemicaBalance)
-              : craftWaallLocally(recipe, quanity, alchemicaBalance);
+          : isFurniture
+            ? (() => {
+                const furniture = craftStoreFurniture(Number(recipe.id), quanity);
+                return { ok: furniture.ok, message: furniture.message, nextBalance: undefined as AlchemicaBalance | undefined };
+              })()
+            : isStore
+              ? craftStoreLocally(recipe, quanity, alchemicaBalance)
+              : isLodge
+                ? craftLodgeLocally(recipe, quanity, alchemicaBalance)
+                : craftWaallLocally(recipe, quanity, alchemicaBalance);
         if (!result.ok) {
           updateTransactionNotificationStatus(notificationDispatch, notificationId, 'error', result.message);
           craftError();
@@ -201,7 +215,9 @@ export const CraftingTable = ({ open, onClose }: Props): JSX.Element => {
         if (GlobalState.USER?.state?.inventory) {
           userDispatch({ type: 'UPDATE_INVENTORY', inventory: [...GlobalState.USER.state.inventory] });
         }
-        void mintCraftToCartridge(recipe, quanity, config.account, config.network);
+        if (!isFurniture) {
+          void mintCraftToCartridge(recipe, quanity, config.account, config.network);
+        }
         craft();
         updateTransactionNotificationStatus(notificationDispatch, notificationId, 'success');
         setCrafting(true);
@@ -290,7 +306,8 @@ export const CraftingTable = ({ open, onClose }: Props): JSX.Element => {
       !selectedRecipe.softLaunch &&
       !isWaallItemId(selectedRecipe.id) &&
       !isLodgeItemId(selectedRecipe.id) &&
-      !isStoreItemId(selectedRecipe.id)
+      !isStoreItemId(selectedRecipe.id) &&
+      !isStoreFurnitureItemId(selectedRecipe.id)
     ) {
       void fetchAndSetAllowance(currentAccount, currentNetwork, globalProvider, selectedRecipe);
     }
@@ -317,6 +334,7 @@ export const CraftingTable = ({ open, onClose }: Props): JSX.Element => {
     !isWaallItemId(selectedRecipe.id) &&
     !isLodgeItemId(selectedRecipe.id) &&
     !isStoreItemId(selectedRecipe.id) &&
+    !isStoreFurnitureItemId(selectedRecipe.id) &&
     isApproved(alchemicaApproved[getContractFromRecipeType(selectedRecipe.type)]) === 'false'
   ) {
     return (

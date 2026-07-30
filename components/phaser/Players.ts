@@ -309,8 +309,13 @@ const displayPlayer = (player: Player): void => {
   setDeadState(id, Boolean(isDead));
 
   // Player was just created on server. Treat as a new spawn (player will have 50% opacity)
-  if ((created || process.env.NEXT_PUBLIC_NETCODE === 'colyseus') && !isDead) handleRespawn(id);
-  else updateFocusTransparency({ id, state: isFocused });
+  if ((created || process.env.NEXT_PUBLIC_NETCODE === 'colyseus') && !isDead) {
+    handleRespawn(id);
+  } else if (!isDead) {
+    // Citaadel / non-spawn path: sprite starts hidden — always reveal after create.
+    toggleVisible(id, true);
+  }
+  updateFocusTransparency({ id, state: isFocused });
 };
 
 function handleGracePeriod(id: string) {
@@ -372,6 +377,16 @@ function updatePlayerHealth(id: string, health: number): void {
 function gotchiSpawnAnim(id) {
   if (!scene[id]) return;
 
+  const reveal = () => toggleVisible(id, true);
+
+  // Always reveal eventually — citaadel may lack gotchi_spawn, and anim can fail silently.
+  const safety = scene.time.delayedCall(400, reveal);
+
+  if (!scene.textures.exists('gotchi_spawn')) {
+    reveal();
+    return;
+  }
+
   const spawnImage = scene.add.sprite(0, -38, 'gotchi_spawn', 0).setName('spawnAnim');
   scene[id].add(spawnImage);
   spawnImage.setVisible(true);
@@ -380,7 +395,21 @@ function gotchiSpawnAnim(id) {
     'animationupdate',
     (anim, frame, gameObject, frameIndex) => {
       if (frameIndex >= 9) {
-        toggleVisible(id, true);
+        safety?.remove?.(false);
+        reveal();
+      }
+    },
+    this,
+  );
+  spawnImage.on(
+    'animationcomplete',
+    () => {
+      safety?.remove?.(false);
+      reveal();
+      try {
+        spawnImage.destroy();
+      } catch {
+        /* ignore */
       }
     },
     this,

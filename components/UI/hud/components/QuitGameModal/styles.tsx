@@ -14,8 +14,11 @@ export default css`
 
   .modal-button-container {
     display: flex;
-    justify-content: space-between;
-    width: 42rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 1.2rem;
+    width: 56rem;
+    max-width: 100%;
     margin: 5.4rem auto 0;
   }
 `;

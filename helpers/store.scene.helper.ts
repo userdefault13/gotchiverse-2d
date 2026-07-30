@@ -17,6 +17,8 @@ export type StoreSceneBuildState = {
   buildMode: boolean;
   placeBrush: number | null;
   floorBrush: number | null;
+  /** Furniture ghost pinned here until Confirm (null = follow cursor). */
+  pendingPlace?: { tx: number; ty: number } | null;
 };
 
 export type StoreSceneCallbacks = {
@@ -27,6 +29,10 @@ export type StoreSceneCallbacks = {
   onBuildTileClick: (tx: number, ty: number) => void;
   onLeaveDoor: () => void;
   onSelectFurniture: (piece: StoreFurniturePiece | null) => void;
+  /** Store build-mode chrome — mirror parcel UPGRADE / MOVE / REMOVE. */
+  onUpgradeFurniture?: (piece: StoreFurniturePiece) => void;
+  onMoveFurniture?: (piece: StoreFurniturePiece) => void;
+  onRemoveFurniture?: (piece: StoreFurniturePiece) => void;
 };
 
 type StoreSceneApi = {
@@ -115,11 +121,20 @@ export async function enterStoreMap(opts: EnterStoreMapOpts): Promise<{ ok: bool
   InputController.updateDisableKeyboard(true);
   toggleFollowGotchi(false);
 
+  // Clear parcel selection chrome so UPGRADE/MOVE/REMOVE can't flash over the store.
   try {
-    game.scene.pause(citaadelKey);
+    const Installations = (await import('components/phaser/Installations')).default;
+    void Installations.setActiveInstallation?.();
+  } catch {
+    /* ignore */
+  }
+
+  // Prefer sleep so citaadel nameplates / HP bars stop rendering (pause still paints).
+  try {
+    game.scene.sleep(citaadelKey);
   } catch {
     try {
-      game.scene.sleep(citaadelKey);
+      game.scene.pause(citaadelKey);
     } catch {
       /* ignore */
     }
@@ -143,7 +158,7 @@ export async function enterStoreMap(opts: EnterStoreMapOpts): Promise<{ ok: bool
   const data = {
     layout: opts.layout,
     callbacks: opts.callbacks,
-    build: { buildMode: false, placeBrush: null, floorBrush: null } as StoreSceneBuildState,
+    build: { buildMode: false, placeBrush: null, floorBrush: null, pendingPlace: null } as StoreSceneBuildState,
   };
 
   // Dynamic import — StoreScene extends Phaser and must never load during Next SSR.
@@ -204,6 +219,13 @@ export async function leaveStoreMap(): Promise<void> {
 
   InputController.updateDisableKeyboard(false);
   toggleFollowGotchi(true);
+  // Sleep/wake can leave the local sprite hidden — force reveal selected player.
+  try {
+    const pid = Players.selectedPlayer?.id;
+    if (pid) Players.toggleVisible(pid, true);
+  } catch {
+    /* ignore */
+  }
   active = false;
   returnPos = null;
   callbacksRef = null;

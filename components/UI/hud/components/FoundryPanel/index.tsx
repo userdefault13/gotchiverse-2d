@@ -1,4 +1,5 @@
 import { useGame } from 'contexts/GameContext';
+import { useUI } from 'contexts/UIContexts';
 import { FoundryNet, FoundryStore, FOUNDRY_RECIPES, MATERIAL_GROUPS } from 'helpers/foundry';
 import { FoundryState, MaterialKey } from 'helpers/foundry/types';
 import { useEffect, useState } from 'react';
@@ -16,6 +17,7 @@ function readMinimized(): boolean {
 
 export const FoundryPanel = (): JSX.Element | null => {
   const [{ gameConfig }] = useGame();
+  const [{ storeState }] = useUI();
   const enabled =
     Boolean((gameConfig as { enableParcelFoundryPoC?: boolean })?.enableParcelFoundryPoC) ||
     process.env.NEXT_PUBLIC_ENABLE_FOUNDRY_POC === 'true';
@@ -33,6 +35,9 @@ export const FoundryPanel = (): JSX.Element | null => {
     setMinimized(readMinimized());
     return FoundryStore.subscribe(setState);
   }, [enabled]);
+
+  // Store interior has its own build HUD — hide Foundry craft chrome while inside.
+  if (storeState?.open) return null;
 
   const setMinimizedPersist = (next: boolean) => {
     setMinimized(next);

@@ -27,8 +27,10 @@ import {
   getConsoleBagCount,
   getFurnitureQty,
   isStoreFurnitureItemId,
+  isTerminalItemId,
 } from 'helpers/store.layout.helper';
 import { getLocalCTileRecipes } from 'helpers/ctile.helper';
+import { getLocalOnchainRecipes } from 'helpers/recipeBook.local.helper';
 
 interface Props {
   selectRecipe: (recipe: Recipe) => void;
@@ -89,12 +91,37 @@ const typeFilters = [
 ];
 
 /** Networks that load recipes from the Gotchiverse subgraph (filters/search/sort). */
-const SUBGRAPH_RECIPE_NETWORKS: NetworkNames[] = ['matic', 'base'];
+const SUBGRAPH_RECIPE_NETWORKS: NetworkNames[] = ['matic', 'base', 'robinhood'];
 
 const isNotDeprecatedYet = (deprecatedAt?: string | number): boolean => {
   if (deprecatedAt == null || deprecatedAt === '' || Number(deprecatedAt) === 0) return true;
   const now = Date.now() / 1000;
   return Number(deprecatedAt) >= now;
+};
+
+const mergeLocalExtras = (recipes: Recipe[], nameFilter: string | undefined, typeFilter): Recipe[] => {
+  const localWaalls =
+    typeFilter.waall !== false
+      ? getLocalWaallRecipes().filter((r) => !nameFilter || r.name.toLowerCase().includes(String(nameFilter).toLowerCase()))
+      : [];
+  const localLodges =
+    typeFilter.lodge !== false
+      ? getLocalLodgeRecipes().filter((r) => !nameFilter || r.name.toLowerCase().includes(String(nameFilter).toLowerCase()))
+      : [];
+  const withoutLocal = recipes.filter(
+    (r) => !isWaallItemId(r.id) && !isLodgeItemId(r.id) && !isStoreItemId(r.id) && !isConsoleItemId(r.id),
+  );
+  return _.concat(withoutLocal, localWaalls, localLodges);
+};
+
+const sortRecipes = (merged: Recipe[], sortBy: SortOption): Recipe[] => {
+  let sorted: Recipe[];
+  if (sortBy.value === 'id') sorted = _.sortBy(merged, (recipe: Recipe) => Number(recipe.id));
+  else if (sortBy.value === 'name') sorted = _.sortBy(merged, (recipe: Recipe) => recipe.name);
+  else if (sortBy.value === 'cost') sorted = _.sortBy(merged, (recipe: Recipe) => recipe.ingredients.fud);
+  else sorted = merged;
+  if (sortBy.direction === 'desc') sorted = _.reverse(sorted);
+  return sorted;
 };
 
 export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
@@ -152,6 +179,11 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
       direction,
     });
   };
+  const applyLocalOnchainFallback = (nameFilter: string, typeFilter, sortBy: SortOption) => {
+    const local = getLocalOnchainRecipes(nameFilter, typeFilter);
+    setRecipes(sortRecipes(mergeLocalExtras(local, nameFilter, typeFilter), sortBy));
+  };
+
   const fetchAndSetRecipesSubgraph = async (nameFilter: string, typeFilter, sortBy: SortOption) => {
     setPending(true);
     try {
@@ -160,14 +192,24 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
         gotchiverseSubgraph,
       );
 
-      const installationTypes: InstallationType[] = (installations?.installationTypes || []).filter((installation: InstallationType) =>
-        isNotDeprecatedYet(installation.deprecatedAt),
+      const installationTypes: InstallationType[] = (installations?.installationTypes || []).filter(
+        (installation: InstallationType) =>
+          Boolean(installation?.name) && isNotDeprecatedYet(installation.deprecatedAt),
       );
 
       const tiles = typeFilter.tile
         ? await useSubgraph<{ tileTypes: TileType[] }>(getTileTypes(nameFilter), gotchiverseSubgraph)
         : { tileTypes: [] };
-      const tileTypes: TileType[] = (tiles?.tileTypes || []).filter((tile: TileType) => isNotDeprecatedYet((tile as any).deprecatedAt));
+      const tileTypes: TileType[] = (tiles?.tileTypes || []).filter(
+        (tile: TileType) => Boolean(tile?.name) && isNotDeprecatedYet((tile as any).deprecatedAt),
+      );
+
+      // Base gotchiverse indexer often stubs InstallationType rows with null metadata.
+      if (installationTypes.length === 0 && tileTypes.length === 0) {
+        console.warn('RecipeBook: subgraph returned no craftable types — using local catalog');
+        applyLocalOnchainFallback(nameFilter, typeFilter, sortBy);
+        return;
+      }
 
       const recipes = _.concat<InstallationType | TileType>(installationTypes, tileTypes).map((item: InstallationType | TileType): Recipe => {
         const isInstallation = 'installationType' in item;
@@ -191,32 +233,10 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
         return data;
       });
 
-      // Waalls / Lodges were never deployed on-chain — merge local L1 recipes when filter allows.
-      const localWaalls =
-        typeFilter.waall !== false
-          ? getLocalWaallRecipes().filter((r) => !nameFilter || r.name.toLowerCase().includes(String(nameFilter).toLowerCase()))
-          : [];
-      const localLodges =
-        typeFilter.lodge !== false
-          ? getLocalLodgeRecipes().filter((r) => !nameFilter || r.name.toLowerCase().includes(String(nameFilter).toLowerCase()))
-          : [];
-      // Store recipes live on the dedicated STORE RECIPES book page.
-      const withoutLocal = recipes.filter(
-        (r) => !isWaallItemId(r.id) && !isLodgeItemId(r.id) && !isStoreItemId(r.id) && !isConsoleItemId(r.id),
-      );
-      const merged = _.concat(withoutLocal, localWaalls, localLodges);
-
-      let sorted: Recipe[];
-      if (sortBy.value === 'id') sorted = _.sortBy(merged, (recipe: Recipe) => Number(recipe.id));
-      else if (sortBy.value === 'name') sorted = _.sortBy(merged, (recipe: Recipe) => recipe.name);
-      else if (sortBy.value === 'cost') sorted = _.sortBy(merged, (recipe: Recipe) => recipe.ingredients.fud);
-      else sorted = merged;
-      if (sortBy.direction === 'desc') sorted = _.reverse(sorted);
-
-      setRecipes(sorted);
+      setRecipes(sortRecipes(mergeLocalExtras(recipes, nameFilter, typeFilter), sortBy));
     } catch (err) {
-      console.warn('RecipeBook: failed to load recipes from subgraph', err);
-      setRecipes([]);
+      console.warn('RecipeBook: failed to load recipes from subgraph — using local catalog', err);
+      applyLocalOnchainFallback(nameFilter, typeFilter, sortBy);
     } finally {
       setPending(false);
     }
@@ -298,6 +318,12 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
 
   const handleSelectStoreRecipe = (recipe: Recipe) => {
     click();
+    // Terminal → Crafting Table so the terminal sprite fills the craft output slot.
+    if (isTerminalItemId(recipe.id)) {
+      selectRecipe(recipe);
+      setOpen(false);
+      return;
+    }
     // Shelf / Cashier craft into the store-furniture bag (place inside Store modal).
     if (isStoreFurnitureItemId(recipe.id)) {
       const result = craftStoreFurniture(Number(recipe.id), 1);
@@ -381,7 +407,8 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
         ) : null}
         {showStorePage ? (
           <div className="foundry-intro">
-            Soft-launch retail: craft a Store for your parcel, then Shelf & Cashier into your furniture bag — place them inside the Store.
+            Soft-launch retail: craft a Store for your parcel, Shelf & Cashier into your furniture bag, and Terminal via the Crafting
+            Table — then place them inside the Store.
           </div>
         ) : null}
         {showConsolePage ? (

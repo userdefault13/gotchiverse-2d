@@ -156,6 +156,22 @@ function pickViewFragment(arr, viewIndex) {
   return arr[0] || ''
 }
 
+/** Like pickViewFragment but never falls back to another view (critical for sleeves). */
+function pickViewFragmentExact(arr, viewIndex) {
+  if (!arr || !arr.length) return ''
+  if (arr[viewIndex] != null && arr[viewIndex] !== '') return arr[viewIndex]
+  return ''
+}
+
+/** True when body SVG has sleeve geometry that CSS would actually show (not only sleeves-up). */
+function bodyHasVisibleEmbeddedSleeves(bodyFrag: string): boolean {
+  if (!bodyFrag || !bodyFrag.includes('gotchi-sleeves')) return false
+  if (bodyFrag.includes('gotchi-sleeves-down')) return true
+  // Plain .gotchi-sleeves groups without -up/-down are visible; -up alone is CSS-hidden.
+  const strippedUp = bodyFrag.replace(/<g\b[^>]*gotchi-sleeves-up[^>]*>[\s\S]*?<\/g>/gi, '')
+  return /class="[^"]*gotchi-sleeves(?!-up)/.test(strippedUp) || /class='[^']*gotchi-sleeves(?!-up)/.test(strippedUp)
+}
+
 function buildStyleBlock(collateral, eyeColorHex, hasBodyWearable) {
   const primary = hexFrom0x(collateral.primaryColor)
   const secondary = hexFrom0x(collateral.secondaryColor)
@@ -300,17 +316,51 @@ function wearableViewOffset(wearable, viewIndex): { x: string; y: string } | nul
   return null
 }
 
+/** Body SVGs often embed sleeve groups — strip them so the overlay can paint above hands. */
+function stripEmbeddedSleeves(fragment: string): string {
+  if (!fragment || !fragment.includes('gotchi-sleeves')) return fragment
+  if (typeof DOMParser === 'undefined') return fragment
+  try {
+    const doc = new DOMParser().parseFromString(
+      `<svg xmlns="http://www.w3.org/2000/svg">${fragment}</svg>`,
+      'image/svg+xml',
+    )
+    doc.querySelectorAll('.gotchi-sleeves').forEach((el) => el.remove())
+    const root = doc.documentElement
+    if (!root) return fragment
+    return Array.from(root.childNodes)
+      .map((n) => new XMLSerializer().serializeToString(n))
+      .join('')
+  } catch {
+    return fragment
+  }
+}
+
+/** Pick sleeve SVG for a view. Back often stores a copy of the right (side) sleeve —
+ *  treat that as missing and reuse front so enter-portal / rear facing looks correct. */
+function sleeveFragmentForView(wearable, viewIndex: number): string {
+  const sleeves = wearable?.sleeves
+  if (!sleeves?.length) return ''
+  const exact = pickViewFragmentExact(sleeves, viewIndex)
+  if (viewIndex === 3) {
+    const right = pickViewFragmentExact(sleeves, 2)
+    if (!exact || (right && exact === right)) {
+      return pickViewFragmentExact(sleeves, 0)
+    }
+  }
+  return exact
+}
+
 function sleevesForWearable(wearable, viewIndex, hasBodyWearable) {
   if (!wearable?.sleeves || !hasBodyWearable) return ''
-  // Back body SVGs already embed sleeve groups — layering sleeves again doubles them
-  // (enter portal + Phaser back frame). Front/side keep separate sleeve fragments.
-  const bodyFrag = pickViewFragment(wearable?.svgs, viewIndex) || ''
-  if (bodyFrag.includes('gotchi-sleeves')) return ''
-  const sleeve = pickViewFragment(wearable.sleeves, viewIndex)
+  const sleeve = sleeveFragmentForView(wearable, viewIndex)
   if (!sleeve) return ''
-  // Sleeve path coords are local to the body wearable's nested svg (same x/y as svgs[view]).
-  // Without that offset they paint near the canvas top and white open-hands show instead.
-  const off = wearableViewOffset(wearable, viewIndex)
+  const bodyFrag = pickViewFragmentExact(wearable?.svgs, viewIndex) || ''
+  // Body already has visible sleeve geometry — don't double-layer (enter portal / Phaser back).
+  if (bodyHasVisibleEmbeddedSleeves(bodyFrag)) return ''
+  // Front-sleeve fallback on back uses front local coords; otherwise match this view's body offset.
+  const usedFrontFallback = viewIndex === 3 && sleeve === pickViewFragmentExact(wearable.sleeves, 0)
+  const off = wearableViewOffset(wearable, usedFrontFallback ? 0 : viewIndex)
   const inner = off ? `<svg x="${off.x}" y="${off.y}">${sleeve}</svg>` : sleeve
   // Prefer sleeves-down content when present; CSS hides sleeves-up
   return `<g class="gotchi-wearable wearable-sleeves">${inner}</g>`
@@ -431,7 +481,16 @@ function composeSvgView({
     if (!id) return
     const w = lib.wearablesById.get(id)
     if (!w) return
-    layers.push(wrapWearable(pickViewFragment(w.svgs, viewIndex), slot, viewIndex))
+    let frag = pickViewFragment(w.svgs, viewIndex)
+    // Body: only strip embedded sleeves when we will paint a separate sleeve overlay for this view.
+    // Back bodies often embed sleeves-up only (CSS-hidden) — keep stripping so sleeves-down overlay can show.
+    if (slot === 0 && w.sleeves) {
+      const sleeveOverlay = sleeveFragmentForView(w, viewIndex)
+      if (sleeveOverlay && !bodyHasVisibleEmbeddedSleeves(frag)) {
+        frag = stripEmbeddedSleeves(frag)
+      }
+    }
+    layers.push(wrapWearable(frag, slot, viewIndex))
   }
   const pushSleeves = () => {
     const id = wearables[0]
@@ -444,19 +503,19 @@ function composeSvgView({
   const handWearables = viewIndex === 3 ? [] : handWearableLayers(wearables, lib, viewIndex)
 
   if (viewIndex === 3) {
-    // Back: hand wearables already inserted behind eyes/logo; body clothing then hands on top
+    // Back: body → head slots → hands → sleeves on top (embedded sleeves stripped above)
     pushSlot(0)
     for (const slot of [1, 2, 3]) pushSlot(slot)
-    pushSleeves()
     if (hands) layers.push(hands)
+    pushSleeves()
     pushSlot(6)
   } else if (viewIndex === 1 || viewIndex === 2) {
-    // Side: clothing first; items under hand strokes (gripping look)
+    // Side: clothing first; items under hand strokes (gripping look); sleeves above hands
     pushSlot(0)
     for (const slot of [1, 2, 3]) pushSlot(slot)
-    pushSleeves()
     layers.push(...handWearables)
     if (hands) layers.push(hands)
+    pushSleeves()
     pushSlot(6)
   } else {
     // Front: match SvgFacet — hand wearables last so they sit on top of hands/sleeves

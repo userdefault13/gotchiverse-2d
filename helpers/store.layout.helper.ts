@@ -560,6 +560,30 @@ export function upgradeConsoleFurniture(
   };
 }
 
+/** Soft-launch in-store Cashier upgrade: bump itemId within 189–197. */
+export function upgradeCashierFurniture(
+  layout: StoreLayout,
+  furnitureId: string,
+): { ok: boolean; message: string; layout: StoreLayout } {
+  const idx = layout.furniture.findIndex((f) => f.id === furnitureId);
+  if (idx < 0) return { ok: false, message: 'Cashier not found', layout };
+  const piece = layout.furniture[idx];
+  if (!isCashierItemId(piece.itemId)) {
+    return { ok: false, message: 'Not a Cashier', layout };
+  }
+  if (Number(piece.itemId) >= CASHIER_ITEM_ID_END) {
+    return { ok: false, message: 'Cashier is max level', layout };
+  }
+  const nextId = Number(piece.itemId) + 1;
+  const furniture = layout.furniture.map((f, i) => (i === idx ? { ...f, itemId: nextId } : f));
+  const next = saveStoreLayout({ ...layout, furniture });
+  return {
+    ok: true,
+    message: `Upgraded Cashier to level ${nextId - CASHIER_ITEM_ID_START + 1}`,
+    layout: next,
+  };
+}
+
 export function furnitureAt(layout: StoreLayout, x: number, y: number): StoreFurniturePiece | undefined {
   return layout.furniture.find((f) => f.x === x && f.y === y);
 }

@@ -127,7 +127,7 @@ const initialTraitDetails: TraitDetails[] = [
 ];
 
 export const PlayerDashboard = (): JSX.Element => {
-  const [{ selectedPlayer, alchemica, userTraits, userTraitsBases, userWearableTraitBonuses, health }] = useRealm();
+  const [{ selectedPlayer, alchemica, userTraits, userTraitsBases, userWearableTraitBonuses, health, gotchiUrl }] = useRealm();
   const [isExtended, setIsExtended] = useState<boolean>(true);
   const [isTooltipVisible, setTooltipVisible] = useState<boolean>(false);
   const isArena = GameController.MAP === 'aarena';
@@ -185,7 +185,22 @@ export const PlayerDashboard = (): JSX.Element => {
           <div className="flex items-stretch justify-between relative">
             <div className="gotchi-traits-container flex relative" onMouseEnter={handleTooltipEnter} onMouseLeave={handleTooltipLeave}>
               <div className="image-wrapper">
-                <GotchiSVG tokenId={selectedPlayer.id} height={12} isSpectator={false} />
+                {gotchiUrl?.url ? (
+                  <div style={{ height: '12rem', width: '12rem', position: 'relative' }}>
+                    <Image alt="" src={gotchiUrl.url} layout="fill" objectFit="contain" unoptimized={gotchiUrl.url.startsWith('blob:')} />
+                  </div>
+                ) : (
+                  <GotchiSVG
+                    tokenId={selectedPlayer.id}
+                    height={12}
+                    isSpectator={false}
+                    equippedWearables={selectedPlayer.equippedWearables}
+                    traits={selectedPlayer.withSetsNumericTraits}
+                    cartridgeCollateral={selectedPlayer.cartridgeCollateral}
+                    hauntId={selectedPlayer.hauntId}
+                    sourceTokenId={selectedPlayer.cartridgeSourceTokenId}
+                  />
+                )}
               </div>
               <div className={`traits-wrapper  ${!isExtended ? 'short' : ''}`}>
                 {_.map(

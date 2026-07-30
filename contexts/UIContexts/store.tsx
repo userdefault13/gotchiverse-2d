@@ -63,6 +63,8 @@ export interface State {
     installationId?: string;
     ownerAddress?: string;
     cartridgeId?: string;
+    /** Owner-only mint-green store build HUD (furniture bag → place brush). */
+    buildMode?: boolean;
   };
 
   /** Soft-launch Console furniture inside a Store — Unity game picker / embed. */
