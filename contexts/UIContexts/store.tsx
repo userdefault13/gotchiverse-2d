@@ -67,17 +67,39 @@ export interface State {
     buildMode?: boolean;
   };
 
+  /** Soft-launch Lodge interior (installationType 4). */
+  lodgeState: {
+    open: boolean;
+    isOwner?: boolean;
+    installationId?: string;
+    ownerAddress?: string;
+    cartridgeId?: string;
+    /** Owner-only mint-green lodge build HUD (furniture bag → place brush). */
+    buildMode?: boolean;
+  };
+
   /** Soft-launch Console furniture inside a Store — Unity game picker / embed. */
   consoleState: {
     open: boolean;
     /** Furniture piece id inside the store layout. */
     furnitureId?: string;
     storeId?: string;
+    /** When set, Console is inside a Lodge interior (use lodge layout helpers). */
+    lodgeId?: string;
     itemId?: number;
     loadedTitles?: string[];
     isOwner?: boolean;
     /** @deprecated use furnitureId — kept for older callers */
     installationId?: string;
+  };
+
+  /** Soft-launch Broadcaster TV inside a Lodge — X live stream modal. */
+  broadcasterState: {
+    open: boolean;
+    furnitureId?: string;
+    lodgeId?: string;
+    streamUrl?: string;
+    isOwner?: boolean;
   };
 
   /** Session cart while inside a store (cleared on leave). */
@@ -91,6 +113,22 @@ export interface State {
   }>;
 
   storeShelfModal: {
+    open: boolean;
+    shelfId?: string;
+    isOwner?: boolean;
+  };
+
+  /** Session cart while inside a lodge (stub; no Baazaar checkout). */
+  lodgeCart: Array<{
+    shelfId: string;
+    listingId: string;
+    title: string;
+    price: number;
+    currency: string;
+    quantity: number;
+  }>;
+
+  lodgeShelfModal: {
     open: boolean;
     shelfId?: string;
     isOwner?: boolean;
@@ -192,11 +230,21 @@ export const initialState: State = {
   storeState: {
     open: false,
   },
+  lodgeState: {
+    open: false,
+  },
   consoleState: {
+    open: false,
+  },
+  broadcasterState: {
     open: false,
   },
   storeCart: [],
   storeShelfModal: {
+    open: false,
+  },
+  lodgeCart: [],
+  lodgeShelfModal: {
     open: false,
   },
 

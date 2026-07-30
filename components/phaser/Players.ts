@@ -183,12 +183,13 @@ const displayPlayer = (player: Player): void => {
     scene[id].health = health ?? 1000;
     scene[id].maxHealth = maxHealth || 1000;
 
-    // setup sprite
+    // setup sprite — start visible. Spawn VFX overlays; never leave the body stuck hidden
+    // if reveal/anim fails (citaadel Colyseus used to keep gotchi_sprite invisible forever).
     if (!isTrueSpectator(isSpectator)) {
       playerSprite = scene.add
         .sprite(0, 0, isNaked(isSpectator) ? 'defaultGotchi' : id, 0)
         .setName('gotchi_sprite')
-        .setVisible(false);
+        .setVisible(true);
       playerSprite.displayWidth = 64;
       playerSprite.displayHeight = 64;
       playerSprite.setDataEnabled();
@@ -308,12 +309,19 @@ const displayPlayer = (player: Player): void => {
 
   setDeadState(id, Boolean(isDead));
 
-  // Player was just created on server. Treat as a new spawn (player will have 50% opacity)
-  if ((created || process.env.NEXT_PUBLIC_NETCODE === 'colyseus') && !isDead) {
+  // Only play spawn VFX on first create — Colyseus re-calls displayPlayer often; re-running
+  // handleRespawn every time left sprites half-alpha / re-hidden under failed anims.
+  const shouldSpawnFx =
+    !isDead && !alreadyAddedToScene && (created || process.env.NEXT_PUBLIC_NETCODE === 'colyseus');
+  if (shouldSpawnFx) {
     handleRespawn(id);
   } else if (!isDead) {
-    // Citaadel / non-spawn path: sprite starts hidden — always reveal after create.
     toggleVisible(id, true);
+  }
+  // Belt-and-suspenders: living local/remote gotchis must stay visible after display.
+  if (!isDead) {
+    forceRevealPlayer(id);
+    scene.time?.delayedCall?.(250, () => forceRevealPlayer(id));
   }
   updateFocusTransparency({ id, state: isFocused });
 };
@@ -374,33 +382,45 @@ function updatePlayerHealth(id: string, health: number): void {
   scene[id].health = health;
 }
 
+/** Force containers + body sprite visible (bypass fragile reveal races). */
+function forceRevealPlayer(id: string): void {
+  if (!scene?.[id] || scene[id].isDead) return;
+  if (!scene.loadedPlayerIds.includes(id)) scene.loadedPlayerIds.push(id);
+  try {
+    scene[id].setVisible(true);
+    scene[id].getByName('gotchi_sprite')?.setVisible(true);
+    scene[id].getByName('spectator')?.setVisible(true);
+    scene[`${id}_top`]?.setVisible(true);
+    scene[`${id}_bottom`]?.setVisible(true);
+  } catch {
+    /* ignore */
+  }
+}
+
 function gotchiSpawnAnim(id) {
   if (!scene[id]) return;
 
-  const reveal = () => toggleVisible(id, true);
+  // Body stays visible under the VFX — never hide it waiting for anim callbacks.
+  const reveal = () => forceRevealPlayer(id);
+  reveal();
 
-  // Always reveal eventually — citaadel may lack gotchi_spawn, and anim can fail silently.
-  const safety = scene.time.delayedCall(400, reveal);
+  const safety = scene.time?.delayedCall?.(500, reveal);
 
   if (!scene.textures.exists('gotchi_spawn')) {
-    reveal();
     return;
+  }
+
+  // Drop any prior spawn VFX (re-entrant displayPlayer / reconnect).
+  try {
+    scene[id].getByName('spawnAnim')?.destroy?.();
+  } catch {
+    /* ignore */
   }
 
   const spawnImage = scene.add.sprite(0, -38, 'gotchi_spawn', 0).setName('spawnAnim');
   scene[id].add(spawnImage);
   spawnImage.setVisible(true);
   AnimationsController.play(spawnImage, 'gotchi_spawn');
-  spawnImage.on(
-    'animationupdate',
-    (anim, frame, gameObject, frameIndex) => {
-      if (frameIndex >= 9) {
-        safety?.remove?.(false);
-        reveal();
-      }
-    },
-    this,
-  );
   spawnImage.on(
     'animationcomplete',
     () => {
@@ -685,12 +705,18 @@ function removePlayers(players: RemovingPlayer[]): void {
 
 const toggleVisible = (playerId: string, isVisible: boolean): void => {
   if (!scene[playerId]) return;
-  if (!scene.loadedPlayerIds.includes(playerId)) return;
+  // Keep registry in sync — Colyseus onRemove used to destroy containers without
+  // clearing loadedPlayerIds, which made later reveals no-op.
+  if (isVisible && !scene.loadedPlayerIds.includes(playerId)) {
+    scene.loadedPlayerIds.push(playerId);
+  } else if (!isVisible && !scene.loadedPlayerIds.includes(playerId)) {
+    return;
+  }
   scene[playerId].setVisible(isVisible);
   scene[playerId].getByName('gotchi_sprite')?.setVisible(isVisible);
   scene[playerId].getByName('spectator')?.setVisible(isVisible);
-  scene[`${playerId}_top`].setVisible(isVisible);
-  scene[`${playerId}_bottom`].setVisible(isVisible);
+  scene[`${playerId}_top`]?.setVisible(isVisible);
+  scene[`${playerId}_bottom`]?.setVisible(isVisible);
   if (!isVisible) {
     // disable any sprinting states
     disableSprint(playerId);
@@ -816,9 +842,12 @@ function updatePlayerPosition(playerPosition: PositionEvent): void {
 const checkInvisible = (id: string, source: 'sprint' | 'shoot'): void => {
   const sprite = scene?.[id];
   if (!sprite) return;
-  if ((sprite.isDead || !sprite.visible) && sprite.health) {
+  const body = sprite.getByName?.('gotchi_sprite') || sprite.getByName?.('spectator');
+  const bodyHidden = body && body.visible === false;
+  if (((sprite.isDead || !sprite.visible) && sprite.health) || (bodyHidden && sprite.health && !sprite.isDead)) {
     console.warn(`Invisible gotchi found on source ${source}: ${id}, reset visibility.`);
     setDeadState(id, false);
+    forceRevealPlayer(id);
   }
 };
 

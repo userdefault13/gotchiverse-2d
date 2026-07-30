@@ -81,13 +81,19 @@ export const RecipeBookModal = ({ open, onClose, children, pages, activePage, on
                       >
                         {page.id === 'onchain'
                           ? 'Installations'
-                          : page.id === 'foundry'
-                            ? 'Logistics'
-                            : page.id === 'store'
-                              ? 'Store'
-                              : page.id === 'ctiles'
-                                ? 'cTiles'
-                                : page.shortLabel}
+                          : page.id === 'parcel-decor'
+                            ? 'Decor'
+                            : page.id === 'foundry'
+                              ? 'Logistics'
+                              : page.id === 'store'
+                                ? 'Store'
+                                : page.id === 'lodge'
+                                  ? 'Lodge'
+                                  : page.id === 'console'
+                                    ? 'Console'
+                                    : page.id === 'ctiles'
+                                      ? 'cTiles'
+                                      : page.shortLabel}
                       </button>
                     ))}
                   </div>

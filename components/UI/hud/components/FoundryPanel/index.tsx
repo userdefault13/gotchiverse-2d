@@ -17,7 +17,7 @@ function readMinimized(): boolean {
 
 export const FoundryPanel = (): JSX.Element | null => {
   const [{ gameConfig }] = useGame();
-  const [{ storeState }] = useUI();
+  const [{ storeState, lodgeState }] = useUI();
   const enabled =
     Boolean((gameConfig as { enableParcelFoundryPoC?: boolean })?.enableParcelFoundryPoC) ||
     process.env.NEXT_PUBLIC_ENABLE_FOUNDRY_POC === 'true';
@@ -36,8 +36,8 @@ export const FoundryPanel = (): JSX.Element | null => {
     return FoundryStore.subscribe(setState);
   }, [enabled]);
 
-  // Store interior has its own build HUD — hide Foundry craft chrome while inside.
-  if (storeState?.open) return null;
+  // Store/lodge interiors have their own build HUD — hide Foundry craft chrome while inside.
+  if (storeState?.open || lodgeState?.open) return null;
 
   const setMinimizedPersist = (next: boolean) => {
     setMinimized(next);

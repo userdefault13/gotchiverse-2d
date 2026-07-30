@@ -4,16 +4,16 @@ import SceneController, { scene as citaadelScene } from 'components/controllers/
 import Players from 'components/phaser/Players';
 import { toggleFollowGotchi } from 'helpers/phaser.helper';
 import {
-  joinStoreRoom,
-  leaveStoreRoom,
-  seedStoreLayout,
-  type JoinStoreOpts,
-} from 'helpers/colyseus.store';
-import { serializeLayout, type StoreFurniturePiece, type StoreLayout } from 'helpers/store.layout.helper';
-import { MAP_ID_CITAADEL, MAP_ID_STORE } from 'shared_code/constants/const.game';
+  joinLodgeRoom,
+  leaveLodgeRoom,
+  seedLodgeLayout,
+  type JoinLodgeOpts,
+} from 'helpers/colyseus.lodge';
+import { serializeLodgeLayout, type LodgeFurniturePiece, type LodgeLayout } from 'helpers/lodge.layout.helper';
+import { MAP_ID_CITAADEL, MAP_ID_LODGE } from 'shared_code/constants/const.game';
 
 /** Kept here (not in storeScene) so HUD can import without pulling Phaser into SSR. */
-export type StoreSceneBuildState = {
+export type LodgeSceneBuildState = {
   buildMode: boolean;
   placeBrush: number | null;
   floorBrush: number | null;
@@ -21,24 +21,25 @@ export type StoreSceneBuildState = {
   pendingPlace?: { tx: number; ty: number } | null;
 };
 
-export type StoreSceneCallbacks = {
-  onInteractShelf: (piece: StoreFurniturePiece) => void;
-  onInteractCashier: (piece: StoreFurniturePiece) => void;
-  onInteractConsole: (piece: StoreFurniturePiece) => void;
-  onInteractTerminal: (piece: StoreFurniturePiece) => void;
+export type LodgeSceneCallbacks = {
+  onInteractShelf: (piece: LodgeFurniturePiece) => void;
+  onInteractCashier: (piece: LodgeFurniturePiece) => void;
+  onInteractConsole: (piece: LodgeFurniturePiece) => void;
+  onInteractTerminal: (piece: LodgeFurniturePiece) => void;
+  onInteractBroadcaster: (piece: LodgeFurniturePiece) => void;
   onBuildTileClick: (tx: number, ty: number) => void;
   onLeaveDoor: () => void;
-  onSelectFurniture: (piece: StoreFurniturePiece | null) => void;
+  onSelectFurniture: (piece: LodgeFurniturePiece | null) => void;
   /** Store build-mode chrome — mirror parcel UPGRADE / MOVE / REMOVE. */
-  onUpgradeFurniture?: (piece: StoreFurniturePiece) => void;
-  onMoveFurniture?: (piece: StoreFurniturePiece) => void;
-  onRemoveFurniture?: (piece: StoreFurniturePiece) => void;
+  onUpgradeFurniture?: (piece: LodgeFurniturePiece) => void;
+  onMoveFurniture?: (piece: LodgeFurniturePiece) => void;
+  onRemoveFurniture?: (piece: LodgeFurniturePiece) => void;
 };
 
-type StoreSceneApi = {
-  setCallbacks: (callbacks: StoreSceneCallbacks) => void;
-  setLayout: (layout: StoreLayout | null) => void;
-  setBuildState: (build: StoreSceneBuildState) => void;
+type LodgeSceneApi = {
+  setCallbacks: (callbacks: LodgeSceneCallbacks) => void;
+  setLayout: (layout: LodgeLayout | null) => void;
+  setBuildState: (build: LodgeSceneBuildState) => void;
 };
 
 type PhaserGame = {
@@ -60,7 +61,7 @@ type PhaserGame = {
 let active = false;
 let citaadelKey = MAP_ID_CITAADEL;
 let returnPos: { x: number; y: number } | null = null;
-let callbacksRef: StoreSceneCallbacks | null = null;
+let callbacksRef: LodgeSceneCallbacks | null = null;
 
 function getGame(): PhaserGame | null {
   const fromScene = citaadelScene?.game as unknown as PhaserGame | undefined;
@@ -72,40 +73,40 @@ function getGame(): PhaserGame | null {
   return null;
 }
 
-function getStoreScene(): StoreSceneApi | null {
+function getLodgeScene(): LodgeSceneApi | null {
   const game = getGame();
   if (!game) return null;
   try {
-    const s = game.scene.getScene(MAP_ID_STORE) as StoreSceneApi | undefined;
+    const s = game.scene.getScene(MAP_ID_LODGE) as LodgeSceneApi | undefined;
     return s || null;
   } catch {
     return null;
   }
 }
 
-export function isStoreMapActive(): boolean {
-  return active || GameController.MAP === MAP_ID_STORE;
+export function isLodgeMapActive(): boolean {
+  return active || GameController.MAP === MAP_ID_LODGE;
 }
 
-export function setStoreSceneCallbacks(callbacks: StoreSceneCallbacks) {
+export function setLodgeSceneCallbacks(callbacks: LodgeSceneCallbacks) {
   callbacksRef = callbacks;
-  getStoreScene()?.setCallbacks(callbacks);
+  getLodgeScene()?.setCallbacks(callbacks);
 }
 
-export function applyStoreSceneLayout(layout: StoreLayout | null) {
-  getStoreScene()?.setLayout(layout);
+export function applyLodgeSceneLayout(layout: LodgeLayout | null) {
+  getLodgeScene()?.setLayout(layout);
 }
 
-export function setStoreSceneBuildState(build: StoreSceneBuildState) {
-  getStoreScene()?.setBuildState(build);
+export function setLodgeSceneBuildState(build: LodgeSceneBuildState) {
+  getLodgeScene()?.setBuildState(build);
 }
 
-export type EnterStoreMapOpts = JoinStoreOpts & {
-  layout: StoreLayout;
-  callbacks: StoreSceneCallbacks;
+export type EnterLodgeMapOpts = JoinLodgeOpts & {
+  layout: LodgeLayout;
+  callbacks: LodgeSceneCallbacks;
 };
 
-export async function enterStoreMap(opts: EnterStoreMapOpts): Promise<{ ok: boolean; error?: string }> {
+export async function enterLodgeMap(opts: EnterLodgeMapOpts): Promise<{ ok: boolean; error?: string }> {
   if (active) return { ok: true };
 
   const game = getGame();
@@ -140,59 +141,59 @@ export async function enterStoreMap(opts: EnterStoreMapOpts): Promise<{ ok: bool
     }
   }
 
-  GameController.updateMapType(MAP_ID_STORE);
+  GameController.updateMapType(MAP_ID_LODGE);
 
-  const room = await joinStoreRoom({
-    storeId: opts.storeId,
+  const room = await joinLodgeRoom({
+    lodgeId: opts.lodgeId,
     ownerAddress: opts.ownerAddress,
     cartridgeId: opts.cartridgeId,
   });
   if (!room) {
     await abortEnter();
-    return { ok: false, error: 'Could not join store (full or auth failed).' };
+    return { ok: false, error: 'Could not join lodge (full or auth failed).' };
   }
 
-  seedStoreLayout(serializeLayout(opts.layout));
+  seedLodgeLayout(serializeLodgeLayout(opts.layout));
   callbacksRef = opts.callbacks;
 
   const data = {
     layout: opts.layout,
     callbacks: opts.callbacks,
-    build: { buildMode: false, placeBrush: null, floorBrush: null, pendingPlace: null } as StoreSceneBuildState,
+    build: { buildMode: false, placeBrush: null, floorBrush: null, pendingPlace: null } as LodgeSceneBuildState,
   };
 
-  // Dynamic import — StoreScene extends Phaser and must never load during Next SSR.
-  const { StoreScene } = await import('components/phaser/scenes/storeScene');
+  // Dynamic import — LodgeScene extends Phaser and must never load during Next SSR.
+  const { LodgeScene } = await import('components/phaser/scenes/lodgeScene');
 
-  if (!game.scene.getScene(MAP_ID_STORE)) {
-    game.scene.add(MAP_ID_STORE, StoreScene, false);
+  if (!game.scene.getScene(MAP_ID_LODGE)) {
+    game.scene.add(MAP_ID_LODGE, LodgeScene, false);
   }
 
   try {
-    game.scene.run(MAP_ID_STORE, data);
+    game.scene.run(MAP_ID_LODGE, data);
   } catch (e) {
-    console.warn('enterStoreMap: scene.run failed, retry add', e);
-    game.scene.add(MAP_ID_STORE, StoreScene, true, data);
+    console.warn('enterLodgeMap: scene.run failed, retry add', e);
+    game.scene.add(MAP_ID_LODGE, LodgeScene, true, data);
   }
 
   active = true;
   return { ok: true };
 }
 
-export async function leaveStoreMap(): Promise<void> {
-  if (!active && GameController.MAP !== MAP_ID_STORE) {
-    await leaveStoreRoom();
+export async function leaveLodgeMap(): Promise<void> {
+  if (!active && GameController.MAP !== MAP_ID_LODGE) {
+    await leaveLodgeRoom();
     return;
   }
 
   const game = getGame();
   try {
-    game?.scene.stop(MAP_ID_STORE);
+    game?.scene.stop(MAP_ID_LODGE);
   } catch {
     /* ignore */
   }
 
-  await leaveStoreRoom();
+  await leaveLodgeRoom();
   GameController.updateMapType(MAP_ID_CITAADEL);
 
   try {
@@ -224,7 +225,6 @@ export async function leaveStoreMap(): Promise<void> {
     const pid = Players.selectedPlayer?.id;
     if (pid) {
       Players.toggleVisible(pid, true);
-      // Delayed pass in case wake restores a stale hidden child flag.
       window.setTimeout(() => {
         try {
           Players.toggleVisible(pid, true);

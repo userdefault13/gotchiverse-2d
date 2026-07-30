@@ -418,18 +418,11 @@ function bindRoomHandlers(activeRoom: Room) {
 
   players.onRemove((player: RemotePlayer) => {
     try {
-      if (!phaserScene) return;
-      const sceneObj = phaserScene as unknown as Record<
-        string,
-        { destroy?: (a?: boolean) => void } | undefined
-      >;
-      const id = String(player.gotchiId);
-      if (sceneObj[id]) {
-        sceneObj[id]?.destroy?.(true);
-        sceneObj[`${id}_top`]?.destroy?.(true);
-        sceneObj[`${id}_bottom`]?.destroy?.(true);
-        delete sceneObj[id];
-      }
+      const id = String(player.gotchiId || '');
+      if (!id) return;
+      // Use Players.removePlayers so loadedPlayerIds / top/bottom containers stay consistent.
+      // Raw destroy left nameplates orphaned and blocked later toggleVisible reveals.
+      Players.removePlayers([{ id, destroyed: true } as any]);
     } catch (e) {
       console.warn('Failed to remove remote player', e);
     }

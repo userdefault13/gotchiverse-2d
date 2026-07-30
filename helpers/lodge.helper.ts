@@ -6,6 +6,7 @@ import { getTypeByItemId, setLocalInventory, getLocalInventoryItem } from './ins
 import { getInstallationIdDataById } from 'shared_code/utils/shared.utils.installations';
 import { isWaallItemId, isWaallInstallationId } from './waalls.helper';
 import { isStoreInstallationId, isStoreItemId } from './store.installation.helper';
+import { getLocalBroadcasterRecipes } from './broadcaster.installation.helper';
 import { isBounceGateInstallationId, isBounceGateItemId } from './bounceGate.helper';
 import { adjustOffchainInventoryQty, getOffchainInventory, setOffchainInventoryQty } from './offchain.store';
 
@@ -70,6 +71,11 @@ export function getLocalLodgeRecipes(): Recipe[] {
         endDate: undefined,
       };
     });
+}
+
+/** Soft-launch Lodge recipes page: exterior Lodge + Broadcaster only. */
+export function getLocalLodgePageRecipes(): Recipe[] {
+  return _.concat(getLocalLodgeRecipes(), getLocalBroadcasterRecipes());
 }
 
 export interface LocalLodgeUpgradeInfo {

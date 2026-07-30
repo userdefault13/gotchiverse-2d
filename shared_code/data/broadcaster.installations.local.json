@@ -1,0 +1,22 @@
+{
+   "209": {
+      "itemId": 209,
+      "width": 1,
+      "height": 1,
+      "name": "Broadcaster",
+      "type": "INSTALLATION",
+      "installationType": 10,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [
+         0,
+         0,
+         0,
+         0
+      ]
+   }
+}

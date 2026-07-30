@@ -33,7 +33,9 @@ import {
   ExitArenaModal,
   FoundryPanel,
   StoreModal,
+  LodgeModal,
   ConsoleModal,
+  BroadcasterModal,
 } from '../components';
 import { GameNav } from 'components/UI/structures';
 import { SuperChatList } from 'components/UI/component/superChat/SuperChatList';
@@ -50,7 +52,7 @@ export const PlayHud = () => {
   const [{ roundTime, minigameIntroAnimation }, phaserDispatch] = usePhaser();
   const [{ gameConfig }] = useGame();
 
-  const [{ inMenu, storeState }, uiDispatch] = useUI();
+  const [{ inMenu, storeState, lodgeState }, uiDispatch] = useUI();
 
   const [totalTimeLeft, setTotalTimeLeft] = useState(0);
   const [minutes, setMinutes] = useState('00');
@@ -181,14 +183,30 @@ export const PlayHud = () => {
     });
   };
 
+  const toggleLodgeBuildMode = () => {
+    if (!lodgeState?.open || !lodgeState?.isOwner) return;
+    click();
+    const next = !lodgeState.buildMode;
+    uiDispatch({
+      type: 'UPDATE_LODGE_MODAL',
+      lodgeState: {
+        ...lodgeState,
+        buildMode: next,
+      },
+    });
+  };
+
   const inStore = Boolean(storeState?.open);
   const storeOwner = Boolean(storeState?.isOwner);
+  const inLodge = Boolean(lodgeState?.open);
+  const lodgeOwner = Boolean(lodgeState?.isOwner);
+  const inInterior = inStore || inLodge;
   const blockPropagation = (e) => e.stopPropagation();
 
   useEffect(() => {
-    if (inStore && itemShopOpen) setItemShopOpen(false);
-    if (inStore && craftTableOpen) setCraftTableOpen(false);
-  }, [inStore]);
+    if (inInterior && itemShopOpen) setItemShopOpen(false);
+    if (inInterior && craftTableOpen) setCraftTableOpen(false);
+  }, [inInterior]);
 
   return (
     <>
@@ -202,7 +220,9 @@ export const PlayHud = () => {
       <ExitArenaModal />
       <NftDisplayModal />
       <StoreModal />
+      <LodgeModal />
       <ConsoleModal />
+      <BroadcasterModal />
       <EventHologram />
       <ActiveEventsModal />
       <TravelParcelsModal />
@@ -213,7 +233,7 @@ export const PlayHud = () => {
       <NotificationStack />
       <ZoneAlert district={currentDistrict} />
       <GameAlert />
-      {!inStore ? <GameNav /> : null}
+      {!inInterior ? <GameNav /> : null}
 
       {/* <div className="minimap-container" onClick={blockPropagation} onMouseDown={blockPropagation}>
         <div className={'clickable icon'} onClick={handleMapIconClick}>
@@ -278,26 +298,26 @@ export const PlayHud = () => {
         <DebugConsole />
       </div>
 
-      {gameConfig.enableItemShop && !inStore && (
+      {gameConfig.enableItemShop && !inInterior && (
         <div className={`item-shop-button-container ${itemShopOpen ? 'open' : ''}`}>
           <ItemShopButton open={itemShopOpen} toggle={() => setItemShopOpen(!itemShopOpen)} />
         </div>
       )}
 
       <div className="right-container" onClick={blockPropagation} onMouseDown={blockPropagation}>
-        {itemShopOpen && !inStore && <ItemShop open={itemShopOpen} onClose={() => setItemShopOpen(false)} />}
+        {itemShopOpen && !inInterior && <ItemShop open={itemShopOpen} onClose={() => setItemShopOpen(false)} />}
       </div>
 
       <div className="bottom-right-container">
         <ZoomSlider color="purple" />
       </div>
       <div className="action-button-container flex flex-row space-between translate-x-4">
-        {!inStore ? (
+        {!inInterior ? (
           <>
             <ActionButton color="pink" img={CraftIcon} onClick={() => setCraftTableOpen(true)} />
             <ActionButton color="info" img={BuildMode} onClick={toggleBuildMode} disableSound text="BUILD MODE" />
           </>
-        ) : storeOwner ? (
+        ) : inStore && storeOwner ? (
           <ActionButton
             color="success"
             colorVariant="300"
@@ -309,6 +329,18 @@ export const PlayHud = () => {
             text="BUILD MODE"
             active={Boolean(storeState?.buildMode)}
           />
+        ) : inLodge && lodgeOwner ? (
+          <ActionButton
+            color="success"
+            colorVariant="300"
+            hoverColor="success"
+            hoverColorVariant="200"
+            img={BuildMode}
+            onClick={toggleLodgeBuildMode}
+            disableSound
+            text="BUILD MODE"
+            active={Boolean(lodgeState?.buildMode)}
+          />
         ) : null}
       </div>
 
@@ -318,7 +350,7 @@ export const PlayHud = () => {
         </div>
       </div>
 
-      {!inStore ? (
+      {!inInterior ? (
         <div className="bottom-left-container">
           <PlayerDashboard />
         </div>

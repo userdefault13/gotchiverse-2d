@@ -17,8 +17,8 @@ import { gotchiverseSubgraph } from 'shared_code/web3/shared.const.web3';
 import { useGame } from 'contexts/GameContext';
 import { FOUNDRY_RECIPES, FoundryRecipe } from 'helpers/foundry/recipes';
 import { FoundryNet } from 'helpers/foundry';
-import { getLocalWaallRecipes, isWaallItemId } from 'helpers/waalls.helper';
-import { getLocalLodgeRecipes, isLodgeItemId } from 'helpers/lodge.helper';
+import { isWaallItemId } from 'helpers/waalls.helper';
+import { getLocalLodgePageRecipes, isLodgeItemId } from 'helpers/lodge.helper';
 import { getLocalStorePageRecipes, isStoreItemId } from 'helpers/store.installation.helper';
 import { CONSOLE_AARCADE_GAMES, getLocalConsoleRecipes, isConsoleItemId } from 'helpers/console.installation.helper';
 import {
@@ -29,8 +29,13 @@ import {
   isStoreFurnitureItemId,
   isTerminalItemId,
 } from 'helpers/store.layout.helper';
-import { getLocalCTileRecipes } from 'helpers/ctile.helper';
-import { getLocalOnchainRecipes } from 'helpers/recipeBook.local.helper';
+import {
+  craftLodgeFurniture,
+  getLodgeFurnitureQty,
+} from 'helpers/lodge.layout.helper';
+import { isBroadcasterItemId } from 'helpers/broadcaster.installation.helper';
+import { getLocalTilePageRecipes } from 'helpers/ctile.helper';
+import { getLocalOnchainRecipes, getLocalDecorationRecipes, isOriginalMintableRecipe } from 'helpers/recipeBook.local.helper';
 
 interface Props {
   selectRecipe: (recipe: Recipe) => void;
@@ -55,6 +60,7 @@ const sortOptions: SortOption[] = [
   },
 ];
 
+/** Original page-one filters — classic on-chain mintable types (no soft-launch Waall/Lodge). */
 const typeFilters = [
   {
     name: 'Tiles',
@@ -80,15 +86,18 @@ const typeFilters = [
     name: 'Maakers',
     value: 'maaker',
   },
-  {
-    name: 'Waalls',
-    value: 'waall',
-  },
-  {
-    name: 'Lodges',
-    value: 'lodge',
-  },
 ];
+
+const DEFAULT_TYPE_FILTER = {
+  tile: true,
+  aaltar: true,
+  reservoir: true,
+  harvester: true,
+  decoration: true,
+  maaker: true,
+  waall: false,
+  lodge: false,
+};
 
 /** Networks that load recipes from the Gotchiverse subgraph (filters/search/sort). */
 const SUBGRAPH_RECIPE_NETWORKS: NetworkNames[] = ['matic', 'base', 'robinhood'];
@@ -99,19 +108,25 @@ const isNotDeprecatedYet = (deprecatedAt?: string | number): boolean => {
   return Number(deprecatedAt) >= now;
 };
 
+/** Union recipes by id — later entries win (subgraph can override local catalog). */
+const unionRecipesById = (...lists: Recipe[][]): Recipe[] => {
+  const byId = new Map<string, Recipe>();
+  lists.flat().forEach((r) => byId.set(`${r.type}-${r.id}`, r));
+  return Array.from(byId.values());
+};
+
 const mergeLocalExtras = (recipes: Recipe[], nameFilter: string | undefined, typeFilter): Recipe[] => {
-  const localWaalls =
-    typeFilter.waall !== false
-      ? getLocalWaallRecipes().filter((r) => !nameFilter || r.name.toLowerCase().includes(String(nameFilter).toLowerCase()))
-      : [];
-  const localLodges =
-    typeFilter.lodge !== false
-      ? getLocalLodgeRecipes().filter((r) => !nameFilter || r.name.toLowerCase().includes(String(nameFilter).toLowerCase()))
-      : [];
-  const withoutLocal = recipes.filter(
-    (r) => !isWaallItemId(r.id) && !isLodgeItemId(r.id) && !isStoreItemId(r.id) && !isConsoleItemId(r.id),
+  // Page one = original on-chain mintables only (Waall/Lodge live on soft-launch pages).
+  const localOnchain = getLocalOnchainRecipes(nameFilter, typeFilter);
+  const withoutSoftLaunch = recipes.filter(
+    (r) =>
+      !isWaallItemId(r.id) &&
+      !isLodgeItemId(r.id) &&
+      !isStoreItemId(r.id) &&
+      !isConsoleItemId(r.id) &&
+      isOriginalMintableRecipe(r),
   );
-  return _.concat(withoutLocal, localWaalls, localLodges);
+  return unionRecipesById(localOnchain, withoutSoftLaunch);
 };
 
 const sortRecipes = (merged: Recipe[], sortBy: SortOption): Recipe[] => {
@@ -139,16 +154,7 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
   };
   const [nameFilter, setNameFilter] = useState<string>(undefined);
   const [sort, setSort] = useState<SortOption>({ name: 'ID', value: 'id', direction: 'asc' });
-  const [typeFilter, setTypeFilter] = useState({
-    tile: true,
-    aaltar: true,
-    reservoir: true,
-    harvester: true,
-    decoration: true,
-    maaker: true,
-    waall: true,
-    lodge: true,
-  });
+  const [typeFilter, setTypeFilter] = useState({ ...DEFAULT_TYPE_FILTER });
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [bookPage, setBookPage] = useState(0);
   const [craftToast, setCraftToast] = useState('');
@@ -157,20 +163,23 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
     Boolean((gameConfig as { enableParcelFoundryPoC?: boolean })?.enableParcelFoundryPoC) ||
     process.env.NEXT_PUBLIC_ENABLE_FOUNDRY_POC === 'true';
 
-  // Always expose Store as its own book section (third page when foundry is on).
   const bookPages: RecipeBookPage[] = [
     { id: 'onchain', label: 'RECIPES BOOK', shortLabel: 'On-chain installations' },
+    { id: 'parcel-decor', label: 'DECOR RECIPES', shortLabel: 'Parcel decorations' },
     ...(foundryEnabled
       ? [{ id: 'foundry', label: 'LOGISTICS RECIPES', shortLabel: 'Off-chain foundry salvage' } as RecipeBookPage]
       : []),
     { id: 'store', label: 'STORE RECIPES', shortLabel: 'Soft-launch store & furniture' },
+    { id: 'lodge', label: 'LODGE RECIPES', shortLabel: 'Soft-launch lodge & broadcaster' },
     { id: 'console', label: 'CONSOLE RECIPES', shortLabel: 'Craft into bag · place inside Store' },
-    { id: 'ctiles', label: 'CTILE RECIPES', shortLabel: 'Soft-launch cTiles → cartridge' },
+    { id: 'ctiles', label: 'CTILE RECIPES', shortLabel: 'cTiles + golden tiles' },
   ];
 
   const storeRecipes = getLocalStorePageRecipes();
+  const lodgePageRecipes = getLocalLodgePageRecipes();
   const consoleRecipes = getLocalConsoleRecipes();
-  const ctileRecipes = getLocalCTileRecipes();
+  const ctileRecipes = getLocalTilePageRecipes();
+  const decorRecipes = getLocalDecorationRecipes();
   const [pendingConsoleRecipe, setPendingConsoleRecipe] = useState<Recipe | null>(null);
   const onSetSortBy = (name: string, value: string, direction: 'asc' | 'desc') => {
     setSort({
@@ -179,16 +188,24 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
       direction,
     });
   };
+
   const applyLocalOnchainFallback = (nameFilter: string, typeFilter, sortBy: SortOption) => {
-    const local = getLocalOnchainRecipes(nameFilter, typeFilter);
-    setRecipes(sortRecipes(mergeLocalExtras(local, nameFilter, typeFilter), sortBy));
+    // Never allow an empty page-one — fall back to full local catalog if filters wiped.
+    const safeFilter = {
+      ...DEFAULT_TYPE_FILTER,
+      ...(typeFilter || {}),
+    };
+    const local = getLocalOnchainRecipes(nameFilter, safeFilter);
+    const merged = sortRecipes(mergeLocalExtras(local, nameFilter, safeFilter), sortBy);
+    setRecipes(merged.length ? merged : sortRecipes(mergeLocalExtras([], nameFilter, DEFAULT_TYPE_FILTER), sortBy));
   };
 
   const fetchAndSetRecipesSubgraph = async (nameFilter: string, typeFilter, sortBy: SortOption) => {
     setPending(true);
     try {
+      const safeFilter = { ...DEFAULT_TYPE_FILTER, ...(typeFilter || {}) };
       const installations = await useSubgraph<{ installationTypes: InstallationType[] }>(
-        getInstallationTypes(nameFilter, typeFilter),
+        getInstallationTypes(nameFilter, safeFilter),
         gotchiverseSubgraph,
       );
 
@@ -197,7 +214,7 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
           Boolean(installation?.name) && isNotDeprecatedYet(installation.deprecatedAt),
       );
 
-      const tiles = typeFilter.tile
+      const tiles = safeFilter.tile
         ? await useSubgraph<{ tileTypes: TileType[] }>(getTileTypes(nameFilter), gotchiverseSubgraph)
         : { tileTypes: [] };
       const tileTypes: TileType[] = (tiles?.tileTypes || []).filter(
@@ -207,7 +224,7 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
       // Base gotchiverse indexer often stubs InstallationType rows with null metadata.
       if (installationTypes.length === 0 && tileTypes.length === 0) {
         console.warn('RecipeBook: subgraph returned no craftable types — using local catalog');
-        applyLocalOnchainFallback(nameFilter, typeFilter, sortBy);
+        applyLocalOnchainFallback(nameFilter, safeFilter, sortBy);
         return;
       }
 
@@ -233,7 +250,12 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
         return data;
       });
 
-      setRecipes(sortRecipes(mergeLocalExtras(recipes, nameFilter, typeFilter), sortBy));
+      const merged = sortRecipes(mergeLocalExtras(recipes, nameFilter, safeFilter), sortBy);
+      if (merged.length === 0) {
+        applyLocalOnchainFallback(nameFilter, safeFilter, sortBy);
+        return;
+      }
+      setRecipes(merged);
     } catch (err) {
       console.warn('RecipeBook: failed to load recipes from subgraph — using local catalog', err);
       applyLocalOnchainFallback(nameFilter, typeFilter, sortBy);
@@ -283,10 +305,7 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
     const fetchedInstallations = await fetchContractRecipe(currentNetwork, globalProvider, 'INSTALLATION');
     const fetchedTiles = await fetchContractRecipe(currentNetwork, globalProvider, 'TILE');
     const fetchedItems = _.concat(fetchedInstallations, fetchedTiles);
-    const withoutLocal = fetchedItems.filter(
-      (r) => !isWaallItemId(r.id) && !isLodgeItemId(r.id) && !isStoreItemId(r.id) && !isConsoleItemId(r.id),
-    );
-    setRecipes(_.concat(withoutLocal, getLocalWaallRecipes(), getLocalLodgeRecipes()));
+    setRecipes(sortRecipes(mergeLocalExtras(fetchedItems, undefined, DEFAULT_TYPE_FILTER), sort));
     setPending(false);
   };
 
@@ -297,8 +316,12 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
   }, [currentNetwork, globalProvider]);
 
   useEffect(() => {
-    if (open && SUBGRAPH_RECIPE_NETWORKS.includes(currentNetwork) && sort !== undefined) {
+    if (!open || sort === undefined) return;
+    if (SUBGRAPH_RECIPE_NETWORKS.includes(currentNetwork)) {
       void fetchAndSetRecipesSubgraph(nameFilter, typeFilter, sort);
+    } else if (currentNetwork !== 'mumbai') {
+      // Offline / unknown network — still show the original local catalog.
+      applyLocalOnchainFallback(nameFilter, typeFilter, sort);
     }
   }, [currentNetwork, nameFilter, typeFilter, sort, open]);
 
@@ -337,6 +360,21 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
     setOpen(false);
   };
 
+  const handleSelectLodgeRecipe = (recipe: Recipe) => {
+    click();
+    // Broadcaster → lodge furniture bag (place inside Lodge).
+    if (isBroadcasterItemId(recipe.id)) {
+      const result = craftLodgeFurniture(Number(recipe.id), 1);
+      const qty = getLodgeFurnitureQty(Number(recipe.id));
+      setCraftToast(result.ok ? `${result.message} (lodge bag: ${qty})` : result.message);
+      window.setTimeout(() => setCraftToast(''), 2500);
+      return;
+    }
+    // Exterior Lodge → CraftingTable / local off-chain craft.
+    selectRecipe(recipe);
+    setOpen(false);
+  };
+
   const handleSelectConsoleRecipe = (recipe: Recipe) => {
     click();
     // Console L1 → pick first Aarcade title, then craft into instance bag.
@@ -359,8 +397,10 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
   };
 
   const showOnChainPage = bookPages[bookPage]?.id === 'onchain';
+  const showParcelDecorPage = bookPages[bookPage]?.id === 'parcel-decor';
   const showFoundryPage = bookPages[bookPage]?.id === 'foundry';
   const showStorePage = bookPages[bookPage]?.id === 'store';
+  const showLodgePage = bookPages[bookPage]?.id === 'lodge';
   const showConsolePage = bookPages[bookPage]?.id === 'console';
   const showCTilesPage = bookPages[bookPage]?.id === 'ctiles';
 
@@ -393,7 +433,8 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
                 filters={typeFilters}
                 width="17rem"
                 onChange={(state) => {
-                  setTypeFilter(state);
+                  // Merge filter toggles onto defaults so an empty first fire can't wipe the catalog.
+                  setTypeFilter({ ...DEFAULT_TYPE_FILTER, ...state });
                 }}
               />
               <SortSelect options={sortOptions} selected={sort} placeholder="Sort by" width="14rem" onSelect={onSetSortBy} useTheme={true} />
@@ -405,10 +446,21 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
             Off-chain logistics: mine ores/gases → smelt (costs alchemica power) → parts → assemble Antenna Relay → place on map.
           </div>
         ) : null}
+        {showParcelDecorPage ? (
+          <div className="foundry-intro">
+            All parcel decorations: Rofl Gnomes, REALM Globes, Smol Flowers, Halloween set, Graand Fountain, and more.
+          </div>
+        ) : null}
         {showStorePage ? (
           <div className="foundry-intro">
             Soft-launch retail: craft a Store for your parcel, Shelf & Cashier into your furniture bag, and Terminal via the Crafting
             Table — then place them inside the Store.
+          </div>
+        ) : null}
+        {showLodgePage ? (
+          <div className="foundry-intro">
+            Soft-launch lodge: craft a Lodge for your parcel, and a Broadcaster into your lodge furniture bag — then place the
+            Broadcaster inside the Lodge.
           </div>
         ) : null}
         {showConsolePage ? (
@@ -419,8 +471,8 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
         ) : null}
         {showCTilesPage ? (
           <div className="foundry-intro">
-            Soft-launch cTiles: craft greyscale floor bases (8–37) and Ghost pack (38–47). Crafts spend sim alchemica and mint into
-            your cartridge bag.
+            Soft-launch cTiles (greyscale bases + Ghost pack) craft into your cartridge bag. LE Golden Tiles craft on-chain via
+            the Crafting Table.
           </div>
         ) : null}
         {pendingConsoleRecipe ? (
@@ -449,6 +501,11 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
             {showOnChainPage
               ? recipes?.map((recipe, i) => <RecipeCard onClick={handleSelect} recipe={recipe} key={`${recipe.type}-${recipe.id}-${i}`} />)
               : null}
+            {showParcelDecorPage
+              ? decorRecipes.map((recipe, i) => (
+                  <RecipeCard onClick={handleSelect} recipe={recipe} key={`decor-${recipe.id}-${i}`} />
+                ))
+              : null}
             {showFoundryPage
               ? FOUNDRY_RECIPES.map((recipe) => (
                   <FoundryRecipeCard recipe={recipe} key={recipe.id} onCraft={handleCraftFoundryRecipe} />
@@ -457,6 +514,11 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
             {showStorePage
               ? storeRecipes.map((recipe, i) => (
                   <RecipeCard onClick={handleSelectStoreRecipe} recipe={recipe} key={`store-${recipe.id}-${i}`} />
+                ))
+              : null}
+            {showLodgePage
+              ? lodgePageRecipes.map((recipe, i) => (
+                  <RecipeCard onClick={handleSelectLodgeRecipe} recipe={recipe} key={`lodge-${recipe.id}-${i}`} />
                 ))
               : null}
             {showConsolePage

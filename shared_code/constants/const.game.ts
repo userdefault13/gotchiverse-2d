@@ -26,7 +26,12 @@ export const STORE_HEIGHT = STORE_WIDTH;
 export const MAP_ID_CITAADEL = 'citaadel';
 export const MAP_ID_AARENA = 'aarena';
 export const MAP_ID_STORE = 'store';
-/** Zone servers only — store uses a secondary Colyseus room, not ENABLED_MAPS zones. */
+export const MAP_ID_LODGE = 'lodge';
+/** Lodge interior reuses store 16×16 dimensions. */
+export const LODGE_GRID_SIZE = STORE_GRID_SIZE;
+export const LODGE_WIDTH = STORE_WIDTH;
+export const LODGE_HEIGHT = STORE_HEIGHT;
+/** Zone servers only — store/lodge use secondary Colyseus rooms, not ENABLED_MAPS zones. */
 export const ENABLED_MAPS = [MAP_ID_CITAADEL, MAP_ID_AARENA];
 export const TOKEN_TO_ADDRESS = {
   FUD: '0x403E967b044d4Be25170310157cB1A4Bf10bdD0f',
@@ -148,6 +153,13 @@ MAP_CONFIG_BY_ID[MAP_ID_STORE] = Object.assign({}, BASE_MAP_CONFIG, {
   GOTCHI_SPEED: 9,
   ENABLE_INERTIA: false,
   RESPAWN_DELAY: 0,
+});
+
+/** Parcel lodge interior — clone of store 16×16 room. */
+MAP_CONFIG_BY_ID[MAP_ID_LODGE] = Object.assign({}, MAP_CONFIG_BY_ID[MAP_ID_STORE], {
+  ID: MAP_ID_LODGE,
+  WIDTH: LODGE_WIDTH,
+  HEIGHT: LODGE_HEIGHT,
 });
 
 MAP_CONFIG_BY_ID[MAP_ID_AARENA] = Object.assign({}, BASE_MAP_CONFIG, {
@@ -776,6 +788,7 @@ export const DEFAULT_MAP_CONFIG = {};
 DEFAULT_MAP_CONFIG[MAP_ID_CITAADEL] = Object.assign({}, MAP_CONFIG_BY_ID[MAP_ID_CITAADEL]);
 DEFAULT_MAP_CONFIG[MAP_ID_AARENA] = Object.assign({}, MAP_CONFIG_BY_ID[MAP_ID_AARENA]);
 DEFAULT_MAP_CONFIG[MAP_ID_STORE] = Object.assign({}, MAP_CONFIG_BY_ID[MAP_ID_STORE]);
+DEFAULT_MAP_CONFIG[MAP_ID_LODGE] = Object.assign({}, MAP_CONFIG_BY_ID[MAP_ID_LODGE]);
 
 // a cache of changed default proeprties to forward to newly connected FE clients so all props aren't always sent
 export const CHANGED_GAME_CONFIG_CACHE = {};
@@ -783,6 +796,7 @@ export const CHANGED_MAP_CONFIG_CACHE = {};
 CHANGED_MAP_CONFIG_CACHE[MAP_ID_CITAADEL] = {};
 CHANGED_MAP_CONFIG_CACHE[MAP_ID_AARENA] = {};
 CHANGED_MAP_CONFIG_CACHE[MAP_ID_STORE] = {};
+CHANGED_MAP_CONFIG_CACHE[MAP_ID_LODGE] = {};
 
 // the redis stream and consumer group that executes alchemica pickups
 export const ALCHEMICA_TAKE_STREAM_NAME = 'alchemica-take-stream';

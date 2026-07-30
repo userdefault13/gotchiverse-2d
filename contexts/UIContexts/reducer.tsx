@@ -70,9 +70,13 @@ export type Action =
   | { type: 'UPDATE_NFT_DISPLAY'; nftDisplayState: State['nftDisplayState'] }
   | { type: 'UPDATE_NFT_DISPLAY_ADMIN'; nftDisplayAdminState: State['nftDisplayAdminState'] }
   | { type: 'UPDATE_STORE_MODAL'; storeState: State['storeState'] }
+  | { type: 'UPDATE_LODGE_MODAL'; lodgeState: State['lodgeState'] }
   | { type: 'UPDATE_CONSOLE_MODAL'; consoleState: State['consoleState'] }
+  | { type: 'UPDATE_BROADCASTER_MODAL'; broadcasterState: State['broadcasterState'] }
   | { type: 'UPDATE_STORE_CART'; storeCart: State['storeCart'] }
   | { type: 'UPDATE_STORE_SHELF_MODAL'; storeShelfModal: State['storeShelfModal'] }
+  | { type: 'UPDATE_LODGE_CART'; lodgeCart: State['lodgeCart'] }
+  | { type: 'UPDATE_LODGE_SHELF_MODAL'; lodgeShelfModal: State['lodgeShelfModal'] }
   | { type: 'UPDATE_EVENT_HOLOGRAM'; eventHologramState: State['eventHologramState'] }
   | { type: 'UPDATE_ACTIVE_EVENTS_MODAL'; activeEventsModal: State['activeEventsModal'] }
   | { type: 'UPDATE_TRAVEL_PARCELS_MODAL'; travelParcelsModal: State['travelParcelsModal'] }
@@ -188,10 +192,20 @@ export const reducer = (state: State, action: Action): State => {
         ...state,
         storeState: action.storeState,
       };
+    case 'UPDATE_LODGE_MODAL':
+      return {
+        ...state,
+        lodgeState: action.lodgeState,
+      };
     case 'UPDATE_CONSOLE_MODAL':
       return {
         ...state,
         consoleState: action.consoleState,
+      };
+    case 'UPDATE_BROADCASTER_MODAL':
+      return {
+        ...state,
+        broadcasterState: action.broadcasterState,
       };
     case 'UPDATE_STORE_CART':
       return {
@@ -202,6 +216,16 @@ export const reducer = (state: State, action: Action): State => {
       return {
         ...state,
         storeShelfModal: action.storeShelfModal,
+      };
+    case 'UPDATE_LODGE_CART':
+      return {
+        ...state,
+        lodgeCart: action.lodgeCart,
+      };
+    case 'UPDATE_LODGE_SHELF_MODAL':
+      return {
+        ...state,
+        lodgeShelfModal: action.lodgeShelfModal,
       };
     case 'UPDATE_ACTIVE_EVENTS_MODAL':
       return { ...state, activeEventsModal: action.activeEventsModal };

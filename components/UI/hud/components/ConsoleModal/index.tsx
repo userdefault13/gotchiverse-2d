@@ -29,7 +29,14 @@ import {
   setConsoleLoadedTitles,
   upgradeConsoleFurniture,
 } from 'helpers/store.layout.helper';
+import {
+  loadLodgeLayout,
+  serializeLodgeLayout,
+  setConsoleLoadedTitles as setLodgeConsoleLoadedTitles,
+  upgradeConsoleFurniture as upgradeLodgeConsoleFurniture,
+} from 'helpers/lodge.layout.helper';
 import { publishStoreLayout } from 'helpers/colyseus.store';
+import { publishLodgeLayout } from 'helpers/colyseus.lodge';
 import styles from './styles';
 
 type ConsoleStep = 'games' | 'manage' | 'cartridges' | 'playing';
@@ -69,6 +76,9 @@ export const ConsoleModal = (): JSX.Element => {
   const open = Boolean(consoleState?.open);
   const furnitureId = consoleState?.furnitureId || consoleState?.installationId;
   const storeId = consoleState?.storeId;
+  const lodgeId = consoleState?.lodgeId;
+  const layoutHostId = lodgeId || storeId;
+  const inLodge = Boolean(lodgeId);
   const isOwner = Boolean(consoleState?.isOwner);
 
   const level = consoleLevelFromItemId(itemId);
@@ -136,7 +146,8 @@ export const ConsoleModal = (): JSX.Element => {
         open: true,
         furnitureId: furnitureId,
         installationId: furnitureId,
-        storeId,
+        storeId: inLodge ? undefined : storeId,
+        lodgeId: inLodge ? lodgeId : undefined,
         isOwner,
         itemId: next.itemId ?? itemId,
         loadedTitles: next.loadedTitles ?? loadedTitles,
@@ -145,15 +156,25 @@ export const ConsoleModal = (): JSX.Element => {
   };
 
   const persistLayout = (
-    layoutUpdater: () => { ok: boolean; message: string; layout: ReturnType<typeof loadStoreLayout> },
-  ): { ok: boolean; message: string; layout?: ReturnType<typeof loadStoreLayout> } => {
-    if (!storeId || !furnitureId) {
-      return { ok: false, message: 'Missing store Console context' };
+    layoutUpdater: () => {
+      ok: boolean;
+      message: string;
+      layout: ReturnType<typeof loadStoreLayout> | ReturnType<typeof loadLodgeLayout>;
+    },
+  ): {
+    ok: boolean;
+    message: string;
+    layout?: ReturnType<typeof loadStoreLayout> | ReturnType<typeof loadLodgeLayout>;
+  } => {
+    if (!layoutHostId || !furnitureId) {
+      return { ok: false, message: 'Missing Console context' };
     }
-    loadStoreLayout(storeId);
+    if (inLodge) loadLodgeLayout(layoutHostId);
+    else loadStoreLayout(layoutHostId);
     const result = layoutUpdater();
     if (result.ok) {
-      publishStoreLayout(serializeLayout(result.layout));
+      if (inLodge) publishLodgeLayout(serializeLodgeLayout(result.layout as ReturnType<typeof loadLodgeLayout>));
+      else publishStoreLayout(serializeLayout(result.layout as ReturnType<typeof loadStoreLayout>));
     }
     return result;
   };
@@ -168,12 +189,13 @@ export const ConsoleModal = (): JSX.Element => {
         furnitureId: undefined,
         installationId: undefined,
         storeId: undefined,
+        lodgeId: undefined,
         itemId: undefined,
         loadedTitles: undefined,
         isOwner: false,
       },
     });
-    // Keep keyboard disabled while StoreModal is still open.
+    // Keep keyboard disabled while StoreModal/LodgeModal is still open.
   };
 
   const launchWithCartridge = (gameId: string, cartridgeId: string) => {
@@ -256,14 +278,18 @@ export const ConsoleModal = (): JSX.Element => {
   };
 
   const handleLoadTitle = (gameId: string) => {
-    if (!isOwner || !storeId || !furnitureId) return;
+    if (!isOwner || !layoutHostId || !furnitureId) return;
     click();
     const check = loadTitleOntoConsole({ itemId, loadedTitles }, gameId);
     if (!check.ok) {
       setStatusMsg(check.message);
       return;
     }
-    const result = persistLayout(() => setConsoleLoadedTitles(loadStoreLayout(storeId), furnitureId, check.loadedTitles));
+    const result = persistLayout(() =>
+      inLodge
+        ? setLodgeConsoleLoadedTitles(loadLodgeLayout(layoutHostId), furnitureId, check.loadedTitles)
+        : setConsoleLoadedTitles(loadStoreLayout(layoutHostId), furnitureId, check.loadedTitles),
+    );
     setStatusMsg(result.message);
     if (result.ok) {
       setLoadedTitles(check.loadedTitles);
@@ -272,9 +298,13 @@ export const ConsoleModal = (): JSX.Element => {
   };
 
   const handleUpgrade = () => {
-    if (!isOwner || !storeId || !furnitureId) return;
+    if (!isOwner || !layoutHostId || !furnitureId) return;
     click();
-    const result = persistLayout(() => upgradeConsoleFurniture(loadStoreLayout(storeId), furnitureId));
+    const result = persistLayout(() =>
+      inLodge
+        ? upgradeLodgeConsoleFurniture(loadLodgeLayout(layoutHostId), furnitureId)
+        : upgradeConsoleFurniture(loadStoreLayout(layoutHostId), furnitureId),
+    );
     setStatusMsg(result.message);
     if (result.ok) {
       const piece = result.layout?.furniture.find((f) => f.id === furnitureId);

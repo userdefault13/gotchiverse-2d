@@ -469,6 +469,12 @@ const createInstallationBuildModeUI = (installationContainer) => {
         handleEnterStore(id);
         return;
       }
+      if (installationType?.installationType === 4) {
+        SFXController.playFX('click');
+        void setActiveInstallation(id);
+        handleEnterLodge(id);
+        return;
+      }
       if (!isUpgradable(id) || installationType?.installationType === 5) {
         resetStates();
         return;
@@ -550,6 +556,10 @@ const handleUnownedInterractions = (id: string) => {
       handleEnterStore(id);
       break;
 
+    case 4:
+      handleEnterLodge(id);
+      break;
+
     default:
       break;
   }
@@ -613,6 +623,10 @@ const handleOwnedInterraction = () => {
       handleEnterStore(activeInstallationId);
       break;
 
+    case 4:
+      handleEnterLodge(activeInstallationId);
+      break;
+
     default:
       break;
   }
@@ -636,6 +650,7 @@ const handleBounceGaate = (id: string): void => {
 const handleEnterStore = (id: string): void => {
   if (Installations.buildModeState) return;
   if (GlobalState.UI?.state?.storeState?.open) return;
+  if (GlobalState.UI?.state?.lodgeState?.open) return;
   toggleFocus(id, true);
   InputController.updateDisableKeyboard(true);
   if (!scene || !GlobalState?.UI?.dispatch) return;
@@ -653,8 +668,30 @@ const handleEnterStore = (id: string): void => {
   setStoreInteractPrompt(false);
 };
 
+const handleEnterLodge = (id: string): void => {
+  if (Installations.buildModeState) return;
+  if (GlobalState.UI?.state?.lodgeState?.open) return;
+  if (GlobalState.UI?.state?.storeState?.open) return;
+  toggleFocus(id, true);
+  InputController.updateDisableKeyboard(true);
+  if (!scene || !GlobalState?.UI?.dispatch) return;
+  const owned = isOwnedById(id);
+  GlobalState.UI.dispatch({
+    type: 'UPDATE_LODGE_MODAL',
+    lodgeState: {
+      open: true,
+      installationId: id,
+      isOwner: Boolean(owned),
+      ownerAddress: owned ? String((owned as Parcel).owner || '').toLowerCase() : undefined,
+      cartridgeId: GlobalState.USER?.state?.cartridgeId || undefined,
+    },
+  });
+  setLodgeInteractPrompt(false);
+};
+
 /** ~2 tiles from 2×2 Store center — standing on the doorstep. */
 const STORE_INTERACT_RADIUS_PX = 180;
+const LODGE_INTERACT_RADIUS_PX = 180;
 
 function getSelectedPlayerWorldPos(): { x: number; y: number } | null {
   const id = Players.selectedPlayer?.id;
@@ -681,7 +718,27 @@ const getNearestStoreId = (maxDistPx = STORE_INTERACT_RADIUS_PX): string | null 
   return bestId;
 };
 
+/** Nearest type-4 Lodge within radius (play mode). */
+const getNearestLodgeId = (maxDistPx = LODGE_INTERACT_RADIUS_PX): string | null => {
+  const player = getSelectedPlayerWorldPos();
+  if (!player || !scene?.installationGroup) return null;
+  let bestId: string | null = null;
+  let bestDist = maxDistPx;
+  scene.installationGroup.forEach((container: Phaser.GameObjects.Container, id: string) => {
+    if (!id || !container) return;
+    const type = getTypeById(id);
+    if (Number(type?.installationType) !== 4) return;
+    const d = Phaser.Math.Distance.Between(player.x, player.y, container.x, container.y);
+    if (d <= bestDist) {
+      bestDist = d;
+      bestId = id;
+    }
+  });
+  return bestId;
+};
+
 let storePromptContainer: Phaser.GameObjects.Container | null = null;
+let lodgePromptContainer: Phaser.GameObjects.Container | null = null;
 
 function setStoreInteractPrompt(visible: boolean, storeId?: string | null): void {
   if (!scene) return;
@@ -710,44 +767,100 @@ function setStoreInteractPrompt(visible: boolean, storeId?: string | null): void
   storePromptContainer.setActive(true);
 }
 
-/** Call from player move — shows E prompt when standing near a Store. */
+function setLodgeInteractPrompt(visible: boolean, lodgeId?: string | null): void {
+  if (!scene) return;
+  if (!visible || !lodgeId) {
+    if (lodgePromptContainer) {
+      lodgePromptContainer.setVisible(false);
+      lodgePromptContainer.setActive(false);
+    }
+    return;
+  }
+  const lodge = scene.installationGroup?.get(lodgeId);
+  if (!lodge) return;
+  if (!lodgePromptContainer) {
+    lodgePromptContainer = scene.add.container(0, 0).setDepth(450);
+    const img = scene.add.image(0, 0, 'e_interact').setOrigin(0.5).setScale(0.7);
+    img.setName('e_interact_lodge');
+    img.setInteractive({ cursor: 'url(/cursors/pointer.png), auto' });
+    img.on('pointerdown', () => {
+      void Installations.tryInteractActive?.();
+    });
+    lodgePromptContainer.add(img);
+  }
+  lodgePromptContainer.setPosition(lodge.x, lodge.y - 96);
+  lodgePromptContainer.setVisible(true);
+  lodgePromptContainer.setActive(true);
+}
+
+/** Call from player move — shows E prompt when standing near a Store or Lodge. */
 const updateNearbyStorePrompt = (): void => {
   if (!scene || Installations.buildModeState || scene.disableKeyboard) {
     setStoreInteractPrompt(false);
+    setLodgeInteractPrompt(false);
     return;
   }
-  if (GlobalState.UI?.state?.storeState?.open || GlobalState.UI?.state?.consoleState?.open) {
+  if (
+    GlobalState.UI?.state?.storeState?.open ||
+    GlobalState.UI?.state?.lodgeState?.open ||
+    GlobalState.UI?.state?.consoleState?.open ||
+    GlobalState.UI?.state?.broadcasterState?.open
+  ) {
     setStoreInteractPrompt(false);
+    setLodgeInteractPrompt(false);
     return;
   }
   // Don't fight alchemica deposit E prompt.
   if (scene.activeDeposit) {
     setStoreInteractPrompt(false);
+    setLodgeInteractPrompt(false);
     return;
   }
   const nearStore = getNearestStoreId();
-  setStoreInteractPrompt(Boolean(nearStore), nearStore);
+  if (nearStore) {
+    setLodgeInteractPrompt(false);
+    setStoreInteractPrompt(true, nearStore);
+    return;
+  }
+  setStoreInteractPrompt(false);
+  const nearLodge = getNearestLodgeId();
+  setLodgeInteractPrompt(Boolean(nearLodge), nearLodge);
 };
 
 /**
- * E-key: enter nearest Store (or active).
+ * E-key: enter nearest Store/Lodge (or active).
  * Returns true if handled so deposit E does not also fire.
  */
 const tryInteractActive = (): boolean => {
   if (Installations.buildModeState || scene.disableKeyboard) return false;
-  if (GlobalState.UI?.state?.storeState?.open || GlobalState.UI?.state?.consoleState?.open) return true;
+  if (
+    GlobalState.UI?.state?.storeState?.open ||
+    GlobalState.UI?.state?.lodgeState?.open ||
+    GlobalState.UI?.state?.consoleState?.open ||
+    GlobalState.UI?.state?.broadcasterState?.open
+  ) {
+    return true;
+  }
 
   let storeId: string | null = null;
+  let lodgeId: string | null = null;
   const activeId = scene.activeInstallation?.data?.get('id') as string | undefined;
   if (activeId) {
     const activeType = Number(getTypeById(activeId)?.installationType);
     if (activeType === 9) storeId = activeId;
+    if (activeType === 4) lodgeId = activeId;
   }
   if (!storeId) storeId = getNearestStoreId();
+  if (!lodgeId) lodgeId = getNearestLodgeId();
 
   if (storeId) {
     SFXController.playFX('click');
     handleEnterStore(storeId);
+    return true;
+  }
+  if (lodgeId) {
+    SFXController.playFX('click');
+    handleEnterLodge(lodgeId);
     return true;
   }
   return false;

@@ -224,9 +224,9 @@ async function socketConnect(
       if (onCombatRoute && GameController.MAP !== 'aarena') {
         GameController.MAP = 'aarena';
       }
-      // Store map uses a secondary Colyseus room — keep citaadel/aarena socket as-is.
-      if (GameController.MAP === 'store') {
-        console.log('SocketConnect skipped while inside store map');
+      // Store/lodge maps use a secondary Colyseus room — keep citaadel/aarena socket as-is.
+      if (GameController.MAP === 'store' || GameController.MAP === 'lodge') {
+        console.log('SocketConnect skipped while inside store/lodge map');
         return;
       }
       const map =

@@ -9,6 +9,9 @@ import { STORE_BASE_SHADE_IDS } from './store.layout.helper';
 export const CTILE_ID_START = 8;
 export const CTILE_ID_END = 47;
 
+/** On-chain LE Golden Tiles shown on the cTiles recipe page. */
+export const GOLDEN_TILE_IDS = [1, 2, 3] as const;
+
 const GHOST_IDS = Array.from({ length: 10 }, (_, i) => 38 + i);
 
 export function isCTileItemId(itemId: number | string): boolean {
@@ -16,7 +19,11 @@ export function isCTileItemId(itemId: number | string): boolean {
   return id >= CTILE_ID_START && id <= CTILE_ID_END;
 }
 
-function tileRow(itemId: number): Record<string, unknown> | null {
+export function isGoldenTileItemId(itemId: number | string): boolean {
+  return (GOLDEN_TILE_IDS as readonly number[]).includes(Number(itemId));
+}
+
+function tileRow(itemId: number): Record<string, Record<string, unknown>>[string] | null {
   const row = (tilesDb as Record<string, Record<string, unknown>>)[String(itemId)];
   return row || null;
 }
@@ -34,27 +41,44 @@ function softCost(itemId: number): { fud: number; fomo: number; alpha: number; k
   return { fud: 5, fomo: 0, alpha: 2, kek: 0 };
 }
 
+function toTileRecipe(itemId: number, softLaunch: boolean): Recipe | null {
+  const row = tileRow(itemId);
+  if (!row) return null;
+  const ingredients = softLaunch ? softCost(itemId) : (() => {
+    const cost = Array.isArray(row.alchemicaCost) ? (row.alchemicaCost as number[]) : [0, 0, 0, 0];
+    return {
+      fud: Number(cost[0]) || 0,
+      fomo: Number(cost[1]) || 0,
+      alpha: Number(cost[2]) || 0,
+      kek: Number(cost[3]) || 0,
+    };
+  })();
+  return {
+    id: itemId,
+    name: String(row.name || `Tile ${itemId}`),
+    ingredients,
+    craftingTime: 0,
+    itemType: Number(row.tileType) || 0,
+    type: 'TILE',
+    installationType: 0,
+    deprecated: false,
+    softLaunch,
+  };
+}
+
 export function getLocalCTileRecipes(): Recipe[] {
   const ids = [...STORE_BASE_SHADE_IDS, ...GHOST_IDS];
-  return ids
-    .map((itemId) => {
-      const row = tileRow(itemId);
-      if (!row) return null;
-      const ingredients = softCost(itemId);
-      const recipe: Recipe = {
-        id: itemId,
-        name: String(row.name || `cTile ${itemId}`),
-        ingredients,
-        craftingTime: 0,
-        itemType: Number(row.tileType) || 0,
-        type: 'TILE',
-        installationType: 0,
-        deprecated: false,
-        softLaunch: true,
-      };
-      return recipe;
-    })
-    .filter(Boolean) as Recipe[];
+  return ids.map((itemId) => toTileRecipe(itemId, true)).filter(Boolean) as Recipe[];
+}
+
+/** LE Golden Tile recipes (on-chain craft via Crafting Table). */
+export function getLocalGoldenTileRecipes(): Recipe[] {
+  return GOLDEN_TILE_IDS.map((itemId) => toTileRecipe(itemId, false)).filter(Boolean) as Recipe[];
+}
+
+/** cTiles page: soft-launch cTiles + golden tiles. */
+export function getLocalTilePageRecipes(): Recipe[] {
+  return [...getLocalCTileRecipes(), ...getLocalGoldenTileRecipes()];
 }
 
 function ensureTileInventorySlot(itemId: number): Installation | undefined {
