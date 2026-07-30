@@ -252,7 +252,7 @@ export async function svgSidesToPngSpritesheet(
       if (opaque > 40) break;
     }
   }
-  if (opaque <= 40) {
+  if (opaque <= 200) {
     throw new Error('png spritesheet has no opaque pixels');
   }
 
