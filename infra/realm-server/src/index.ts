@@ -9,6 +9,7 @@ import { CitaadelRoom } from './rooms/CitaadelRoom';
 import { AarenaRoom } from './rooms/AarenaRoom';
 import { AarenaRhRoom } from './rooms/AarenaRhRoom';
 import { StoreRoom } from './rooms/StoreRoom';
+import { LodgeRoom } from './rooms/LodgeRoom';
 
 const app = express();
 
@@ -58,6 +59,7 @@ gameServer.define('citaadel', CitaadelRoom);
 gameServer.define('aarena', AarenaRoom);
 gameServer.define('aarena-rh', AarenaRhRoom);
 gameServer.define('store', StoreRoom).filterBy(['storeId']);
+gameServer.define('lodge', LodgeRoom).filterBy(['lodgeId']);
 
 server.listen(env.port, env.host, () => {
   console.log(`[realm-server] HTTP+Colyseus listening on ${env.host}:${env.port}`);
