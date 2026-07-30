@@ -47,7 +47,7 @@ import { CollateralObject, collateralObjects } from './vars';
 import { formatUnits } from 'ethers/lib/utils';
 import { formatDigit } from './functions';
 import { collateralFromSimId, parseCartridgeHeroCollateral } from './cartridgeHero.helper';
-import { fetchCartridgeHeroSideSVGs, svgSidesToPngSpritesheet } from './collateralPreview';
+import { fetchCartridgeHeroSideSVGs, svgSidesToPngSpritesheet, buildCollateralDefaultSideSvgs } from './collateralPreview';
 
 export async function fetchAndSetGlobalAavegotchis(
   updateAddresses: boolean,
@@ -306,14 +306,25 @@ export async function fetchAavegotchiURLById(
   const allSides = _.map(sideviewArray, (svg) => _getMutateSVGBloblAavegotchiSVG(svg, urlOptions));
   // console.log(allSides); // Array of objects with url and svg
   // extract the svgs to be combined in _aavegotchiSpriteSVG.
-  const allSvgs = _.map(allSides, ({ svg }) => svg);
-  // Cartridge / soft-mint: rasterize to PNG — Phaser often fails nested SVG sheets (camWBTC etc).
+  const allSvgs = _.map(allSides, ({ svg }) => svg).filter(Boolean) as string[];
+  // Cartridge / soft-mint: always PNG. Prefer the same recolor path as select cards (guaranteed
+  // visible body); compose SVGs often rasterize blank while still registering 4 Phaser frames.
   let sprite: string;
   if (cartridgeCollateral) {
+    const coll = collateralFromSimId(cartridgeCollateral);
+    const tryPng = async (sides: string[], label: string) => {
+      const url = await svgSidesToPngSpritesheet(sides, { columns: 2 });
+      console.log(`@fetchAavegotchiURLById png ok (${label})`, id);
+      return url;
+    };
     try {
-      sprite = await svgSidesToPngSpritesheet(allSvgs, { columns: 2 });
+      if (coll) {
+        sprite = await tryPng(buildCollateralDefaultSideSvgs(coll), 'recolor-default');
+      } else {
+        sprite = await tryPng(allSvgs.length >= 4 ? allSvgs : defaultGotchi, 'sides-or-default');
+      }
     } catch (err) {
-      console.warn('@fetchAavegotchiURLById png sheet failed, using defaultGotchi sheet', id, err);
+      console.warn('@fetchAavegotchiURLById cartridge png failed, using defaultGotchi sheet', id, err);
       sprite = getDefaultGotchiURL();
     }
   } else {
@@ -496,7 +507,7 @@ export const fetchAavegotchiSideSVGs = async (
     const traitKey = (opts?.traits || []).map((n) => traitNumber(n, 50)).join(',');
     const sourceKey = String(opts?.sourceTokenId || '');
     const hauntKey = Number(opts?.hauntId) === 2 ? 'h2' : Number(opts?.hauntId) === 1 ? 'h1' : 'h?';
-    const cacheKey = `cartridge:base-sides-v11:${simCollateral}:src${sourceKey}:${hauntKey}:w${equipKey}:t${traitKey}`;
+    const cacheKey = `cartridge:base-sides-v12:${simCollateral}:src${sourceKey}:${hauntKey}:w${equipKey}:t${traitKey}`;
     if (GlobalState.CHAT.state.gotchiSides[cacheKey]) {
       return GlobalState.CHAT.state.gotchiSides[cacheKey];
     }

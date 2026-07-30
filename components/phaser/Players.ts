@@ -104,6 +104,29 @@ function initPlayer(player: SelectedPlayer): void {
   selectedPlayer = player;
 }
 
+function applyGotchiTexture(id: string, textureKey: string): void {
+  if (!scene?.[id]) return;
+  const spr = scene[id].getByName?.('gotchi_sprite');
+  if (!spr || !textureKey) return;
+  if (!scene.textures.exists(textureKey) || scene.textures.get(textureKey)?.key === '__MISSING') return;
+  try {
+    const frame = spr.frame?.name ?? 0;
+    spr.setTexture(textureKey, frame);
+    spr.setDisplaySize(64, 64);
+    spr.setVisible(true);
+    spr.setAlpha(1);
+  } catch (e) {
+    console.warn('@applyGotchiTexture', id, textureKey, e);
+  }
+}
+
+function isGotchiTextureOk(key: string): boolean {
+  if (!scene?.textures?.exists(key)) return false;
+  const tex = scene.textures.get(key);
+  if (!tex || tex.key === '__MISSING') return false;
+  return Number(tex.frameTotal ?? 0) >= 4;
+}
+
 function isSelectedPlayer(id: string): boolean {
   if (!selectedPlayer) return false;
   // Soft-mint ids (`starter-wbtc-1`) are non-numeric — Number() → NaN and never matches.
@@ -127,13 +150,11 @@ async function addPlayers(players: Player[]): Promise<void> {
         return;
       }
 
-      const textureOk =
-        scene.textures.exists(player.id) &&
-        scene.textures.get(player.id)?.key !== '__MISSING' &&
-        Number(scene.textures.get(player.id)?.frameTotal ?? 0) >= 4;
+      const textureOk = isGotchiTextureOk(player.id);
 
       if (textureOk || scene.loadedPlayerIds.includes(player.id)) {
         // player is already loaded, just apply properties
+        if (textureOk) applyGotchiTexture(player.id, player.id);
         displayPlayer(player);
       } else {
         if (scene.textures.exists(player.id) && !textureOk) {
@@ -152,9 +173,8 @@ async function addPlayers(players: Player[]): Promise<void> {
           scene.playersToLoad.push(player);
           if (!isTrueSpectator(player.isSpectator)) {
             await getOrFetchAavegotchiURL(player.id, (texture) => {
-              // by the time we get here the user may have been destroyed due to the delay caused by the 2 loading events above
-              // so in this case we'll just double check that the player exists before showing it
-              // display loaded gotchi after load, don't use our original reference in case it got replaced
+              const key = texture?.key && texture.key !== '__MISSING' ? texture.key : player.id;
+              applyGotchiTexture(player.id, key);
               displayExistingPlayerWithId(player.id);
             });
           } else {
@@ -204,20 +224,15 @@ const displayPlayer = (player: Player): void => {
     // if reveal/anim fails (citaadel Colyseus used to keep gotchi_sprite invisible forever).
     if (!isTrueSpectator(isSpectator)) {
       const preferredKey = isNaked(isSpectator) ? 'defaultGotchi' : id;
-      const texOk =
-        scene.textures.exists(preferredKey) &&
-        scene.textures.get(preferredKey)?.key !== '__MISSING' &&
-        Number(scene.textures.get(preferredKey)?.frameTotal ?? 0) >= 4;
-      const fallbackOk =
-        scene.textures.exists('defaultGotchi') &&
-        scene.textures.get('defaultGotchi')?.key !== '__MISSING' &&
-        Number(scene.textures.get('defaultGotchi')?.frameTotal ?? 0) >= 4;
-      // Cartridge SVG sheets that fail to decode show Phaser magenta __MISSING bars.
+      const texOk = isGotchiTextureOk(preferredKey);
+      const fallbackOk = isGotchiTextureOk('defaultGotchi');
+      // Prefer a real body texture — blank PNG sheets can pass frameTotal and still paint nothing.
       const textureKey = texOk ? preferredKey : fallbackOk ? 'defaultGotchi' : preferredKey;
       playerSprite = scene.add
         .sprite(0, 0, textureKey, 0)
         .setName('gotchi_sprite')
-        .setVisible(true);
+        .setVisible(true)
+        .setAlpha(1);
       playerSprite.displayWidth = 64;
       playerSprite.displayHeight = 64;
       playerSprite.setDataEnabled();
@@ -296,6 +311,12 @@ const displayPlayer = (player: Player): void => {
         spr.setDisplaySize(64, 64);
         spr.setVisible(true);
       }
+    }
+    // Soft-mint: swap blank/missing body for a good sheet when it arrives after first paint.
+    if (!isTrueSpectator(isSpectator)) {
+      if (isGotchiTextureOk(id)) applyGotchiTexture(id, id);
+      else if (isGotchiTextureOk('defaultGotchi')) applyGotchiTexture(id, 'defaultGotchi');
+      forceRevealPlayer(id);
     }
   }
   if (healthbarActive && !isTrueSpectator(isSpectator)) toggleHealthBar(id, true, health);

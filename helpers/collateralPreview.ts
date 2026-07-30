@@ -190,6 +190,7 @@ function loadHtmlImage(url: string): Promise<HTMLImageElement> {
 /**
  * Rasterize 4 side SVGs into a PNG spritesheet blob URL.
  * Phaser reliably decodes PNG; nested SVG sheets often register as empty/__MISSING for soft-mint compose art.
+ * Throws if the sheet has no opaque pixels (so callers can fall back).
  */
 export async function svgSidesToPngSpritesheet(
   svgs: string[],
@@ -204,15 +205,15 @@ export async function svgSidesToPngSpritesheet(
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
   if (!ctx) {
-    // Fallback: SVG sheet (may still fail in Phaser for some haunt-2 compose SVGs).
-    return svgSidesToSvgSpritesheet(svgs, opts);
+    throw new Error('canvas 2d unavailable for png spritesheet');
   }
 
+  let drew = 0;
   for (let i = 0; i < svgs.length; i += 1) {
     const baked = bakeGotchiSvgClassFills(String(svgs[i] || '').trim());
-    if (!baked) continue;
+    if (!baked || baked.length < 40) continue;
     // Ensure a root svg with explicit size so the browser rasterizer paints at 64×64.
     const framed = /<svg\b/i.test(baked)
       ? baked.replace(/<svg\b([^>]*)>/i, (_m, attrs) => {
@@ -232,9 +233,27 @@ export async function svgSidesToPngSpritesheet(
       const y = Math.floor(i / columns) * frameSize;
       ctx.clearRect(x, y, frameSize, frameSize);
       ctx.drawImage(img, x, y, frameSize, frameSize);
+      drew += 1;
     } finally {
       URL.revokeObjectURL(url);
     }
+  }
+
+  if (drew < 1) {
+    throw new Error('png spritesheet drew 0 frames');
+  }
+
+  // Reject fully-transparent sheets (Phaser still reports frameTotal >= 4 for blank PNGs).
+  const pixels = ctx.getImageData(0, 0, width, height).data;
+  let opaque = 0;
+  for (let i = 3; i < pixels.length; i += 4) {
+    if (pixels[i] > 8) {
+      opaque += 1;
+      if (opaque > 40) break;
+    }
+  }
+  if (opaque <= 40) {
+    throw new Error('png spritesheet has no opaque pixels');
   }
 
   return await new Promise((resolve, reject) => {
@@ -246,6 +265,16 @@ export async function svgSidesToPngSpritesheet(
       resolve(URL.createObjectURL(blob));
     }, 'image/png');
   });
+}
+
+/** Guaranteed 4-side SVGs for Phaser — same recolor path as select-card thumbs. */
+export function buildCollateralDefaultSideSvgs(collateral: CollateralObject): [string, string, string, string] {
+  return [
+    buildCollateralGotchiSvgFromBase(defaultGotchi[0], collateral),
+    buildCollateralGotchiSvgFromBase(defaultGotchi[1], collateral),
+    buildCollateralGotchiSvgFromBase(defaultGotchi[2], collateral),
+    buildCollateralGotchiSvgFromBase(defaultGotchi[3], collateral),
+  ];
 }
 
 /** Local fallback if diamond preview fails — recolor shared default body. */
