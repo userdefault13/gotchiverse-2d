@@ -178,6 +178,76 @@ export function svgSidesToSvgSpritesheet(
   return URL.createObjectURL(new Blob([sheet], { type: 'image/svg+xml;charset=utf-8' }));
 }
 
+function loadHtmlImage(url: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('svg frame image failed to load'));
+    img.src = url;
+  });
+}
+
+/**
+ * Rasterize 4 side SVGs into a PNG spritesheet blob URL.
+ * Phaser reliably decodes PNG; nested SVG sheets often register as empty/__MISSING for soft-mint compose art.
+ */
+export async function svgSidesToPngSpritesheet(
+  svgs: string[],
+  opts?: { frameSize?: number; columns?: number },
+): Promise<string> {
+  const frameSize = opts?.frameSize ?? 64;
+  const columns = opts?.columns ?? 2;
+  const rows = Math.ceil(Math.max(svgs.length, 1) / columns);
+  const width = frameSize * columns;
+  const height = frameSize * rows;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    // Fallback: SVG sheet (may still fail in Phaser for some haunt-2 compose SVGs).
+    return svgSidesToSvgSpritesheet(svgs, opts);
+  }
+
+  for (let i = 0; i < svgs.length; i += 1) {
+    const baked = bakeGotchiSvgClassFills(String(svgs[i] || '').trim());
+    if (!baked) continue;
+    // Ensure a root svg with explicit size so the browser rasterizer paints at 64×64.
+    const framed = /<svg\b/i.test(baked)
+      ? baked.replace(/<svg\b([^>]*)>/i, (_m, attrs) => {
+          let next = String(attrs || '');
+          if (!/\bwidth=/i.test(next)) next += ` width="${frameSize}"`;
+          if (!/\bheight=/i.test(next)) next += ` height="${frameSize}"`;
+          if (!/\bviewBox=/i.test(next)) next += ' viewBox="0 0 64 64"';
+          if (!/\bxmlns=/i.test(next)) next += ' xmlns="http://www.w3.org/2000/svg"';
+          return `<svg${next}>`;
+        })
+      : `<svg xmlns="http://www.w3.org/2000/svg" width="${frameSize}" height="${frameSize}" viewBox="0 0 64 64">${baked}</svg>`;
+
+    const url = URL.createObjectURL(new Blob([framed], { type: 'image/svg+xml;charset=utf-8' }));
+    try {
+      const img = await loadHtmlImage(url);
+      const x = (i % columns) * frameSize;
+      const y = Math.floor(i / columns) * frameSize;
+      ctx.clearRect(x, y, frameSize, frameSize);
+      ctx.drawImage(img, x, y, frameSize, frameSize);
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }
+
+  return await new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        reject(new Error('png spritesheet blob failed'));
+        return;
+      }
+      resolve(URL.createObjectURL(blob));
+    }, 'image/png');
+  });
+}
+
 /** Local fallback if diamond preview fails — recolor shared default body. */
 export function buildCollateralGotchiSvg(collateral: CollateralObject, opts?: { removeBg?: boolean }): string {
   return buildCollateralGotchiSvgFromBase(defaultGotchi[0], collateral, opts);
@@ -294,7 +364,7 @@ export async function fetchCollateralGotchiSvg(
     }
   }
 
-  const cacheKey = `json:v10:${tid || addr || collateral.name}:h${hauntId}:t${traitArr.join(',')}:w${equipped.join(',')}`;
+  const cacheKey = `json:v11:${tid || addr || collateral.name}:h${hauntId}:t${traitArr.join(',')}:w${equipped.join(',')}`;
   if (svgCache.has(cacheKey)) return svgCache.get(cacheKey);
 
   if (!addr) {

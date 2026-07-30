@@ -47,7 +47,7 @@ import { CollateralObject, collateralObjects } from './vars';
 import { formatUnits } from 'ethers/lib/utils';
 import { formatDigit } from './functions';
 import { collateralFromSimId, parseCartridgeHeroCollateral } from './cartridgeHero.helper';
-import { fetchCartridgeHeroSideSVGs, svgSidesToSvgSpritesheet } from './collateralPreview';
+import { fetchCartridgeHeroSideSVGs, svgSidesToPngSpritesheet } from './collateralPreview';
 
 export async function fetchAndSetGlobalAavegotchis(
   updateAddresses: boolean,
@@ -307,10 +307,18 @@ export async function fetchAavegotchiURLById(
   // console.log(allSides); // Array of objects with url and svg
   // extract the svgs to be combined in _aavegotchiSpriteSVG.
   const allSvgs = _.map(allSides, ({ svg }) => svg);
-  // Cartridge heroes: SVG sheet with per-frame data-URI images (keeps class fills).
-  const sprite = cartridgeCollateral
-    ? svgSidesToSvgSpritesheet(allSvgs, { columns: 2 })
-    : _aavegotchiSpriteSVG(allSvgs, 2);
+  // Cartridge / soft-mint: rasterize to PNG — Phaser often fails nested SVG sheets (camWBTC etc).
+  let sprite: string;
+  if (cartridgeCollateral) {
+    try {
+      sprite = await svgSidesToPngSpritesheet(allSvgs, { columns: 2 });
+    } catch (err) {
+      console.warn('@fetchAavegotchiURLById png sheet failed, using defaultGotchi sheet', id, err);
+      sprite = getDefaultGotchiURL();
+    }
+  } else {
+    sprite = _aavegotchiSpriteSVG(allSvgs, 2);
+  }
   // console.log('sprite4Sideviews', sprite);
 
   // strippedGotchi = svg;
@@ -347,10 +355,30 @@ export async function fetchAavegotchiURLById(
 }
 
 export const getOrFetchAavegotchiURL = async (playerId: string, callback): Promise<void> => {
-  if (scene.textures.exists(playerId) || scene.loadedPlayerIds.includes(playerId)) {
+  const textureLooksOk = (key: string): boolean => {
+    if (!scene.textures.exists(key)) return false;
+    const tex = scene.textures.get(key);
+    if (!tex || tex.key === '__MISSING') return false;
+    // Phaser includes __BASE; a 2×2 sheet should expose ≥4 named frames + base.
+    const total = Number(tex.frameTotal ?? 0);
+    return total >= 4;
+  };
+
+  if (textureLooksOk(playerId) || scene.loadedPlayerIds.includes(playerId)) {
     callback(scene.textures.get(playerId));
-  } else {
+    return;
+  }
+
+  // Drop a registered-but-empty/corrupt sheet so we can rebuild (common for bad SVG sheets).
+  if (scene.textures.exists(playerId) && !textureLooksOk(playerId)) {
     try {
+      scene.textures.remove(playerId);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  try {
       const selected = GlobalState.REALM?.state?.selectedPlayer;
       const sameAsSelected = selected && String(selected.id) === String(playerId);
       const playerUrl = await fetchAavegotchiURLById(
@@ -383,7 +411,7 @@ export const getOrFetchAavegotchiURL = async (playerId: string, callback): Promi
       };
       const useDefault = () => {
         console.warn('getOrFetchAavegotchiURL: spritesheet failed, using defaultGotchi', playerId);
-        if (scene.textures.exists('defaultGotchi') && scene.textures.get('defaultGotchi')?.key !== '__MISSING') {
+        if (textureLooksOk('defaultGotchi')) {
           finish(scene.textures.get('defaultGotchi'));
           return;
         }
@@ -395,12 +423,16 @@ export const getOrFetchAavegotchiURL = async (playerId: string, callback): Promi
         scene.load.start();
       };
       const onDone = () => {
-        const tex = scene.textures.get(playerId);
-        if (!tex || tex.key === '__MISSING') {
+        if (!textureLooksOk(playerId)) {
+          try {
+            scene.textures.remove(playerId);
+          } catch {
+            /* ignore */
+          }
           useDefault();
           return;
         }
-        finish(tex);
+        finish(scene.textures.get(playerId));
       };
       const onErr = (file?: { key?: string }) => {
         if (file?.key && file.key !== playerId) return;
@@ -409,9 +441,8 @@ export const getOrFetchAavegotchiURL = async (playerId: string, callback): Promi
       scene.load.on(`filecomplete-spritesheet-${playerId}`, onDone);
       scene.load.on('loaderror', onErr);
       scene.load.start();
-    } catch (err) {
-      console.error('getOrFetchAavegotchiURL:ERR', err);
-    }
+  } catch (err) {
+    console.error('getOrFetchAavegotchiURL:ERR', err);
   }
 };
 
@@ -465,7 +496,7 @@ export const fetchAavegotchiSideSVGs = async (
     const traitKey = (opts?.traits || []).map((n) => traitNumber(n, 50)).join(',');
     const sourceKey = String(opts?.sourceTokenId || '');
     const hauntKey = Number(opts?.hauntId) === 2 ? 'h2' : Number(opts?.hauntId) === 1 ? 'h1' : 'h?';
-    const cacheKey = `cartridge:base-sides-v10:${simCollateral}:src${sourceKey}:${hauntKey}:w${equipKey}:t${traitKey}`;
+    const cacheKey = `cartridge:base-sides-v11:${simCollateral}:src${sourceKey}:${hauntKey}:w${equipKey}:t${traitKey}`;
     if (GlobalState.CHAT.state.gotchiSides[cacheKey]) {
       return GlobalState.CHAT.state.gotchiSides[cacheKey];
     }

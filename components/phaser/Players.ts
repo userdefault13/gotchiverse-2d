@@ -105,7 +105,12 @@ function initPlayer(player: SelectedPlayer): void {
 }
 
 function isSelectedPlayer(id: string): boolean {
-  return selectedPlayer?.isSpectator ? id === selectedPlayer.id : Number(id) === Number(selectedPlayer.id);
+  if (!selectedPlayer) return false;
+  // Soft-mint ids (`starter-wbtc-1`) are non-numeric — Number() → NaN and never matches.
+  if (selectedPlayer.isSpectator || !Number.isFinite(Number(id)) || !Number.isFinite(Number(selectedPlayer.id))) {
+    return String(id) === String(selectedPlayer.id);
+  }
+  return Number(id) === Number(selectedPlayer.id);
 }
 
 async function addPlayers(players: Player[]): Promise<void> {
@@ -122,10 +127,22 @@ async function addPlayers(players: Player[]): Promise<void> {
         return;
       }
 
-      if (scene.textures.exists(player.id) || scene.loadedPlayerIds.includes(player.id)) {
+      const textureOk =
+        scene.textures.exists(player.id) &&
+        scene.textures.get(player.id)?.key !== '__MISSING' &&
+        Number(scene.textures.get(player.id)?.frameTotal ?? 0) >= 4;
+
+      if (textureOk || scene.loadedPlayerIds.includes(player.id)) {
         // player is already loaded, just apply properties
         displayPlayer(player);
       } else {
+        if (scene.textures.exists(player.id) && !textureOk) {
+          try {
+            scene.textures.remove(player.id);
+          } catch {
+            /* ignore */
+          }
+        }
         const playerAlreadyLoadingObj = _.find(scene.playersToLoad, ['id', player.id]);
         if (playerAlreadyLoadingObj) {
           // player is already loading from a previous request, piggy back on it
@@ -188,9 +205,13 @@ const displayPlayer = (player: Player): void => {
     if (!isTrueSpectator(isSpectator)) {
       const preferredKey = isNaked(isSpectator) ? 'defaultGotchi' : id;
       const texOk =
-        scene.textures.exists(preferredKey) && scene.textures.get(preferredKey)?.key !== '__MISSING';
+        scene.textures.exists(preferredKey) &&
+        scene.textures.get(preferredKey)?.key !== '__MISSING' &&
+        Number(scene.textures.get(preferredKey)?.frameTotal ?? 0) >= 4;
       const fallbackOk =
-        scene.textures.exists('defaultGotchi') && scene.textures.get('defaultGotchi')?.key !== '__MISSING';
+        scene.textures.exists('defaultGotchi') &&
+        scene.textures.get('defaultGotchi')?.key !== '__MISSING' &&
+        Number(scene.textures.get('defaultGotchi')?.frameTotal ?? 0) >= 4;
       // Cartridge SVG sheets that fail to decode show Phaser magenta __MISSING bars.
       const textureKey = texOk ? preferredKey : fallbackOk ? 'defaultGotchi' : preferredKey;
       playerSprite = scene.add
