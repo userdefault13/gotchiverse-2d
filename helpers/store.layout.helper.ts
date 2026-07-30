@@ -20,6 +20,9 @@ export const CASHIER_ITEM_ID = CASHIER_ITEM_ID_START;
 /** Shelf L1 only (own spritesheet `shelf`). */
 export const SHELF_ITEM_ID = 198;
 
+/** Terminal L1 only (own spritesheet `terminal`) — owner store SaaS desk. */
+export const TERMINAL_ITEM_ID = 208;
+
 /** Console L1–9 (re-export for furniture callers). */
 export const CONSOLE_ITEM_ID_START = CONSOLE_START;
 export const CONSOLE_ITEM_ID_END = CONSOLE_END;
@@ -194,10 +197,19 @@ export function isCashierItemId(itemId: number | string): boolean {
   return id >= CASHIER_ITEM_ID_START && id <= CASHIER_ITEM_ID_END;
 }
 
+export function isTerminalItemId(itemId: number | string): boolean {
+  return Number(itemId) === TERMINAL_ITEM_ID;
+}
+
 export { isConsoleItemId };
 
 export function isStoreFurnitureItemId(itemId: number | string): boolean {
-  return isShelfItemId(itemId) || isCashierItemId(itemId) || isConsoleItemId(itemId);
+  return (
+    isShelfItemId(itemId) ||
+    isCashierItemId(itemId) ||
+    isTerminalItemId(itemId) ||
+    isConsoleItemId(itemId)
+  );
 }
 
 function migrateFurnitureItemId(itemId: number): number {
@@ -358,7 +370,7 @@ export function craftStoreFurniture(itemId: number, quantity = 1): { ok: boolean
     return { ok: false, message: 'Console craft requires a title — use craftConsoleFurniture', qty: 0 };
   }
   const qty = adjustFurnitureQty(itemId, quantity);
-  const name = isShelfItemId(itemId) ? 'Shelf' : 'Cashier';
+  const name = isShelfItemId(itemId) ? 'Shelf' : isTerminalItemId(itemId) ? 'Terminal' : 'Cashier';
   return { ok: true, message: `Crafted ${quantity}× ${name}`, qty };
 }
 
@@ -437,7 +449,7 @@ export function placeFurniture(
     return { ok: true, message: 'Placed Console', layout: next };
   }
 
-  if (!isShelfItemId(itemId) && !isCashierItemId(itemId)) {
+  if (!isShelfItemId(itemId) && !isCashierItemId(itemId) && !isTerminalItemId(itemId)) {
     return { ok: false, message: 'Invalid furniture', layout };
   }
   if (getFurnitureQty(itemId) < 1) {
@@ -455,7 +467,8 @@ export function placeFurniture(
     ...layout,
     furniture: [...layout.furniture, piece],
   });
-  return { ok: true, message: 'Placed', layout: next };
+  const label = isShelfItemId(itemId) ? 'Shelf' : isTerminalItemId(itemId) ? 'Terminal' : 'Cashier';
+  return { ok: true, message: `Placed ${label}`, layout: next };
 }
 
 export function removeFurniture(layout: StoreLayout, furnitureId: string): { ok: boolean; layout: StoreLayout } {

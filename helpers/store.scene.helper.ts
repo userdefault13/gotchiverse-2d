@@ -23,6 +23,7 @@ export type StoreSceneCallbacks = {
   onInteractShelf: (piece: StoreFurniturePiece) => void;
   onInteractCashier: (piece: StoreFurniturePiece) => void;
   onInteractConsole: (piece: StoreFurniturePiece) => void;
+  onInteractTerminal: (piece: StoreFurniturePiece) => void;
   onBuildTileClick: (tx: number, ty: number) => void;
   onLeaveDoor: () => void;
   onSelectFurniture: (piece: StoreFurniturePiece | null) => void;

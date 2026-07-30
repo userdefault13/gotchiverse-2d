@@ -14,6 +14,7 @@ import {
   SHELF_ITEM_ID,
   CASHIER_ITEM_ID,
   CONSOLE_ITEM_ID,
+  TERMINAL_ITEM_ID,
   StoreLayout,
   StoreFurniturePiece,
   StoreListingBind,
@@ -51,7 +52,7 @@ import styles from './styles';
 
 const STORE_MAX = 8;
 
-type FurnitureBrush = typeof SHELF_ITEM_ID | typeof CASHIER_ITEM_ID | typeof CONSOLE_ITEM_ID;
+type FurnitureBrush = typeof SHELF_ITEM_ID | typeof CASHIER_ITEM_ID | typeof CONSOLE_ITEM_ID | typeof TERMINAL_ITEM_ID;
 type PlaceBrush = FurnitureBrush | null;
 
 export const StoreModal = (): JSX.Element => {
@@ -68,6 +69,7 @@ export const StoreModal = (): JSX.Element => {
   const [floorBrush, setFloorBrush] = useState<number | null>(null);
   const [shelfQty, setShelfQty] = useState(0);
   const [cashierQty, setCashierQty] = useState(0);
+  const [terminalQty, setTerminalQty] = useState(0);
   const [consoleQty, setConsoleQty] = useState(0);
   const [showCart, setShowCart] = useState(false);
   const [bindForm, setBindForm] = useState<StoreListingBind | null>(null);
@@ -93,6 +95,7 @@ export const StoreModal = (): JSX.Element => {
   const refreshInv = () => {
     setShelfQty(getFurnitureQty(SHELF_ITEM_ID));
     setCashierQty(getFurnitureQty(CASHIER_ITEM_ID));
+    setTerminalQty(getFurnitureQty(TERMINAL_ITEM_ID));
     setConsoleQty(getConsoleBagCount());
   };
 
@@ -260,6 +263,9 @@ export const StoreModal = (): JSX.Element => {
         setStatusMsg('Cashier — review cart. Checkout (escrow) lands in phase 1c.');
       },
       onInteractConsole: (piece: StoreFurniturePiece) => openConsole(piece),
+      onInteractTerminal: () => {
+        setStatusMsg('Terminal — store owner desk. Concierge SaaS wiring comes next.');
+      },
       onBuildTileClick: (tx: number, ty: number) => handleBuildTileClick(tx, ty),
       onLeaveDoor: () => {
         void handleClose();
@@ -330,7 +336,7 @@ export const StoreModal = (): JSX.Element => {
     }
   };
 
-  const handleCraft = (itemId: typeof SHELF_ITEM_ID | typeof CASHIER_ITEM_ID) => {
+  const handleCraft = (itemId: typeof SHELF_ITEM_ID | typeof CASHIER_ITEM_ID | typeof TERMINAL_ITEM_ID) => {
     const r = craftStoreFurniture(itemId, 1);
     setStatusMsg(r.message);
     refreshInv();
@@ -461,6 +467,9 @@ export const StoreModal = (): JSX.Element => {
             <Button size={2} onClick={() => handleCraft(CASHIER_ITEM_ID)}>
               Craft Cashier ({cashierQty})
             </Button>
+            <Button size={2} onClick={() => handleCraft(TERMINAL_ITEM_ID)}>
+              Craft Terminal ({terminalQty})
+            </Button>
             <Button
               size={2}
               secondary={placeBrush !== SHELF_ITEM_ID}
@@ -480,6 +489,16 @@ export const StoreModal = (): JSX.Element => {
               }}
             >
               Place Cashier
+            </Button>
+            <Button
+              size={2}
+              secondary={placeBrush !== TERMINAL_ITEM_ID}
+              onClick={() => {
+                setFloorBrush(null);
+                setPlaceBrush(placeBrush === TERMINAL_ITEM_ID ? null : TERMINAL_ITEM_ID);
+              }}
+            >
+              Place Terminal
             </Button>
             <Button
               size={2}

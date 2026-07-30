@@ -14,6 +14,7 @@ import {
   isCashierItemId,
   isConsoleItemId,
   isShelfItemId,
+  isTerminalItemId,
   storeIsWalkable,
   storeStructureAt,
   storeTileCenter,
@@ -92,6 +93,9 @@ export class StoreScene extends Phaser.Scene {
     if (!this.textures.exists('console')) {
       this.load.spritesheet('console', '/animations/installations/console.png', { frameWidth: 256, frameHeight: 256 });
     }
+    if (!this.textures.exists('terminal')) {
+      this.load.spritesheet('terminal', '/animations/installations/terminal.png', { frameWidth: 256, frameHeight: 256 });
+    }
 
     // Floor tiles used by current layout
     const floor = this.layout?.floor || {};
@@ -155,6 +159,7 @@ export class StoreScene extends Phaser.Scene {
       if (piece && isShelfItemId(piece.itemId)) this.callbacks?.onInteractShelf(piece);
       if (piece && isCashierItemId(piece.itemId)) this.callbacks?.onInteractCashier(piece);
       if (piece && isConsoleItemId(piece.itemId)) this.callbacks?.onInteractConsole(piece);
+      if (piece && isTerminalItemId(piece.itemId)) this.callbacks?.onInteractTerminal(piece);
     });
 
     sendStoreMove(spawn.x, spawn.y);
@@ -260,12 +265,19 @@ export class StoreScene extends Phaser.Scene {
       let key = 'shelf';
       if (isCashierItemId(piece.itemId)) key = 'cashier';
       if (isConsoleItemId(piece.itemId)) key = 'console';
+      if (isTerminalItemId(piece.itemId)) key = 'terminal';
       let spr: Phaser.GameObjects.GameObject;
       if (this.textures.exists(key)) {
         const s = this.add.sprite(cx, cy, key, 0).setDisplaySize(TILE_SIZE * 0.95, TILE_SIZE * 0.95);
         spr = s;
       } else {
-        const color = isShelfItemId(piece.itemId) ? 0xc4a574 : isCashierItemId(piece.itemId) ? 0x6bcb77 : 0x4d96ff;
+        const color = isShelfItemId(piece.itemId)
+          ? 0xc4a574
+          : isCashierItemId(piece.itemId)
+            ? 0x6bcb77
+            : isTerminalItemId(piece.itemId)
+              ? 0x75fb92
+              : 0x4d96ff;
         spr = this.add.rectangle(cx, cy, TILE_SIZE * 0.8, TILE_SIZE * 0.8, color);
       }
       this.furnitureLayer?.add(spr);
@@ -325,6 +337,7 @@ export class StoreScene extends Phaser.Scene {
     if (isShelfItemId(piece.itemId)) this.callbacks?.onInteractShelf(piece);
     else if (isCashierItemId(piece.itemId)) this.callbacks?.onInteractCashier(piece);
     else if (isConsoleItemId(piece.itemId)) this.callbacks?.onInteractConsole(piece);
+    else if (isTerminalItemId(piece.itemId)) this.callbacks?.onInteractTerminal(piece);
   }
 
   private syncRemotes() {

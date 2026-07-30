@@ -1,0 +1,19 @@
+{
+  "columns": 1,
+  "image": "terminal.png",
+  "imageheight": 256,
+  "imagewidth": 256,
+  "margin": 0,
+  "name": "terminal",
+  "spacing": 0,
+  "tilecount": 1,
+  "tiledversion": "1.7.0",
+  "tileheight": 256,
+  "tilewidth": 256,
+  "type": "tileset",
+  "version": "1.6",
+  "offset": {
+    "x": -64,
+    "y": -64
+  }
+}

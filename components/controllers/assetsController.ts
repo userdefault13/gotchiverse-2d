@@ -185,6 +185,8 @@ const installationList: TextureConfig[] = [
   { id: 'store', preload: true, local: true },
   { id: 'cashier', preload: true, local: true },
   { id: 'shelf', preload: true, local: true },
+  { id: 'terminal', preload: true, local: true },
+  { id: 'console', preload: true, local: true },
   { id: '157', preload: true },
   { id: '158', preload: true },
   { id: '159', preload: true },
@@ -821,7 +823,7 @@ const loadTexture = async (texture: TextureConfig): Promise<void> => {
         // Soft-launch local sheets: still load PNG with known frame size if JSON import missed.
         if (texture.local && (texture.id === 'store' || texture.id === 'cashier')) {
           config = { frameWidth: 256, frameHeight: 256 };
-        } else if (texture.local && texture.id === 'shelf') {
+        } else if (texture.local && (texture.id === 'shelf' || texture.id === 'terminal' || texture.id === 'console')) {
           config = { frameWidth: 256, frameHeight: 256 };
         } else {
           console.error(`@globalLoadTexture: ${texture.id}, missing spritesheet json`);

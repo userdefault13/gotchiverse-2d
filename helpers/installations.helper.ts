@@ -117,14 +117,15 @@ export const getInstallationKeyByTypeData = (typeData: InstallationTypeLocal): s
   // Waalls / Lodges share one spritesheet each; frames map by level.
   if (Number(typeData.installationType) === 3) return 'waall';
   if (Number(typeData.installationType) === 4) return 'lodge';
-  // Soft-launch Store / Cashier / Shelf — own spritesheets (local catalog, not diamond art).
-  // Store 180–188, Cashier 189–197, Shelf 198 — keep ranges in sync with store.*.helper.
+  // Soft-launch Store / Cashier / Shelf / Terminal / Console — own spritesheets (local catalog, not diamond art).
+  // Store 180–188, Cashier 189–197, Shelf 198, Console 199–207, Terminal 208 — keep ranges in sync with store.*.helper.
   if (Number(typeData.installationType) === 9) return 'store';
   {
     const itemId = Number(typeData.itemId);
     if (itemId >= 189 && itemId <= 197) return 'cashier';
     if (itemId === 198) return 'shelf';
     if (itemId >= 199 && itemId <= 207) return 'console';
+    if (itemId === 208) return 'terminal';
   }
   return ALCHEMICA_BASED_INSTALLATION_TYPES.includes(typeData.installationType)
     ? `${typeData.installationType}_${typeData.alchemicaType}`

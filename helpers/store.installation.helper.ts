@@ -11,14 +11,16 @@ import {
   CASHIER_ITEM_ID_START,
   SHELF_ITEM_ID,
   STORE_FURNITURE_TYPE,
+  TERMINAL_ITEM_ID,
   isCashierItemId,
   isShelfItemId,
   isStoreFurnitureItemId,
+  isTerminalItemId,
 } from './store.layout.helper';
 
 /**
  * Soft-launch Store catalog lives in `store.installations.local.json` (not official installations.json).
- * Store L1–9: 180–188 · Cashier L1–9: 189–197 (Maaker-style levels) · Shelf L1: 198
+ * Store L1–9: 180–188 · Cashier L1–9: 189–197 (Maaker-style levels) · Shelf L1: 198 · Terminal L1: 208
  */
 export const STORE_ITEM_ID_START = 180;
 export const STORE_ITEM_ID_END = 188;
@@ -28,6 +30,7 @@ export const STORE_INSTALLATION_TYPE = 9;
 export const STORE_SPRITE_KEY = 'store';
 export const CASHIER_SPRITE_KEY = 'cashier';
 export const SHELF_SPRITE_KEY = 'shelf';
+export const TERMINAL_SPRITE_KEY = 'terminal';
 
 export function isStoreItemId(itemId: number | string): boolean {
   const id = Number(itemId);
@@ -112,14 +115,14 @@ export function getLocalStorePageRecipes(): Recipe[] {
   return _.concat(getLocalStoreRecipes(), getLocalStoreFurnitureRecipes());
 }
 
-/** Shelf L1 + Cashier L1 (Cashier upgrades 2–9 like Maaker via upgrade UI later). */
+/** Shelf / Cashier / Terminal L1 (Cashier upgrades 2–9 like Maaker via upgrade UI later). */
 export function getLocalStoreFurnitureRecipes(): Recipe[] {
   return _.values(installationTypes)
     .filter(
       (item) =>
         Number(item.installationType) === STORE_FURNITURE_TYPE &&
         Number(item.level) === 1 &&
-        (isShelfItemId(item.itemId) || isCashierItemId(item.itemId)),
+        (isShelfItemId(item.itemId) || isCashierItemId(item.itemId) || isTerminalItemId(item.itemId)),
     )
     .map(toRecipe);
 }
@@ -280,4 +283,4 @@ export function syncStoreInventoryFromScene(itemId: number): void {
   setOffchainInventoryQty(itemId, quantity);
 }
 
-export { CASHIER_ITEM_ID, CASHIER_ITEM_ID_END, CASHIER_ITEM_ID_START, SHELF_ITEM_ID };
+export { CASHIER_ITEM_ID, CASHIER_ITEM_ID_END, CASHIER_ITEM_ID_START, SHELF_ITEM_ID, TERMINAL_ITEM_ID };
