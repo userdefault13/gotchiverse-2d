@@ -303,20 +303,12 @@ export async function fetchAavegotchiURLById(
   const urlOptions = { removeShadow: true, removeBackground: true };
 
   // Mutate each aavegotchi side to get the final game result in both svg and url blob format
-  const allSides = _.compact(
-    _.map(sideviewArray, (svg) => {
-      try {
-        return _getMutateSVGBloblAavegotchiSVG(svg, urlOptions);
-      } catch (e) {
-        console.warn('@fetchAavegotchiURLById mutate side failed', id, e);
-        return null;
-      }
-    }),
-  );
+  const allSides = _.map(sideviewArray, (svg) => _getMutateSVGBloblAavegotchiSVG(svg, urlOptions));
+  // console.log(allSides); // Array of objects with url and svg
+  // extract the svgs to be combined in _aavegotchiSpriteSVG.
   const allSvgs = _.map(allSides, ({ svg }) => svg).filter(Boolean) as string[];
-
-  // Cartridge / soft-mint: PNG sheet for Phaser.
-  // 1) compose/RPC sides (with cWearables)  2) recolor default  3) stock defaultGotchi SVG sheet
+  // Cartridge / soft-mint: always PNG. Prefer the same recolor path as select cards (guaranteed
+  // visible body); compose SVGs often rasterize blank while still registering 4 Phaser frames.
   let sprite: string;
   if (cartridgeCollateral) {
     const coll = collateralFromSimId(cartridgeCollateral);
@@ -325,39 +317,15 @@ export async function fetchAavegotchiURLById(
       console.log(`@fetchAavegotchiURLById png ok (${label})`, id);
       return url;
     };
-    const composeCandidates = [
-      // Prefer raw compose sides (bg already stripped); mutate can fight class fills.
-      ...(Array.isArray(sideviewArray) ? sideviewArray.map((s) => String(s || '')).filter((s) => s.length >= 80) : []),
-    ];
-    const mutatedCandidates = allSvgs.filter((s) => s.length >= 80);
-
     try {
-      if (composeCandidates.length >= 4) {
-        sprite = await tryPng(composeCandidates.slice(0, 4), 'compose');
+      if (coll) {
+        sprite = await tryPng(buildCollateralDefaultSideSvgs(coll), 'recolor-default');
       } else {
-        throw new Error(`compose sides incomplete (${composeCandidates.length})`);
+        sprite = await tryPng(allSvgs.length >= 4 ? allSvgs : defaultGotchi, 'sides-or-default');
       }
-    } catch (composeErr) {
-      console.warn('@fetchAavegotchiURLById compose png failed', id, composeErr);
-      try {
-        if (mutatedCandidates.length >= 4) {
-          sprite = await tryPng(mutatedCandidates.slice(0, 4), 'compose-mutated');
-        } else {
-          throw composeErr;
-        }
-      } catch (mutatedErr) {
-        console.warn('@fetchAavegotchiURLById mutated png failed', id, mutatedErr);
-        try {
-          if (coll) {
-            sprite = await tryPng(buildCollateralDefaultSideSvgs(coll), 'recolor-default');
-          } else {
-            throw new Error('no collateral for recolor fallback');
-          }
-        } catch (recolorErr) {
-          console.warn('@fetchAavegotchiURLById recolor png failed, using defaultGotchi sheet', id, recolorErr);
-          sprite = getDefaultGotchiURL();
-        }
-      }
+    } catch (err) {
+      console.warn('@fetchAavegotchiURLById cartridge png failed, using defaultGotchi sheet', id, err);
+      sprite = getDefaultGotchiURL();
     }
   } else {
     sprite = _aavegotchiSpriteSVG(allSvgs, 2);
@@ -394,12 +362,7 @@ export async function fetchAavegotchiURLById(
   if (!allSides[0]?.url) {
     console.log(`no url for gotchi id ${id}`);
   }
-  const frontUrl =
-    allSides[0]?.url ||
-    (typeof sideviewArray?.[0] === 'string' && sideviewArray[0].length > 80
-      ? URL.createObjectURL(new Blob([sideviewArray[0]], { type: 'image/svg+xml' }))
-      : '');
-  return { url: frontUrl, sprite };
+  return { url: allSides[0].url, sprite };
 }
 
 export const getOrFetchAavegotchiURL = async (playerId: string, callback): Promise<void> => {
@@ -544,7 +507,7 @@ export const fetchAavegotchiSideSVGs = async (
     const traitKey = (opts?.traits || []).map((n) => traitNumber(n, 50)).join(',');
     const sourceKey = String(opts?.sourceTokenId || '');
     const hauntKey = Number(opts?.hauntId) === 2 ? 'h2' : Number(opts?.hauntId) === 1 ? 'h1' : 'h?';
-    const cacheKey = `cartridge:base-sides-v13:${simCollateral}:src${sourceKey}:${hauntKey}:w${equipKey}:t${traitKey}`;
+    const cacheKey = `cartridge:base-sides-v12:${simCollateral}:src${sourceKey}:${hauntKey}:w${equipKey}:t${traitKey}`;
     if (GlobalState.CHAT.state.gotchiSides[cacheKey]) {
       return GlobalState.CHAT.state.gotchiSides[cacheKey];
     }
