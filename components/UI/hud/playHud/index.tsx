@@ -331,9 +331,9 @@ export const PlayHud = () => {
           />
         ) : inLodge && lodgeOwner ? (
           <ActionButton
-            color="success"
+            color="pink"
             colorVariant="300"
-            hoverColor="success"
+            hoverColor="pink"
             hoverColorVariant="200"
             img={BuildMode}
             onClick={toggleLodgeBuildMode}
