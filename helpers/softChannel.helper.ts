@@ -88,9 +88,29 @@ export function walletOwnsAavegotchiId(tokenId: string | number | null | undefin
   return gotchis.some((g) => String(g.id) === tid);
 }
 
+/** True when wallet owns this REALM parcel token id (User + Realm owned lists). */
+export function walletOwnsParcelId(realmTokenId: string | number | null | undefined): boolean {
+  if (realmTokenId == null || realmTokenId === '') return false;
+  const tid = String(realmTokenId);
+  const match = (p: { tokenId?: string | number; id?: string | number; parcelId?: string | number } | null | undefined) => {
+    if (!p) return false;
+    return [p.tokenId, p.id, p.parcelId].some((v) => v != null && String(v) === tid);
+  };
+  const fromUser = GlobalState.USER?.state?.ownedParcels || [];
+  const fromRealm = GlobalState.REALM?.state?.ownedParcels || [];
+  return fromUser.some(match) || fromRealm.some(match);
+}
+
+export function isCParcelInInventory(realmTokenId: string | number | null | undefined): boolean {
+  if (realmTokenId == null || realmTokenId === '') return false;
+  const tid = String(realmTokenId);
+  const inventory = GlobalState.USER?.state?.parcelInventory || [];
+  return inventory.some((p) => String(p.realmTokenId) === tid);
+}
+
 /**
  * Gotchi id to use for live Realm diamond txs (channel / claim / build).
- * cAavegotchi → bound `cartridgeSourceTokenId` from mint/bind.
+ * cAavegotchi → bound `cartridgeSourceTokenId` from mint/bind (prefer wallet-owned).
  * Normal gotchi → numeric `id`. Returns null when soft-launch only.
  */
 export function resolveOnChainGotchiId(
@@ -106,8 +126,9 @@ export function resolveOnChainGotchiId(
   if (player.isCartridgeHero) {
     const source = Number(player.cartridgeSourceTokenId);
     if (!Number.isFinite(source) || source < 0) return null;
-    // Bound L1 id from cAavegotchi mint — wallet ownership was verified at bind time.
-    return source;
+    // Prefer explicit wallet ownership; still allow bound source (verified at mint/bind).
+    if (walletOwnsAavegotchiId(source) || Boolean(player.cartridgeSourceTokenId)) return source;
+    return null;
   }
 
   const id = Number(player.id);
@@ -115,21 +136,34 @@ export function resolveOnChainGotchiId(
 }
 
 /**
- * Soft-launch local path when we cannot run Realm diamond txs with a wallet-owned L1 gotchi.
- * Minted cParcels share real realmTokenIds — inventory membership alone must NOT block
- * on-chain channel / claim / build when a matching L1 Aavegotchi is available.
+ * Parcel token id for live Realm diamond txs.
+ * cParcel → same realmTokenId only when the wallet owns that L1 REALM parcel.
+ * Normal parcel → numeric realm id.
  */
-export function isSoftLaunchChannel(realmId?: number | string | null): boolean {
-  // cAavegotchi (or normal gotchi) with wallet-owned L1 id → always live chain path.
-  if (resolveOnChainGotchiId(Players.selectedPlayer) != null) return false;
+export function resolveOnChainParcelId(realmId?: number | string | null): number | null {
+  if (realmId == null || realmId === '') return null;
+  const id = Number(realmId);
+  if (!Number.isFinite(id) || id < 0) return null;
 
-  const inventory = GlobalState.USER?.state?.parcelInventory || [];
-  if (inventory.length && realmId != null && realmId !== '') {
-    const id = String(realmId);
-    if (inventory.some((p) => String(p.realmTokenId) === id)) return true;
+  if (isCParcelInInventory(realmId)) {
+    return walletOwnsParcelId(realmId) ? id : null;
   }
 
-  if (Players.selectedPlayer?.isCartridgeHero) return true;
+  return id;
+}
+
+/**
+ * Soft-launch local path when cParcel/cAavegotchi cannot bridge to wallet-owned L1 assets.
+ * On-chain when both gotchi + parcel resolve to live ids.
+ */
+export function isSoftLaunchChannel(realmId?: number | string | null): boolean {
+  const onChainGotchi = resolveOnChainGotchiId(Players.selectedPlayer);
+  const onChainParcel = resolveOnChainParcelId(realmId);
+
+  if (onChainGotchi != null && onChainParcel != null) return false;
+
+  if (isCParcelInInventory(realmId) && onChainParcel == null) return true;
+  if (Players.selectedPlayer?.isCartridgeHero && onChainGotchi == null) return true;
 
   return false;
 }

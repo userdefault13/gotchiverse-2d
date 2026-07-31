@@ -30,8 +30,10 @@ import {
   channelAlchemicaLocally,
   getSoftGotchiLastChanneled,
   getSoftParcelLastChanneled,
+  isCParcelInInventory,
   isSoftLaunchChannel,
   resolveOnChainGotchiId,
+  resolveOnChainParcelId,
 } from 'helpers/softChannel.helper';
 import { useEffect, useState } from 'react';
 import { getInstallationIdDataById, getInstallationTypeById } from 'shared_code/utils/shared.utils.installations';
@@ -66,7 +68,7 @@ export const ParcelDashboard = (): JSX.Element => {
   const [{ parcelDashboardState, accessRightsState }, uiDispatch] = useUI();
   const [{ ethersSigner, currentNetwork, globalProvider }] = useWeb3();
   const [{ selectedPlayer, ownedParcels }, realmDispatch] = useRealm();
-  const [{ alchemicaBalance, userAavegotchis }, userDispatch] = useUser();
+  const [{ alchemicaBalance, userAavegotchis, ownedParcels: userOwnedParcels, parcelInventory }, userDispatch] = useUser();
   const [, notificationDispatch] = useNotification();
   const [{ scene }, phaserDispatch] = usePhaser();
   const { oops } = useAavegotchiSound();
@@ -145,6 +147,9 @@ export const ParcelDashboard = (): JSX.Element => {
     selectedPlayer?.cartridgeSourceTokenId,
     selectedPlayer?.isCartridgeHero,
     userAavegotchis,
+    userOwnedParcels,
+    ownedParcels,
+    parcelInventory,
     realmId,
   ]);
 
@@ -324,6 +329,7 @@ export const ParcelDashboard = (): JSX.Element => {
   const handleChannel = async () => {
     const soft = isSoftLaunchChannel(realmId);
     const onChainGotchiId = resolveOnChainGotchiId(selectedPlayer);
+    const onChainParcelId = resolveOnChainParcelId(realmId);
 
     if (!soft) {
       if (!ethersSigner || !currentNetwork) {
@@ -351,6 +357,17 @@ export const ParcelDashboard = (): JSX.Element => {
           message: selectedPlayer?.isCartridgeHero
             ? 'Bind a matching L1 Aavegotchi in this wallet to channel on-chain as your cAavegotchi.'
             : 'No Aavegotchi selected for on-chain channeling.',
+          options: { sound: true },
+        });
+        return;
+      }
+      if (onChainParcelId == null) {
+        oops();
+        showNotificationWithTimeout(notificationDispatch, {
+          type: 'error',
+          message: isCParcelInInventory(realmId)
+            ? 'This cParcel is not owned by your wallet as an L1 REALM parcel. Own the matching parcel to channel on-chain.'
+            : 'Parcel id missing for on-chain channeling.',
           options: { sound: true },
         });
         return;
@@ -457,7 +474,7 @@ export const ParcelDashboard = (): JSX.Element => {
       }
 
       const channelContract: ChannelData = {
-        realmId: realmId,
+        realmId: onChainParcelId,
         gotchiId: onChainGotchiId,
       };
       const tx = await channelAlchemica(ethersSigner, currentNetwork, channelContract);
@@ -502,14 +519,18 @@ export const ParcelDashboard = (): JSX.Element => {
   const handleClaim = async () => {
     const soft = isSoftLaunchChannel(realmId);
     const onChainGotchiId = resolveOnChainGotchiId(selectedPlayer);
+    const onChainParcelId = resolveOnChainParcelId(realmId);
 
     if (soft) {
       oops();
       showNotificationWithTimeout(notificationDispatch, {
         type: 'error',
-        message: selectedPlayer?.isCartridgeHero
-          ? 'Bind a matching L1 Aavegotchi in this wallet (same id as this cAavegotchi) to empty reservoirs on-chain.'
-          : 'Reservoir claim is not available in soft-launch. Channel Alchemica instead.',
+        message:
+          isCParcelInInventory(realmId) && onChainParcelId == null
+            ? 'This cParcel is not owned by your wallet as an L1 REALM parcel. Own the matching parcel to empty reservoirs on-chain.'
+            : selectedPlayer?.isCartridgeHero && onChainGotchiId == null
+              ? 'Bind a matching L1 Aavegotchi in this wallet (same id as this cAavegotchi) to empty reservoirs on-chain.'
+              : 'Reservoir claim is not available in soft-launch. Channel Alchemica instead.',
         options: { sound: true },
       });
       return;
@@ -527,6 +548,18 @@ export const ParcelDashboard = (): JSX.Element => {
       return;
     }
 
+    if (onChainParcelId == null) {
+      oops();
+      showNotificationWithTimeout(notificationDispatch, {
+        type: 'error',
+        message: isCParcelInInventory(realmId)
+          ? 'This cParcel is not owned by your wallet as an L1 REALM parcel. Own the matching parcel to empty reservoirs on-chain.'
+          : 'Parcel id missing for reservoir claim.',
+        options: { sound: true },
+      });
+      return;
+    }
+
     if (!ethersSigner || !currentNetwork) {
       oops();
       showNotificationWithTimeout(notificationDispatch, {
@@ -538,7 +571,7 @@ export const ParcelDashboard = (): JSX.Element => {
     }
 
     const channelContract: ChannelData = {
-      realmId: realmId,
+      realmId: onChainParcelId,
       gotchiId: onChainGotchiId,
     };
 

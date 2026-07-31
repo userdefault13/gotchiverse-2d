@@ -104,6 +104,7 @@ import {
   upsertOffchainPlacement,
 } from 'helpers/offchain.placements.helper';
 import { flushOffchainStore, hydrateOffchainStore } from 'helpers/offchain.store';
+import { isCParcelInInventory, resolveOnChainParcelId } from 'helpers/softChannel.helper';
 
 const uiContainers: { marker? } = {};
 // let markerBtnContainer = null;
@@ -1995,9 +1996,10 @@ const handleBatchEquip = async () => {
       });
     }
 
+    const onChainParcelId = resolveOnChainParcelId(scene.activeParcel.tokenId);
     const batchEquipContract: BatchEquipContract = {
       gotchiId: getSelectedGotchiId(),
-      realmId: Number(scene.activeParcel.tokenId),
+      realmId: onChainParcelId ?? Number(scene.activeParcel.tokenId),
     };
 
     try {
@@ -2028,6 +2030,13 @@ const handleBatchEquip = async () => {
           hero
             ? 'This cAavegotchi needs a matching L1 Aavegotchi in your wallet for on-chain build. Bind the same token id, or use soft-launch installs without Confirm.'
             : 'Missing gotchi id for batch equip. Select a gotchi and try again.',
+        );
+      }
+      if (onChainParcelId == null) {
+        throw new Error(
+          isCParcelInInventory(scene.activeParcel.tokenId)
+            ? 'This cParcel is not owned by your wallet as an L1 REALM parcel. Own the matching parcel for on-chain build, or use soft-launch installs without Confirm.'
+            : 'Missing parcel token id for batch equip.',
         );
       }
       if (!batchEquipContract.realmId && batchEquipContract.realmId !== 0) {
