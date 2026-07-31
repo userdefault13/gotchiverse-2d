@@ -56,6 +56,8 @@ export type XStreamParseResult = {
   watchUrl?: string;
   /** Best-effort iframe embed URL (may still be blocked by X). */
   embedUrl?: string;
+  /** What kind of X link this is — drives UI fallback copy. */
+  kind?: 'broadcast' | 'spaces' | 'status' | 'other';
 };
 
 /** Normalize pasted X/Twitter live or broadcast URLs for modal use. */
@@ -84,14 +86,17 @@ export function parseXStreamUrl(raw: string): XStreamParseResult {
   const watchUrl = url.toString();
 
   // Broadcast: /i/broadcasts/{id}
+  // Tweet.html embed only accepts numeric status IDs — broadcast ids are not tweets.
+  // X also blocks framing the broadcast page itself, so leave embed empty.
   const broadcastMatch = path.match(/\/i\/broadcasts\/([A-Za-z0-9_-]+)/i);
   if (broadcastMatch) {
     const id = broadcastMatch[1];
     return {
       ok: true,
       message: 'ok',
+      kind: 'broadcast',
       watchUrl: `https://x.com/i/broadcasts/${id}`,
-      embedUrl: `https://platform.twitter.com/embed/Tweet.html?id=${encodeURIComponent(id)}`,
+      embedUrl: undefined,
     };
   }
 
@@ -102,21 +107,31 @@ export function parseXStreamUrl(raw: string): XStreamParseResult {
     return {
       ok: true,
       message: 'ok',
+      kind: 'spaces',
       watchUrl: `https://x.com/i/spaces/${id}`,
-      // Spaces rarely iframe; leave embed empty so UI shows fallback
       embedUrl: undefined,
     };
   }
 
-  // Status / video tweet: /user/status/{id}
+  // Status / video / live-card tweet: /user/status/{id}
+  // Tweet.html is required for live broadcast cards. /i/videos/tweet only works for
+  // uploaded mp4/HLS media and shows "The media could not be played" for broadcasts.
   const statusMatch = path.match(/\/status(?:es)?\/(\d+)/i);
   if (statusMatch) {
     const id = statusMatch[1];
+    const params = new URLSearchParams({
+      id,
+      theme: 'dark',
+      hideThread: 'true',
+      dnt: 'true',
+      width: '550',
+    });
     return {
       ok: true,
       message: 'ok',
+      kind: 'status',
       watchUrl,
-      embedUrl: `https://platform.twitter.com/embed/Tweet.html?id=${encodeURIComponent(id)}`,
+      embedUrl: `https://platform.twitter.com/embed/Tweet.html?${params.toString()}`,
     };
   }
 
@@ -124,6 +139,7 @@ export function parseXStreamUrl(raw: string): XStreamParseResult {
   return {
     ok: true,
     message: 'ok',
+    kind: 'other',
     watchUrl,
     embedUrl: undefined,
   };

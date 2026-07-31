@@ -65,11 +65,21 @@ export default css`
     font-size: 1.4rem;
   }
 
-  .broadcaster-iframe {
+  .broadcaster-player {
     flex: 1;
-    width: 100%;
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
     min-height: 42rem;
+    background: #000;
     border: 0.2rem solid rgba(79, 195, 247, 0.45);
+    overflow: hidden;
+  }
+
+  .broadcaster-iframe {
+    width: min(100%, 55rem);
+    min-height: 42rem;
+    border: 0;
     background: #000;
   }
 
@@ -87,10 +97,21 @@ export default css`
     padding: 2rem;
   }
 
+  .broadcaster-nosignal--cta {
+    background: linear-gradient(180deg, rgba(72, 20, 120, 0.55) 0%, rgba(16, 2, 33, 0.9) 100%);
+    border: 0.2rem solid rgba(255, 105, 180, 0.55);
+  }
+
   .broadcaster-nosignal p:first-child {
     font-size: 2.4rem;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     margin: 0;
+  }
+
+  .broadcaster-tip {
+    max-width: 48rem;
+    margin-top: 0.6rem;
+    line-height: 1.45;
   }
 `;

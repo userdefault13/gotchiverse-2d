@@ -31,6 +31,22 @@ export const BroadcasterModal = (): JSX.Element => {
   const parsed = useMemo(() => parseXStreamUrl(streamUrl), [streamUrl]);
   const embedUrl = parsed.ok ? parsed.embedUrl || '' : '';
   const watchUrl = parsed.ok ? parsed.watchUrl || streamUrl : streamUrl;
+  const streamKind = parsed.ok ? parsed.kind : undefined;
+
+  const fallbackTitle = (() => {
+    if (embedUrl && !watching) return 'Player hidden';
+    if (streamKind === 'broadcast') return 'Broadcast ready';
+    if (streamKind === 'spaces') return 'Spaces ready';
+    return 'Embed unavailable';
+  })();
+
+  const fallbackHint = (() => {
+    if (embedUrl && !watching) return 'Show the player again, or open the stream on X.';
+    if (streamKind === 'broadcast' || streamKind === 'spaces') {
+      return 'X blocks in-game playback for live broadcasts and Spaces. Open on X to watch.';
+    }
+    return 'X often blocks iframes for this link type. Use Open on X.';
+  })();
 
   useEffect(() => {
     if (!open) return;
@@ -81,6 +97,11 @@ export const BroadcasterModal = (): JSX.Element => {
     });
   };
 
+  const openOnX = () => {
+    click();
+    if (watchUrl) window.open(watchUrl, '_blank', 'noopener,noreferrer');
+  };
+
   return (
     <>
       <Modal title="Broadcaster" open={open} onClose={close} light>
@@ -92,13 +113,7 @@ export const BroadcasterModal = (): JSX.Element => {
             </div>
             <div className="broadcaster-actions">
               {watchUrl ? (
-                <Button
-                  size={2}
-                  onClick={() => {
-                    click();
-                    window.open(watchUrl, '_blank', 'noopener,noreferrer');
-                  }}
-                >
+                <Button size={2} onClick={openOnX}>
                   Open on X
                 </Button>
               ) : null}
@@ -107,11 +122,13 @@ export const BroadcasterModal = (): JSX.Element => {
 
           {isOwner ? (
             <div className="broadcaster-config">
-              <p className="broadcaster-meta">Paste an X live / broadcast / Spaces URL for visitors.</p>
+              <p className="broadcaster-meta">
+                Paste an X status/video tweet URL to embed in-game, or a broadcast / Spaces URL to open on X.
+              </p>
               <input
                 className="broadcaster-input"
                 type="url"
-                placeholder="https://x.com/i/broadcasts/…"
+                placeholder="https://x.com/…/status/… or /i/broadcasts/…"
                 value={draftUrl}
                 onChange={(e) => setDraftUrl(e.target.value)}
               />
@@ -119,15 +136,17 @@ export const BroadcasterModal = (): JSX.Element => {
                 <Button size={2} onClick={saveUrl}>
                   Save stream
                 </Button>
-                <Button
-                  size={2}
-                  onClick={() => {
-                    click();
-                    setWatching((v) => !v);
-                  }}
-                >
-                  {watching ? 'Hide player' : 'Show player'}
-                </Button>
+                {embedUrl ? (
+                  <Button
+                    size={2}
+                    onClick={() => {
+                      click();
+                      setWatching((v) => !v);
+                    }}
+                  >
+                    {watching ? 'Hide player' : 'Show player'}
+                  </Button>
+                ) : null}
               </div>
               {statusMsg ? <p className="broadcaster-meta">{statusMsg}</p> : null}
             </div>
@@ -141,30 +160,30 @@ export const BroadcasterModal = (): JSX.Element => {
               </p>
             </div>
           ) : watching && embedUrl ? (
-            <iframe
-              key={embedUrl}
-              title="X live stream"
-              src={embedUrl}
-              className="broadcaster-iframe"
-              allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
-              allowFullScreen
-            />
+            <div className="broadcaster-player">
+              <iframe
+                key={embedUrl}
+                title="X live stream"
+                src={embedUrl}
+                className="broadcaster-iframe"
+                allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+                allowFullScreen
+              />
+            </div>
           ) : (
-            <div className="broadcaster-nosignal">
-              <p>{embedUrl ? 'Player hidden' : 'Embed unavailable'}</p>
-              <p className="broadcaster-meta">
-                X often blocks iframes for Spaces / live. Use Open on X.
-              </p>
+            <div className={`broadcaster-nosignal ${!embedUrl ? 'broadcaster-nosignal--cta' : ''}`}>
+              <p>{fallbackTitle}</p>
+              <p className="broadcaster-meta">{fallbackHint}</p>
               {watchUrl ? (
-                <Button
-                  size={2}
-                  onClick={() => {
-                    click();
-                    window.open(watchUrl, '_blank', 'noopener,noreferrer');
-                  }}
-                >
+                <Button size={2} onClick={openOnX}>
                   Watch on X
                 </Button>
+              ) : null}
+              {!embedUrl && streamKind === 'broadcast' ? (
+                <p className="broadcaster-meta broadcaster-tip">
+                  Tip: for in-TV playback, paste a tweet status URL that contains the video
+                  (x.com/…/status/123…). Broadcast links only open on X.
+                </p>
               ) : null}
             </div>
           )}
