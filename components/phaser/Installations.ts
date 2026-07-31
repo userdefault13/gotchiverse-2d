@@ -699,7 +699,8 @@ const handleEnterLodge = (id: string): void => {
 
 /** ~2 tiles from 2×2 Store center — standing on the doorstep. */
 const STORE_INTERACT_RADIUS_PX = 180;
-const LODGE_INTERACT_RADIUS_PX = 180;
+/** Lodge is 5×5 (320px); center→door is ~160px, so doorstep needs a larger radius than Store. */
+const LODGE_INTERACT_RADIUS_PX = 320;
 
 function getSelectedPlayerWorldPos(): { x: number; y: number } | null {
   const id = Players.selectedPlayer?.id;
@@ -716,7 +717,9 @@ const getNearestStoreId = (maxDistPx = STORE_INTERACT_RADIUS_PX): string | null 
   scene.installationGroup.forEach((container: Phaser.GameObjects.Container, id: string) => {
     if (!id || !container) return;
     const type = getTypeById(id);
-    if (Number(type?.installationType) !== 9) return;
+    const isStore =
+      Number(type?.installationType) === 9 || isStoreInstallationId(id) || isStoreItemId(type?.itemId);
+    if (!isStore) return;
     const d = Phaser.Math.Distance.Between(player.x, player.y, container.x, container.y);
     if (d <= bestDist) {
       bestDist = d;
@@ -726,7 +729,7 @@ const getNearestStoreId = (maxDistPx = STORE_INTERACT_RADIUS_PX): string | null 
   return bestId;
 };
 
-/** Nearest type-4 Lodge within radius (play mode). */
+/** Nearest Lodge within radius (play mode) — distance to door (bottom-center), not footprint center. */
 const getNearestLodgeId = (maxDistPx = LODGE_INTERACT_RADIUS_PX): string | null => {
   const player = getSelectedPlayerWorldPos();
   if (!player || !scene?.installationGroup) return null;
@@ -735,8 +738,16 @@ const getNearestLodgeId = (maxDistPx = LODGE_INTERACT_RADIUS_PX): string | null 
   scene.installationGroup.forEach((container: Phaser.GameObjects.Container, id: string) => {
     if (!id || !container) return;
     const type = getTypeById(id);
-    if (Number(type?.installationType) !== 4) return;
-    const d = Phaser.Math.Distance.Between(player.x, player.y, container.x, container.y);
+    const isLodge =
+      Number(type?.installationType) === 4 ||
+      isLodgeInstallationId(id) ||
+      isLodgeItemId(type?.itemId);
+    if (!isLodge) return;
+    const tileH = Math.max(1, Number(type?.height) || 5);
+    // Interact from the front door (bottom edge of footprint), matching where players stand.
+    const doorX = container.x;
+    const doorY = container.y + (tileH * 64) / 2;
+    const d = Phaser.Math.Distance.Between(player.x, player.y, doorX, doorY);
     if (d <= bestDist) {
       bestDist = d;
       bestId = id;
@@ -796,7 +807,10 @@ function setLodgeInteractPrompt(visible: boolean, lodgeId?: string | null): void
     });
     lodgePromptContainer.add(img);
   }
-  lodgePromptContainer.setPosition(lodge.x, lodge.y - 96);
+  // Float above the taller 5×5 Lodge (Store uses -96 for 2×2).
+  const lodgeType = getTypeById(lodgeId);
+  const tileH = Math.max(1, Number(lodgeType?.height) || 5);
+  lodgePromptContainer.setPosition(lodge.x, lodge.y - tileH * 32);
   lodgePromptContainer.setVisible(true);
   lodgePromptContainer.setActive(true);
 }
@@ -854,9 +868,14 @@ const tryInteractActive = (): boolean => {
   let lodgeId: string | null = null;
   const activeId = scene.activeInstallation?.data?.get('id') as string | undefined;
   if (activeId) {
-    const activeType = Number(getTypeById(activeId)?.installationType);
-    if (activeType === 9) storeId = activeId;
-    if (activeType === 4) lodgeId = activeId;
+    const activeType = getTypeById(activeId);
+    const activeTypeNum = Number(activeType?.installationType);
+    if (activeTypeNum === 9 || isStoreInstallationId(activeId) || isStoreItemId(activeType?.itemId)) {
+      storeId = activeId;
+    }
+    if (activeTypeNum === 4 || isLodgeInstallationId(activeId) || isLodgeItemId(activeType?.itemId)) {
+      lodgeId = activeId;
+    }
   }
   if (!storeId) storeId = getNearestStoreId();
   if (!lodgeId) lodgeId = getNearestLodgeId();
