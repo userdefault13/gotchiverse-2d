@@ -90,7 +90,7 @@ export function walletOwnsAavegotchiId(tokenId: string | number | null | undefin
 
 /**
  * Gotchi id to use for live Realm diamond txs (channel / claim / build).
- * cAavegotchi → bound `cartridgeSourceTokenId` only when that L1 id is in the wallet.
+ * cAavegotchi → bound `cartridgeSourceTokenId` from mint/bind.
  * Normal gotchi → numeric `id`. Returns null when soft-launch only.
  */
 export function resolveOnChainGotchiId(
@@ -106,7 +106,7 @@ export function resolveOnChainGotchiId(
   if (player.isCartridgeHero) {
     const source = Number(player.cartridgeSourceTokenId);
     if (!Number.isFinite(source) || source < 0) return null;
-    if (!walletOwnsAavegotchiId(source)) return null;
+    // Bound L1 id from cAavegotchi mint — wallet ownership was verified at bind time.
     return source;
   }
 
@@ -115,19 +115,21 @@ export function resolveOnChainGotchiId(
 }
 
 /**
- * Soft-launch local path when:
- * - parcel is a soft-launch cParcel inventory entry, OR
- * - selected cAavegotchi has no wallet-owned L1 binding for on-chain txs.
+ * Soft-launch local path when we cannot run Realm diamond txs with a wallet-owned L1 gotchi.
+ * Minted cParcels share real realmTokenIds — inventory membership alone must NOT block
+ * on-chain channel / claim / build when a matching L1 Aavegotchi is available.
  */
 export function isSoftLaunchChannel(realmId?: number | string | null): boolean {
+  // cAavegotchi (or normal gotchi) with wallet-owned L1 id → always live chain path.
+  if (resolveOnChainGotchiId(Players.selectedPlayer) != null) return false;
+
   const inventory = GlobalState.USER?.state?.parcelInventory || [];
   if (inventory.length && realmId != null && realmId !== '') {
     const id = String(realmId);
     if (inventory.some((p) => String(p.realmTokenId) === id)) return true;
   }
 
-  const player = Players.selectedPlayer;
-  if (player?.isCartridgeHero && resolveOnChainGotchiId(player) == null) return true;
+  if (Players.selectedPlayer?.isCartridgeHero) return true;
 
   return false;
 }

@@ -504,17 +504,12 @@ export const ParcelDashboard = (): JSX.Element => {
     const onChainGotchiId = resolveOnChainGotchiId(selectedPlayer);
 
     if (soft) {
-      const softParcel = Boolean(
-        (GlobalState.USER?.state?.parcelInventory || []).some((p) => String(p.realmTokenId) === String(realmId)),
-      );
       oops();
       showNotificationWithTimeout(notificationDispatch, {
         type: 'error',
-        message: softParcel
-          ? 'Reservoir claim is not available on soft-launch parcels. Channel Alchemica instead.'
-          : selectedPlayer?.isCartridgeHero
-            ? 'Bind a matching L1 Aavegotchi in this wallet (same id as this cAavegotchi) to empty reservoirs on-chain.'
-            : 'Reservoir claim is not available in soft-launch. Channel Alchemica instead.',
+        message: selectedPlayer?.isCartridgeHero
+          ? 'Bind a matching L1 Aavegotchi in this wallet (same id as this cAavegotchi) to empty reservoirs on-chain.'
+          : 'Reservoir claim is not available in soft-launch. Channel Alchemica instead.',
         options: { sound: true },
       });
       return;
