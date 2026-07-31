@@ -4,7 +4,7 @@ export default css`
   .foundry-panel {
     position: fixed;
     left: 12px;
-    bottom: 96px;
+    top: 12px;
     z-index: 40;
     width: 260px;
     padding: 10px 12px;
@@ -51,7 +51,7 @@ export default css`
   .foundry-chip {
     position: fixed;
     left: 12px;
-    bottom: 96px;
+    top: 12px;
     z-index: 40;
     display: flex;
     align-items: center;

@@ -175,6 +175,11 @@ export const PlayerDashboard = (): JSX.Element => {
   }, []);
 
   const borderColor = useMemo(() => (isArena ? 'var(--col-yellow-100)' : 'var(--col-pink-350)'), [isArena]);
+  const [avatarImgFailed, setAvatarImgFailed] = useState(false);
+
+  useEffect(() => {
+    setAvatarImgFailed(false);
+  }, [selectedPlayer?.id, gotchiUrl?.url]);
 
   return (
     <>
@@ -185,9 +190,21 @@ export const PlayerDashboard = (): JSX.Element => {
           <div className="flex items-stretch justify-between relative">
             <div className="gotchi-traits-container flex relative" onMouseEnter={handleTooltipEnter} onMouseLeave={handleTooltipLeave}>
               <div className="image-wrapper">
-                {gotchiUrl?.url ? (
+                {/* Cartridge / soft-mint: always compose via GotchiSVG (same as select cards).
+                    Mutated blob URLs from fetchAavegotchiURL often fail as <img> for haunt-2 compose. */}
+                {gotchiUrl?.url &&
+                !selectedPlayer.isCartridgeHero &&
+                !selectedPlayer.cartridgeCollateral &&
+                !avatarImgFailed ? (
                   <div style={{ height: '12rem', width: '12rem', position: 'relative' }}>
-                    <Image alt="" src={gotchiUrl.url} layout="fill" objectFit="contain" unoptimized={gotchiUrl.url.startsWith('blob:')} />
+                    <Image
+                      alt=""
+                      src={gotchiUrl.url}
+                      layout="fill"
+                      objectFit="contain"
+                      unoptimized={gotchiUrl.url.startsWith('blob:') || gotchiUrl.url.startsWith('data:')}
+                      onError={() => setAvatarImgFailed(true)}
+                    />
                   </div>
                 ) : (
                   <GotchiSVG

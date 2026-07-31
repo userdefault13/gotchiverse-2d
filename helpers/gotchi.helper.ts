@@ -359,10 +359,21 @@ export async function fetchAavegotchiURLById(
   // strippedGotchi = _getMutateSVGBloblAavegotchiSVG(strippedGotchi, urlOptions);
   // spritesArray.push(strippedGotchi.svg);
   // const sprite = _aavegotchiSpriteSVG(spritesArray, 2);
-  if (!allSides[0]?.url) {
+  // HUD portrait: prefer mutated front blob; for cartridge use raw front (mutate often breaks
+  // haunt-2 compose as <img>). Empty url → PlayerDashboard falls back to GotchiSVG.
+  let frontUrl = allSides[0]?.url || '';
+  if (cartridgeCollateral) {
+    const rawFront = typeof sideviewArray?.[0] === 'string' ? sideviewArray[0] : '';
+    if (rawFront.length >= 80) {
+      frontUrl = URL.createObjectURL(new Blob([rawFront], { type: 'image/svg+xml;charset=utf-8' }));
+    } else {
+      frontUrl = '';
+    }
+  }
+  if (!frontUrl) {
     console.log(`no url for gotchi id ${id}`);
   }
-  return { url: allSides[0].url, sprite };
+  return { url: frontUrl, sprite };
 }
 
 export const getOrFetchAavegotchiURL = async (playerId: string, callback): Promise<void> => {
