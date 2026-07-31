@@ -307,8 +307,8 @@ export async function fetchAavegotchiURLById(
   // console.log(allSides); // Array of objects with url and svg
   // extract the svgs to be combined in _aavegotchiSpriteSVG.
   const allSvgs = _.map(allSides, ({ svg }) => svg).filter(Boolean) as string[];
-  // Cartridge / soft-mint: always PNG. Prefer the same recolor path as select cards (guaranteed
-  // visible body); compose SVGs often rasterize blank while still registering 4 Phaser frames.
+  // Cartridge / soft-mint: PNG for Phaser. Prefer the same composed sides as HUD/GotchiSVG
+  // (with wearables); only fall back to collateral recolor if compose rasterizes blank.
   let sprite: string;
   if (cartridgeCollateral) {
     const coll = collateralFromSimId(cartridgeCollateral);
@@ -317,14 +317,34 @@ export async function fetchAavegotchiURLById(
       console.log(`@fetchAavegotchiURLById png ok (${label})`, id);
       return url;
     };
-    try {
-      if (coll) {
-        sprite = await tryPng(buildCollateralDefaultSideSvgs(coll), 'recolor-default');
-      } else {
-        sprite = await tryPng(allSvgs.length >= 4 ? allSvgs : defaultGotchi, 'sides-or-default');
+    const rawSides = (sideviewArray || []).filter((s) => typeof s === 'string' && s.length >= 80);
+    sprite = '';
+    // 1) Raw compose sides (same SVG GotchiSVG shows — includes equipped wearables)
+    if (rawSides.length >= 4) {
+      try {
+        sprite = await tryPng(rawSides, 'compose-raw');
+      } catch (err) {
+        console.warn('@fetchAavegotchiURLById compose-raw png failed', id, err);
       }
-    } catch (err) {
-      console.warn('@fetchAavegotchiURLById cartridge png failed, using defaultGotchi sheet', id, err);
+    }
+    // 2) Mutated sides (shadow/bg stripped)
+    if (!sprite && allSvgs.length >= 4) {
+      try {
+        sprite = await tryPng(allSvgs, 'compose-mutated');
+      } catch (err) {
+        console.warn('@fetchAavegotchiURLById compose-mutated png failed', id, err);
+      }
+    }
+    // 3) Collateral recolor default (visible body, no wearables)
+    if (!sprite && coll) {
+      try {
+        sprite = await tryPng(buildCollateralDefaultSideSvgs(coll), 'recolor-default');
+      } catch (err) {
+        console.warn('@fetchAavegotchiURLById recolor png failed', id, err);
+      }
+    }
+    if (!sprite) {
+      console.warn('@fetchAavegotchiURLById cartridge png failed, using defaultGotchi sheet', id);
       sprite = getDefaultGotchiURL();
     }
   } else {
@@ -518,7 +538,7 @@ export const fetchAavegotchiSideSVGs = async (
     const traitKey = (opts?.traits || []).map((n) => traitNumber(n, 50)).join(',');
     const sourceKey = String(opts?.sourceTokenId || '');
     const hauntKey = Number(opts?.hauntId) === 2 ? 'h2' : Number(opts?.hauntId) === 1 ? 'h1' : 'h?';
-    const cacheKey = `cartridge:base-sides-v12:${simCollateral}:src${sourceKey}:${hauntKey}:w${equipKey}:t${traitKey}`;
+    const cacheKey = `cartridge:base-sides-v14:${simCollateral}:src${sourceKey}:${hauntKey}:w${equipKey}:t${traitKey}`;
     if (GlobalState.CHAT.state.gotchiSides[cacheKey]) {
       return GlobalState.CHAT.state.gotchiSides[cacheKey];
     }

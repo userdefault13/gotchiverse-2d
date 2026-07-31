@@ -226,7 +226,7 @@ export async function svgSidesToPngSpritesheet(
         })
       : `<svg xmlns="http://www.w3.org/2000/svg" width="${frameSize}" height="${frameSize}" viewBox="0 0 64 64">${baked}</svg>`;
 
-    const url = URL.createObjectURL(new Blob([framed], { type: 'image/svg+xml;charset=utf-8' }));
+    const url = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(framed)}`;
     try {
       const img = await loadHtmlImage(url);
       const x = (i % columns) * frameSize;
@@ -234,8 +234,19 @@ export async function svgSidesToPngSpritesheet(
       ctx.clearRect(x, y, frameSize, frameSize);
       ctx.drawImage(img, x, y, frameSize, frameSize);
       drew += 1;
-    } finally {
-      URL.revokeObjectURL(url);
+    } catch (err) {
+      // Fall back to blob URL if data-URI decode fails for a side.
+      const blobUrl = URL.createObjectURL(new Blob([framed], { type: 'image/svg+xml;charset=utf-8' }));
+      try {
+        const img = await loadHtmlImage(blobUrl);
+        const x = (i % columns) * frameSize;
+        const y = Math.floor(i / columns) * frameSize;
+        ctx.clearRect(x, y, frameSize, frameSize);
+        ctx.drawImage(img, x, y, frameSize, frameSize);
+        drew += 1;
+      } finally {
+        URL.revokeObjectURL(blobUrl);
+      }
     }
   }
 
@@ -249,10 +260,10 @@ export async function svgSidesToPngSpritesheet(
   for (let i = 3; i < pixels.length; i += 4) {
     if (pixels[i] > 8) {
       opaque += 1;
-      if (opaque > 40) break;
+      if (opaque > 200) break;
     }
   }
-  if (opaque <= 40) {
+  if (opaque <= 200) {
     throw new Error('png spritesheet has no opaque pixels');
   }
 
