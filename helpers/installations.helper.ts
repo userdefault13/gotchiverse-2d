@@ -439,11 +439,14 @@ export const getSelectedGotchiId = (): number => {
   const player = Players.selectedPlayer;
   if (!player || player.isSpectator) return 0;
 
-  // Soft-launch cAavegotchis use non-numeric ids (`starter-uni-1`). Prefer bound L1 token.
+  // Soft-launch cAavegotchis use non-numeric ids (`starter-uni-1`). Prefer bound L1 token
+  // only when that same id is in the connected wallet (for live on-chain txs).
   if (player.isCartridgeHero) {
     const source = Number(player.cartridgeSourceTokenId);
-    if (Number.isFinite(source) && source >= 0) return source;
-    return Number.NaN;
+    if (!Number.isFinite(source) || source < 0) return Number.NaN;
+    const gotchis = GlobalState.USER?.state?.userAavegotchis || [];
+    const owned = gotchis.some((g) => String(g.id) === String(source));
+    return owned ? source : Number.NaN;
   }
 
   const id = Number(player.id);

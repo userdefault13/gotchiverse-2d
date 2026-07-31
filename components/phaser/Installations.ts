@@ -2026,7 +2026,7 @@ const handleBatchEquip = async () => {
         const hero = Players.selectedPlayer?.isCartridgeHero;
         throw new Error(
           hero
-            ? 'This cartridge hero has no L1 gotchi id. Bind an L1 Aavegotchi, or place soft-launch installs (Store / Bounce Gate) without Confirm on-chain.'
+            ? 'This cAavegotchi needs a matching L1 Aavegotchi in your wallet for on-chain build. Bind the same token id, or use soft-launch installs without Confirm.'
             : 'Missing gotchi id for batch equip. Select a gotchi and try again.',
         );
       }

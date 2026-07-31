@@ -80,13 +80,56 @@ function resolveWallet(): string | null {
   );
 }
 
-/** True when channeling should use the soft-launch local path. */
+/** True when wallet inventory includes this L1 Aavegotchi token id. */
+export function walletOwnsAavegotchiId(tokenId: string | number | null | undefined): boolean {
+  if (tokenId == null || tokenId === '') return false;
+  const tid = String(tokenId);
+  const gotchis = GlobalState.USER?.state?.userAavegotchis || [];
+  return gotchis.some((g) => String(g.id) === tid);
+}
+
+/**
+ * Gotchi id to use for live Realm diamond txs (channel / claim / build).
+ * cAavegotchi → bound `cartridgeSourceTokenId` only when that L1 id is in the wallet.
+ * Normal gotchi → numeric `id`. Returns null when soft-launch only.
+ */
+export function resolveOnChainGotchiId(
+  player: {
+    id?: string | number;
+    isSpectator?: boolean;
+    isCartridgeHero?: boolean;
+    cartridgeSourceTokenId?: string;
+  } | null = Players.selectedPlayer,
+): number | null {
+  if (!player || player.isSpectator) return null;
+
+  if (player.isCartridgeHero) {
+    const source = Number(player.cartridgeSourceTokenId);
+    if (!Number.isFinite(source) || source < 0) return null;
+    if (!walletOwnsAavegotchiId(source)) return null;
+    return source;
+  }
+
+  const id = Number(player.id);
+  return Number.isFinite(id) ? id : null;
+}
+
+/**
+ * Soft-launch local path when:
+ * - parcel is a soft-launch cParcel inventory entry, OR
+ * - selected cAavegotchi has no wallet-owned L1 binding for on-chain txs.
+ */
 export function isSoftLaunchChannel(realmId?: number | string | null): boolean {
-  if (Players.selectedPlayer?.isCartridgeHero) return true;
   const inventory = GlobalState.USER?.state?.parcelInventory || [];
-  if (!inventory.length || realmId == null || realmId === '') return false;
-  const id = String(realmId);
-  return inventory.some((p) => String(p.realmTokenId) === id);
+  if (inventory.length && realmId != null && realmId !== '') {
+    const id = String(realmId);
+    if (inventory.some((p) => String(p.realmTokenId) === id)) return true;
+  }
+
+  const player = Players.selectedPlayer;
+  if (player?.isCartridgeHero && resolveOnChainGotchiId(player) == null) return true;
+
+  return false;
 }
 
 export function getSoftParcelLastChanneled(realmId: number | string, wallet?: string | null): string {

@@ -31,6 +31,7 @@ import {
   getSoftGotchiLastChanneled,
   getSoftParcelLastChanneled,
   isSoftLaunchChannel,
+  resolveOnChainGotchiId,
 } from 'helpers/softChannel.helper';
 import { useEffect, useState } from 'react';
 import { getInstallationIdDataById, getInstallationTypeById } from 'shared_code/utils/shared.utils.installations';
@@ -65,7 +66,7 @@ export const ParcelDashboard = (): JSX.Element => {
   const [{ parcelDashboardState, accessRightsState }, uiDispatch] = useUI();
   const [{ ethersSigner, currentNetwork, globalProvider }] = useWeb3();
   const [{ selectedPlayer, ownedParcels }, realmDispatch] = useRealm();
-  const [{ alchemicaBalance }, userDispatch] = useUser();
+  const [{ alchemicaBalance, userAavegotchis }, userDispatch] = useUser();
   const [, notificationDispatch] = useNotification();
   const [{ scene }, phaserDispatch] = usePhaser();
   const { oops } = useAavegotchiSound();
@@ -129,9 +130,23 @@ export const ParcelDashboard = (): JSX.Element => {
   }, [parcelDashboardState]);
 
   useEffect(() => {
-    if (!parcelDashboardState.open || !globalProvider || !currentNetwork || selectedPlayer?.id == null) return;
-    void getSetGotchiChannelTime(selectedPlayer.id);
-  }, [parcelDashboardState.open, globalProvider, currentNetwork, selectedPlayer?.id]);
+    if (!parcelDashboardState.open || selectedPlayer?.id == null) return;
+    const onChainId = resolveOnChainGotchiId(selectedPlayer);
+    const soft = isSoftLaunchChannel(realmId);
+    // Soft path uses cartridge id; on-chain path uses bound L1 id when wallet owns it.
+    const gotchiKey = soft || onChainId == null ? selectedPlayer.id : onChainId;
+    if (!soft && (onChainId == null || !globalProvider || !currentNetwork)) return;
+    void getSetGotchiChannelTime(gotchiKey);
+  }, [
+    parcelDashboardState.open,
+    globalProvider,
+    currentNetwork,
+    selectedPlayer?.id,
+    selectedPlayer?.cartridgeSourceTokenId,
+    selectedPlayer?.isCartridgeHero,
+    userAavegotchis,
+    realmId,
+  ]);
 
   // Tick gotchi UTC countdown while dashboard is open
   useEffect(() => {
@@ -269,7 +284,7 @@ export const ParcelDashboard = (): JSX.Element => {
 
   const getSetGotchiChannelTime = async (gotchiId: string | number) => {
     if (gotchiId == null || gotchiId === '') return;
-    const soft = isSoftLaunchChannel(realmId) || Boolean(selectedPlayer?.isCartridgeHero);
+    const soft = isSoftLaunchChannel(realmId);
     if (soft) {
       const gotchiLast = getSoftGotchiLastChanneled(gotchiId);
       setGotchiLastChanneledStr(gotchiLast);
@@ -307,7 +322,8 @@ export const ParcelDashboard = (): JSX.Element => {
 
   // CALLS
   const handleChannel = async () => {
-    const soft = isSoftLaunchChannel(realmId) || Boolean(selectedPlayer?.isCartridgeHero);
+    const soft = isSoftLaunchChannel(realmId);
+    const onChainGotchiId = resolveOnChainGotchiId(selectedPlayer);
 
     if (!soft) {
       if (!ethersSigner || !currentNetwork) {
@@ -324,6 +340,17 @@ export const ParcelDashboard = (): JSX.Element => {
         showNotificationWithTimeout(notificationDispatch, {
           type: 'error',
           message: `Wrong network (${currentNetwork}). Switch to Base and try again.`,
+          options: { sound: true },
+        });
+        return;
+      }
+      if (onChainGotchiId == null) {
+        oops();
+        showNotificationWithTimeout(notificationDispatch, {
+          type: 'error',
+          message: selectedPlayer?.isCartridgeHero
+            ? 'Bind a matching L1 Aavegotchi in this wallet to channel on-chain as your cAavegotchi.'
+            : 'No Aavegotchi selected for on-chain channeling.',
           options: { sound: true },
         });
         return;
@@ -431,7 +458,7 @@ export const ParcelDashboard = (): JSX.Element => {
 
       const channelContract: ChannelData = {
         realmId: realmId,
-        gotchiId: Number(selectedPlayer.id),
+        gotchiId: onChainGotchiId,
       };
       const tx = await channelAlchemica(ethersSigner, currentNetwork, channelContract);
       // console.log('@handleChannel TX:', tx);
@@ -447,11 +474,11 @@ export const ParcelDashboard = (): JSX.Element => {
 
         SFXController.playFX('channeling_end');
         await getSetChannelTime(realmId, installationId);
-        if (selectedPlayer?.id != null) await getSetGotchiChannelTime(selectedPlayer.id);
+        await getSetGotchiChannelTime(onChainGotchiId);
         updateTransactionNotificationStatus(notificationDispatch, id, 'success');
         realmDispatch({
           type: 'UPDATE_CHANNEL_ID',
-          lastChanneledId: Number(selectedPlayer.id),
+          lastChanneledId: onChainGotchiId,
         });
         // Hybrid Foundry PoC: channel spill raises pollution score
         if ((gameConfig as { enableParcelFoundryPoC?: boolean })?.enableParcelFoundryPoC || process.env.NEXT_PUBLIC_ENABLE_FOUNDRY_POC === 'true') {
@@ -473,12 +500,43 @@ export const ParcelDashboard = (): JSX.Element => {
   };
 
   const handleClaim = async () => {
-    const soft = isSoftLaunchChannel(realmId) || Boolean(selectedPlayer?.isCartridgeHero);
+    const soft = isSoftLaunchChannel(realmId);
+    const onChainGotchiId = resolveOnChainGotchiId(selectedPlayer);
+
     if (soft) {
+      const softParcel = Boolean(
+        (GlobalState.USER?.state?.parcelInventory || []).some((p) => String(p.realmTokenId) === String(realmId)),
+      );
       oops();
       showNotificationWithTimeout(notificationDispatch, {
         type: 'error',
-        message: 'Reservoir claim is not available in soft-launch. Channel Alchemica instead.',
+        message: softParcel
+          ? 'Reservoir claim is not available on soft-launch parcels. Channel Alchemica instead.'
+          : selectedPlayer?.isCartridgeHero
+            ? 'Bind a matching L1 Aavegotchi in this wallet (same id as this cAavegotchi) to empty reservoirs on-chain.'
+            : 'Reservoir claim is not available in soft-launch. Channel Alchemica instead.',
+        options: { sound: true },
+      });
+      return;
+    }
+
+    if (onChainGotchiId == null) {
+      oops();
+      showNotificationWithTimeout(notificationDispatch, {
+        type: 'error',
+        message: selectedPlayer?.isCartridgeHero
+          ? 'Bind a matching L1 Aavegotchi in this wallet to empty reservoirs via your cAavegotchi.'
+          : 'No Aavegotchi selected for reservoir claim.',
+        options: { sound: true },
+      });
+      return;
+    }
+
+    if (!ethersSigner || !currentNetwork) {
+      oops();
+      showNotificationWithTimeout(notificationDispatch, {
+        type: 'error',
+        message: 'Wallet not connected. Connect on Base and try again.',
         options: { sound: true },
       });
       return;
@@ -486,7 +544,7 @@ export const ParcelDashboard = (): JSX.Element => {
 
     const channelContract: ChannelData = {
       realmId: realmId,
-      gotchiId: Number(selectedPlayer.id),
+      gotchiId: onChainGotchiId,
     };
 
     setClaimLoading(true);
