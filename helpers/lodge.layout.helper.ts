@@ -8,7 +8,9 @@ import {
   consoleLevelFromItemId,
   getLocalConsoleUpgradeInfo,
   isConsoleItemId,
+  loadSharedConsoleBag,
   normalizeLoadedTitles,
+  saveSharedConsoleBag,
 } from './console.installation.helper';
 import {
   BROADCASTER_ITEM_ID as BROADCASTER_L1,
@@ -40,7 +42,8 @@ export const LODGE_FURNITURE_TYPE = 10;
 
 export const LODGE_LAYOUT_KEY = 'gotchiverse.lodge.layout.v1';
 export const LODGE_FURNITURE_INV_KEY = 'gotchiverse.lodge.furnitureInv.v1';
-export const CONSOLE_BAG_KEY = 'gotchiverse.lodge.consoleBag.v1';
+/** @deprecated use shared bag via loadSharedConsoleBag — kept for callers. */
+export { CONSOLE_BAG_KEY } from './console.installation.helper';
 
 /** Legacy furniture ids from first soft-launch pass (before local L1–9 catalog). */
 const LEGACY_SHELF_ITEM_ID = 181;
@@ -354,19 +357,11 @@ export function adjustLodgeFurnitureQty(itemId: number, delta: number): number {
 }
 
 export function loadConsoleBag(): ConsoleBagInstance[] {
-  const raw = readJson<ConsoleBagInstance[]>(CONSOLE_BAG_KEY, []);
-  if (!Array.isArray(raw)) return [];
-  return raw
-    .filter((row) => row && isConsoleItemId(row.itemId))
-    .map((row) => ({
-      bagId: String(row.bagId || `bag_${Date.now()}`),
-      itemId: Number(row.itemId),
-      loadedTitles: normalizeLoadedTitles(row.loadedTitles),
-    }));
+  return loadSharedConsoleBag();
 }
 
 export function saveConsoleBag(bag: ConsoleBagInstance[]): void {
-  writeJson(CONSOLE_BAG_KEY, bag);
+  saveSharedConsoleBag(bag);
 }
 
 export function getConsoleBagCount(itemId?: number): number {

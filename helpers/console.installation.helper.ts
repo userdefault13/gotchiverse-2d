@@ -14,6 +14,77 @@ export const CONSOLE_ITEM_ID = CONSOLE_ITEM_ID_START;
 export const CONSOLE_INSTALLATION_TYPE = 10;
 export const CONSOLE_SPRITE_KEY = 'console';
 
+/** Shared Console instance bag (Store + Lodge). */
+export const CONSOLE_BAG_KEY = 'gotchiverse.consoleBag.v1';
+const CONSOLE_BAG_LEGACY_KEYS = ['gotchiverse.store.consoleBag.v1', 'gotchiverse.lodge.consoleBag.v1'];
+
+export type ConsoleBagRow = {
+  bagId: string;
+  itemId: number;
+  loadedTitles: string[];
+};
+
+function readLocalJson<T>(key: string, fallback: T): T {
+  if (typeof localStorage === 'undefined') return fallback;
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeLocalJson(key: string, value: unknown): void {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    /* ignore quota */
+  }
+}
+
+function normalizeConsoleBagRows(raw: unknown): ConsoleBagRow[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((row) => row && isConsoleItemId((row as ConsoleBagRow).itemId))
+    .map((row) => {
+      const r = row as ConsoleBagRow;
+      return {
+        bagId: String(r.bagId || `bag_${Date.now()}`),
+        itemId: Number(r.itemId),
+        loadedTitles: normalizeLoadedTitles(r.loadedTitles),
+      };
+    });
+}
+
+/** Load shared Console bag, merging legacy store/lodge keys when needed. */
+export function loadSharedConsoleBag(): ConsoleBagRow[] {
+  const seen = new Set<string>();
+  const merged: ConsoleBagRow[] = [];
+  for (const row of normalizeConsoleBagRows(readLocalJson(CONSOLE_BAG_KEY, []))) {
+    seen.add(row.bagId);
+    merged.push(row);
+  }
+  let migrated = false;
+  for (const key of CONSOLE_BAG_LEGACY_KEYS) {
+    for (const row of normalizeConsoleBagRows(readLocalJson(key, []))) {
+      if (seen.has(row.bagId)) continue;
+      seen.add(row.bagId);
+      merged.push(row);
+      migrated = true;
+    }
+  }
+  if (migrated) {
+    writeLocalJson(CONSOLE_BAG_KEY, merged);
+  }
+  return merged;
+}
+
+export function saveSharedConsoleBag(bag: ConsoleBagRow[]): void {
+  writeLocalJson(CONSOLE_BAG_KEY, bag);
+}
+
 /** Soft-launch Aarcade games unlockable / playable from a Console. */
 export const CONSOLE_AARCADE_GAMES: Array<{ id: string; name: string; tag?: string }> = [
   { id: 'gotchinopoly', name: 'Gotchinopoly', tag: 'Cartridge' },
@@ -124,6 +195,27 @@ export function playableConsoleGames(
   return CONSOLE_AARCADE_GAMES.filter((g) => loaded.has(g.id));
 }
 
+/** First Aarcade title chosen in Recipe Book before Crafting Table mint. */
+let pendingConsoleCraftTitle: string | null = null;
+
+export function setPendingConsoleCraftTitle(title: string | null): void {
+  const id = String(title || '')
+    .trim()
+    .toLowerCase();
+  pendingConsoleCraftTitle = id && CONSOLE_AARCADE_GAMES.some((g) => g.id === id) ? id : null;
+}
+
+export function peekPendingConsoleCraftTitle(): string | null {
+  return pendingConsoleCraftTitle;
+}
+
+/** Read + clear the pending title (used when Crafting Table mints). */
+export function consumePendingConsoleCraftTitle(): string | null {
+  const title = pendingConsoleCraftTitle;
+  pendingConsoleCraftTitle = null;
+  return title;
+}
+
 function toRecipe(item: InstallationTypeLocal): Recipe {
   const cost = item.alchemicaCost || [0, 0, 0, 0];
   return {
@@ -142,6 +234,7 @@ function toRecipe(item: InstallationTypeLocal): Recipe {
     deprecated: false,
     level: Number(item.level) || 1,
     endDate: undefined,
+    softLaunch: true,
   };
 }
 

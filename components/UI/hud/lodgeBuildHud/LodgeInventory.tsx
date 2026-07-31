@@ -4,12 +4,14 @@ import { InventoryCard } from 'components/UI/component';
 import useAavegotchiSound from 'hooks/useAavegotchiSound';
 import {
   BROADCASTER_ITEM_ID,
+  CONSOLE_ITEM_ID,
   LODGE_FURNITURE_TYPE,
+  getConsoleBagCount,
   getLodgeFurnitureQty,
 } from 'helpers/lodge.layout.helper';
 import inventoryStyles from '../components/Inventory/styles';
 
-export type LodgeFurnitureBrush = typeof BROADCASTER_ITEM_ID;
+export type LodgeFurnitureBrush = typeof BROADCASTER_ITEM_ID | typeof CONSOLE_ITEM_ID;
 
 interface LodgeInstallCard {
   id: number;
@@ -39,10 +41,19 @@ function buildLodgeInstallations(): LodgeInstallCard[] {
       itemType: LODGE_FURNITURE_TYPE,
       type: 'INSTALLATION',
     },
+    {
+      id: CONSOLE_ITEM_ID,
+      itemId: CONSOLE_ITEM_ID,
+      name: 'Console Level 1',
+      quantity: getConsoleBagCount(),
+      level: 1,
+      itemType: LODGE_FURNITURE_TYPE,
+      type: 'INSTALLATION',
+    },
   ];
 }
 
-/** Inventory tray for lodge furniture bag (Broadcaster). */
+/** Inventory tray for lodge furniture bag (Broadcaster + Console). */
 export const LodgeInventory = ({ placeBrush, invTick, onSelectBrush, onExit }: Props): JSX.Element => {
   const { click, oops, back } = useAavegotchiSound();
 
@@ -66,7 +77,9 @@ export const LodgeInventory = ({ placeBrush, invTick, onSelectBrush, onExit }: P
   return (
     <>
       <div className="content">
-        <p className="store-inv-hint">Broadcaster — craft via Recipe Book → Crafting Table, then place here</p>
+        <p className="store-inv-hint">
+          Broadcaster via Crafting Table · Console via CONSOLE recipes — place in Lodge or Store
+        </p>
         <div className="divider"></div>
         <div className="scroll-wrapper">
           <div className="scroll-cantainer-wrapper scrollable info">
@@ -102,7 +115,7 @@ export const LodgeInventory = ({ placeBrush, invTick, onSelectBrush, onExit }: P
         </div>
       </div>
       <div className="exit-button">
-        <Button color="success" fullWidth={true} onClick={handleExit} disableSound>
+        <Button fullWidth={true} onClick={handleExit} disableSound>
           Exit Build Mode
         </Button>
       </div>
@@ -111,16 +124,16 @@ export const LodgeInventory = ({ placeBrush, invTick, onSelectBrush, onExit }: P
         .store-inv-hint {
           margin: 0 0 0.4rem;
           font-size: 1.2rem;
-          color: var(--col-success-300);
+          color: var(--col-pink-300);
           line-height: 1.2;
         }
         .shadow.active {
-          filter: drop-shadow(0rem 0.1rem 0.1rem var(--col-success-300))
-            drop-shadow(0rem -0.1rem 0.1rem var(--col-success-300)) drop-shadow(0.1rem 0rem 0.1rem var(--col-success-300))
-            drop-shadow(-0.1rem 0rem 0.1rem var(--col-success-300)) drop-shadow(0rem 0rem 0.4rem var(--col-success-300));
+          filter: drop-shadow(0rem 0.1rem 0.1rem var(--col-pink-300))
+            drop-shadow(0rem -0.1rem 0.1rem var(--col-pink-300)) drop-shadow(0.1rem 0rem 0.1rem var(--col-pink-300))
+            drop-shadow(-0.1rem 0rem 0.1rem var(--col-pink-300)) drop-shadow(0rem 0rem 0.4rem var(--col-pink-300));
         }
         .installation-wrapper.active {
-          background: var(--col-success-300);
+          background: var(--col-pink-300);
         }
       `}</style>
     </>

@@ -50,10 +50,17 @@ const getInstallationDisplays = (id) => {
 const getTileDisplays = (id: number): { bg: string; img: string } => {
   let img;
   try {
+    // Prefer colored LE art for recipe / inventory cards.
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     img = require(`public/images/tiles/Tile_LE_${id}.png`).default;
-  } catch (error) {
-    img = DefaultTlile;
+  } catch {
+    try {
+      // Soft-launch greyscale bases (when no color sheet exists).
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      img = require(`public/images/tiles/greyscale/Tile_LE_${id}_base.png`).default;
+    } catch {
+      img = DefaultTlile;
+    }
   }
 
   return {

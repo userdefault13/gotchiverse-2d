@@ -25,6 +25,13 @@ export default css`
     height: 100%;
   }
 
+  .img-container :global(.display-img.tile) img,
+  .img-container :global(.display-img.tile) span {
+    object-fit: cover !important;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+
   .end-time {
     position: absolute;
     background-color: rgba(0, 0, 0, 0.8);

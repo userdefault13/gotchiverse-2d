@@ -1,6 +1,5 @@
 import _ from 'lodash';
 import installationTypes from 'shared_code/data/installations.json';
-import tileTypes from 'shared_code/data/tiles.json';
 import { Recipe } from 'types';
 import { isWaallItemId } from './waalls.helper';
 import { isLodgeItemId } from './lodge.helper';
@@ -58,6 +57,26 @@ export function isOriginalMintableRecipe(recipe: Recipe): boolean {
   const ing = recipe.ingredients || ({} as Recipe['ingredients']);
   const sum = Number(ing.fud || 0) + Number(ing.fomo || 0) + Number(ing.alpha || 0) + Number(ing.kek || 0);
   return sum > 0;
+}
+
+/**
+ * Hide LE / event / decor clutter from Installations (page 1).
+ * Decor → DECOR page; golden + soft tiles → CTILES; classic aaltar/harvester/reservoir/maaker stay.
+ */
+export function isHiddenFromOnchainRecipePage(recipe: {
+  id?: number | string;
+  name?: string;
+  type?: string;
+  installationType?: number | string;
+}): boolean {
+  if (recipe.type === 'TILE') return true;
+  if (Number(recipe.installationType) === 7) return true;
+  const name = String(recipe.name || '');
+  if (/^LE\b/i.test(name.trim())) return true;
+  // LE Golden Aaltar L1 + LE Golden NFT Displays (name may vary by size)
+  const id = Number(recipe.id);
+  if ([1, 141, 142, 143, 144, 161].includes(id)) return true;
+  return false;
 }
 
 /** Match subgraph getInstallationTypes type flags (always includes 5 + 8). */
@@ -120,40 +139,22 @@ export function getLocalOnchainRecipes(nameFilter: string | undefined, typeFilte
       if (!id || Number(item.level) !== 1) return false;
       if (!allowed.includes(Number(item.installationType))) return false;
       if (!isOriginalMintableL1(item)) return false;
+      if (
+        isHiddenFromOnchainRecipePage({
+          id,
+          name: item.name,
+          type: 'INSTALLATION',
+          installationType: item.installationType,
+        })
+      ) {
+        return false;
+      }
       return matchesName(item.name, nameFilter);
     })
     .map(toInstallationRecipe);
 
-  const tiles: Recipe[] =
-    typeFilter?.tile === true
-      ? _.values(tileTypes)
-          .filter((item) => {
-            const id = Number(item.itemId);
-            if (!id) return false;
-            // Soft-launch grey cTiles are zero-cost — keep only on-chain mintable tiles.
-            if (costSum(item.alchemicaCost) <= 0) return false;
-            return matchesName(item.name, nameFilter);
-          })
-          .map((item) => {
-            const cost = item.alchemicaCost || [0, 0, 0, 0];
-            return {
-              id: Number(item.itemId),
-              name: item.name,
-              ingredients: {
-                fud: Number(cost[0] || 0),
-                fomo: Number(cost[1] || 0),
-                alpha: Number(cost[2] || 0),
-                kek: Number(cost[3] || 0),
-              },
-              craftingTime: Number((item as { craftTime?: number }).craftTime || 0),
-              itemType: Number(item.tileType),
-              type: 'TILE' as const,
-              installationType: 0,
-              deprecated: false,
-              endDate: undefined,
-            };
-          })
-      : [];
+  // Tiles live on the CTILES page (golden + soft cTiles) — not Installations page 1.
+  const tiles: Recipe[] = [];
 
   return _.concat(installations, tiles);
 }

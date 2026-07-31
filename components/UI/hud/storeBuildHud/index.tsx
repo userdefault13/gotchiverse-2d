@@ -6,6 +6,7 @@ import { Tab } from 'components/UI/elements';
 import { HammerIcon } from 'assets';
 import { StoreInventory, StoreFurnitureBrush } from './StoreInventory';
 import useAavegotchiSound from 'hooks/useAavegotchiSound';
+import { nudgeStoreBuildCamera } from 'helpers/store.scene.helper';
 
 interface FloorTile {
   itemId: number;
@@ -52,10 +53,23 @@ export const StoreBuildHud = ({
 
   const blockPropagation = (e: SyntheticEvent) => e.stopPropagation();
 
+  const panMap = (dir: -1 | 1) => {
+    click();
+    nudgeStoreBuildCamera(dir);
+  };
+
   return (
     <>
       <div className="store-build-root" aria-label="Store Build Mode">
         <div className="build-border" />
+        <div className="map-pan" onClick={blockPropagation} onMouseDown={blockPropagation}>
+          <Button size={2} secondary onClick={() => panMap(1)} title="Shift map left (reveal right tiles)">
+            ◀ Map
+          </Button>
+          <Button size={2} secondary onClick={() => panMap(-1)} title="Shift map right (reveal left tiles)">
+            Map ▶
+          </Button>
+        </div>
         <div className="right-container" onClick={blockPropagation} onMouseDown={blockPropagation}>
           <div className="panel-wrapper">
             <IndentedPanel

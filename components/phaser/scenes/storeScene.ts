@@ -69,6 +69,13 @@ export class StoreScene extends Phaser.Scene {
   private selectedPieceId: string | null = null;
   private selectUi: Phaser.GameObjects.Container | null = null;
   private selectHighlight: Phaser.GameObjects.GameObject | null = null;
+  /** Floating E prompt above nearby Console furniture. */
+  private consoleInteractPrompt: Phaser.GameObjects.Image | null = null;
+  /** Extra horizontal look-offset while build inventory covers the right side. */
+  private buildCamPanX = 0;
+  private static readonly BUILD_HUD_BIAS_X = 240;
+  private static readonly BUILD_PAN_STEP = 120;
+  private static readonly BUILD_PAN_MAX = 480;
 
   constructor() {
     super({ key: MAP_ID_STORE });
@@ -110,6 +117,9 @@ export class StoreScene extends Phaser.Scene {
     }
     if (!this.textures.exists('terminal')) {
       this.load.spritesheet('terminal', '/animations/installations/terminal.png', { frameWidth: 256, frameHeight: 256 });
+    }
+    if (!this.textures.exists('e_interact')) {
+      this.load.image('e_interact', '/images/e_interact.png');
     }
 
     // Floor tiles used by current layout
@@ -237,6 +247,8 @@ export class StoreScene extends Phaser.Scene {
         this.callbacks?.onLeaveDoor();
       }
     }
+
+    this.updateConsoleInteractPrompt();
   }
 
   setLayout(layout: StoreLayout | null) {
@@ -249,7 +261,11 @@ export class StoreScene extends Phaser.Scene {
   }
 
   setBuildState(build: StoreSceneBuildState) {
+    const wasBuild = this.build.buildMode;
     this.build = { pendingPlace: null, ...build };
+    if (build.buildMode !== wasBuild || build.buildMode) {
+      this.applyBuildCamera();
+    }
     if (!build.buildMode) {
       this.clearSelectedFurniture();
       this.clearPlacePreview();
@@ -272,6 +288,27 @@ export class StoreScene extends Phaser.Scene {
       if (this.hoverTx < 0 || this.hoverTx >= STORE_GRID || this.hoverTy < 0 || this.hoverTy >= STORE_GRID) {
         this.placePreview?.setVisible(false);
       }
+    }
+  }
+
+  /** Nudge camera left/right in build mode so tiles clear the inventory tray. */
+  nudgeBuildCamera(dir: -1 | 1) {
+    if (!this.build.buildMode) return;
+    this.buildCamPanX = Phaser.Math.Clamp(
+      this.buildCamPanX + dir * StoreScene.BUILD_PAN_STEP,
+      -StoreScene.BUILD_PAN_MAX,
+      StoreScene.BUILD_PAN_MAX,
+    );
+    this.applyBuildCamera();
+  }
+
+  private applyBuildCamera() {
+    if (!this.cameras?.main) return;
+    if (this.build.buildMode) {
+      this.cameras.main.setFollowOffset(-(StoreScene.BUILD_HUD_BIAS_X + this.buildCamPanX), 0);
+    } else {
+      this.buildCamPanX = 0;
+      this.cameras.main.setFollowOffset(0, 0);
     }
   }
 
@@ -624,18 +661,68 @@ export class StoreScene extends Phaser.Scene {
     }
   }
 
-  private tryInteract() {
+  private getNearbyFurniture(): StoreFurniturePiece[] {
+    if (!this.layout || !this.player) return [];
     const { tx, ty } = this.getPlayerTile();
-    const under = this.layout ? furnitureAt(this.layout, tx, ty) : null;
-    // Also check adjacent tiles (furniture is blocked so player stands beside)
-    const neighbors = [
+    const under = furnitureAt(this.layout, tx, ty);
+    return [
       under,
-      this.layout ? furnitureAt(this.layout, tx, ty - 1) : null,
-      this.layout ? furnitureAt(this.layout, tx, ty + 1) : null,
-      this.layout ? furnitureAt(this.layout, tx - 1, ty) : null,
-      this.layout ? furnitureAt(this.layout, tx + 1, ty) : null,
+      furnitureAt(this.layout, tx, ty - 1),
+      furnitureAt(this.layout, tx, ty + 1),
+      furnitureAt(this.layout, tx - 1, ty),
+      furnitureAt(this.layout, tx + 1, ty),
     ].filter(Boolean) as StoreFurniturePiece[];
-    const piece = neighbors[0];
+  }
+
+  private getNearbyConsole(): StoreFurniturePiece | null {
+    if (this.build.buildMode) return null;
+    return this.getNearbyFurniture().find((p) => isConsoleItemId(p.itemId)) || null;
+  }
+
+  private hideConsoleInteractPrompt() {
+    if (!this.consoleInteractPrompt) return;
+    this.consoleInteractPrompt.setVisible(false);
+    this.consoleInteractPrompt.setActive(false);
+  }
+
+  private updateConsoleInteractPrompt() {
+    const piece = this.getNearbyConsole();
+    if (!piece || !this.textures.exists('e_interact')) {
+      this.hideConsoleInteractPrompt();
+      return;
+    }
+    const spr = this.furnitureSprites.get(piece.id);
+    let x = piece.x * TILE_SIZE + TILE_SIZE / 2;
+    let y = piece.y * TILE_SIZE + TILE_SIZE / 2 - 48;
+    if (spr && 'x' in spr && 'y' in spr) {
+      x = (spr as Phaser.GameObjects.Sprite).x;
+      y = (spr as Phaser.GameObjects.Sprite).y - 48;
+    }
+    if (!this.consoleInteractPrompt) {
+      const img = this.add
+        .image(x, y, 'e_interact')
+        .setOrigin(0.5)
+        .setScale(0.7)
+        .setDepth(60)
+        .setInteractive({ cursor: 'url(/cursors/pointer.png), auto' });
+      img.setName('e_interact');
+      img.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+        pointer.event?.stopPropagation?.();
+        this.tryInteract();
+      });
+      this.consoleInteractPrompt = img;
+    } else {
+      this.consoleInteractPrompt.setPosition(x, y);
+      this.consoleInteractPrompt.setVisible(true);
+      this.consoleInteractPrompt.setActive(true);
+    }
+  }
+
+  private tryInteract() {
+    // Prefer Console when nearby so E / prompt always opens arcade first.
+    const nearby = this.getNearbyFurniture();
+    const consolePiece = nearby.find((p) => isConsoleItemId(p.itemId));
+    const piece = consolePiece || nearby[0];
     if (!piece) return;
     if (isShelfItemId(piece.itemId)) this.callbacks?.onInteractShelf(piece);
     else if (isCashierItemId(piece.itemId)) this.callbacks?.onInteractCashier(piece);

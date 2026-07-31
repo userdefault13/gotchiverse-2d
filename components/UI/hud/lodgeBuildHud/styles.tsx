@@ -2,9 +2,9 @@ import css from 'styled-jsx/css';
 
 export default css`
   .lodge-build-root {
-    --col-blue-border: var(--col-success-300);
-    --col-info-400: var(--col-success-300);
-    --col-info-500: var(--col-success-400);
+    --col-blue-border: var(--col-pink-300);
+    --col-info-400: var(--col-pink-300);
+    --col-info-500: var(--col-pink-400);
     position: fixed;
     inset: 0;
     z-index: 46;
@@ -18,8 +18,8 @@ export default css`
     height: 100%;
     top: 0;
     left: 0;
-    border: 0.2rem solid var(--col-success-300);
-    box-shadow: inset 0rem 0rem 2.4rem rgba(0, 244, 112, 0.85);
+    border: 0.2rem solid var(--col-pink-300);
+    box-shadow: inset 0rem 0rem 2.4rem rgba(255, 43, 214, 0.75);
   }
 
   .right-container {
@@ -33,6 +33,20 @@ export default css`
     transition: opacity 0.2s ease-in-out;
   }
   .right-container:hover {
+    opacity: 1;
+  }
+
+  .map-pan {
+    position: absolute;
+    left: 1.2rem;
+    bottom: 1.2rem;
+    z-index: 2;
+    pointer-events: auto;
+    display: flex;
+    gap: 0.6rem;
+    opacity: 0.92;
+  }
+  .map-pan:hover {
     opacity: 1;
   }
 
@@ -66,8 +80,8 @@ export default css`
     justify-content: center;
     max-width: min(90vw, 56rem);
     padding: 0.8rem 1.2rem;
-    background: rgba(0, 20, 12, 0.88);
-    border: 2px solid var(--col-success-300);
+    background: rgba(40, 0, 36, 0.88);
+    border: 2px solid var(--col-pink-300);
     opacity: 0.9;
   }
   .build-tools:hover {
@@ -96,7 +110,7 @@ export default css`
     line-height: 0.9;
   }
   .batch-msg :global(.ok) {
-    color: var(--col-success-300);
+    color: var(--col-pink-300);
   }
 
   .floor-tile-bar {
@@ -109,7 +123,7 @@ export default css`
   }
   .floor-tile-label {
     font-size: 1.2rem;
-    color: var(--col-success-300);
+    color: var(--col-pink-300);
   }
   .floor-tile-list {
     display: flex;
@@ -126,10 +140,10 @@ export default css`
     cursor: pointer;
   }
   .floor-tile-chip.active {
-    border-color: var(--col-success-300);
+    border-color: var(--col-pink-300);
   }
   .muted {
-    color: #8ab89a;
+    color: #c98bbf;
     font-size: 1.2rem;
   }
 `;

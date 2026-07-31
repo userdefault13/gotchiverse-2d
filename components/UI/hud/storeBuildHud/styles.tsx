@@ -36,6 +36,20 @@ export default css`
     opacity: 1;
   }
 
+  .map-pan {
+    position: absolute;
+    left: 1.2rem;
+    bottom: 1.2rem;
+    z-index: 2;
+    pointer-events: auto;
+    display: flex;
+    gap: 0.6rem;
+    opacity: 0.92;
+  }
+  .map-pan:hover {
+    opacity: 1;
+  }
+
   .panel-wrapper {
     position: relative;
   }

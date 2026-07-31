@@ -17,21 +17,24 @@ import { gotchiverseSubgraph } from 'shared_code/web3/shared.const.web3';
 import { useGame } from 'contexts/GameContext';
 import { FOUNDRY_RECIPES, FoundryRecipe } from 'helpers/foundry/recipes';
 import { FoundryNet } from 'helpers/foundry';
-import { isWaallItemId } from 'helpers/waalls.helper';
+import { getLocalWaallRecipes, isWaallItemId } from 'helpers/waalls.helper';
 import { getLocalLodgePageRecipes, isLodgeItemId } from 'helpers/lodge.helper';
 import { getLocalStorePageRecipes, isStoreItemId } from 'helpers/store.installation.helper';
-import { CONSOLE_AARCADE_GAMES, getLocalConsoleRecipes, isConsoleItemId } from 'helpers/console.installation.helper';
 import {
-  craftConsoleFurniture,
+  CONSOLE_AARCADE_GAMES,
+  getLocalConsoleRecipes,
+  isConsoleItemId,
+  setPendingConsoleCraftTitle,
+} from 'helpers/console.installation.helper';
+import {
   craftStoreFurniture,
-  getConsoleBagCount,
   getFurnitureQty,
   isStoreFurnitureItemId,
   isTerminalItemId,
 } from 'helpers/store.layout.helper';
 import { isBroadcasterItemId } from 'helpers/broadcaster.installation.helper';
 import { getLocalTilePageRecipes } from 'helpers/ctile.helper';
-import { getLocalOnchainRecipes, getLocalDecorationRecipes, isOriginalMintableRecipe } from 'helpers/recipeBook.local.helper';
+import { getLocalOnchainRecipes, getLocalDecorationRecipes, isOriginalMintableRecipe, isHiddenFromOnchainRecipePage } from 'helpers/recipeBook.local.helper';
 
 interface Props {
   selectRecipe: (recipe: Recipe) => void;
@@ -56,16 +59,8 @@ const sortOptions: SortOption[] = [
   },
 ];
 
-/** Original page-one filters — classic on-chain mintable types (no soft-launch Waall/Lodge). */
+/** Original page-one filters — classic craftables + soft-launch Waalls (no LE decor / tiles). */
 const typeFilters = [
-  {
-    name: 'Tiles',
-    value: 'tile',
-  },
-  {
-    name: 'Decorations',
-    value: 'decoration',
-  },
   {
     name: 'Harvesters',
     value: 'harvester',
@@ -82,16 +77,20 @@ const typeFilters = [
     name: 'Maakers',
     value: 'maaker',
   },
+  {
+    name: 'Waalls',
+    value: 'waall',
+  },
 ];
 
 const DEFAULT_TYPE_FILTER = {
-  tile: true,
+  tile: false,
   aaltar: true,
   reservoir: true,
   harvester: true,
-  decoration: true,
+  decoration: false,
   maaker: true,
-  waall: false,
+  waall: true,
   lodge: false,
 };
 
@@ -112,17 +111,24 @@ const unionRecipesById = (...lists: Recipe[][]): Recipe[] => {
 };
 
 const mergeLocalExtras = (recipes: Recipe[], nameFilter: string | undefined, typeFilter): Recipe[] => {
-  // Page one = original on-chain mintables only (Waall/Lodge live on soft-launch pages).
+  // Page one = classic mintables + soft-launch Waalls (Lodge/Store/Console stay on their pages).
   const localOnchain = getLocalOnchainRecipes(nameFilter, typeFilter);
+  const waalls =
+    typeFilter?.waall === false
+      ? []
+      : getLocalWaallRecipes().filter((r) =>
+          nameFilter ? String(r.name || '').toLowerCase().includes(String(nameFilter).toLowerCase()) : true,
+        );
   const withoutSoftLaunch = recipes.filter(
     (r) =>
       !isWaallItemId(r.id) &&
       !isLodgeItemId(r.id) &&
       !isStoreItemId(r.id) &&
       !isConsoleItemId(r.id) &&
-      isOriginalMintableRecipe(r),
+      isOriginalMintableRecipe(r) &&
+      !isHiddenFromOnchainRecipePage(r),
   );
-  return unionRecipesById(localOnchain, withoutSoftLaunch);
+  return unionRecipesById(localOnchain, waalls, withoutSoftLaunch);
 };
 
 const sortRecipes = (merged: Recipe[], sortBy: SortOption): Recipe[] => {
@@ -167,7 +173,7 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
       : []),
     { id: 'store', label: 'STORE RECIPES', shortLabel: 'Soft-launch store & furniture' },
     { id: 'lodge', label: 'LODGE RECIPES', shortLabel: 'Soft-launch lodge & broadcaster' },
-    { id: 'console', label: 'CONSOLE RECIPES', shortLabel: 'Craft into bag · place inside Store' },
+    { id: 'console', label: 'CONSOLE RECIPES', shortLabel: 'Crafting Table mint · place in Store or Lodge' },
     { id: 'ctiles', label: 'CTILE RECIPES', shortLabel: 'cTiles + golden tiles' },
   ];
 
@@ -371,7 +377,7 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
 
   const handleSelectConsoleRecipe = (recipe: Recipe) => {
     click();
-    // Console L1 → pick first Aarcade title, then craft into instance bag.
+    // Console L1 → pick first Aarcade title, then Crafting Table mint into bag.
     if (isConsoleItemId(recipe.id)) {
       setPendingConsoleRecipe(recipe);
       return;
@@ -383,11 +389,10 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
   const finishConsoleCraft = (gameId: string) => {
     if (!pendingConsoleRecipe) return;
     click();
-    const result = craftConsoleFurniture(Number(pendingConsoleRecipe.id), gameId, 1);
-    const qty = getConsoleBagCount(Number(pendingConsoleRecipe.id));
-    setCraftToast(result.ok ? `${result.message} (bag: ${qty})` : result.message);
+    setPendingConsoleCraftTitle(gameId);
+    selectRecipe({ ...pendingConsoleRecipe, softLaunch: true });
     setPendingConsoleRecipe(null);
-    window.setTimeout(() => setCraftToast(''), 2500);
+    setOpen(false);
   };
 
   const showOnChainPage = bookPages[bookPage]?.id === 'onchain';
@@ -459,8 +464,8 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
         ) : null}
         {showConsolePage ? (
           <div className="foundry-intro">
-            Soft-launch arcade: craft a Console into your furniture bag (pick a title to unlock), then place it inside a Store. Level =
-            title slots; L9 plays any owned cartridge.
+            Soft-launch arcade: pick a title, then mint a Console on the Crafting Table into your furniture bag — place it inside
+            a Store or Lodge. Level = title slots; L9 plays any owned cartridge.
           </div>
         ) : null}
         {showCTilesPage ? (
@@ -472,7 +477,7 @@ export const RecipeBook = ({ selectRecipe, disabled }: Props): JSX.Element => {
         {pendingConsoleRecipe ? (
           <div className="foundry-intro console-title-pick">
             <p>
-              Load first title onto <strong>{pendingConsoleRecipe.name}</strong>:
+              Load first title onto <strong>{pendingConsoleRecipe.name}</strong>, then mint on the Crafting Table:
             </p>
             <div className="console-title-grid">
               {CONSOLE_AARCADE_GAMES.map((game) => (

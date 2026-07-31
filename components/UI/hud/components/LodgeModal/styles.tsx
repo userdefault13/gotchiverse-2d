@@ -47,12 +47,12 @@ export default css`
     text-transform: uppercase;
   }
   .owner-badge.build {
-    background: var(--col-success-300);
-    color: #042012;
+    background: var(--col-pink-300);
+    color: #1a0018;
   }
   .build-status {
     font-size: 1.2rem;
-    color: var(--col-success-300);
+    color: var(--col-pink-300);
     max-width: 36rem;
   }
   .cart-chip {

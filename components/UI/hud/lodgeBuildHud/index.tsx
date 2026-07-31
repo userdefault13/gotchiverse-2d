@@ -6,6 +6,7 @@ import { Tab } from 'components/UI/elements';
 import { HammerIcon } from 'assets';
 import { LodgeInventory, LodgeFurnitureBrush } from './LodgeInventory';
 import useAavegotchiSound from 'hooks/useAavegotchiSound';
+import { nudgeLodgeBuildCamera } from 'helpers/lodge.scene.helper';
 
 interface FloorTile {
   itemId: number;
@@ -30,7 +31,7 @@ interface Props {
   onExit: () => void;
 }
 
-/** Mint-green duplicate of parcel BuildHud for lodge installations. */
+/** Hot-pink lodge build HUD — inventory tray + floor tools. */
 export const LodgeBuildHud = ({
   placeBrush,
   floorBrush,
@@ -52,10 +53,23 @@ export const LodgeBuildHud = ({
 
   const blockPropagation = (e: SyntheticEvent) => e.stopPropagation();
 
+  const panMap = (dir: -1 | 1) => {
+    click();
+    nudgeLodgeBuildCamera(dir);
+  };
+
   return (
     <>
       <div className="lodge-build-root" aria-label="Lodge Build Mode">
         <div className="build-border" />
+        <div className="map-pan" onClick={blockPropagation} onMouseDown={blockPropagation}>
+          <Button size={2} secondary onClick={() => panMap(1)} title="Shift map left (reveal right tiles)">
+            ◀ Map
+          </Button>
+          <Button size={2} secondary onClick={() => panMap(-1)} title="Shift map right (reveal left tiles)">
+            Map ▶
+          </Button>
+        </div>
         <div className="right-container" onClick={blockPropagation} onMouseDown={blockPropagation}>
           <div className="panel-wrapper">
             <IndentedPanel
@@ -91,7 +105,7 @@ export const LodgeBuildHud = ({
                 <>Click a floor tile, then Confirm</>
               )}
             </div>
-            <Button color="success" size={2} disabled={!pendingPlace} onClick={onConfirmPlace}>
+            <Button size={2} disabled={!pendingPlace} onClick={onConfirmPlace}>
               Confirm
             </Button>
           </div>

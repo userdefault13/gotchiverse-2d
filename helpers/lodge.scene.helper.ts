@@ -40,6 +40,7 @@ type LodgeSceneApi = {
   setCallbacks: (callbacks: LodgeSceneCallbacks) => void;
   setLayout: (layout: LodgeLayout | null) => void;
   setBuildState: (build: LodgeSceneBuildState) => void;
+  nudgeBuildCamera?: (dir: -1 | 1) => void;
 };
 
 type PhaserGame = {
@@ -99,6 +100,11 @@ export function applyLodgeSceneLayout(layout: LodgeLayout | null) {
 
 export function setLodgeSceneBuildState(build: LodgeSceneBuildState) {
   getLodgeScene()?.setBuildState(build);
+}
+
+/** Pan lodge camera left (-1) / right (1) while build inventory covers the right side. */
+export function nudgeLodgeBuildCamera(dir: -1 | 1) {
+  getLodgeScene()?.nudgeBuildCamera?.(dir);
 }
 
 export type EnterLodgeMapOpts = JoinLodgeOpts & {

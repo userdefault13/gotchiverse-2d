@@ -115,7 +115,11 @@ export const InstallationDisplayImg = ({ type, itemId, installationScale = 0.5, 
         {type === 'INSTALLATION' && spriteMetadata && isSimpleDecoration(itemId) && (
           <span className="item-img">{<Image alt="" src={getSimpleSpriteGif(spriteMetadata.pngName, 'decorations').img} />}</span>
         )}
-        {type === 'TILE' && <span className="item-img">{<Image alt="" src={getTileDisplays(itemId).img} />}</span>}
+        {type === 'TILE' && (
+          <span className="item-img tile-sprite">
+            <Image alt="" src={getTileDisplays(itemId).img} layout="fill" objectFit="cover" unoptimized />
+          </span>
+        )}
       </div>
       <style jsx>{styles}</style>
     </>

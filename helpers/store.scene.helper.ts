@@ -39,6 +39,7 @@ type StoreSceneApi = {
   setCallbacks: (callbacks: StoreSceneCallbacks) => void;
   setLayout: (layout: StoreLayout | null) => void;
   setBuildState: (build: StoreSceneBuildState) => void;
+  nudgeBuildCamera?: (dir: -1 | 1) => void;
 };
 
 type PhaserGame = {
@@ -98,6 +99,11 @@ export function applyStoreSceneLayout(layout: StoreLayout | null) {
 
 export function setStoreSceneBuildState(build: StoreSceneBuildState) {
   getStoreScene()?.setBuildState(build);
+}
+
+/** Pan store camera left (-1) / right (1) while build inventory covers the right side. */
+export function nudgeStoreBuildCamera(dir: -1 | 1) {
+  getStoreScene()?.nudgeBuildCamera?.(dir);
 }
 
 export type EnterStoreMapOpts = JoinStoreOpts & {
