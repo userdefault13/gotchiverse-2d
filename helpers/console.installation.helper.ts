@@ -85,16 +85,28 @@ export function saveSharedConsoleBag(bag: ConsoleBagRow[]): void {
   writeLocalJson(CONSOLE_BAG_KEY, bag);
 }
 
-/** Soft-launch Aarcade games unlockable / playable from a Console. */
+/**
+ * Soft-launch Aarcade games unlockable / playable from a Console.
+ * `id` must match Aarcade admin-settings /games/:id (build catalog), not cartridge-sim aliases.
+ */
 export const CONSOLE_AARCADE_GAMES: Array<{ id: string; name: string; tag?: string }> = [
   { id: 'gotchinopoly', name: 'Gotchinopoly', tag: 'Cartridge' },
   { id: 'billy-mandy', name: 'Billy Mandy', tag: 'Cartridge' },
-  { id: 'fakewaars', name: 'FakeWaars', tag: 'Cartridge' },
+  { id: 'fakewaar', name: 'FakeWaars', tag: 'Cartridge' },
   { id: 'gotp', name: 'Guardian of the Portal', tag: 'Cartridge' },
   { id: 'r-o-f-l', name: 'R.O.F.L', tag: 'Cartridge' },
   { id: 'lickquidaator', name: 'Lickquidaator', tag: 'Cartridge' },
   { id: 'paarcel', name: 'Paarcel', tag: 'Cartridge' },
 ];
+
+/** Map cartridge-sim / display aliases → Aarcade WebGL route slug. */
+export function normalizeAarcadeEmbedGameId(gameId: string): string {
+  const id = String(gameId || '')
+    .trim()
+    .toLowerCase();
+  if (id === 'fakewaars') return 'fakewaar';
+  return id;
+}
 
 export function isConsoleItemId(itemId: number | string): boolean {
   const id = Number(itemId);
@@ -126,9 +138,7 @@ export function normalizeLoadedTitles(raw: unknown): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
   for (const row of raw) {
-    const id = String(row || '')
-      .trim()
-      .toLowerCase();
+    const id = normalizeAarcadeEmbedGameId(String(row || ''));
     if (!id || seen.has(id)) continue;
     if (!CONSOLE_AARCADE_GAMES.some((g) => g.id === id)) continue;
     seen.add(id);
@@ -138,9 +148,7 @@ export function normalizeLoadedTitles(raw: unknown): string[] {
 }
 
 export function getConsoleGameMeta(gameId: string): { id: string; name: string; tag?: string } | undefined {
-  const id = String(gameId || '')
-    .trim()
-    .toLowerCase();
+  const id = normalizeAarcadeEmbedGameId(gameId);
   return CONSOLE_AARCADE_GAMES.find((g) => g.id === id);
 }
 
@@ -153,9 +161,7 @@ export function canLoadTitleOntoConsole(
   if (!isConsoleItemId(piece.itemId)) {
     return { ok: false, message: 'Not a Console' };
   }
-  const title = String(gameId || '')
-    .trim()
-    .toLowerCase();
+  const title = normalizeAarcadeEmbedGameId(gameId);
   if (!getConsoleGameMeta(title)) {
     return { ok: false, message: 'Unknown Aarcade title' };
   }
@@ -178,9 +184,7 @@ export function loadTitleOntoConsole(
   const check = canLoadTitleOntoConsole(piece, gameId);
   const loaded = normalizeLoadedTitles(piece.loadedTitles);
   if (!check.ok) return { ...check, loadedTitles: loaded };
-  const title = String(gameId || '')
-    .trim()
-    .toLowerCase();
+  const title = normalizeAarcadeEmbedGameId(gameId);
   return { ok: true, message: 'Loaded', loadedTitles: [...loaded, title] };
 }
 
@@ -199,9 +203,7 @@ export function playableConsoleGames(
 let pendingConsoleCraftTitle: string | null = null;
 
 export function setPendingConsoleCraftTitle(title: string | null): void {
-  const id = String(title || '')
-    .trim()
-    .toLowerCase();
+  const id = normalizeAarcadeEmbedGameId(title || '');
   pendingConsoleCraftTitle = id && CONSOLE_AARCADE_GAMES.some((g) => g.id === id) ? id : null;
 }
 
@@ -308,7 +310,7 @@ export function buildConsoleEmbedUrl(opts: {
     /\/$/,
     '',
   );
-  const gameId = String(opts.gameId || '').trim();
+  const gameId = normalizeAarcadeEmbedGameId(opts.gameId || '');
   const qs = new URLSearchParams({ embed: '1' });
   if (opts.playerId) qs.set('playerId', String(opts.playerId).toLowerCase());
   if (opts.cartridgeId) qs.set('cartridgeId', String(opts.cartridgeId));

@@ -194,6 +194,19 @@ async function fetchCartridgeStatusForGameId(
   };
 }
 
+function sameAarcadeGameId(a: string, b: string): boolean {
+  const left = String(a || '')
+    .trim()
+    .toLowerCase();
+  const right = String(b || '')
+    .trim()
+    .toLowerCase();
+  if (!left || !right) return false;
+  if (left === right) return true;
+  const canon = (id: string) => (id === 'fakewaar' || id === 'fakewaars' ? 'fakewaars' : id);
+  return canon(left) === canon(right);
+}
+
 function normalizeAarcadeCartridgeList(
   raw: unknown,
   gameId: string,
@@ -211,7 +224,7 @@ function normalizeAarcadeCartridgeList(
       .trim()
       .toLowerCase();
     if (!cartridgeId) continue;
-    if (want && rowGameId && rowGameId !== want) continue;
+    if (want && rowGameId && !sameAarcadeGameId(rowGameId, want)) continue;
     const roster = Array.isArray(rec.cAavegotchis)
       ? rec.cAavegotchis
       : rec.cAavegotchi
