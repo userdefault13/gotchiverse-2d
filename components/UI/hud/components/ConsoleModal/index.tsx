@@ -515,14 +515,32 @@ export const ConsoleModal = (): JSX.Element => {
           {step === 'playing' ? (
             <div className="console-player">
               {embedUrl ? (
-                <iframe
-                  key={embedUrl}
-                  title={`Aarcade ${activeGameId}`}
-                  src={embedUrl}
-                  className="console-iframe"
-                  allow="autoplay; fullscreen; gamepad; clipboard-write"
-                  allowFullScreen
-                />
+                <>
+                  <iframe
+                    key={embedUrl}
+                    title={`Aarcade ${activeGameId}`}
+                    src={embedUrl}
+                    className="console-iframe"
+                    allow="autoplay; fullscreen; gamepad; clipboard-write"
+                    allowFullScreen
+                    referrerPolicy="strict-origin-when-cross-origin"
+                  />
+                  <div className="console-embed-fallback">
+                    <p className="console-meta">
+                      If you see “refused to connect”, Aarcade is blocking this host from embedding. Open the game in a
+                      new tab instead:
+                    </p>
+                    <Button
+                      size={2}
+                      onClick={() => {
+                        click();
+                        window.open(embedUrl, '_blank', 'noopener,noreferrer');
+                      }}
+                    >
+                      Open {pendingGameName || activeGameId || 'game'}
+                    </Button>
+                  </div>
+                </>
               ) : null}
             </div>
           ) : null}

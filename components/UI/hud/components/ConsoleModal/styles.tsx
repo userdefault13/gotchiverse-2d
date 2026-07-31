@@ -134,6 +134,8 @@ export default css`
 
   .console-player {
     flex: 1;
+    display: flex;
+    flex-direction: column;
     min-height: min(78vh, 64rem);
     background: #000;
     border: 0.2rem solid #7b61ff;
@@ -142,9 +144,24 @@ export default css`
 
   .console-iframe {
     width: 100%;
-    height: 100%;
-    min-height: min(78vh, 64rem);
+    flex: 1;
+    min-height: min(62vh, 52rem);
     border: 0;
     background: #000;
+  }
+
+  .console-embed-fallback {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.2rem;
+    border-top: 0.15rem solid rgba(255, 107, 157, 0.55);
+    background: rgba(16, 2, 33, 0.95);
+  }
+
+  .console-embed-fallback .console-meta {
+    flex: 1;
+    min-width: 18rem;
   }
 `;
