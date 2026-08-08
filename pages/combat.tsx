@@ -73,7 +73,8 @@ const Combat = () => {
       currentNetwork !== process.env.REALM_NETWORK &&
       currentNetwork !== 'matic' &&
       currentNetwork !== 'base' &&
-      currentNetwork !== 'robinhood'
+      currentNetwork !== 'robinhood' &&
+      currentNetwork !== 'bitcoin'
     ) {
       void router.push('/');
     }

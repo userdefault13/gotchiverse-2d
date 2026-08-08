@@ -3,6 +3,7 @@ import { State, initialState } from './store';
 import { JsonRpcProvider, Web3Provider } from '@ethersproject/providers';
 import { Action, reducer } from './reducer';
 import { chainIdToName } from 'helpers/ethers.helper';
+import { getSoftNetwork } from 'helpers/softNetwork.helper';
 import Web3ConnectProvider, { useUserWalletDataContext, useWeb3React } from 'components/utility/WalletConnect';
 import { connectToSecondaryNetwork } from './actions';
 
@@ -62,6 +63,14 @@ const Web3Mapper = ({ children }: { children: React.ReactNode }): JSX.Element =>
 
   useEffect(() => {
     if (!useLocalhost) {
+      // Soft Bitcoin track overrides MetaMask's EVM eth_chainId (Base/RH stay underneath).
+      if (getSoftNetwork() === 'bitcoin') {
+        dispatch({
+          type: 'UPDATE_CURRENT_NETWORK',
+          currentNetwork: 'bitcoin',
+        });
+        return;
+      }
       dispatch({
         type: 'UPDATE_CURRENT_NETWORK',
         currentNetwork: chainIdToName(chainId),
@@ -69,6 +78,19 @@ const Web3Mapper = ({ children }: { children: React.ReactNode }): JSX.Element =>
       // console.log('currentNetwork', chainIdToName(chainId));
     }
   }, [chainId]);
+
+  // Soft-network events (Switch to BTC) — keep UI pinned without EIP-1193 chain change.
+  useEffect(() => {
+    if (useLocalhost || typeof window === 'undefined') return;
+    const onSoft = (ev: Event) => {
+      const detail = (ev as CustomEvent)?.detail;
+      if (detail?.network === 'bitcoin') {
+        dispatch({ type: 'UPDATE_CURRENT_NETWORK', currentNetwork: 'bitcoin' });
+      }
+    };
+    window.addEventListener('aarcade-soft-network', onSoft as EventListener);
+    return () => window.removeEventListener('aarcade-soft-network', onSoft as EventListener);
+  }, []);
 
   useEffect(() => {
     if (!useLocalhost) {

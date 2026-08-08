@@ -46,11 +46,25 @@ export default css`
     border-radius: 50%;
   }
 
+  .btc-icon {
+    background: rgba(247, 147, 26, 0.15);
+  }
+
   .content {
     margin-left: 2rem;
+    min-width: 0;
   }
   .content p {
     font-size: 2.4rem;
     margin: 0;
   }
+
+  .btc-sub {
+    font-size: 1.4rem !important;
+    margin: 0.4rem 0 0.8rem !important;
+    max-width: 36rem;
+    line-height: 1.25;
+    opacity: 0.9;
+  }
+
 `;

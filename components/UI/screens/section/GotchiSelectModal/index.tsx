@@ -32,7 +32,11 @@ import { useRealm } from 'contexts/RealmContext';
 import useResizeObserver from 'hooks/useResizeObserver';
 import router from 'next/router';
 import { toast } from 'react-toastify';
-import { collateralByAddress, getMintableCollaterals, type CollateralObject } from 'helpers/ethers.helper';
+import {
+  collateralByAddress,
+  getMintableCollateralsForNetwork,
+  type CollateralObject,
+} from 'helpers/ethers.helper';
 import { fetchCartridgeHeroSideSVGs, fetchCollateralGotchiBlobUrl } from 'helpers/collateralPreview';
 import { traitNumber } from 'helpers/composeGotchi';
 import { convertInlineSVGToBlobURL } from 'helpers/aavegotchi';
@@ -72,7 +76,7 @@ import {
   filterMintablePaarcelsOwnedByWallet,
 } from 'helpers/cartridgePaarcel.helper';
 
-import { GotchiverseBaseCartridge, GotchiverseRhCartridge } from 'assets';
+import { GotchiverseBaseCartridge, GotchiverseBtcCartridge, GotchiverseRhCartridge } from 'assets';
 import {
   fetchAndSetGlobalParcels,
   fetchContractOwnedParcels,
@@ -172,7 +176,12 @@ export const GotchiSelectModal = ({
   useEffect(() => {
     if (mintStep !== 'paarcels') setSelectedPaarcelId(null);
   }, [mintStep]);
-  const cartridgeArt = currentNetwork === 'robinhood' ? GotchiverseRhCartridge : GotchiverseBaseCartridge;
+  const cartridgeArt =
+    currentNetwork === 'robinhood'
+      ? GotchiverseRhCartridge
+      : currentNetwork === 'bitcoin'
+        ? GotchiverseBtcCartridge
+        : GotchiverseBaseCartridge;
   const selectedIsCartridgeHero = Boolean(selectedGotchi?.isCartridgeHero);
 
   const previewCollateral = useMemo(() => {
@@ -554,7 +563,12 @@ export const GotchiSelectModal = ({
     setSelectedWalletGotchi(null);
     setMintStep('caavegotchi');
     // Default collateral so center + tip match immediately in manage mint rail.
-    setSelectedCollateral((prev) => prev || getMintableCollaterals()[0] || null);
+    // Bitcoin soft-launch: BTC cAavegotchi only (amWBTC).
+    const mintables = getMintableCollateralsForNetwork(currentNetwork);
+    setSelectedCollateral((prev) => {
+      if (prev && mintables.some((c) => c.name === prev.name)) return prev;
+      return mintables[0] || null;
+    });
   };
 
   const handleGotchiSelect = (gotchi: GotchiverseAavegotchi) => {
@@ -1008,7 +1022,13 @@ export const GotchiSelectModal = ({
     setMintError(null);
     setSelectedPaarcelId(null);
     setMintStep('paarcels');
-    if (currentAccount && globalProvider && currentNetwork && currentNetwork !== 'robinhood') {
+    if (
+      currentAccount &&
+      globalProvider &&
+      currentNetwork &&
+      currentNetwork !== 'robinhood' &&
+      currentNetwork !== 'bitcoin'
+    ) {
       // Owned list: Base Realm tokenIdsOfOwner (Aarcade subgraph owner filters not healthy yet).
       // Subgraph URLs still point at Aarcade for other reads once compat proxy is fixed.
       try {
@@ -1064,7 +1084,7 @@ export const GotchiSelectModal = ({
 
   const addPaarcelToCart = async (row: MintablePaarcelRow) => {
     if (!currentNetwork || !globalProvider || !currentAccount) return;
-    const net = currentNetwork === 'robinhood' ? 'base' : currentNetwork;
+    const net = (currentNetwork === 'robinhood' || currentNetwork === 'bitcoin') ? 'base' : currentNetwork;
     const { owned, skipped } = await filterMintablePaarcelsOwnedByWallet([row], {
       wallet: currentAccount,
       network: net,
@@ -1085,7 +1105,7 @@ export const GotchiSelectModal = ({
 
   const addAllPaarcelsToCart = async (rows: MintablePaarcelRow[]) => {
     if (!currentNetwork || !globalProvider || !currentAccount || rows.length === 0) return;
-    const net = currentNetwork === 'robinhood' ? 'base' : currentNetwork;
+    const net = (currentNetwork === 'robinhood' || currentNetwork === 'bitcoin') ? 'base' : currentNetwork;
     const { owned, skipped } = await filterMintablePaarcelsOwnedByWallet(rows, {
       wallet: currentAccount,
       network: net,
@@ -1161,7 +1181,7 @@ export const GotchiSelectModal = ({
     let nestedInstalls = 0;
     try {
       if (paarcelCartRows.length > 0) {
-        const net = currentNetwork === 'robinhood' ? 'base' : currentNetwork;
+        const net = (currentNetwork === 'robinhood' || currentNetwork === 'bitcoin') ? 'base' : currentNetwork;
         // Only drop parcels whose Base ownerOf is a different address (true rentals).
         // RPC failures stay in cart and are verified by Aarcade.
         const { owned: ownedRows, skipped } = await filterMintablePaarcelsOwnedByWallet(paarcelCartRows, {
@@ -1261,7 +1281,7 @@ export const GotchiSelectModal = ({
             installationType: r.installationType,
           })),
           cartridgeId,
-          network: currentNetwork === 'robinhood' ? 'base' : currentNetwork,
+          network: (currentNetwork === 'robinhood' || currentNetwork === 'bitcoin') ? 'base' : currentNetwork,
         });
         if (!result.ok && !(Number(result.imported) > 0 || Number(result.alreadyMinted) > 0)) {
           const msg = result.error || 'Failed importing installations';
@@ -1902,6 +1922,7 @@ export const GotchiSelectModal = ({
                   />
                 ) : mintStep === 'caavegotchi' && currentNetwork && globalProvider ? (
                   <CollateralGotchiGallery
+                    network={currentNetwork}
                     selectedCollateral={selectedCollateral}
                     onSelect={(c) => {
                       setMintError(null);

@@ -132,8 +132,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   const phase = normalizePhase(req.body?.phase);
+  const gameId = normalizeGameId(req.body?.gameId || process.env.NEXT_PUBLIC_AARCADE_CARTRIDGE_GAME_ID);
+  const isBtcTrack = gameId === 'gotchiverse-btc' || gameId === 'aarena-btc';
+
   const needsCollateral = phase === 'bind' || phase === 'bind-owned' || phase === 'bind-rental';
-  const collateral = needsCollateral ? toSimCollateralId(req.body?.collateral) || (phase === 'bind-owned' ? 'dai' : null) : null;
+  // Bitcoin soft-launch: only BTC cAavegotchi (wbtc). Ignore other gallery collaterals.
+  let collateral = needsCollateral
+    ? toSimCollateralId(req.body?.collateral) || (phase === 'bind-owned' ? 'dai' : null)
+    : null;
+  if (needsCollateral && isBtcTrack) {
+    if (phase === 'bind-owned' || phase === 'bind-rental') {
+      return res.status(400).json({
+        error: 'Bitcoin track only supports minting a BTC cAavegotchi starter (wbtc). L1 bind is Base/RH only.',
+        code: 'BTC_ONLY_STARTER',
+      });
+    }
+    collateral = 'wbtc';
+  }
   if (needsCollateral && !collateral) {
     return res.status(400).json({
       error: 'Invalid collateral',
@@ -149,8 +164,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       code: 'INVALID_SOURCE_TOKEN',
     });
   }
-
-  const gameId = normalizeGameId(req.body?.gameId || process.env.NEXT_PUBLIC_AARCADE_CARTRIDGE_GAME_ID);
   const templateId = String(req.body?.templateId || DEFAULT_TEMPLATE_ID).trim() || DEFAULT_TEMPLATE_ID;
   const simPay = req.body?.simPay !== false;
 

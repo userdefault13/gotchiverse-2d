@@ -41,11 +41,13 @@ export const Navigation = (): JSX.Element => {
   }, []);
 
   const isRobinhood = currentNetwork === 'robinhood';
+  const isBitcoin = currentNetwork === 'bitcoin';
   const brandLogo = isRobinhood ? LogoRh : LogoBase;
+  const navMod = isRobinhood ? ' rh' : isBitcoin ? ' btc' : '';
 
   return (
     <>
-      <nav className={`navigation-container${isRobinhood ? ' rh' : ''}`}>
+      <nav className={`navigation-container${navMod}`}>
         <nav className="navigation-content flex">
           <div className="logo-container">
             <div className="logo-wrapper" onClick={async () => await router.push('/')}>

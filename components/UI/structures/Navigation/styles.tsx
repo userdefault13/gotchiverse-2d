@@ -29,6 +29,21 @@ export default css`
     filter: hue-rotate(-75deg) saturate(1.4) brightness(1.15);
   }
 
+  /* Bitcoin orange track */
+  .navigation-container.btc {
+    --col-info-border: var(--col-btc-neon);
+    --col-info-300: var(--col-btc-300);
+    --col-info-500: var(--col-btc-500);
+    --col-info-600: var(--col-btc-600);
+    --col-info-700: var(--col-btc-700);
+    --col-info-800: var(--col-btc-neon);
+    background: var(--col-btc-500);
+  }
+
+  .navigation-container.btc .setting-button-container {
+    filter: hue-rotate(-20deg) saturate(1.35) brightness(1.1);
+  }
+
   .logo-container {
     display: flex;
     align-items: center;

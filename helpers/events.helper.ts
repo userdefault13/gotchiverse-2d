@@ -72,6 +72,7 @@ export const fetchEventsList = async (network: string, owner?: string) => {
     process.env.NEXT_PUBLIC_DISABLE_BOUNCE_GATES === 'true' ||
     network === 'base' ||
     network === 'robinhood' ||
+    network === 'bitcoin' ||
     process.env.REALM_NETWORK === 'base' ||
     process.env.NETWORK === 'base'
   ) {

@@ -4,13 +4,13 @@ import { parseUnits } from 'ethers/lib/utils';
 
 export const DEFAULT_GAS_PRICE = '32';
 
-/** Networks accepted for Gotchiverse play when REALM is Base (includes RH aarena). */
+/** Networks accepted for Gotchiverse play when REALM is Base (includes RH + BTC aarena). */
 export function isRealmAllowedNetwork(currentNetwork: string | undefined): boolean {
   if (!currentNetwork) return false;
   const expected = process.env.REALM_NETWORK || process.env.NETWORK || 'base';
   if (currentNetwork === expected) return true;
-  // Base deploy also accepts Robinhood Chain for aarena-rh.
-  if (expected === 'base' && currentNetwork === 'robinhood') return true;
+  // Base deploy also accepts Robinhood Chain + soft Bitcoin track for aarena.
+  if (expected === 'base' && (currentNetwork === 'robinhood' || currentNetwork === 'bitcoin')) return true;
   if (['local', 'alpha', 'development'].includes(process.env.APP_ENV || '') && currentNetwork === 'localhost') {
     return true;
   }
@@ -104,8 +104,13 @@ export function wrongExpectedNetworkError(currentNetwork, expectedTestnet) {
 export function wrongExpectedNetworkMatic(currentNetwork) {
   if (!currentNetwork) return 'Please connect your wallet.';
   const expected = process.env.REALM_NETWORK || process.env.NETWORK || 'base';
-  if (expected === 'base' && currentNetwork !== 'base' && currentNetwork !== 'robinhood') {
-    return 'Please connect to Base or Robinhood Chain!';
+  if (
+    expected === 'base' &&
+    currentNetwork !== 'base' &&
+    currentNetwork !== 'robinhood' &&
+    currentNetwork !== 'bitcoin'
+  ) {
+    return 'Please connect to Base, Robinhood Chain, or Bitcoin!';
   }
   if (process.env.ENVIRONMENT === 'prod' && currentNetwork !== 'matic' && expected !== 'base') return 'Please connect to Polygon Network!';
   else if (process.env.ENVIRONMENT === 'dev' && currentNetwork !== 'mumbai') return 'Please connect to Mumbai Testnet!';

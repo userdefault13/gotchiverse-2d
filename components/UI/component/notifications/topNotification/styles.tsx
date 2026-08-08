@@ -11,4 +11,12 @@ export default css`
     color: var(--col-purple-border);
     box-shadow: 0 0 .8rem .2rem var(--col-purple-border);
   }
+
+  .notification-container.btc {
+    border-left-color: var(--col-btc-neon, #f7931a);
+    border-right-color: var(--col-btc-neon, #f7931a);
+    border-bottom-color: var(--col-btc-neon, #f7931a);
+    color: var(--col-btc-neon, #f7931a);
+    box-shadow: 0 0 0.8rem 0.2rem rgba(247, 147, 26, 0.65);
+  }
 `;

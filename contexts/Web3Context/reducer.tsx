@@ -74,6 +74,15 @@ export const reducer = (state: State, action: Action): State => {
         secondaryNetwork: action.secondaryNetwork,
       };
     case 'HANDLE_LOGOUT':
+      if (typeof window !== 'undefined') {
+        try {
+          // Soft Bitcoin pin must not survive logout.
+          localStorage.removeItem('aarcadeSoftNetwork');
+          localStorage.removeItem('aarcadeBtcAddress');
+        } catch {
+          /* ignore */
+        }
+      }
       return {
         ...state,
         currentNetwork: undefined,

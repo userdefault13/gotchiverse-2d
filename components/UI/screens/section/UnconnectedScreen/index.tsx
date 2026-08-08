@@ -4,7 +4,7 @@ import { Button, WalletConnectButton } from 'components/UI/elements';
 import { useWeb3 } from 'contexts/Web3Context';
 import { useUserWalletDataContext } from 'components/utility/WalletConnect';
 import Image from 'next/image';
-import { addBase, addRobinhood } from 'helpers/ethers.helper';
+import { addBase, addBitcoin, addRobinhood } from 'helpers/ethers.helper';
 import styles from './styles';
 import { GotchiverseLogo, GotchiverseTitleHalloween } from 'assets';
 import GameController from 'components/controllers/GameController';
@@ -20,7 +20,7 @@ export const UnconnectedScreen = (): JSX.Element => {
   const [{ gameConfig }] = useGame();
   const isHalloween = gameConfig.gotchiverseTheme === 'halloween';
 
-  const [{ currentNetwork, currentAccount }] = useWeb3();
+  const [{ currentNetwork, currentAccount }, web3Dispatch] = useWeb3();
 
   const checkUser = async () => {
     click();
@@ -35,6 +35,11 @@ export const UnconnectedScreen = (): JSX.Element => {
   const connectToRobinhood = async () => {
     handleNetworkChange(ChainId.robinhood);
     void addRobinhood();
+  };
+
+  const connectToBitcoin = async () => {
+    await addBitcoin();
+    web3Dispatch({ type: 'UPDATE_CURRENT_NETWORK', currentNetwork: 'bitcoin' });
   };
 
   const onExpectedNetwork = isRealmAllowedNetwork(currentNetwork);
@@ -64,15 +69,26 @@ export const UnconnectedScreen = (): JSX.Element => {
                         Connect to Base
                       </Button>
                       {EXPECTED_NETWORK === 'base' && (
-                        <Button
-                          size={3.2}
-                          onClick={connectToRobinhood}
-                          color={gameConfig.gotchiverseTheme}
-                          secondary
-                          fullWidth
-                        >
-                          Connect to Robinhood Chain
-                        </Button>
+                        <>
+                          <Button
+                            size={3.2}
+                            onClick={connectToRobinhood}
+                            color={gameConfig.gotchiverseTheme}
+                            secondary
+                            fullWidth
+                          >
+                            Connect to Robinhood Chain
+                          </Button>
+                          <Button
+                            size={3.2}
+                            onClick={connectToBitcoin}
+                            color={gameConfig.gotchiverseTheme}
+                            secondary
+                            fullWidth
+                          >
+                            Connect to Bitcoin
+                          </Button>
+                        </>
                       )}
                     </div>
                   )}

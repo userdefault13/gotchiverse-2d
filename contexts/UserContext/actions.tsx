@@ -232,7 +232,8 @@ export const fetchAndSetMaticBalance = async (
       !maticAddress ||
       /^0x0{40}$/i.test(maticAddress) ||
       web3Options.network === 'base' ||
-      web3Options.network === 'robinhood';
+      web3Options.network === 'robinhood' ||
+      web3Options.network === 'bitcoin';
     let formattedBalance: number;
     if (useNativeGas) {
       const balance = await web3Options.provider.getBalance(web3Options.account);

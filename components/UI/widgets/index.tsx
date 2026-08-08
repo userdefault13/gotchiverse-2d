@@ -2,6 +2,7 @@ export * from './ApprovalNeeded';
 export * from './ChatWindow';
 export * from './GotchiSVG';
 export * from './MaticNeeded';
+export * from './CashAppBuyBtcModal';
 export * from './NewsList';
 export * from './Truncate';
 export * from './WearableThumbnail';

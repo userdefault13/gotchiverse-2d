@@ -1,7 +1,19 @@
 import { BigNumber } from 'ethers';
 import { DiamondName } from 'web3/contract';
 
-export type NetworkNames = 'rinkeby' | 'kovan' | 'main' | 'mumbai' | 'polyon' | 'matic' | 'goerli' | 'localhost' | 'base' | 'robinhood';
+export type NetworkNames =
+  | 'rinkeby'
+  | 'kovan'
+  | 'main'
+  | 'mumbai'
+  | 'polyon'
+  | 'matic'
+  | 'goerli'
+  | 'localhost'
+  | 'base'
+  | 'robinhood'
+  /** Soft-launch Bitcoin track (MetaMask SegWit / SRC-721 Aarena) — not an EVM chain id. */
+  | 'bitcoin';
 export type MoralisNetwork = 'POLYGON' | 'ETHEREUM';
 
 export interface NFTDisplayData {

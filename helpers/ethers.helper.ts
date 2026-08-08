@@ -133,6 +133,9 @@ export function chainIdToName(chainId: number): NetworkNames {
       return 'base';
     case 4663:
       return 'robinhood';
+    /** Soft-launch Bitcoin (app UI only — not EIP-1193). */
+    case 8253038:
+      return 'bitcoin';
 
     default:
       break;
@@ -559,6 +562,22 @@ export function getMintableCollaterals(): CollateralObject[] {
   });
 }
 
+/**
+ * Gallery for soft-launch mint: Bitcoin track is BTC cAavegotchi only (amWBTC / wbtc).
+ * Base / RH keep the full mintable set.
+ */
+export function getMintableCollateralsForNetwork(network?: string | null): CollateralObject[] {
+  const all = getMintableCollaterals();
+  if (network === 'bitcoin') {
+    return all.filter((c) => {
+      const n = (c.name || '').toLowerCase();
+      const d = (c.maticDisplay || '').toLowerCase();
+      return n.includes('wbtc') || d.includes('wbtc') || n === 'btc';
+    });
+  }
+  return all;
+}
+
 export function collateralDisplayName(collateral: CollateralObject): string {
   return collateral.maticDisplay || collateral.name;
 }
@@ -625,6 +644,8 @@ export async function addPolygon(): Promise<void> {
 
 /** Add / switch MetaMask to Robinhood Chain mainnet (4663 / 0x1237). */
 export async function addRobinhood(): Promise<void> {
+  const { clearBitcoinSoftTrack } = await import('helpers/softNetwork.helper');
+  clearBitcoinSoftTrack();
   // @ts-expect-error
   await window.ethereum?.request({
     method: 'wallet_addEthereumChain',
@@ -645,6 +666,8 @@ export async function addRobinhood(): Promise<void> {
 }
 
 export async function addBase(): Promise<void> {
+  const { clearBitcoinSoftTrack } = await import('helpers/softNetwork.helper');
+  clearBitcoinSoftTrack();
   // @ts-expect-error
   await window.ethereum?.request({
     method: 'wallet_addEthereumChain',
@@ -662,4 +685,54 @@ export async function addBase(): Promise<void> {
       },
     ],
   });
+}
+
+/**
+ * Soft-launch Bitcoin track: pin app network to `bitcoin` and try MetaMask SegWit (bip122) connect.
+ * Does NOT call wallet_addEthereumChain — Bitcoin is not an EVM chain.
+ * Explicitly prompts MetaMask for a Bitcoin account; surfaces success / failure in the toast UI.
+ */
+export async function addBitcoin(): Promise<void> {
+  const { setSoftNetwork } = await import('helpers/softNetwork.helper');
+  const { connectMetaMaskBitcoinSegwit } = await import('helpers/bitcoinWallet.helper');
+  setSoftNetwork('bitcoin');
+
+  // Notify UI immediately so the network label flips while MetaMask may still be prompting.
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('aarcade-soft-network', { detail: { network: 'bitcoin' } }));
+  }
+
+  const result = await connectMetaMaskBitcoinSegwit();
+  if (result.error) {
+    console.warn('[bitcoin] MetaMask SegWit connect:', result.error);
+  }
+
+  if (GlobalState.NOTIFICATION?.dispatch) {
+    if (result.address) {
+      showNotificationWithTimeout(GlobalState.NOTIFICATION.dispatch, {
+        type: 'success',
+        title: 'Bitcoin connected',
+        message: `MetaMask Bitcoin address linked (${result.address.slice(0, 8)}…).`,
+        options: { sound: true },
+      });
+    } else {
+      showNotificationWithTimeout(GlobalState.NOTIFICATION.dispatch, {
+        type: 'warning',
+        title: 'Bitcoin wallet',
+        message:
+          result.error ||
+          'Approve the MetaMask Bitcoin permission prompt (or add a BTC account), then click Connect BTC Wallet again.',
+        options: { sound: true },
+      });
+    }
+  }
+
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(
+      new CustomEvent('aarcade-soft-network', { detail: { network: 'bitcoin', address: result.address } }),
+    );
+    window.dispatchEvent(
+      new CustomEvent('btc-wallet-updated', { detail: { address: result.address, error: result.error } }),
+    );
+  }
 }

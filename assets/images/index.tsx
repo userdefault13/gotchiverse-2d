@@ -40,6 +40,7 @@ import LogoBase from './logo-base.png';
 import LogoRh from './logo-rh.png';
 import GotchiverseBaseCartridge from './gotchiverse-base-cartridge.png';
 import GotchiverseRhCartridge from './gotchiverse-rh-cartridge.png';
+import GotchiverseBtcCartridge from './gotchiverse-btc-cartridge.svg';
 import CompanyLogo from './pixelcraft.png';
 import AarcadeLogo from './aarcade.png';
 import MainBackground from './main-bg.png';
@@ -111,6 +112,7 @@ export {
   LogoRh,
   GotchiverseBaseCartridge,
   GotchiverseRhCartridge,
+  GotchiverseBtcCartridge,
   CompanyLogo,
   AarcadeLogo,
   MainBackground,

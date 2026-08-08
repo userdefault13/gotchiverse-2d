@@ -2,10 +2,11 @@ import styles from './styles';
 import { CollateralGotchiCard, GotchiSelectCard } from 'components/UI/component';
 import { Button } from 'components/UI/elements';
 import { SoftCText, WearableThumbnail } from 'components/UI/widgets';
-import { getMintableCollaterals, type CollateralObject } from 'helpers/ethers.helper';
+import { getMintableCollateralsForNetwork, type CollateralObject } from 'helpers/ethers.helper';
 import useAavegotchiSound from 'hooks/useAavegotchiSound';
 import { useEffect, useMemo, useState } from 'react';
 import { useUser } from 'contexts/UserContext';
+import { useWeb3 } from 'contexts/Web3Context';
 import type { GotchiverseAavegotchi } from 'types';
 import LazyLoad from 'react-lazyload';
 import { mintedSourceTokenIds } from 'helpers/cartridgeHero.helper';
@@ -23,6 +24,8 @@ interface Props {
   onSelectWalletGotchi?: (gotchi: GotchiverseAavegotchi) => void;
   onMintWalletGotchi?: (opts: { withWearables: boolean }) => void | Promise<void>;
   onMintAllOwnedWalletGotchis?: (opts: { withWearables: boolean }) => void | Promise<void>;
+  /** Soft-launch network: bitcoin → BTC cAavegotchi only. */
+  network?: string | null;
 }
 
 export const CollateralGotchiGallery = ({
@@ -35,11 +38,16 @@ export const CollateralGotchiGallery = ({
   onSelectWalletGotchi,
   onMintWalletGotchi,
   onMintAllOwnedWalletGotchis,
+  network: networkProp = null,
 }: Props): JSX.Element => {
   const { click } = useAavegotchiSound();
   const [{ userAavegotchis, cartridgeHeroes }] = useUser();
-  const items = useMemo(() => getMintableCollaterals(), []);
-  const walletGotchis = userAavegotchis || [];
+  const [{ currentNetwork }] = useWeb3();
+  const network = networkProp || currentNetwork;
+  const isBitcoin = network === 'bitcoin';
+  const items = useMemo(() => getMintableCollateralsForNetwork(network), [network]);
+  // BTC track: soft-mint BTC cAavegotchi only — hide L1 wallet bind tabs.
+  const walletGotchis = isBitcoin ? [] : userAavegotchis || [];
 
   const mintedIds = useMemo(() => mintedSourceTokenIds(cartridgeHeroes), [cartridgeHeroes]);
   const unmintedOwned = useMemo(
@@ -48,16 +56,23 @@ export const CollateralGotchiGallery = ({
   );
 
   // Prefer Wallet Gotchis when the player has any — Mint All lives on that tab.
-  const [tab, setTab] = useState<MintTab>(() => (walletGotchis.length > 0 ? 'wallet' : 'caavegotchi'));
+  // Bitcoin track: collateral-only (BTC cAavegotchi).
+  const [tab, setTab] = useState<MintTab>(() =>
+    isBitcoin ? 'caavegotchi' : walletGotchis.length > 0 ? 'wallet' : 'caavegotchi',
+  );
   const [mintWithWearables, setMintWithWearables] = useState(true);
 
   useEffect(() => {
+    if (isBitcoin) {
+      setTab('caavegotchi');
+      return;
+    }
     if (walletGotchis.length > 0 && tab === 'caavegotchi' && unmintedOwned.length > 0) {
       setTab('wallet');
     }
     // Only auto-switch when roster first becomes available.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [walletGotchis.length]);
+  }, [walletGotchis.length, isBitcoin]);
 
   const handleMintCollateral = () => {
     if (minting || !selectedCollateral) return;
@@ -113,38 +128,50 @@ export const CollateralGotchiGallery = ({
           <span className="title-lead">Mint</span>{' '}
           <SoftCText>cAavegotchi</SoftCText>
         </h2>
-        <div className="mint-tabs" role="tablist">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === 'caavegotchi'}
-            className={`mint-tab ${tab === 'caavegotchi' ? 'active' : ''}`}
-            onClick={() => {
-              click();
-              setTab('caavegotchi');
-            }}
-          >
-            Collateral
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={tab === 'wallet'}
-            className={`mint-tab ${tab === 'wallet' ? 'active' : ''}`}
-            onClick={() => {
-              click();
-              setTab('wallet');
-            }}
-          >
-            Wallet Gotchis{unmintedOwned.length > 0 ? ` (${unmintedOwned.length})` : ''}
-          </button>
-        </div>
+        {!isBitcoin && (
+          <div className="mint-tabs" role="tablist">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === 'caavegotchi'}
+              className={`mint-tab ${tab === 'caavegotchi' ? 'active' : ''}`}
+              onClick={() => {
+                click();
+                setTab('caavegotchi');
+              }}
+            >
+              Collateral
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === 'wallet'}
+              className={`mint-tab ${tab === 'wallet' ? 'active' : ''}`}
+              onClick={() => {
+                click();
+                setTab('wallet');
+              }}
+            >
+              Wallet Gotchis{unmintedOwned.length > 0 ? ` (${unmintedOwned.length})` : ''}
+            </button>
+          </div>
+        )}
 
         {tab === 'caavegotchi' ? (
           <>
             <p className="gallery-caption">
-              Base-level cAavegotchi — pick a collateral spirit. <span className="price-tag">$5 USDC</span>{' '}
-              <span className="price-note">(sim — not live)</span>
+              {isBitcoin ? (
+                <>
+                  Bitcoin track — mint a <strong>BTC cAavegotchi</strong> only (amWBTC).{' '}
+                  <span className="price-tag">$5 USDC</span>{' '}
+                  <span className="price-note">(sim — not live)</span>
+                </>
+              ) : (
+                <>
+                  Base-level cAavegotchi — pick a collateral spirit. <span className="price-tag">$5 USDC</span>{' '}
+                  <span className="price-note">(sim — not live)</span>
+                </>
+              )}
             </p>
             <div className="gotchi-list-container">
               <div className="gotchi-list-inner scrollable">

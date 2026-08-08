@@ -162,6 +162,13 @@ export type AarcadeCartridgeStatus = {
 /** Aarcade Games catalog (mint / buy cartridge). */
 export const getAarcadeGamesCatalogUrl = (): string => `${AARCADE_HOME}/games`;
 
+/** Soft-launch cartridge manage (pocket sats / withdraw). */
+export const getAarcadeCartridgeManageUrl = (cartridgeId?: string | null): string => {
+  const id = String(cartridgeId || '').trim();
+  if (id) return `${AARCADE_HOME}/cartridges/${encodeURIComponent(id)}`;
+  return `${AARCADE_HOME}/cartridges`;
+};
+
 async function fetchCartridgeStatusForGameId(
   address: string,
   gameId: string,

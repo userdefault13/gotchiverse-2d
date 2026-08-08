@@ -81,6 +81,13 @@ export default css`
     --box-inner-shadow: inset 0px 0px 14px 2px rgba(214, 253, 81, 0.35);
   }
 
+  .gotchi-panel.btc {
+    --border-color: var(--col-btc-neon);
+    --label-bg-color: #5c3205;
+    --box-inner-bg: rgba(92, 50, 5, 0.55);
+    --box-inner-shadow: inset 0px 0px 14px 2px rgba(247, 147, 26, 0.4);
+  }
+
   .gotchi-panel.base {
     --border-color: var(--col-info-border);
     --label-bg-color: var(--col-info-600);

@@ -45,11 +45,13 @@ AARCADE_VERIFY_SECRET=
 NEXT_PUBLIC_AARCADE_HOME=https://aarcadeghst.com
 
 # Aarcade cartridge soft launch (pages/api/aarcade-cartridge.ts + aarcade-cartridge-mint.ts)
+# Hits Aarcade cartridge-sim (Vercel or home Express). SRC-721 stamps run in-process there
+# when Aarcade has BTC_ORDINALS_SIM_ENABLED=true — no separate stamp URL needed from Gotchiverse.
 AARCADE_CARTRIDGE_SIM_URL=https://aarcadeghst.com/api/cartridge-sim
 # Optional; defaults to NEXT_PUBLIC_AARCADE_HOME/api/game-session
 AARCADE_GAME_SESSION_URL=
-# Root id — FE mints under gotchiverse-base (Base) and gotchiverse-rh (Robinhood).
-# Register both on Aarcade; RH also accepts legacy bare `gotchiverse` for soft-launch mints.
+# Root id — FE mints under gotchiverse-base (Base), gotchiverse-rh (RH), gotchiverse-btc (Bitcoin).
+# Bitcoin soft-launch: BTC cAavegotchi only (wbtc). Register gameTypes on Aarcade.
 NEXT_PUBLIC_AARCADE_CARTRIDGE_GAME_ID=gotchiverse
 
 # Optional

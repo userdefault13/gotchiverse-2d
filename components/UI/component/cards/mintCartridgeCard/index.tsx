@@ -1,6 +1,6 @@
 import styles from './styles';
 import Image from 'next/image';
-import { GotchiverseBaseCartridge, GotchiverseRhCartridge } from 'assets';
+import { GotchiverseBaseCartridge, GotchiverseBtcCartridge, GotchiverseRhCartridge } from 'assets';
 import useAavegotchiSound from 'hooks/useAavegotchiSound';
 
 interface Props {
@@ -10,10 +10,18 @@ interface Props {
   onClick?: () => void;
 }
 
+function cartridgeArtForNetwork(network?: string) {
+  if (network === 'robinhood') return GotchiverseRhCartridge;
+  if (network === 'bitcoin') return GotchiverseBtcCartridge;
+  return GotchiverseBaseCartridge;
+}
+
 export const MintCartridgeCard = ({ network, isSelected, hasCartridge, onClick }: Props): JSX.Element => {
   const { click } = useAavegotchiSound();
   const isRobinhood = network === 'robinhood';
-  const cartridgeImg = isRobinhood ? GotchiverseRhCartridge : GotchiverseBaseCartridge;
+  const isBitcoin = network === 'bitcoin';
+  const cartridgeImg = cartridgeArtForNetwork(network);
+  const trackClass = isRobinhood ? 'rh' : isBitcoin ? 'btc' : 'base';
   // Manage mode selected → Exit (toggle off); otherwise Manage / Mint Cartridge.
   const label = hasCartridge ? (isSelected ? 'Exit' : 'Manage') : 'Mint Cartridge';
 
@@ -25,7 +33,7 @@ export const MintCartridgeCard = ({ network, isSelected, hasCartridge, onClick }
   return (
     <>
       <div
-        className={`gotchi-panel clickable ${isRobinhood ? 'rh' : 'base'} ${hasCartridge ? 'manage' : 'mint'} ${
+        className={`gotchi-panel clickable ${trackClass} ${hasCartridge ? 'manage' : 'mint'} ${
           isSelected ? 'selected' : ''
         }`}
         onClick={handleClick}

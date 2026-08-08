@@ -1,6 +1,7 @@
 import AlphaIcon from './alpha.png';
 import AdminSearch from './admin-search.svg';
 import BaseIcon from './base.png';
+import BitcoinIcon from './bitcoin.svg';
 import BookIcon from './book.svg';
 import BorrowedIcon from './borrowedIcon.svg';
 import BotIcon from './bot.svg';
@@ -160,6 +161,7 @@ export {
   AdminSearch,
   AlphaIcon,
   BaseIcon,
+  BitcoinIcon,
   BookIcon,
   BorrowedIcon,
   BotIcon,
