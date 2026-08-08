@@ -5,7 +5,14 @@ import { SoundType } from 'types/phaser';
 import { AllowedItemTypeId } from 'helpers/items.helpers';
 export type TowerTypes = 'tower1' | 'tower2' | 'tower3' | 'tower4';
 
-export type SceneType = 'citaadel' | 'aarena' | 'store' | 'lodge'; // SCENE_TYPE
+export type SceneType =
+  | 'citaadel'
+  | 'aarena'
+  | 'store'
+  | 'lodge'
+  | 'bazaar'
+  | 'dao_office'
+  | 'potion_shop'; // SCENE_TYPE
 
 export type BinaryBoolean = 0 | 1;
 export const AllowedTokens = ['FUD', 'FOMO', 'ALPHA', 'KEK', 'GLTR', 'GHST'] as const;
