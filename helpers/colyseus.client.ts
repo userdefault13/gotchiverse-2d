@@ -66,45 +66,55 @@ function syncLocalVitals(player: RemotePlayer) {
   const maxHp = Number(player.maxHp);
   const ap = Number(player.ap);
   const maxAp = Number(player.maxAp);
+  const roundedMaxHp = Number.isFinite(maxHp) && maxHp > 0 ? Math.round(maxHp) : undefined;
+  const roundedMaxAp = Number.isFinite(maxAp) && maxAp > 0 ? Math.round(maxAp) : undefined;
+
   if (Number.isFinite(hp)) {
     const roundedHp = Math.round(hp);
-    const roundedMax = Number.isFinite(maxHp) ? Math.round(maxHp) : undefined;
-    if (roundedHp !== lastSyncedHp || (roundedMax != null && phaserScene?.[localGotchiId] && (phaserScene[localGotchiId] as { maxHealth?: number }).maxHealth !== roundedMax)) {
-      lastSyncedHp = roundedHp;
-      if (roundedMax != null && phaserScene?.[localGotchiId]) {
-        (phaserScene[localGotchiId] as { maxHealth?: number }).maxHealth = roundedMax;
+    // Full HP on join: never display a partial bar when server seeds hp === maxHp.
+    const displayHp =
+      roundedMaxHp != null && roundedHp > 0 && roundedHp === roundedMaxHp ? roundedMaxHp : roundedHp;
+    const sceneMax = phaserScene?.[localGotchiId]
+      ? (phaserScene[localGotchiId] as { maxHealth?: number }).maxHealth
+      : undefined;
+    if (displayHp !== lastSyncedHp || (roundedMaxHp != null && sceneMax !== roundedMaxHp)) {
+      lastSyncedHp = displayHp;
+      if (roundedMaxHp != null && phaserScene?.[localGotchiId]) {
+        (phaserScene[localGotchiId] as { maxHealth?: number }).maxHealth = roundedMaxHp;
       }
       Players.updateHealth({
         id: String(localGotchiId),
-        health: roundedHp,
-        ...(roundedMax != null ? { maxHealth: roundedMax } : {}),
+        health: displayHp,
+        ...(roundedMaxHp != null ? { maxHealth: roundedMaxHp } : {}),
       } as any);
     }
   }
-  if (Number.isFinite(ap)) {
-    const roundedAp = Math.round(ap);
-    if (roundedAp !== lastSyncedAp) {
-      lastSyncedAp = roundedAp;
-      try {
+
+  // Keep HUD maxHealth/maxAP aligned with server profile (not only when AP changes).
+  try {
+    const prev = GlobalState.REALM?.state?.userTraits;
+    if (prev) {
+      const nextMaxAp = roundedMaxAp != null ? roundedMaxAp : prev.maxAP;
+      const nextMaxHp = roundedMaxHp != null ? roundedMaxHp : prev.maxHealth;
+      const nextAp = Number.isFinite(ap) ? Math.round(ap) : prev.ap;
+      if (nextMaxAp !== prev.maxAP || nextMaxHp !== prev.maxHealth || (Number.isFinite(ap) && Math.round(ap) !== lastSyncedAp)) {
+        if (Number.isFinite(ap)) lastSyncedAp = Math.round(ap);
+        GlobalState.REALM.dispatch({
+          type: 'UPDATE_USER_TRAITS',
+          userTraits: { ...prev, ap: nextAp, maxAP: nextMaxAp, maxHealth: nextMaxHp },
+          userTraitsBases: GlobalState.REALM?.state?.userTraitsBases,
+          userWearableTraitBonuses: GlobalState.REALM?.state?.userWearableTraitBonuses || {},
+        });
+      }
+    } else if (Number.isFinite(ap)) {
+      const roundedAp = Math.round(ap);
+      if (roundedAp !== lastSyncedAp) {
+        lastSyncedAp = roundedAp;
         GlobalState.REALM.dispatch({ type: 'UPDATE_PLAYERS_AP', AP: roundedAp });
-        // Optionally refresh maxAP / maxHealth when server profile differs from HUD seed.
-        const prev = GlobalState.REALM?.state?.userTraits;
-        if (prev && (Number.isFinite(maxAp) || Number.isFinite(maxHp))) {
-          const nextMaxAp = Number.isFinite(maxAp) ? Math.round(maxAp) : prev.maxAP;
-          const nextMaxHp = Number.isFinite(maxHp) ? Math.round(maxHp) : prev.maxHealth;
-          if (nextMaxAp !== prev.maxAP || nextMaxHp !== prev.maxHealth) {
-            GlobalState.REALM.dispatch({
-              type: 'UPDATE_USER_TRAITS',
-              userTraits: { ...prev, ap: roundedAp, maxAP: nextMaxAp, maxHealth: nextMaxHp },
-              userTraitsBases: GlobalState.REALM?.state?.userTraitsBases,
-              userWearableTraitBonuses: GlobalState.REALM?.state?.userWearableTraitBonuses || {},
-            });
-          }
-        }
-      } catch (e) {
-        console.warn('Failed to sync local AP', e);
       }
     }
+  } catch (e) {
+    console.warn('Failed to sync local vitals traits', e);
   }
 }
 

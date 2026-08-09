@@ -221,6 +221,7 @@ export function attachColyseusCombat(
   activeRoom.onMessage('combat.hit', (raw) => {
     try {
       const msg = raw as {
+        attackerGotchiId?: string;
         victimGotchiId?: string;
         hp?: number;
         maxHp?: number;
@@ -229,6 +230,11 @@ export function attachColyseusCombat(
       };
       const id = msg?.victimGotchiId != null ? String(msg.victimGotchiId) : '';
       if (!id) return;
+      const attackerId = msg?.attackerGotchiId != null ? String(msg.attackerGotchiId) : '';
+      // Client-side guard: never apply self-damage (ghost sessions / same gotchi).
+      if (attackerId && attackerId === id) return;
+      const localId = selectedGotchiId();
+      if (localId && attackerId === localId && id === localId) return;
       if (Number.isFinite(Number(msg.maxHp)) && scene?.[id]) {
         scene[id].maxHealth = Math.round(Number(msg.maxHp));
       }
@@ -270,6 +276,12 @@ export function attachColyseusCombat(
           mod.default?.updateDisableKeyboard?.(true);
           setTimeout(() => mod.default?.updateDisableKeyboard?.(false), ms);
         });
+      }
+      // Refresh in-game leaderboard shortly after KO so K/D updates without waiting for poll.
+      try {
+        window.dispatchEvent(new CustomEvent('aarena-leaderboard-refresh'));
+      } catch {
+        /* ignore */
       }
     } catch (e) {
       console.warn('@combat.ko handler', e);

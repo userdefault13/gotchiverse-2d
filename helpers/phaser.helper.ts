@@ -105,7 +105,15 @@ export function toggleUnlimitedZoomOut(allowUnlimitedZoomOutState) {
 }
 
 export const getMapPos = (): string => {
-  return `${scene[Players.selectedPlayer.id].x.toFixed()}, ${scene[Players.selectedPlayer.id].y.toFixed()}`;
+  try {
+    const id = Players?.selectedPlayer?.id;
+    if (!id || !scene) return '—, —';
+    const spr = scene[id] || scene[String(id)];
+    if (!spr || typeof spr.x !== 'number' || typeof spr.y !== 'number') return '—, —';
+    return `${Number(spr.x).toFixed(0)}, ${Number(spr.y).toFixed(0)}`;
+  } catch {
+    return '—, —';
+  }
 };
 
 export function getDefaultCameraSettings() {

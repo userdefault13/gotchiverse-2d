@@ -138,24 +138,26 @@ export const LeaderboardScreen = (): JSX.Element => {
   };
 
   const transformRes = (leaderboard): LeaderboardData[] => {
-    // First pick only pros needed.
+    // First pick only props needed.
     const propsNeeded = _.keys(_.groupBy(labels, 'param'));
-    leaderboard = _.map(leaderboard, (item) => _.pick(item, propsNeeded));
+    leaderboard = _.map(leaderboard || [], (item) => _.pick(item, propsNeeded));
     const result = _.map(leaderboard, (item) => {
+      const tips = item.tips || { FUD: 0, FOMO: 0, ALPHA: 0, KEK: 0 };
+      const kd = Number(item.killDeathRatio);
       if (item.tipsValueSent) {
         item.tipsValueSent = nFormatter(item.tipsValueSent, 2);
       }
       return {
         ...item,
         alchemicaPickedUp: nFormatter((item.alchemicaPickedUp || 0) - (item.alchemicaDropped || 0), 2),
-        killDeathRatio: item.killDeathRatio.toFixed(1),
+        killDeathRatio: (Number.isFinite(kd) ? kd : 0).toFixed(1),
         tips: {
-          FUD: nFormatter(item.tips.FUD, 2),
-          FOMO: nFormatter(item.tips.FOMO, 2),
-          ALPHA: nFormatter(item.tips.ALPHA, 2),
-          KEK: nFormatter(item.tips.KEK, 2),
+          FUD: nFormatter(tips.FUD || 0, 2),
+          FOMO: nFormatter(tips.FOMO || 0, 2),
+          ALPHA: nFormatter(tips.ALPHA || 0, 2),
+          KEK: nFormatter(tips.KEK || 0, 2),
         },
-        tipsAverage: nFormatter((item.tips.FUD + item.tips.FOMO + item.tips.ALPHA + item.tips.KEK) / 4, 2),
+        tipsAverage: nFormatter(((tips.FUD || 0) + (tips.FOMO || 0) + (tips.ALPHA || 0) + (tips.KEK || 0)) / 4, 2),
       };
     });
     return result;

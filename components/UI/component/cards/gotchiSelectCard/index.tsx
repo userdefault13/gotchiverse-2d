@@ -55,7 +55,9 @@ export const GotchiSelectCard = ({ gotchi, handleSelect, isSelected }: Props): J
   }, [gotchi?.withSetsNumericTraits, gotchi?.numericTraits]);
   const sourceTokenId = gotchi?.cartridgeSourceTokenId || undefined;
   const hauntId =
-    gotchi?.hauntId === 1 || gotchi?.hauntId === 2 ? gotchi.hauntId : undefined;
+    gotchi?.hauntId === 1 || gotchi?.hauntId === 2 || gotchi?.hauntId === 3
+      ? gotchi.hauntId
+      : undefined;
 
   useEffect(() => {
     if (!isCartridgeHero || !gotchi?.cartridgeCollateral) {

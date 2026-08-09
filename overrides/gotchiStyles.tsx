@@ -35,8 +35,8 @@ export function replaceParts(svg, targetClass, replaceSvg) {
 }
 
 export const removeBackground = `
-.gotchi-bg, .wearable-bg {
-    display:none;
+.gotchi-bg, .gotchi-bg-rh, .wearable-bg {
+    display:none !important;
   }
 `;
 

@@ -188,6 +188,18 @@ export class AarenaRhRoom extends Room<AarenaState> {
 
   onJoin(client: Client, options: JoinOptions, auth?: AuthData) {
     const gotchiId = auth?.gotchiId || String(options.gotchiId || '');
+    // Drop ghost sessions of the same gotchi so slap can't "self-hit" a duplicate body.
+    for (const other of this.clients) {
+      if (other.sessionId === client.sessionId) continue;
+      const existing = this.state.players.get(other.sessionId);
+      if (existing && String(existing.gotchiId) === String(gotchiId)) {
+        try {
+          other.leave(4000);
+        } catch {
+          /* ignore */
+        }
+      }
+    }
     const prev = this.lastGotchiPos.get(String(gotchiId));
     const reuse =
       prev && Date.now() - prev.at < 120_000 && !isAarenaBlocked(prev.x, prev.y)

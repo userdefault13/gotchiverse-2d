@@ -23,6 +23,10 @@ export default class HealthBar extends Phaser.GameObjects.Graphics {
   enemyConfig: {};
 
   constructor(x: number, y: number, type: 'player' | 'friends' | 'enemy', max?: number) {
+    // Phaser Graphics requires a live Scene — bail cleanly during teardown / pre-boot.
+    if (!scene) {
+      throw new Error('HealthBar: Phaser scene is not ready');
+    }
     super(scene);
     this.bar = this;
     this.x = x;

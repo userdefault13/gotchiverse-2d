@@ -57,13 +57,21 @@ export async function getLeaderboardAll(filter?: string, page?: number, limit = 
   if (page) offset = page * limit;
 
   try {
-    return await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/leaderboard/all?limit=${limit}&offset=${offset}&filterBy=${
-        filter.length ? filter : undefined
-      }&sortBy=${sort}&sortType=${dir}`,
-    ).then(async (response) => await response.json());
+    const base = (process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_COLYSEUS_URL || '').replace(/\/$/, '');
+    if (!base) return { leaderboard: [], gotchis: [] };
+    const params = new URLSearchParams({
+      limit: String(limit),
+      offset: String(offset),
+      sortBy: sort || 'kills',
+      sortType: dir || 'desc',
+    });
+    if (filter && filter.length) params.set('filterBy', filter);
+    const response = await fetch(`${base}/leaderboard/all?${params.toString()}`);
+    if (!response.ok) return { leaderboard: [], gotchis: [] };
+    return await response.json();
   } catch (e) {
     console.warn('Failed to load leaderboard all via API', e);
+    return { leaderboard: [], gotchis: [] };
   }
 }
 

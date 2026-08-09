@@ -137,8 +137,13 @@ function isSelectedPlayer(id: string): boolean {
 }
 
 async function addPlayers(players: Player[]): Promise<void> {
+  if (!scene || !scene.textures || !Array.isArray(scene.playersToLoad)) {
+    console.warn('@addPlayers: Phaser scene not ready');
+    return;
+  }
   await Promise.all(
     players.map(async (player) => {
+      if (!scene || !scene.textures) return;
       const nakeyId = /^0x[a-fA-F0-9]{40}$/i.test(String(player.id || ''));
       // Colyseus payloads historically omitted isSpectator — treat wallet-address ids as Nakey.
       if (nakeyId && GlobalState.GAME.state.gameConfig.enableNakedGotchis) {
@@ -152,7 +157,7 @@ async function addPlayers(players: Player[]): Promise<void> {
 
       const textureOk = isGotchiTextureOk(player.id);
 
-      if (textureOk || scene.loadedPlayerIds.includes(player.id)) {
+      if (textureOk || scene.loadedPlayerIds?.includes(player.id)) {
         // player is already loaded, just apply properties
         if (textureOk) applyGotchiTexture(player.id, player.id);
         displayPlayer(player);
@@ -173,6 +178,7 @@ async function addPlayers(players: Player[]): Promise<void> {
           scene.playersToLoad.push(player);
           if (!isTrueSpectator(player.isSpectator)) {
             await getOrFetchAavegotchiURL(player.id, (texture) => {
+              if (!scene || !scene.textures) return;
               const key = texture?.key && texture.key !== '__MISSING' ? texture.key : player.id;
               applyGotchiTexture(player.id, key);
               displayExistingPlayerWithId(player.id);
@@ -195,19 +201,25 @@ const displayExistingPlayerWithId = (id: string): void => {
 
 // create a player or update an existing one with new state
 const displayPlayer = (player: Player): void => {
+  if (!scene || !scene.add || !scene.textures) {
+    console.warn('@displayPlayer: Phaser scene not ready', player?.id);
+    return;
+  }
   const { x, y, name, id, health, maxHealth, isSpectator, isLent, isShadowBanned, isDead, isFocused, created, spectatorColor } = player;
-  if (isSpectator && id === selectedPlayer.id) {
+  if (isSpectator && selectedPlayer && id === selectedPlayer.id) {
     selectedPlayer.spectatorColor = spectatorColor;
     selectedPlayer.name = name;
   }
 
   let playerSprite, observerEye, observerContainer;
 
+  if (!Array.isArray(scene.loadedPlayerIds)) scene.loadedPlayerIds = [];
+  if (!Array.isArray(scene.playersToLoad)) scene.playersToLoad = [];
   _.remove(scene.loadedPlayerIds, (loadedId) => loadedId === id);
   scene.loadedPlayerIds.push(id);
   _.remove(scene.playersToLoad, (playerObj) => playerObj.id === id);
 
-  const healthbarActive = Boolean(scene.mapConfig.SHOOT_MODE);
+  const healthbarActive = Boolean(scene.mapConfig?.SHOOT_MODE);
   const alreadyAddedToScene = Boolean(scene[id]);
   if (!alreadyAddedToScene) {
     scene[id] = scene.add.container(x, y);
@@ -486,12 +498,18 @@ function gotchiSpawnAnim(id) {
 }
 
 const toggleHealthBar = (id: string, state: boolean, health: number): void => {
+  if (!scene || !scene[`${id}_top`]) return;
   let healthBar = scene[`${id}_top`]?.getByName('health');
   if (state) {
     const maxHealth = scene[id]?.maxHealth || 1000;
     if (!healthBar) {
-      healthBar = new HealthBar(-16, -45, isSelectedPlayer(id) ? 'player' : 'friends', maxHealth).setName('health');
-      scene[`${id}_top`].add(healthBar);
+      try {
+        healthBar = new HealthBar(-16, -45, isSelectedPlayer(id) ? 'player' : 'friends', maxHealth).setName('health');
+        scene[`${id}_top`].add(healthBar);
+      } catch (e) {
+        console.warn('@toggleHealthBar: scene not ready', e);
+        return;
+      }
     }
     const nextHealth = Number.isFinite(Number(health)) ? Number(health) : maxHealth;
     updateHealth({ id, health: nextHealth, maxHealth } as Health);

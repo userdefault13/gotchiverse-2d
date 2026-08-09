@@ -247,6 +247,11 @@ export function registerCombatMessages(
     const attacker = room.state.players.get(attackerSessionId);
     const victim = room.state.players.get(victimSessionId);
     if (!attacker || !victim) return;
+    // Never self-damage: same session, same gotchi, or same wallet (ghost reconnects).
+    if (String(attacker.gotchiId || '') && String(attacker.gotchiId) === String(victim.gotchiId)) return;
+    const atkAddr = (attacker.address || '').toLowerCase();
+    const vicAddr = (victim.address || '').toLowerCase();
+    if (atkAddr && vicAddr && atkAddr === vicAddr) return;
     if (victim.hp <= 0 || attacker.hp <= 0) return;
 
     const atkProfile = profileOf(attackerSessionId);

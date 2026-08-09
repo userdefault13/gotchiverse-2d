@@ -217,7 +217,11 @@ export function wearablesForSlot(library, slotIndex) {
 
 function pickViewFragment(arr, viewIndex) {
   if (!arr || !arr.length) return ''
-  if (arr[viewIndex] != null && arr[viewIndex] !== '') return arr[viewIndex]
+  // Honor intentional empty strings (e.g. H3 left/right hands = no front hands).
+  // Only fall back to [0] when the index is out of range / missing.
+  if (viewIndex >= 0 && viewIndex < arr.length && arr[viewIndex] != null) {
+    return arr[viewIndex] || ''
+  }
   return arr[0] || ''
 }
 
@@ -271,10 +275,13 @@ export function bakeGotchiSvgClassFills(svg: string): string {
     const doc = new DOMParser().parseFromString(svg, 'image/svg+xml')
     const styleText = doc.querySelector('style')?.textContent || ''
     const colorFor = (cls: string): string | null => {
-      const re = new RegExp(`\\.${cls}\\s*\\{[^}]*fill:\\s*([^;!}]+)`, 'i')
+      // Capture fill color before optional !important (do not swallow '#000000').
+      const re = new RegExp(`\\.${cls}\\s*\\{[^}]*fill:\\s*([^;!}\\s]+)`, 'i')
       const m = styleText.match(re)
       return m ? m[1].trim() : null
     }
+    // Primary/secondary first, then face/collateral last so black shell + logos win
+    // when nested under a body/primary group (PNG raster ignores CSS classes).
     const classes = [
       'gotchi-primary',
       'gotchi-secondary',
@@ -282,23 +289,61 @@ export function bakeGotchiSvgClassFills(svg: string): string {
       'gotchi-eyeColor',
       'gotchi-primary-mouth',
       'gotchi-face',
+      'gotchi-collateral',
     ] as const
+    const paintClass = new Set(classes)
+    const solidFill = (el: Element, color: string) => {
+      el.setAttribute('fill', color)
+      // Opaque paint for Phaser PNG — do not force element opacity (shadows keep .25).
+      el.setAttribute('fill-opacity', '1')
+    }
+    const hasOtherPaintClass = (classAttr: string, cls: string) => {
+      if (!classAttr) return false
+      for (const token of classAttr.split(/\s+/)) {
+        if (paintClass.has(token as (typeof classes)[number]) && token !== cls) return true
+      }
+      return false
+    }
     for (const cls of classes) {
-      const color = colorFor(cls)
+      // Prefer style block color; H3 face + logos default black when rule is missing.
+      const color =
+        colorFor(cls) ||
+        (cls === 'gotchi-collateral' ? '#000000' : null) ||
+        (cls === 'gotchi-face' ? '#000000' : null)
       if (!color) continue
       doc.querySelectorAll(`.${cls}`).forEach((el) => {
-        el.setAttribute('fill', color)
+        solidFill(el, color)
+        // Paint bare shape descendants only — never recolor nested paint-class groups.
         el.querySelectorAll('path,rect,circle,polygon,polyline,ellipse').forEach((child) => {
           const childEl = child as Element
           const childClass = childEl.getAttribute('class') || ''
-          if (/gotchi-(primary|secondary|cheek|eyeColor|primary-mouth|face)/.test(childClass)) return
-          // Preserve explicit black outlines on body
-          const existing = childEl.getAttribute('fill')
-          if (existing && existing !== 'none' && existing !== 'currentColor') return
-          childEl.setAttribute('fill', color)
+          if (hasOtherPaintClass(childClass, cls)) return
+          // Skip shapes that live under a nested paint group (e.g. primary inside face).
+          let ancestor = childEl.parentElement
+          let nestedOther = false
+          while (ancestor && ancestor !== el) {
+            if (hasOtherPaintClass(ancestor.getAttribute('class') || '', cls)) {
+              nestedOther = true
+              break
+            }
+            ancestor = ancestor.parentElement
+          }
+          if (nestedOther) return
+          solidFill(childEl, color)
         })
       })
     }
+    // Ensure painted body/face shapes are opaque without inventing a primary fallback
+    // that would wash black shell / black primary collaterals to lime.
+    doc
+      .querySelectorAll(
+        '.gotchi-primary, .gotchi-secondary, .gotchi-cheek, .gotchi-eyeColor, .gotchi-primary-mouth, .gotchi-face, .gotchi-collateral',
+      )
+      .forEach((el) => {
+        if (!(el.getAttribute('class') || '').includes('gotchi-shadow')) {
+          if (!el.getAttribute('fill-opacity')) el.setAttribute('fill-opacity', '1')
+        }
+      })
     const root = doc.documentElement
     return root ? new XMLSerializer().serializeToString(root) : svg
   } catch {
@@ -514,9 +559,10 @@ function composeSvgView({
   // Eyes (not on back)
   if (viewIndex !== 3) {
     let eyeFrag = ''
-    if (isH3 && main.eyes_happy?.[0]) {
-      // RH ase base eyes (black squares) — match art/rh-gotchi/preview-front.svg
-      eyeFrag = reclassH3FaceLayer(main.eyes_happy[0])
+    if (isH3 && main.eyes_happy?.length) {
+      // RH: front/left/right eye fragments (black). No mouth on side views.
+      const eyeView = Math.min(viewIndex, main.eyes_happy.length - 1)
+      eyeFrag = reclassH3FaceLayer(pickViewFragment(main.eyes_happy, eyeView))
     } else if (useCollateralEyes && eyesFrom.eyeShapeSvgs) {
       eyeFrag = pickViewFragment(eyesFrom.eyeShapeSvgs, Math.min(viewIndex, eyesFrom.eyeShapeSvgs.length - 1))
     } else if (eyeShape?.svgs) {
@@ -535,7 +581,19 @@ function composeSvgView({
 
   // Hands + wearables. Front matches SvgFacet: sleeves under hand items.
   // H3: closed strokes are gotchi-face (black); open-down/open-up use primary lime/body fill.
-  const hands = pickViewFragment(main.hands, viewIndex)
+  // Side views leave hands empty (body includes profile arm folds). Back = hands down open only.
+  let hands = pickViewFragment(main.hands, viewIndex)
+  if (isH3 && viewIndex === 3) {
+    // Naked H3 style hides .gotchi-handsDownOpen — force it visible on back.
+    let openBack = pickViewFragment(main.hands_down_open, 3)
+    if (openBack) {
+      openBack = openBack.replace(
+        /class="gotchi-handsDownOpen"/,
+        'class="gotchi-handsDownOpen" style="display:block"',
+      )
+    }
+    hands = openBack || ''
+  }
   const handWearables = viewIndex === 3 ? [] : handWearableLayers(wearables, lib, viewIndex)
 
   const pushSlot = (slot) => {
@@ -562,6 +620,7 @@ function composeSvgView({
     pushSlot(6)
   } else if (viewIndex === 1 || viewIndex === 2) {
     // Side: clothing → near-hand item under strokes → hands → sleeves → pet
+    // H3 side body already includes arm/belly profile — skip empty/wrong front hands.
     pushSlot(0)
     for (const slot of [1, 2, 3]) pushSlot(slot)
     layers.push(...handWearables)

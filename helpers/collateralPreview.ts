@@ -87,18 +87,49 @@ function collateralAddress(collateral: CollateralObject): string | null {
   }
 }
 
+/**
+ * Strip gotchi backgrounds for thumbs / Phaser.
+ * Prefer physical node removal — canvas SVG→PNG often ignores CSS `display:none`,
+ * so RH checker (`.gotchi-bg-rh`) was baking into in-game sprites.
+ */
 function stripGotchiBackground(svg: string, opts?: { keepRhBg?: boolean }): string {
-  // RH H3 uses .gotchi-bg-rh — keep checker bg when requested.
+  if (!svg || typeof svg !== 'string') return svg;
+
+  // DOM path: reliably drop bg groups before rasterization.
+  if (typeof DOMParser !== 'undefined' && typeof XMLSerializer !== 'undefined') {
+    try {
+      const doc = new DOMParser().parseFromString(svg, 'image/svg+xml');
+      const root = doc.documentElement;
+      if (root && root.localName?.toLowerCase() === 'svg' && !root.querySelector('parsererror')) {
+        const removeSel = opts?.keepRhBg
+          ? '.gotchi-bg:not(.gotchi-bg-rh), .wearable-bg'
+          : '.gotchi-bg, .gotchi-bg-rh, .wearable-bg';
+        root.querySelectorAll(removeSel).forEach((el) => el.parentNode?.removeChild(el));
+        const serialized = new XMLSerializer().serializeToString(root);
+        const open = svg.match(/<svg\b[^>]*>/i)?.[0];
+        return open ? serialized.replace(/<svg\b[^>]*>/i, open) : serialized;
+      }
+    } catch {
+      /* fall through to regex */
+    }
+  }
+
+  // Regex fallback (SSR / no DOM)
+  let out = svg;
+  if (opts?.keepRhBg) {
+    // Drop classic bg only; keep RH checker group.
+    out = out.replace(/<g\b[^>]*class="[^"]*\bgotchi-bg\b(?![^"]*\bgotchi-bg-rh\b)[^"]*"[^>]*>[\s\S]*?<\/g>/gi, '');
+  } else {
+    out = out.replace(/<g\b[^>]*class="[^"]*\bgotchi-bg(?:-rh)?\b[^"]*"[^>]*>[\s\S]*?<\/g>/gi, '');
+  }
+  out = out.replace(/<g\b[^>]*class="[^"]*\bwearable-bg\b[^"]*"[^>]*>[\s\S]*?<\/g>/gi, '');
   const hide = opts?.keepRhBg
     ? '.gotchi-bg:not(.gotchi-bg-rh),.wearable-bg{display:none!important}'
-    : '.gotchi-bg,.wearable-bg{display:none}';
-  if (svg.includes('<style>')) {
-    if (opts?.keepRhBg) {
-      return svg.replace(/<style([^>]*)>/i, `<style$1>${hide}`);
-    }
-    return removeBG(svg);
+    : '.gotchi-bg,.gotchi-bg-rh,.wearable-bg{display:none!important}';
+  if (/<style[\s>]/i.test(out)) {
+    return out.replace(/<style([^>]*)>/i, `<style$1>${hide}`);
   }
-  return svg.replace(/<svg([^>]*)>/, `<svg$1><style>${hide}</style>`);
+  return out.replace(/<svg([^>]*)>/i, `<svg$1><style>${hide}</style>`);
 }
 
 /** Prefer offline JSON compose for cAavegotchis; RPC only as last resort. */
@@ -116,6 +147,7 @@ async function composeOfflineSvg(
   });
   const svg = views?.Front || '';
   if (!svg || svg.length < 80) throw new Error('empty composed svg');
+  // Keep RH checker only for mint-card thumbs; callers that need bare body strip again.
   return stripGotchiBackground(svg, { keepRhBg: Number(hauntId) === 3 });
 }
 
@@ -143,18 +175,26 @@ export function buildCollateralGotchiSvgFromBase(
 ): string {
   let svg = baseSvg;
   if (opts?.removeBg !== false) {
-    svg = stripGotchiBackground(svg);
+    svg = stripGotchiBackground(svg, { keepRhBg: false });
   }
+  const isH3 = isRhH3BrandName(collateral?.name) || Number((collateral as { hauntId?: number })?.hauntId) === 3;
+  // H3: lime body + black face/logo (never paint collateral primary — it vanishes on lime).
+  const primary = isH3 ? '#ccff00' : collateral.primaryColor;
+  const secondary = isH3 ? '#e8ff66' : collateral.secondaryColor;
+  const cheek = collateral.cheekColor;
+  const face = isH3 ? '#000000' : primary;
+  const collFill = isH3 ? '#000000' : collateral.primaryColor;
   // No `*` on eyeColor — nested gotchi-primary / fill="#fff" mythical dots must survive.
   const style = `<style>
-    .gotchi-primary,.gotchi-primary *{fill:${collateral.primaryColor}!important}
-    .gotchi-secondary,.gotchi-secondary *{fill:${collateral.secondaryColor}!important}
-    .gotchi-collateral,.gotchi-collateral *{fill:${collateral.primaryColor}!important}
-    .gotchi-cheek,.gotchi-cheek *{fill:${collateral.cheekColor}!important}
-    .gotchi-eyeColor{fill:${collateral.primaryColor}!important}
-    .gotchi-primary-mouth,.gotchi-primary-mouth *{fill:${collateral.primaryColor}!important}
+    .gotchi-primary,.gotchi-primary *{fill:${primary}!important}
+    .gotchi-secondary,.gotchi-secondary *{fill:${secondary}!important}
+    .gotchi-collateral,.gotchi-collateral *{fill:${collFill}!important}
+    .gotchi-cheek,.gotchi-cheek *{fill:${cheek}!important}
+    .gotchi-eyeColor{fill:${face}!important}
+    .gotchi-primary-mouth,.gotchi-primary-mouth *{fill:${face}!important}
+    .gotchi-face,.gotchi-face *{fill:${face}!important}
   </style>`;
-  return svg.replace(/<svg([^>]*)>/, `<svg$1>${style}`);
+  return svg.replace(/<svg([^>]*)>/i, `<svg$1>${style}`);
 }
 
 /**
@@ -421,7 +461,9 @@ export async function fetchCollateralGotchiSvg(
 
   // H3 brands compose by name (amazon, tesla, …); H1/H2 use on-chain address.
   const composeKey = isH3 ? brandName || addr || '' : addr || brandName || '';
-  const cacheKey = `json:v14:${tid || composeKey}:h${hauntId}:t${traitArr.join(',')}:w${equipped.join(',')}`;
+  // v15: in-game sheets strip RH bg; gallery thumbs still use keepRhBg via composeOfflineSvg
+  // v21: solid fill-opacity without overwriting black face/primary nested paints
+  const cacheKey = `json:v21:${tid || composeKey}:h${hauntId}:t${traitArr.join(',')}:w${equipped.join(',')}`;
   if (svgCache.has(cacheKey)) return svgCache.get(cacheKey);
 
   if (!composeKey) {
@@ -544,7 +586,28 @@ export async function fetchCartridgeHeroSideSVGs(
         COMPOSE_TIMEOUT_MS,
         'composeAllViews',
       );
-      const strip = (s: string) => stripGotchiBackground(s, { keepRhBg: isH3 });
+      // Phaser sprites sit on the map — drop RH checker (physical remove, not CSS-only).
+      const strip = (s: string) => {
+        let out = stripGotchiBackground(s, { keepRhBg: false });
+        // Shadow: classic in-game sheets drop it; remove nodes so PNG bake does too.
+        if (typeof DOMParser !== 'undefined') {
+          try {
+            const doc = new DOMParser().parseFromString(out, 'image/svg+xml');
+            const root = doc.documentElement;
+            root?.querySelectorAll?.('.gotchi-shadow')?.forEach((el) => el.parentNode?.removeChild(el));
+            if (root) {
+              const open = out.match(/<svg\b[^>]*>/i)?.[0];
+              const ser = new XMLSerializer().serializeToString(root);
+              out = open ? ser.replace(/<svg\b[^>]*>/i, open) : ser;
+            }
+          } catch {
+            out = out.replace(/<g\b[^>]*class="[^"]*\bgotchi-shadow\b[^"]*"[^>]*>[\s\S]*?<\/g>/gi, '');
+          }
+        } else {
+          out = out.replace(/<g\b[^>]*class="[^"]*\bgotchi-shadow\b[^"]*"[^>]*>[\s\S]*?<\/g>/gi, '');
+        }
+        return out;
+      };
       const sides: [string, string, string, string] = [
         strip(views.Front || ''),
         strip(views.Left || ''),

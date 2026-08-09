@@ -34,7 +34,7 @@ import {
   removeLeftHandWearables,
   replaceParts,
 } from 'overrides/gotchiStyles';
-import { collateralByAddress, getRhH3Collaterals, maxQuantityToRarity } from './ethers.helper';
+import { collateralByAddress, getRhH3Collaterals, isRhH3BrandName, maxQuantityToRarity } from './ethers.helper';
 import { traitNumber } from './composeGotchi';
 import React from 'react';
 import { showNotificationWithTimeout } from 'contexts/NotificationContext/actions';
@@ -312,8 +312,7 @@ export async function fetchAavegotchiURLById(
   // console.log(allSides); // Array of objects with url and svg
   // extract the svgs to be combined in _aavegotchiSpriteSVG.
   const allSvgs = _.map(allSides, ({ svg }) => svg).filter(Boolean) as string[];
-  // Cartridge / soft-mint: PNG for Phaser. Prefer the same composed sides as HUD/GotchiSVG
-  // (with wearables); only fall back to collateral recolor if compose rasterizes blank.
+  // Cartridge / soft-mint: PNG for Phaser. Prefer bg-stripped sides (RH checker must not bake in).
   let sprite: string;
   if (cartridgeCollateral) {
     const coll = collateralFromSimId(cartridgeCollateral);
@@ -324,23 +323,23 @@ export async function fetchAavegotchiURLById(
     };
     const rawSides = (sideviewArray || []).filter((s) => typeof s === 'string' && s.length >= 80);
     sprite = '';
-    // 1) Raw compose sides (same SVG GotchiSVG shows — includes equipped wearables)
-    if (rawSides.length >= 4) {
-      try {
-        sprite = await tryPng(rawSides, 'compose-raw');
-      } catch (err) {
-        console.warn('@fetchAavegotchiURLById compose-raw png failed', id, err);
-      }
-    }
-    // 2) Mutated sides (shadow/bg stripped)
-    if (!sprite && allSvgs.length >= 4) {
+    // 1) Mutated sides (shadow + all backgrounds stripped — correct for grass/map)
+    if (allSvgs.length >= 4) {
       try {
         sprite = await tryPng(allSvgs, 'compose-mutated');
       } catch (err) {
         console.warn('@fetchAavegotchiURLById compose-mutated png failed', id, err);
       }
     }
-    // 3) Collateral recolor default (visible body, no wearables)
+    // 2) Raw compose sides as last compose attempt
+    if (!sprite && rawSides.length >= 4) {
+      try {
+        sprite = await tryPng(rawSides, 'compose-raw');
+      } catch (err) {
+        console.warn('@fetchAavegotchiURLById compose-raw png failed', id, err);
+      }
+    }
+    // 3) Collateral recolor default (H3 keeps black logo + lime body)
     if (!sprite && coll) {
       try {
         sprite = await tryPng(buildCollateralDefaultSideSvgs(coll), 'recolor-default');
@@ -384,13 +383,15 @@ export async function fetchAavegotchiURLById(
   // strippedGotchi = _getMutateSVGBloblAavegotchiSVG(strippedGotchi, urlOptions);
   // spritesArray.push(strippedGotchi.svg);
   // const sprite = _aavegotchiSpriteSVG(spritesArray, 2);
-  // HUD portrait: prefer mutated front blob; for cartridge use raw front (mutate often breaks
-  // haunt-2 compose as <img>). Empty url → PlayerDashboard falls back to GotchiSVG.
+  // HUD portrait: mutated front (bg stripped). Cartridge: prefer compose front without RH checker.
   let frontUrl = allSides[0]?.url || '';
   if (cartridgeCollateral) {
-    const rawFront = typeof sideviewArray?.[0] === 'string' ? sideviewArray[0] : '';
-    if (rawFront.length >= 80) {
-      frontUrl = URL.createObjectURL(new Blob([rawFront], { type: 'image/svg+xml;charset=utf-8' }));
+    const frontSvg =
+      (typeof allSvgs?.[0] === 'string' && allSvgs[0].length >= 80 && allSvgs[0]) ||
+      (typeof sideviewArray?.[0] === 'string' && sideviewArray[0].length >= 80 && sideviewArray[0]) ||
+      '';
+    if (frontSvg) {
+      frontUrl = URL.createObjectURL(new Blob([frontSvg], { type: 'image/svg+xml;charset=utf-8' }));
     } else {
       frontUrl = '';
     }
@@ -402,8 +403,10 @@ export async function fetchAavegotchiURLById(
 }
 
 export const getOrFetchAavegotchiURL = async (playerId: string, callback): Promise<void> => {
+  const sceneReady = (): boolean => Boolean(scene && scene.textures && scene.load);
+
   const textureLooksOk = (key: string): boolean => {
-    if (!scene.textures.exists(key)) return false;
+    if (!sceneReady() || !scene.textures.exists(key)) return false;
     const tex = scene.textures.get(key);
     if (!tex || tex.key === '__MISSING') return false;
     // Phaser includes __BASE; a 2×2 sheet should expose ≥4 named frames + base.
@@ -411,7 +414,12 @@ export const getOrFetchAavegotchiURL = async (playerId: string, callback): Promi
     return total >= 4;
   };
 
-  if (textureLooksOk(playerId) || scene.loadedPlayerIds.includes(playerId)) {
+  if (!sceneReady()) {
+    console.warn('getOrFetchAavegotchiURL: scene not ready', playerId);
+    return;
+  }
+
+  if (textureLooksOk(playerId) || scene.loadedPlayerIds?.includes(playerId)) {
     callback(scene.textures.get(playerId));
     return;
   }
@@ -428,21 +436,40 @@ export const getOrFetchAavegotchiURL = async (playerId: string, callback): Promi
   try {
       const selected = GlobalState.REALM?.state?.selectedPlayer;
       const sameAsSelected = selected && String(selected.id) === String(playerId);
+      const simColl =
+        (sameAsSelected && selected.cartridgeCollateral) ||
+        parseCartridgeHeroCollateral(playerId) ||
+        // hero ids like starter-amazon-1 → amazon; also bare brand names
+        (typeof playerId === 'string' && playerId.includes('-')
+          ? playerId.split('-')[1]
+          : undefined);
+      const inferredHaunt =
+        sameAsSelected && selected.hauntId
+          ? selected.hauntId
+          : simColl && isRhH3BrandName(simColl)
+            ? 3
+            : undefined;
       const playerUrl = await fetchAavegotchiURLById(
         playerId,
         sameAsSelected
           ? {
-              cartridgeCollateral: selected.cartridgeCollateral || parseCartridgeHeroCollateral(playerId),
+              cartridgeCollateral: selected.cartridgeCollateral || parseCartridgeHeroCollateral(playerId) || simColl,
               network: selected.network as NetworkNames | undefined,
               equippedWearables: selected.equippedWearables,
               traits: selected.withSetsNumericTraits,
               sourceTokenId: selected.cartridgeSourceTokenId,
-              hauntId: selected.hauntId,
+              hauntId: selected.hauntId ?? inferredHaunt,
             }
           : {
-              cartridgeCollateral: parseCartridgeHeroCollateral(playerId) || undefined,
+              cartridgeCollateral: parseCartridgeHeroCollateral(playerId) || simColl,
+              hauntId: inferredHaunt,
             },
       );
+      // Await may span scene teardown / map switch — re-check before loader use.
+      if (!sceneReady()) {
+        console.warn('getOrFetchAavegotchiURL: scene gone after fetch', playerId);
+        return;
+      }
       const spriteUrl = playerUrl?.sprite || getDefaultGotchiURL();
       scene.load.spritesheet(playerId, spriteUrl, {
         frameWidth: 64,
@@ -452,12 +479,15 @@ export const getOrFetchAavegotchiURL = async (playerId: string, callback): Promi
       const finish = (tex) => {
         if (settled) return;
         settled = true;
-        scene.load.off(`filecomplete-spritesheet-${playerId}`, onDone);
-        scene.load.off(`loaderror`, onErr);
+        if (sceneReady()) {
+          scene.load.off(`filecomplete-spritesheet-${playerId}`, onDone);
+          scene.load.off(`loaderror`, onErr);
+        }
         callback(tex);
       };
       const useDefault = () => {
         console.warn('getOrFetchAavegotchiURL: spritesheet failed, using defaultGotchi', playerId);
+        if (!sceneReady()) return;
         if (textureLooksOk('defaultGotchi')) {
           finish(scene.textures.get('defaultGotchi'));
           return;
@@ -466,10 +496,14 @@ export const getOrFetchAavegotchiURL = async (playerId: string, callback): Promi
           frameWidth: 64,
           frameHeight: 64,
         });
-        scene.load.once('complete', () => finish(scene.textures.get('defaultGotchi')));
+        scene.load.once('complete', () => {
+          if (!sceneReady()) return;
+          finish(scene.textures.get('defaultGotchi'));
+        });
         scene.load.start();
       };
       const onDone = () => {
+        if (!sceneReady()) return;
         if (!textureLooksOk(playerId)) {
           try {
             scene.textures.remove(playerId);
@@ -542,8 +576,10 @@ export const fetchAavegotchiSideSVGs = async (
     const equipKey = (opts?.equippedWearables || []).map((n) => Number(n) || 0).join(',');
     const traitKey = (opts?.traits || []).map((n) => traitNumber(n, 50)).join(',');
     const sourceKey = String(opts?.sourceTokenId || '');
-    const hauntKey = Number(opts?.hauntId) === 2 ? 'h2' : Number(opts?.hauntId) === 1 ? 'h1' : 'h?';
-    const cacheKey = `cartridge:base-sides-v14:${simCollateral}:src${sourceKey}:${hauntKey}:w${equipKey}:t${traitKey}`;
+    const hauntKey =
+      Number(opts?.hauntId) === 3 ? 'h3' : Number(opts?.hauntId) === 2 ? 'h2' : Number(opts?.hauntId) === 1 ? 'h1' : 'h?';
+    // v21: solid fill-opacity without overwriting black face/primary nested paints
+    const cacheKey = `cartridge:base-sides-v21:${simCollateral}:src${sourceKey}:${hauntKey}:w${equipKey}:t${traitKey}`;
     if (GlobalState.CHAT.state.gotchiSides[cacheKey]) {
       return GlobalState.CHAT.state.gotchiSides[cacheKey];
     }

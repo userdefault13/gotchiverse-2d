@@ -24,6 +24,8 @@ export const DebugConsole = (): JSX.Element => {
     */
   };
   const [{ host, playersOnline, queues, performance, toggleDebugConsole, playerPosition, mapAlchemica }, phaserDispatch] = usePhaser();
+  const fpsTarget = scene?.game?.loop?.targetFps;
+  const fpsActual = scene?.game?.loop?.actualFps;
   return (
     <>
       {toggleDebugConsole && (
@@ -35,11 +37,11 @@ export const DebugConsole = (): JSX.Element => {
           {playersOnline && <span> Players: {playersOnline} </span>}
           {queues && <span> Queues: {queues} </span>}
           {<span> Alchemica: {mapAlchemica} </span>}
-          {
+          {fpsTarget != null && (
             <span>
-              FPS: Target {scene.game.loop.targetFps} | Actual {scene.game.loop.actualFps?.toFixed(2)}
+              FPS: Target {fpsTarget} | Actual {fpsActual != null ? Number(fpsActual).toFixed(2) : '—'}
             </span>
-          }
+          )}
         </p>
       )}
 

@@ -16,8 +16,11 @@ export const convertInlineSVGToBlobURL = (svg: string) => {
  * @returns {string} Returns customised SVG
  */
 export const removeBG = (svg: string) => {
-  const styledSvg = svg.replace('<style>', '<style>.gotchi-bg,.wearable-bg{display: none}');
-  return styledSvg;
+  const hide = '.gotchi-bg,.gotchi-bg-rh,.wearable-bg{display:none!important}';
+  if (/<style[\s>]/i.test(svg)) {
+    return svg.replace(/<style([^>]*)>/i, `<style$1>${hide}`);
+  }
+  return svg.replace(/<svg([^>]*)>/i, `<svg$1><style>${hide}</style>`);
 };
 
 /**
