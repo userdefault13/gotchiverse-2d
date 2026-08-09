@@ -77,6 +77,7 @@ import {
   colyseusPreloadNearbyInstallations,
   colyseusResetInstallationSync,
 } from 'helpers/colyseus.installations';
+import { loadLastCitaadelPosition } from 'helpers/lastPosition.helper';
 import { NFTDisplay } from 'components/phaser/NFTDisplay';
 import { scene } from 'components/controllers/SceneController';
 import MinigameController from './minigameController';
@@ -274,9 +275,16 @@ async function socketConnect(
         ? { x: liveSprite.x, y: liveSprite.y }
         : null;
     const parcelSpawn = map === 'citaadel' ? colyseusSpawnFromSelectedParcel(selectedSpawnLoc) : null;
+    // "Use Last position" sends no spawnLocId, and the room then spawns joiners in a fixed
+    // random band (District 43), so replay the walked position we stored client-side.
+    const restoredSpawn =
+      map === 'citaadel' && !selectedSpawnLoc && !livePos
+        ? loadLastCitaadelPosition(selectedPlayer?.id)
+        : null;
     const spawn =
       parcelSpawn ||
       livePos ||
+      restoredSpawn ||
       colyseusLocalSpawn() ||
       (map === 'aarena' || map === 'aarena-rh' ? aarenaFallback : { x: 42 * 64 + 10 * 64, y: 52 * 64 + 10 * 64 });
     let previewMaxHp = 1000;
@@ -318,10 +326,12 @@ async function socketConnect(
       console.warn('onPlayerSocketInit (colyseus) failed', e);
     }
 
-    // Snap server position to selected parcel when the room ignored spawnLocId.
+    // Snap server position to the selected parcel / stored last position when the room
+    // ignored spawnLocId. The room accepts a free snap for a few seconds after join.
     // Clear spawnId so mid-session reconnect keeps walked position (not re-snap to parcel).
-    if (parcelSpawn) {
-      colyseusSendMove(parcelSpawn.x, parcelSpawn.y);
+    const serverSnap = parcelSpawn || restoredSpawn;
+    if (serverSnap) {
+      colyseusSendMove(serverSnap.x, serverSnap.y);
       spawnId = '';
     }
 
@@ -416,6 +426,9 @@ async function socketConnect(
         : SFXController.getDefaultMusicTheme(),
     );
     SFXController.ensureMusicUnlocked();
+
+    // Circus WIP tents / world rooms (same as legacy connection-success).
+    AnimationsController.playObjectsAnim();
 
     return;
   }

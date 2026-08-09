@@ -124,7 +124,7 @@ export const SpawnOnParcel = ({ spawnParcelId, handleSpawnSelect }: Props): JSX.
 
   const loadOwnedFallback = useCallback(async () => {
     if (!currentAccount || !globalProvider || !currentNetwork) return;
-    if (currentNetwork === 'robinhood') return;
+    if (currentNetwork === 'robinhood' || currentNetwork === 'bitcoin') return;
     if ((parcelInventory || []).length > 0) return;
     if ((ownedParcels || []).length > 0) return;
     setLoading(true);
@@ -151,7 +151,7 @@ export const SpawnOnParcel = ({ spawnParcelId, handleSpawnSelect }: Props): JSX.
 
   /** Refresh cartridge cPaarcels when opening spawn (inventory may be stale after mint). */
   const refreshCPaarcels = useCallback(async () => {
-    if (!currentAccount || !cartridgeId || currentNetwork === 'robinhood') return;
+    if (!currentAccount || !cartridgeId || currentNetwork === 'robinhood' || currentNetwork === 'bitcoin') return;
     try {
       const { getCartridgePaarcels } = await import('helpers/auth.helper');
       const result = await getCartridgePaarcels(currentAccount, cartridgeId);

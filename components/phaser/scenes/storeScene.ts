@@ -12,10 +12,15 @@ import {
   floorCellUrl,
   floorKey,
   furnitureAt,
+  furnitureTiles,
   isCashierItemId,
   isConsoleItemId,
   isShelfItemId,
   isTerminalItemId,
+  normalizeShelfPiece,
+  shelfFootprint,
+  shelfSlotAnchors,
+  shelfSpriteKey,
   storeIsWalkable,
   storeStructureAt,
   storeTileCenter,
@@ -76,6 +81,8 @@ export class StoreScene extends Phaser.Scene {
   private static readonly BUILD_HUD_BIAS_X = 240;
   private static readonly BUILD_PAN_STEP = 120;
   private static readonly BUILD_PAN_MAX = 480;
+  /** Skip body interact when a holder already handled this click. */
+  private suppressShelfInteractUntil = 0;
 
   constructor() {
     super({ key: MAP_ID_STORE });
@@ -106,18 +113,24 @@ export class StoreScene extends Phaser.Scene {
     }
 
     // Furniture sheets may already be on the citaadel scene textures — copy via load if missing.
-    if (!this.textures.exists('shelf')) {
-      this.load.spritesheet('shelf', '/animations/installations/shelf.png', { frameWidth: 256, frameHeight: 256 });
-    }
-    if (!this.textures.exists('cashier')) {
-      this.load.spritesheet('cashier', '/animations/installations/cashier.png', { frameWidth: 256, frameHeight: 256 });
-    }
-    if (!this.textures.exists('console')) {
-      this.load.spritesheet('console', '/animations/installations/console.png', { frameWidth: 256, frameHeight: 256 });
-    }
-    if (!this.textures.exists('terminal')) {
-      this.load.spritesheet('terminal', '/animations/installations/terminal.png', { frameWidth: 256, frameHeight: 256 });
-    }
+    const furnitureSheets: Array<{ key: string; path: string; fw: number; fh: number }> = [
+      { key: 'shelf', path: '/animations/installations/shelf.png', fw: 128, fh: 128 },
+      { key: 'display_table', path: '/animations/installations/display_table.png', fw: 128, fh: 128 },
+      { key: 'feature_table', path: '/animations/installations/feature_table.png', fw: 128, fh: 128 },
+      { key: 'rack_h', path: '/animations/installations/rack_h.png', fw: 192, fh: 64 },
+      { key: 'rack_v', path: '/animations/installations/rack_v.png', fw: 64, fh: 192 },
+      { key: 'holder_sm', path: '/animations/installations/holder_sm.png', fw: 32, fh: 32 },
+      { key: 'holder_md', path: '/animations/installations/holder_md.png', fw: 48, fh: 48 },
+      { key: 'holder_lg', path: '/animations/installations/holder_lg.png', fw: 64, fh: 64 },
+      { key: 'cashier', path: '/animations/installations/cashier.png', fw: 256, fh: 256 },
+      { key: 'console', path: '/animations/installations/console.png', fw: 256, fh: 256 },
+      { key: 'terminal', path: '/animations/installations/terminal.png', fw: 256, fh: 256 },
+    ];
+    furnitureSheets.forEach(({ key, path, fw, fh }) => {
+      if (!this.textures.exists(key)) {
+        this.load.spritesheet(key, path, { frameWidth: fw, frameHeight: fh });
+      }
+    });
     if (!this.textures.exists('e_interact')) {
       this.load.image('e_interact', '/images/e_interact.png');
     }
@@ -195,7 +208,10 @@ export class StoreScene extends Phaser.Scene {
       this.clearSelectedFurniture();
       const piece = this.layout ? furnitureAt(this.layout, tx, ty) : null;
       this.callbacks?.onSelectFurniture(piece || null);
-      if (piece && isShelfItemId(piece.itemId)) this.callbacks?.onInteractShelf(piece);
+      if (piece && isShelfItemId(piece.itemId)) {
+        if (this.time.now < this.suppressShelfInteractUntil) return;
+        this.callbacks?.onInteractShelf(piece);
+      }
       if (piece && isCashierItemId(piece.itemId)) this.callbacks?.onInteractCashier(piece);
       if (piece && isConsoleItemId(piece.itemId)) this.callbacks?.onInteractConsole(piece);
       if (piece && isTerminalItemId(piece.itemId)) this.callbacks?.onInteractTerminal(piece);
@@ -327,6 +343,10 @@ export class StoreScene extends Phaser.Scene {
     if (isCashierItemId(itemId)) return 'cashier';
     if (isConsoleItemId(itemId)) return 'console';
     if (isTerminalItemId(itemId)) return 'terminal';
+    if (isShelfItemId(itemId)) {
+      const key = shelfSpriteKey(itemId);
+      return this.textures.exists(key) ? key : 'shelf';
+    }
     return 'shelf';
   }
 
@@ -337,10 +357,23 @@ export class StoreScene extends Phaser.Scene {
     return 0x4d96ff;
   }
 
-  private canPlaceAt(tx: number, ty: number): boolean {
-    if (tx < 0 || ty < 0 || tx >= STORE_GRID || ty >= STORE_GRID) return false;
-    if (storeStructureAt(tx, ty) !== 'floor') return false;
-    if (this.layout && furnitureAt(this.layout, tx, ty)) return false;
+  private footprintForBrush(itemId: number): { width: number; height: number } {
+    if (isShelfItemId(itemId)) return shelfFootprint(itemId);
+    return { width: 1, height: 1 };
+  }
+
+  private canPlaceAt(tx: number, ty: number, itemId?: number | null): boolean {
+    const brush = itemId ?? this.build.placeBrush;
+    const fp = brush != null ? this.footprintForBrush(brush) : { width: 1, height: 1 };
+    if (tx < 0 || ty < 0 || tx + fp.width > STORE_GRID || ty + fp.height > STORE_GRID) return false;
+    for (let dy = 0; dy < fp.height; dy += 1) {
+      for (let dx = 0; dx < fp.width; dx += 1) {
+        const x = tx + dx;
+        const y = ty + dy;
+        if (storeStructureAt(x, y) !== 'floor') return false;
+        if (this.layout && furnitureAt(this.layout, x, y)) return false;
+      }
+    }
     return true;
   }
 
@@ -356,13 +389,16 @@ export class StoreScene extends Phaser.Scene {
     if (this.placePreview && this.placePreviewItemId === itemId) return;
     this.clearPlacePreview();
     const key = this.textureKeyForItemId(itemId);
+    const fp = this.footprintForBrush(itemId);
+    const dw = TILE_SIZE * fp.width * 0.95;
+    const dh = TILE_SIZE * fp.height * 0.95;
     if (this.textures.exists(key)) {
-      const spr = this.add.sprite(0, 0, key, 0).setDisplaySize(TILE_SIZE * 0.95, TILE_SIZE * 0.95);
+      const spr = this.add.sprite(0, 0, key, 0).setDisplaySize(dw, dh);
       spr.setDepth(25);
       spr.setAlpha(0.55);
       this.placePreview = spr;
     } else {
-      const rect = this.add.rectangle(0, 0, TILE_SIZE * 0.8, TILE_SIZE * 0.8, this.fallbackColorForItemId(itemId), 0.55);
+      const rect = this.add.rectangle(0, 0, dw * 0.9, dh * 0.9, this.fallbackColorForItemId(itemId), 0.55);
       rect.setDepth(25);
       this.placePreview = rect;
     }
@@ -373,8 +409,9 @@ export class StoreScene extends Phaser.Scene {
     this.ensurePlacePreview(this.build.placeBrush!);
     const preview = this.placePreview;
     if (!preview) return;
-    const cx = tx * TILE_SIZE + TILE_SIZE / 2;
-    const cy = ty * TILE_SIZE + TILE_SIZE / 2;
+    const fp = this.footprintForBrush(this.build.placeBrush!);
+    const cx = tx * TILE_SIZE + (TILE_SIZE * fp.width) / 2;
+    const cy = ty * TILE_SIZE + (TILE_SIZE * fp.height) / 2;
     this.hoverTx = tx;
     this.hoverTy = ty;
     preview.setPosition(cx, cy);
@@ -415,8 +452,9 @@ export class StoreScene extends Phaser.Scene {
       return;
     }
 
-    const cx = tx * TILE_SIZE + TILE_SIZE / 2;
-    const cy = ty * TILE_SIZE + TILE_SIZE / 2;
+    const fp = this.footprintForBrush(this.build.placeBrush);
+    const cx = tx * TILE_SIZE + (TILE_SIZE * fp.width) / 2;
+    const cy = ty * TILE_SIZE + (TILE_SIZE * fp.height) / 2;
     preview.setPosition(cx, cy);
     preview.setVisible(true);
 
@@ -469,29 +507,77 @@ export class StoreScene extends Phaser.Scene {
     }
 
     (this.layout?.furniture || []).forEach((piece) => {
-      const cx = piece.x * TILE_SIZE + TILE_SIZE / 2;
-      const cy = piece.y * TILE_SIZE + TILE_SIZE / 2;
-      let key = 'shelf';
-      if (isCashierItemId(piece.itemId)) key = 'cashier';
-      if (isConsoleItemId(piece.itemId)) key = 'console';
-      if (isTerminalItemId(piece.itemId)) key = 'terminal';
-      let spr: Phaser.GameObjects.GameObject;
+      const fp = isShelfItemId(piece.itemId) ? shelfFootprint(piece.itemId) : { width: 1, height: 1 };
+      const cx = piece.x * TILE_SIZE + (TILE_SIZE * fp.width) / 2;
+      const cy = piece.y * TILE_SIZE + (TILE_SIZE * fp.height) / 2;
+      const key = this.textureKeyForItemId(piece.itemId);
+      const container = this.add.container(cx, cy);
+      let body: Phaser.GameObjects.GameObject;
       if (this.textures.exists(key)) {
-        const s = this.add.sprite(cx, cy, key, 0).setDisplaySize(TILE_SIZE * 0.95, TILE_SIZE * 0.95);
-        spr = s;
+        const s = this.add
+          .sprite(0, 0, key, 0)
+          .setDisplaySize(TILE_SIZE * fp.width * 0.95, TILE_SIZE * fp.height * 0.95);
+        body = s;
+        container.add(s);
       } else {
-        const color = isShelfItemId(piece.itemId)
-          ? 0xc4a574
-          : isCashierItemId(piece.itemId)
-            ? 0x6bcb77
-            : isTerminalItemId(piece.itemId)
-              ? 0x75fb92
-              : 0x4d96ff;
-        spr = this.add.rectangle(cx, cy, TILE_SIZE * 0.8, TILE_SIZE * 0.8, color);
+        const color = this.fallbackColorForItemId(piece.itemId);
+        const rect = this.add.rectangle(
+          0,
+          0,
+          TILE_SIZE * fp.width * 0.85,
+          TILE_SIZE * fp.height * 0.85,
+          color,
+        );
+        body = rect;
+        container.add(rect);
       }
-      this.furnitureLayer?.add(spr);
-      this.furnitureSprites.set(piece.id, spr);
-      this.blocked.add(`${piece.x},${piece.y}`);
+
+      if (isShelfItemId(piece.itemId)) {
+        const normalized = normalizeShelfPiece(piece);
+        const kind = normalized.kind!;
+        const anchors = shelfSlotAnchors(kind, normalized.slots || [], normalized.shelfCount || 1);
+        anchors.forEach((anchor) => {
+          const slot = (normalized.slots || []).find((s) => s.id === anchor.slotId);
+          if (!slot) return;
+          const holderKey =
+            slot.size === 'lg' ? 'holder_lg' : slot.size === 'md' ? 'holder_md' : 'holder_sm';
+          const sizePx = slot.size === 'lg' ? 36 : slot.size === 'md' ? 28 : 22;
+          const localX = (anchor.ox - fp.width / 2) * TILE_SIZE;
+          const localY = (anchor.oy - fp.height / 2) * TILE_SIZE;
+          let holder: Phaser.GameObjects.Sprite | Phaser.GameObjects.Rectangle;
+          if (this.textures.exists(holderKey)) {
+            holder = this.add.sprite(localX, localY, holderKey, 0).setDisplaySize(sizePx, sizePx);
+          } else {
+            holder = this.add.rectangle(localX, localY, sizePx, sizePx, 0xd4af37, 0.85);
+          }
+          if (slot.listing) {
+            if (holder instanceof Phaser.GameObjects.Sprite) holder.setTint(0x7dffb3);
+            else holder.setFillStyle(0x63f323, 0.95);
+          }
+          holder.setInteractive({ useHandCursor: true });
+          holder.on(
+            'pointerdown',
+            (
+              pointer: Phaser.Input.Pointer,
+              _lx: number,
+              _ly: number,
+              event: Phaser.Types.Input.EventData,
+            ) => {
+              if (this.build.buildMode) return;
+              event?.stopPropagation?.();
+              pointer.event?.stopPropagation?.();
+              this.suppressShelfInteractUntil = this.time.now + 80;
+              this.callbacks?.onInteractShelf(piece, slot.id);
+            },
+          );
+          container.add(holder);
+        });
+      }
+
+      this.furnitureLayer?.add(container);
+      this.furnitureSprites.set(piece.id, container);
+      furnitureTiles(piece).forEach((t) => this.blocked.add(`${t.x},${t.y}`));
+      void body;
     });
   }
 
@@ -519,22 +605,32 @@ export class StoreScene extends Phaser.Scene {
     const spr = this.furnitureSprites.get(piece.id);
     if (!spr || !('x' in spr) || !('y' in spr)) return;
 
-    const x = (spr as Phaser.GameObjects.Sprite).x;
-    const y = (spr as Phaser.GameObjects.Sprite).y;
+    const x = (spr as Phaser.GameObjects.Container).x;
+    const y = (spr as Phaser.GameObjects.Container).y;
+    const fp = isShelfItemId(piece.itemId) ? shelfFootprint(piece.itemId) : { width: 1, height: 1 };
 
     // Pink plate + mint border with furniture preview on top (parcel selection look).
     const frame = this.add.container(x, y).setDepth(25);
-    const plate = this.add.rectangle(0, 0, TILE_SIZE * 0.98, TILE_SIZE * 0.98, SELECT_PINK, 0.92);
+    const plate = this.add.rectangle(
+      0,
+      0,
+      TILE_SIZE * fp.width * 0.98,
+      TILE_SIZE * fp.height * 0.98,
+      SELECT_PINK,
+      0.92,
+    );
     plate.setStrokeStyle(5, SELECT_MINT, 1);
     frame.add(plate);
     const texKey = this.textureKeyForItemId(piece.itemId);
     if (this.textures.exists(texKey)) {
-      const preview = this.add.sprite(0, 0, texKey, 0).setDisplaySize(TILE_SIZE * 0.85, TILE_SIZE * 0.85);
+      const preview = this.add
+        .sprite(0, 0, texKey, 0)
+        .setDisplaySize(TILE_SIZE * fp.width * 0.85, TILE_SIZE * fp.height * 0.85);
       frame.add(preview);
     }
     this.selectHighlight = frame;
 
-    const ui = this.add.container(x, y + TILE_SIZE * 0.55).setDepth(40);
+    const ui = this.add.container(x, y + (TILE_SIZE * fp.height) / 2 + 8).setDepth(40);
     this.selectUi = ui;
 
     let yOff = 0;

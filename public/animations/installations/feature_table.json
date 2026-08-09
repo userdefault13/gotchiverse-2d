@@ -1,0 +1,19 @@
+{
+  "columns": 1,
+  "image": "feature_table.png",
+  "imageheight": 128,
+  "imagewidth": 128,
+  "margin": 0,
+  "name": "feature_table",
+  "spacing": 0,
+  "tilecount": 1,
+  "tiledversion": "1.7.0",
+  "tileheight": 128,
+  "tilewidth": 128,
+  "type": "tileset",
+  "version": "1.6",
+  "offset": {
+    "x": -32,
+    "y": -32
+  }
+}

@@ -34,6 +34,9 @@ import {
   FoundryPanel,
   StoreModal,
   LodgeModal,
+  BazaarModal,
+  DaoOfficeModal,
+  PotionShopModal,
   ConsoleModal,
   BroadcasterModal,
 } from '../components';
@@ -52,7 +55,7 @@ export const PlayHud = () => {
   const [{ roundTime, minigameIntroAnimation }, phaserDispatch] = usePhaser();
   const [{ gameConfig }] = useGame();
 
-  const [{ inMenu, storeState, lodgeState }, uiDispatch] = useUI();
+  const [{ inMenu, storeState, lodgeState, bazaarState, daoOfficeState, potionShopState }, uiDispatch] = useUI();
 
   const [totalTimeLeft, setTotalTimeLeft] = useState(0);
   const [minutes, setMinutes] = useState('00');
@@ -200,7 +203,10 @@ export const PlayHud = () => {
   const storeOwner = Boolean(storeState?.isOwner);
   const inLodge = Boolean(lodgeState?.open);
   const lodgeOwner = Boolean(lodgeState?.isOwner);
-  const inInterior = inStore || inLodge;
+  const inBazaar = Boolean(bazaarState?.open);
+  const inDaoOffice = Boolean(daoOfficeState?.open);
+  const inPotionShop = Boolean(potionShopState?.open);
+  const inInterior = inStore || inLodge || inBazaar || inDaoOffice || inPotionShop;
   const blockPropagation = (e) => e.stopPropagation();
 
   useEffect(() => {
@@ -221,6 +227,9 @@ export const PlayHud = () => {
       <NftDisplayModal />
       <StoreModal />
       <LodgeModal />
+      <BazaarModal />
+      <DaoOfficeModal />
+      <PotionShopModal />
       <ConsoleModal />
       <BroadcasterModal />
       <EventHologram />

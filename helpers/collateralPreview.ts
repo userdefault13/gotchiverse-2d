@@ -1,6 +1,7 @@
 import { defaultGotchi } from 'helpers/aavegotchi/svg';
 import { convertInlineSVGToBlobURL, removeBG } from 'helpers/aavegotchi';
 import type { CollateralObject } from 'helpers/ethers.helper';
+import { isRhH3BrandName } from 'helpers/ethers.helper';
 import { ethers } from 'ethers';
 import type { NetworkNames, Tuple } from 'types';
 import { abis, varsForNetwork } from 'shared_code/web3/shared.const.web3';
@@ -31,11 +32,13 @@ export function inferCollateralHauntId(
   collateral: CollateralObject | null | undefined,
   hauntIdHint?: number | null,
 ): number {
+  if (Number(hauntIdHint) === 3) return 3;
   if (Number(hauntIdHint) === 2) return 2;
   if (Number(hauntIdHint) === 1) return 1;
   const name = String(collateral?.name || collateral?.maticDisplay || '')
     .trim()
     .toLowerCase();
+  if (isRhH3BrandName(name)) return 3;
   if (HAUNT2_ONLY_COLLATERAL_NAMES.has(name) || name.startsWith('am')) return 2;
   return 1;
 }
@@ -84,29 +87,36 @@ function collateralAddress(collateral: CollateralObject): string | null {
   }
 }
 
-function stripGotchiBackground(svg: string): string {
+function stripGotchiBackground(svg: string, opts?: { keepRhBg?: boolean }): string {
+  // RH H3 uses .gotchi-bg-rh — keep checker bg when requested.
+  const hide = opts?.keepRhBg
+    ? '.gotchi-bg:not(.gotchi-bg-rh),.wearable-bg{display:none!important}'
+    : '.gotchi-bg,.wearable-bg{display:none}';
   if (svg.includes('<style>')) {
+    if (opts?.keepRhBg) {
+      return svg.replace(/<style([^>]*)>/i, `<style$1>${hide}`);
+    }
     return removeBG(svg);
   }
-  return svg.replace(/<svg([^>]*)>/, '<svg$1><style>.gotchi-bg,.wearable-bg{display:none}</style>');
+  return svg.replace(/<svg([^>]*)>/, `<svg$1><style>${hide}</style>`);
 }
 
 /** Prefer offline JSON compose for cAavegotchis; RPC only as last resort. */
 async function composeOfflineSvg(
   hauntId: number,
-  collateralAddr: string,
+  collateralKey: string,
   traits: number[],
   equipped: number[],
 ): Promise<string> {
   const views = await composeAllViews({
     hauntId,
-    collateralType: collateralAddr,
+    collateralType: collateralKey,
     numericTraits: traits,
     equippedWearables: equipped,
   });
   const svg = views?.Front || '';
   if (!svg || svg.length < 80) throw new Error('empty composed svg');
-  return stripGotchiBackground(svg);
+  return stripGotchiBackground(svg, { keepRhBg: Number(hauntId) === 3 });
 }
 
 function padEquip(equippedWearables?: number[] | Tuple<number, 16> | null): number[] {
@@ -386,6 +396,11 @@ export async function fetchCollateralGotchiSvg(
   let hauntId = inferCollateralHauntId(collateral, hauntIdHint);
   let addr = collateralAddress(collateral);
   let traitArr = padTraits(traits);
+  const brandName = String(collateral?.name || '')
+    .trim()
+    .toLowerCase();
+  const isH3 = hauntId === 3 || isRhH3BrandName(brandName);
+  if (isH3) hauntId = 3;
 
   if (isL1) {
     try {
@@ -404,10 +419,12 @@ export async function fetchCollateralGotchiSvg(
     }
   }
 
-  const cacheKey = `json:v11:${tid || addr || collateral.name}:h${hauntId}:t${traitArr.join(',')}:w${equipped.join(',')}`;
+  // H3 brands compose by name (amazon, tesla, …); H1/H2 use on-chain address.
+  const composeKey = isH3 ? brandName || addr || '' : addr || brandName || '';
+  const cacheKey = `json:v14:${tid || composeKey}:h${hauntId}:t${traitArr.join(',')}:w${equipped.join(',')}`;
   if (svgCache.has(cacheKey)) return svgCache.get(cacheKey);
 
-  if (!addr) {
+  if (!composeKey) {
     const fallback = buildCollateralGotchiSvg(collateral);
     svgCache.set(cacheKey, fallback);
     return fallback;
@@ -415,7 +432,7 @@ export async function fetchCollateralGotchiSvg(
 
   try {
     const cleaned = await withTimeout(
-      composeOfflineSvg(hauntId, addr, traitArr, equipped),
+      composeOfflineSvg(hauntId, composeKey, traitArr, equipped),
       COMPOSE_TIMEOUT_MS,
       'composeOfflineSvg',
     );
@@ -423,6 +440,12 @@ export async function fetchCollateralGotchiSvg(
     return cleaned;
   } catch (composeErr) {
     console.warn('@fetchCollateralGotchiSvg compose', collateral.name, tid || '', composeErr);
+    // H3 has no Base diamond preview — local recolor only.
+    if (isH3 || !addr) {
+      const fallback = buildCollateralGotchiSvg(collateral);
+      svgCache.set(cacheKey, fallback);
+      return fallback;
+    }
     try {
       const cleaned = await withTimeout(
         previewOnBase(hauntId, addr, traitArr, equipped),
@@ -484,6 +507,11 @@ export async function fetchCartridgeHeroSideSVGs(
   let hauntId = inferCollateralHauntId(collateral, hauntIdHint);
   let addr = collateralAddress(collateral);
   let traitArr = padTraits(traits);
+  const brandName = String(collateral?.name || '')
+    .trim()
+    .toLowerCase();
+  const isH3 = hauntId === 3 || isRhH3BrandName(brandName);
+  if (isH3) hauntId = 3;
 
   if (isL1) {
     try {
@@ -503,7 +531,7 @@ export async function fetchCartridgeHeroSideSVGs(
   }
 
   const tryComposeSides = async (): Promise<[string, string, string, string] | null> => {
-    const type = addr || collateralAddress(collateral);
+    const type = isH3 ? brandName || addr : addr || brandName;
     if (!type) return null;
     try {
       const views = await withTimeout(
@@ -516,11 +544,12 @@ export async function fetchCartridgeHeroSideSVGs(
         COMPOSE_TIMEOUT_MS,
         'composeAllViews',
       );
+      const strip = (s: string) => stripGotchiBackground(s, { keepRhBg: isH3 });
       const sides: [string, string, string, string] = [
-        stripGotchiBackground(views.Front || ''),
-        stripGotchiBackground(views.Left || ''),
-        stripGotchiBackground(views.Right || ''),
-        stripGotchiBackground(views.Back || ''),
+        strip(views.Front || ''),
+        strip(views.Left || ''),
+        strip(views.Right || ''),
+        strip(views.Back || ''),
       ];
       // Require all 4 directional views — missing sides break enter / Phaser spritesheets.
       if (sides.every((svg) => svg.length >= 80)) return sides;

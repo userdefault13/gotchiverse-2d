@@ -19,8 +19,22 @@ export const CASHIER_ITEM_ID_END = 197;
 /** Level-1 Cashier craft/place id */
 export const CASHIER_ITEM_ID = CASHIER_ITEM_ID_START;
 
-/** Shelf L1 only (own spritesheet `shelf`). */
+/**
+ * Shelf family (furniture type 10):
+ * 198 Display Table 2×2 · 213 Feature Table 2×2 · 214 Rack H 3×1 · 215 Rack V 1×3
+ * Legacy bag id 198 kept as Display Table.
+ */
 export const SHELF_ITEM_ID = 198;
+export const DISPLAY_TABLE_ITEM_ID = 198;
+export const FEATURE_TABLE_ITEM_ID = 213;
+export const RACK_H_ITEM_ID = 214;
+export const RACK_V_ITEM_ID = 215;
+export const SHELF_FAMILY_ITEM_IDS = [
+  DISPLAY_TABLE_ITEM_ID,
+  FEATURE_TABLE_ITEM_ID,
+  RACK_H_ITEM_ID,
+  RACK_V_ITEM_ID,
+] as const;
 
 /** Terminal L1 only (own spritesheet `terminal`) — owner store SaaS desk. */
 export const TERMINAL_ITEM_ID = 208;
@@ -53,12 +67,29 @@ export type StoreListingBind = {
   tokenId?: string;
 };
 
+export type ShelfKind = 'feature_table' | 'display_table' | 'rack_h' | 'rack_v';
+export type HolderLayout = '3sm' | '2md' | '1lg';
+export type HolderSize = 'sm' | 'md' | 'lg';
+
+export type ShelfSlot = {
+  id: string;
+  size: HolderSize;
+  /** 0 for tables; 0..shelfCount-1 for racks. */
+  tier: number;
+  listing?: StoreListingBind | null;
+};
+
 export type StoreFurniturePiece = {
   id: string;
   itemId: number;
   x: number;
   y: number;
+  /** @deprecated prefer slots — migrated into slots[0] on load */
   listing?: StoreListingBind | null;
+  kind?: ShelfKind;
+  shelfCount?: 1 | 2 | 3;
+  holderLayout?: HolderLayout;
+  slots?: ShelfSlot[];
   /** Console: Aarcade game ids loaded onto this piece. */
   loadedTitles?: string[];
 };
@@ -177,6 +208,8 @@ export function setFloorTile(
 
 export type StoreCartLine = {
   shelfId: string;
+  /** Slot id when multi-holder shelf; omit for legacy single listing. */
+  slotId?: string;
   listing: StoreListingBind;
   quantity: number;
 };
@@ -191,8 +224,170 @@ export type ConsoleBagInstance = {
   loadedTitles: string[];
 };
 
+export function shelfKindFromItemId(itemId: number | string): ShelfKind | null {
+  const id = Number(itemId);
+  if (id === FEATURE_TABLE_ITEM_ID) return 'feature_table';
+  if (id === DISPLAY_TABLE_ITEM_ID) return 'display_table';
+  if (id === RACK_H_ITEM_ID) return 'rack_h';
+  if (id === RACK_V_ITEM_ID) return 'rack_v';
+  return null;
+}
+
+export function isRackShelfKind(kind: ShelfKind | undefined | null): boolean {
+  return kind === 'rack_h' || kind === 'rack_v';
+}
+
+export function shelfFootprint(itemId: number | string): { width: number; height: number } {
+  const kind = shelfKindFromItemId(itemId);
+  if (kind === 'feature_table' || kind === 'display_table') return { width: 2, height: 2 };
+  if (kind === 'rack_h') return { width: 3, height: 1 };
+  if (kind === 'rack_v') return { width: 1, height: 3 };
+  return { width: 1, height: 1 };
+}
+
+export function shelfSpriteKey(itemId: number | string): string {
+  const kind = shelfKindFromItemId(itemId);
+  if (kind === 'feature_table') return 'feature_table';
+  if (kind === 'display_table') return 'display_table';
+  if (kind === 'rack_h') return 'rack_h';
+  if (kind === 'rack_v') return 'rack_v';
+  return 'shelf';
+}
+
+export function shelfDisplayName(itemId: number | string): string {
+  const kind = shelfKindFromItemId(itemId);
+  if (kind === 'feature_table') return 'Feature Table';
+  if (kind === 'display_table') return 'Display Table';
+  if (kind === 'rack_h') return 'Rack (Horizontal)';
+  if (kind === 'rack_v') return 'Rack (Vertical)';
+  return 'Shelf';
+}
+
+function sizesForHolderLayout(layout: HolderLayout): HolderSize[] {
+  if (layout === '2md') return ['md', 'md'];
+  if (layout === '1lg') return ['lg'];
+  return ['sm', 'sm', 'sm'];
+}
+
+export function buildShelfSlots(
+  kind: ShelfKind,
+  shelfCount: 1 | 2 | 3 = 1,
+  holderLayout: HolderLayout = '3sm',
+): ShelfSlot[] {
+  if (kind === 'feature_table') {
+    return [{ id: 's0', size: 'lg', tier: 0, listing: null }];
+  }
+  if (kind === 'display_table') {
+    return [0, 1, 2, 3].map((i) => ({ id: `s${i}`, size: 'sm' as const, tier: 0, listing: null }));
+  }
+  const sizes = sizesForHolderLayout(holderLayout);
+  const slots: ShelfSlot[] = [];
+  for (let tier = 0; tier < shelfCount; tier += 1) {
+    sizes.forEach((size, i) => {
+      slots.push({ id: `t${tier}_${i}`, size, tier, listing: null });
+    });
+  }
+  return slots;
+}
+
+/** Slot local offsets within the furniture footprint (tile fractions → later * TILE_SIZE). */
+export function shelfSlotAnchors(
+  kind: ShelfKind,
+  slots: ShelfSlot[],
+  shelfCount: 1 | 2 | 3 = 1,
+): Array<{ slotId: string; ox: number; oy: number }> {
+  const out: Array<{ slotId: string; ox: number; oy: number }> = [];
+  if (kind === 'feature_table') {
+    const s = slots[0];
+    if (s) out.push({ slotId: s.id, ox: 1, oy: 1 });
+    return out;
+  }
+  if (kind === 'display_table') {
+    const positions = [
+      { ox: 0.5, oy: 0.5 },
+      { ox: 1.5, oy: 0.5 },
+      { ox: 0.5, oy: 1.5 },
+      { ox: 1.5, oy: 1.5 },
+    ];
+    slots.forEach((s, i) => {
+      const p = positions[i] || positions[0];
+      out.push({ slotId: s.id, ox: p.ox, oy: p.oy });
+    });
+    return out;
+  }
+  // Racks: distribute along width (H) or height (V), split tiers across the short axis.
+  const isH = kind === 'rack_h';
+  const tiers = Math.max(1, shelfCount);
+  const byTier = new Map<number, ShelfSlot[]>();
+  slots.forEach((s) => {
+    const list = byTier.get(s.tier) || [];
+    list.push(s);
+    byTier.set(s.tier, list);
+  });
+  for (let tier = 0; tier < tiers; tier += 1) {
+    const tierSlots = byTier.get(tier) || [];
+    const n = Math.max(1, tierSlots.length);
+    const tierFrac = (tier + 0.5) / tiers;
+    tierSlots.forEach((s, i) => {
+      const along = (i + 0.5) / n;
+      if (isH) {
+        out.push({ slotId: s.id, ox: along * 3, oy: tierFrac });
+      } else {
+        out.push({ slotId: s.id, ox: tierFrac, oy: along * 3 });
+      }
+    });
+  }
+  return out;
+}
+
+export function normalizeShelfPiece(piece: StoreFurniturePiece): StoreFurniturePiece {
+  const itemId = Number(piece.itemId);
+  const kind = shelfKindFromItemId(itemId);
+  if (!kind) return piece;
+
+  const isRack = isRackShelfKind(kind);
+  const shelfCount = (isRack ? Math.min(3, Math.max(1, Number(piece.shelfCount) || 1)) : 1) as 1 | 2 | 3;
+  const holderLayout: HolderLayout =
+    piece.holderLayout === '2md' || piece.holderLayout === '1lg' || piece.holderLayout === '3sm'
+      ? piece.holderLayout
+      : '3sm';
+
+  let slots = Array.isArray(piece.slots) ? piece.slots.map((s) => ({ ...s })) : [];
+  const expected = buildShelfSlots(kind, shelfCount, holderLayout);
+  if (slots.length !== expected.length || slots.some((s, i) => s.size !== expected[i].size || s.tier !== expected[i].tier)) {
+    const listingByKey = new Map<string, StoreListingBind | null | undefined>();
+    slots.forEach((s) => listingByKey.set(`${s.tier}:${s.size}:${s.id}`, s.listing));
+    // Prefer matching by index when sizes align partially
+    const oldListings = slots.map((s) => s.listing).filter(Boolean) as StoreListingBind[];
+    slots = expected.map((e, i) => ({
+      ...e,
+      listing: listingByKey.get(`${e.tier}:${e.size}:${e.id}`) ?? oldListings[i] ?? null,
+    }));
+  }
+
+  // Migrate legacy single listing → first empty / first slot
+  if (piece.listing && !slots.some((s) => s.listing)) {
+    if (slots[0]) slots[0] = { ...slots[0], listing: piece.listing };
+  }
+
+  return {
+    ...piece,
+    itemId,
+    kind,
+    shelfCount: isRack ? shelfCount : undefined,
+    holderLayout: isRack ? holderLayout : undefined,
+    slots,
+    listing: slots[0]?.listing ?? piece.listing ?? null,
+  };
+}
+
+export function pieceListedSlots(piece: StoreFurniturePiece): ShelfSlot[] {
+  const normalized = normalizeShelfPiece(piece);
+  return (normalized.slots || []).filter((s) => s.listing && s.listing.listingId);
+}
+
 export function isShelfItemId(itemId: number | string): boolean {
-  return Number(itemId) === SHELF_ITEM_ID;
+  return SHELF_FAMILY_ITEM_IDS.includes(Number(itemId) as (typeof SHELF_FAMILY_ITEM_IDS)[number]);
 }
 
 export function isCashierItemId(itemId: number | string): boolean {
@@ -224,9 +419,12 @@ function migrateFurnitureItemId(itemId: number): number {
 function migrateFurnitureList(furniture: StoreFurniturePiece[]): StoreFurniturePiece[] {
   return (furniture || []).map((piece) => {
     const itemId = migrateFurnitureItemId(Number(piece.itemId));
-    const next: StoreFurniturePiece = { ...piece, itemId };
+    let next: StoreFurniturePiece = { ...piece, itemId };
     if (isConsoleItemId(itemId)) {
       next.loadedTitles = normalizeLoadedTitles(piece.loadedTitles);
+    }
+    if (isShelfItemId(itemId)) {
+      next = normalizeShelfPiece(next);
     }
     return next;
   });
@@ -365,7 +563,11 @@ export function craftStoreFurniture(itemId: number, quantity = 1): { ok: boolean
     return { ok: false, message: 'Console craft requires a title — use craftConsoleFurniture', qty: 0 };
   }
   const qty = adjustFurnitureQty(itemId, quantity);
-  const name = isShelfItemId(itemId) ? 'Shelf' : isTerminalItemId(itemId) ? 'Terminal' : 'Cashier';
+  const name = isShelfItemId(itemId)
+    ? shelfDisplayName(itemId)
+    : isTerminalItemId(itemId)
+      ? 'Terminal'
+      : 'Cashier';
   return { ok: true, message: `Crafted ${quantity}× ${name}`, qty };
 }
 
@@ -404,17 +606,52 @@ export function craftConsoleFurniture(
   };
 }
 
+export function furnitureTiles(piece: { itemId: number; x: number; y: number }): Array<{ x: number; y: number }> {
+  const { width, height } = isShelfItemId(piece.itemId)
+    ? shelfFootprint(piece.itemId)
+    : { width: 1, height: 1 };
+  const tiles: Array<{ x: number; y: number }> = [];
+  for (let dy = 0; dy < height; dy += 1) {
+    for (let dx = 0; dx < width; dx += 1) {
+      tiles.push({ x: piece.x + dx, y: piece.y + dy });
+    }
+  }
+  return tiles;
+}
+
+function tileOccupied(
+  layout: StoreLayout,
+  x: number,
+  y: number,
+  ignoreId?: string,
+): boolean {
+  return layout.furniture.some((f) => {
+    if (ignoreId && f.id === ignoreId) return false;
+    return furnitureTiles(f).some((t) => t.x === x && t.y === y);
+  });
+}
+
 export function placeFurniture(
   layout: StoreLayout,
   itemId: number,
   x: number,
   y: number,
 ): { ok: boolean; message: string; layout: StoreLayout } {
-  if (x < 0 || y < 0 || x > 15 || y > 15) {
+  const fp = isShelfItemId(itemId) ? shelfFootprint(itemId) : { width: 1, height: 1 };
+  if (x < 0 || y < 0 || x + fp.width - 1 > 15 || y + fp.height - 1 > 15) {
     return { ok: false, message: 'Out of bounds', layout };
   }
-  if (layout.furniture.some((f) => f.x === x && f.y === y)) {
-    return { ok: false, message: 'Tile occupied', layout };
+  for (let dy = 0; dy < fp.height; dy += 1) {
+    for (let dx = 0; dx < fp.width; dx += 1) {
+      const tx = x + dx;
+      const ty = y + dy;
+      if (storeStructureAt(tx, ty) !== 'floor') {
+        return { ok: false, message: 'Furniture goes on the floor', layout };
+      }
+      if (tileOccupied(layout, tx, ty)) {
+        return { ok: false, message: 'Tile occupied', layout };
+      }
+    }
   }
 
   if (isConsoleItemId(itemId)) {
@@ -451,18 +688,34 @@ export function placeFurniture(
     return { ok: false, message: 'No furniture in inventory — craft first', layout };
   }
   adjustFurnitureQty(itemId, -1);
-  const piece: StoreFurniturePiece = {
+
+  const kind = shelfKindFromItemId(itemId);
+  let piece: StoreFurniturePiece = {
     id: `f_${itemId}_${x}_${y}_${Date.now()}`,
     itemId,
     x,
     y,
     listing: null,
   };
+  if (kind) {
+    piece = normalizeShelfPiece({
+      ...piece,
+      kind,
+      shelfCount: isRackShelfKind(kind) ? 1 : undefined,
+      holderLayout: isRackShelfKind(kind) ? '3sm' : undefined,
+      slots: buildShelfSlots(kind, 1, '3sm'),
+    });
+  }
+
   const next = saveStoreLayout({
     ...layout,
     furniture: [...layout.furniture, piece],
   });
-  const label = isShelfItemId(itemId) ? 'Shelf' : isTerminalItemId(itemId) ? 'Terminal' : 'Cashier';
+  const label = isShelfItemId(itemId)
+    ? shelfDisplayName(itemId)
+    : isTerminalItemId(itemId)
+      ? 'Terminal'
+      : 'Cashier';
   return { ok: true, message: `Placed ${label}`, layout: next };
 }
 
@@ -493,15 +746,68 @@ export function bindListingToShelf(
   layout: StoreLayout,
   shelfId: string,
   listing: StoreListingBind | null,
+  slotId?: string,
 ): { ok: boolean; message: string; layout: StoreLayout } {
   const idx = layout.furniture.findIndex((f) => f.id === shelfId);
   if (idx < 0) return { ok: false, message: 'Shelf not found', layout };
   if (!isShelfItemId(layout.furniture[idx].itemId)) {
     return { ok: false, message: 'Not a shelf', layout };
   }
-  const furniture = layout.furniture.map((f, i) => (i === idx ? { ...f, listing } : f));
+  const base = normalizeShelfPiece(layout.furniture[idx]);
+  const targetSlotId = slotId || base.slots?.[0]?.id;
+  if (!targetSlotId || !base.slots?.some((s) => s.id === targetSlotId)) {
+    return { ok: false, message: 'Slot not found', layout };
+  }
+  const slots = (base.slots || []).map((s) => (s.id === targetSlotId ? { ...s, listing } : s));
+  const furniture = layout.furniture.map((f, i) =>
+    i === idx
+      ? {
+          ...base,
+          slots,
+          listing: slots[0]?.listing ?? null,
+        }
+      : f,
+  );
   const next = saveStoreLayout({ ...layout, furniture });
   return { ok: true, message: listing ? 'Listing bound' : 'Listing cleared', layout: next };
+}
+
+export function configureRackShelf(
+  layout: StoreLayout,
+  furnitureId: string,
+  shelfCount: 1 | 2 | 3,
+  holderLayout: HolderLayout,
+): { ok: boolean; message: string; layout: StoreLayout } {
+  const idx = layout.furniture.findIndex((f) => f.id === furnitureId);
+  if (idx < 0) return { ok: false, message: 'Shelf not found', layout };
+  const piece = layout.furniture[idx];
+  const kind = shelfKindFromItemId(piece.itemId);
+  if (!kind || !isRackShelfKind(kind)) {
+    return { ok: false, message: 'Not a rack', layout };
+  }
+  const nextPiece = normalizeShelfPiece({
+    ...piece,
+    kind,
+    shelfCount,
+    holderLayout,
+    slots: buildShelfSlots(kind, shelfCount, holderLayout).map((slot, i) => ({
+      ...slot,
+      listing: piece.slots?.[i]?.listing ?? null,
+    })),
+  });
+  // Re-run normalize to rematch listings by size/tier when possible
+  const rematched = normalizeShelfPiece({
+    ...nextPiece,
+    slots: buildShelfSlots(kind, shelfCount, holderLayout).map((slot) => {
+      const prev =
+        (piece.slots || []).find((s) => s.id === slot.id) ||
+        (piece.slots || []).find((s) => s.tier === slot.tier && s.size === slot.size && s.listing);
+      return { ...slot, listing: prev?.listing ?? null };
+    }),
+  });
+  const furniture = layout.furniture.map((f, i) => (i === idx ? rematched : f));
+  const next = saveStoreLayout({ ...layout, furniture });
+  return { ok: true, message: `Rack set to ${shelfCount} shelf(ves), ${holderLayout}`, layout: next };
 }
 
 export function setConsoleLoadedTitles(
@@ -580,7 +886,7 @@ export function upgradeCashierFurniture(
 }
 
 export function furnitureAt(layout: StoreLayout, x: number, y: number): StoreFurniturePiece | undefined {
-  return layout.furniture.find((f) => f.x === x && f.y === y);
+  return layout.furniture.find((f) => furnitureTiles(f).some((t) => t.x === x && t.y === y));
 }
 
 export function makeDemoListing(seed = 1): StoreListingBind {

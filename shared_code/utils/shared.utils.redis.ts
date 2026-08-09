@@ -330,7 +330,7 @@ export function parseCollisionsFile(objectsJSON, type) {
         offset.y = objectJSON.dimensions.height - 2;
         offset.x = -1;
       }
-    } else if (objectJSON.type === 'tent') {
+    } else if (objectJSON.type === 'tent' || objectJSON.type === 'dao_office' || objectJSON.type === 'potion_shop') {
       offset.y = 7;
       offset.x = 0;
     } else if (objectJSON.type === 'deposite') {
@@ -340,11 +340,18 @@ export function parseCollisionsFile(objectsJSON, type) {
       offset.x = -0.5;
       offset.y = objectJSON.dimensions.height - 0.5;
     }
+    const isWorldRoom =
+      objectJSON.type === 'tent' || objectJSON.type === 'dao_office' || objectJSON.type === 'potion_shop';
+    // Keep original center; shrink footprint 2 tiles (1 per side) to match land_wip platform.
+    const rawW = objectJSON.dimensions.width;
+    const rawH = objectJSON.dimensions.height;
+    const width = isWorldRoom ? Math.max(1, rawW - 2) : rawW;
+    const height = isWorldRoom ? Math.max(1, rawH - 2) : rawH;
     return {
-      x: (objectJSON.position.x - offset.x) * TILE_SIZE + (objectJSON.dimensions.width * TILE_SIZE) / 2,
-      y: (objectJSON.position.y - offset.y) * TILE_SIZE + (objectJSON.dimensions.height * TILE_SIZE) / 2,
-      width: objectJSON.dimensions.width * TILE_SIZE,
-      height: objectJSON.dimensions.height * TILE_SIZE,
+      x: (objectJSON.position.x - offset.x) * TILE_SIZE + (rawW * TILE_SIZE) / 2,
+      y: (objectJSON.position.y - offset.y) * TILE_SIZE + (rawH * TILE_SIZE) / 2,
+      width: width * TILE_SIZE,
+      height: height * TILE_SIZE,
       type,
     };
   };

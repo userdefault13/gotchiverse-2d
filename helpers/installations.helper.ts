@@ -117,16 +117,26 @@ export const getInstallationKeyByTypeData = (typeData: InstallationTypeLocal): s
   // Waalls / Lodges share one spritesheet each; frames map by level.
   if (Number(typeData.installationType) === 3) return 'waall';
   if (Number(typeData.installationType) === 4) return 'lodge';
-  // Soft-launch Store / Cashier / Shelf / Terminal / Console — own spritesheets (local catalog, not diamond art).
-  // Store 180–188, Cashier 189–197, Shelf 198, Console 199–207, Terminal 208 — keep ranges in sync with store.*.helper.
+  // Soft-launch Store / Cashier / Shelf family / Terminal / Console — own spritesheets (local catalog, not diamond art).
+  // Store 180–188, Cashier 189–197, Display 198, Console 199–207, Terminal 208, Feature 213, Rack H/V 214–215.
   if (Number(typeData.installationType) === 9) return 'store';
+  // Soft-launch Bazaar exterior — land_wip placeholder until bazaar tileset lands.
+  if (Number(typeData.installationType) === 11) return 'land_wip';
+  // Soft-launch DAO Satellite Office — land_wip placeholder until office art lands.
+  if (Number(typeData.installationType) === 12) return 'land_wip';
+  // Soft-launch Potion Shop — land_wip placeholder until potion shop art lands.
+  if (Number(typeData.installationType) === 13) return 'land_wip';
   {
     const itemId = Number(typeData.itemId);
     if (itemId >= 189 && itemId <= 197) return 'cashier';
-    if (itemId === 198) return 'shelf';
+    if (itemId === 198) return 'display_table';
+    if (itemId === 213) return 'feature_table';
+    if (itemId === 214) return 'rack_h';
+    if (itemId === 215) return 'rack_v';
     if (itemId >= 199 && itemId <= 207) return 'console';
     if (itemId === 208) return 'terminal';
     if (itemId === 209) return 'broadcaster';
+    if (itemId === 210 || itemId === 211 || itemId === 212) return 'land_wip';
   }
   return ALCHEMICA_BASED_INSTALLATION_TYPES.includes(typeData.installationType)
     ? `${typeData.installationType}_${typeData.alchemicaType}`

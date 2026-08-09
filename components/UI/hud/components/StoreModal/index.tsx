@@ -14,6 +14,7 @@ import {
   StoreLayout,
   StoreFurniturePiece,
   StoreListingBind,
+  HolderLayout,
   loadStoreLayout,
   saveStoreLayout,
   serializeLayout,
@@ -21,12 +22,17 @@ import {
   placeFurniture,
   removeFurniture,
   bindListingToShelf,
+  configureRackShelf,
   furnitureAt,
   makeDemoListing,
   isShelfItemId,
   isCashierItemId,
   isConsoleItemId,
   isTerminalItemId,
+  isRackShelfKind,
+  normalizeShelfPiece,
+  pieceListedSlots,
+  shelfDisplayName,
   upgradeConsoleFurniture,
   upgradeCashierFurniture,
   CONSOLE_ITEM_ID,
@@ -37,7 +43,6 @@ import {
   storeInteriorFloorKeys,
   storeStructureAt,
 } from 'helpers/store.layout.helper';
-import { consoleLevelFromItemId } from 'helpers/console.installation.helper';
 import { useUser } from 'contexts/UserContext';
 import {
   subscribeStoreLayout,
@@ -64,6 +69,7 @@ export const StoreModal = (): JSX.Element => {
   const [invTick, setInvTick] = useState(0);
   const [showCart, setShowCart] = useState(false);
   const [bindForm, setBindForm] = useState<StoreListingBind | null>(null);
+  const [bindSlotId, setBindSlotId] = useState<string | null>(null);
   const [statusMsg, setStatusMsg] = useState<string | null>(null);
   const layoutRef = useRef<StoreLayout | null>(null);
   const buildRef = useRef({
@@ -115,6 +121,7 @@ export const StoreModal = (): JSX.Element => {
     setPendingPlace(null);
     setShowCart(false);
     setBindForm(null);
+    setBindSlotId(null);
     setLayout(null);
     layoutRef.current = null;
     uiDispatch({ type: 'UPDATE_STORE_CART', storeCart: [] });
@@ -130,14 +137,26 @@ export const StoreModal = (): JSX.Element => {
   }, [back, uiDispatch]);
 
   const openShelf = useCallback(
-    (piece: StoreFurniturePiece) => {
+    (piece: StoreFurniturePiece, slotId?: string) => {
       if (!isShelfItemId(piece.itemId)) return;
       click();
+      const normalized = normalizeShelfPiece(piece);
       setSelectedId(piece.id);
-      setBindForm(piece.listing ? { ...piece.listing } : isOwner ? makeDemoListing(1) : null);
+      const focusSlot =
+        (slotId && normalized.slots?.find((s) => s.id === slotId)) ||
+        normalized.slots?.find((s) => s.listing) ||
+        normalized.slots?.[0];
+      setBindSlotId(focusSlot?.id || null);
+      setBindForm(
+        focusSlot?.listing
+          ? { ...focusSlot.listing }
+          : isOwner
+            ? makeDemoListing(1)
+            : null,
+      );
       uiDispatch({
         type: 'UPDATE_STORE_SHELF_MODAL',
-        storeShelfModal: { open: true, shelfId: piece.id, isOwner },
+        storeShelfModal: { open: true, shelfId: piece.id, slotId: focusSlot?.id, isOwner },
       });
     },
     [click, isOwner, uiDispatch],
@@ -202,7 +221,7 @@ export const StoreModal = (): JSX.Element => {
         setSelectedId(piece.id);
         setStatusMsg(
           isShelfItemId(piece.itemId)
-            ? 'Selected shelf — bind listing or Remove'
+            ? `Selected ${shelfDisplayName(piece.itemId)} — bind listing or Remove`
             : isCashierItemId(piece.itemId)
               ? 'Selected cashier — Remove to return to bag'
               : isTerminalItemId(piece.itemId)
@@ -359,7 +378,7 @@ export const StoreModal = (): JSX.Element => {
     layoutRef.current = local;
 
     const callbacks = {
-      onInteractShelf: (piece: StoreFurniturePiece) => openShelf(piece),
+      onInteractShelf: (piece: StoreFurniturePiece, slotId?: string) => openShelf(piece, slotId),
       onInteractCashier: () => {
         setShowCart(true);
         setStatusMsg('Cashier — review cart. Checkout (escrow) lands in phase 1c.');
@@ -471,30 +490,34 @@ export const StoreModal = (): JSX.Element => {
   };
 
   const handleBindSave = () => {
-    if (!layout || !selectedId || !bindForm || !isOwner) return;
+    if (!layout || !selectedId || !bindForm || !isOwner || !bindSlotId) return;
     if (!bindForm.listingId.trim() || !bindForm.title.trim() || !(bindForm.price > 0)) {
       setStatusMsg('Listing needs id, title, and price > 0');
       return;
     }
-    const r = bindListingToShelf(layout, selectedId, {
-      ...bindForm,
-      listingId: bindForm.listingId.trim(),
-      title: bindForm.title.trim(),
-      description: bindForm.description || '',
-      currency: 'sim_credit',
-      chainId: Number(bindForm.chainId) || 8453,
-      price: Number(bindForm.price),
-    });
+    const r = bindListingToShelf(
+      layout,
+      selectedId,
+      {
+        ...bindForm,
+        listingId: bindForm.listingId.trim(),
+        title: bindForm.title.trim(),
+        description: bindForm.description || '',
+        currency: 'sim_credit',
+        chainId: Number(bindForm.chainId) || 8453,
+        price: Number(bindForm.price),
+      },
+      bindSlotId,
+    );
     setStatusMsg(r.message);
     if (r.ok) {
       applyLayout(r.layout, true);
-      uiDispatch({ type: 'UPDATE_STORE_SHELF_MODAL', storeShelfModal: { open: false } });
     }
   };
 
   const handleBindClear = () => {
-    if (!layout || !selectedId || !isOwner) return;
-    const r = bindListingToShelf(layout, selectedId, null);
+    if (!layout || !selectedId || !isOwner || !bindSlotId) return;
+    const r = bindListingToShelf(layout, selectedId, null, bindSlotId);
     setStatusMsg(r.message);
     if (r.ok) {
       applyLayout(r.layout, true);
@@ -502,20 +525,49 @@ export const StoreModal = (): JSX.Element => {
     }
   };
 
-  const handleAddToCart = () => {
+  const handleRackConfigure = (shelfCount: 1 | 2 | 3, holderLayout: HolderLayout) => {
+    if (!layout || !selectedId || !isOwner) return;
+    const r = configureRackShelf(layout, selectedId, shelfCount, holderLayout);
+    setStatusMsg(r.message);
+    if (r.ok) {
+      applyLayout(r.layout, true);
+      const piece = r.layout.furniture.find((f) => f.id === selectedId);
+      if (piece) {
+        const n = normalizeShelfPiece(piece);
+        const slot = n.slots?.[0];
+        setBindSlotId(slot?.id || null);
+        setBindForm(slot?.listing ? { ...slot.listing } : makeDemoListing(1));
+      }
+    }
+  };
+
+  const handleAddToCart = (slotId?: string) => {
     const piece = layout?.furniture.find((f) => f.id === storeShelfModal.shelfId || f.id === selectedId);
-    const listing = piece?.listing;
-    if (!piece || !listing) {
+    if (!piece || !isShelfItemId(piece.itemId)) {
       setStatusMsg('No listing bound to this shelf');
       return;
     }
-    const existing = storeCart.find((l) => l.shelfId === piece.id);
+    const normalized = normalizeShelfPiece(piece);
+    const slot =
+      (slotId && normalized.slots?.find((s) => s.id === slotId)) ||
+      normalized.slots?.find((s) => s.id === storeShelfModal.slotId) ||
+      normalized.slots?.find((s) => s.listing);
+    const listing = slot?.listing;
+    if (!listing || !slot) {
+      setStatusMsg('No listing bound to this holder');
+      return;
+    }
+    const cartKey = `${piece.id}:${slot.id}`;
+    const existing = storeCart.find((l) => `${l.shelfId}:${l.slotId || ''}` === cartKey || (l.shelfId === piece.id && l.slotId === slot.id));
     const next = existing
-      ? storeCart.map((l) => (l.shelfId === piece.id ? { ...l, quantity: l.quantity + 1 } : l))
+      ? storeCart.map((l) =>
+          l.shelfId === piece.id && l.slotId === slot.id ? { ...l, quantity: l.quantity + 1 } : l,
+        )
       : [
           ...storeCart,
           {
             shelfId: piece.id,
+            slotId: slot.id,
             listingId: listing.listingId,
             title: listing.title,
             price: listing.price,
@@ -529,11 +581,15 @@ export const StoreModal = (): JSX.Element => {
     click();
   };
 
-  const handleCartQty = (shelfId: string, quantity: number) => {
+  const handleCartQty = (shelfId: string, quantity: number, slotId?: string) => {
     const next =
       quantity <= 0
-        ? storeCart.filter((l) => l.shelfId !== shelfId)
-        : storeCart.map((l) => (l.shelfId === shelfId ? { ...l, quantity } : l));
+        ? storeCart.filter((l) => !(l.shelfId === shelfId && (slotId ? l.slotId === slotId : true)))
+        : storeCart.map((l) =>
+            l.shelfId === shelfId && (slotId ? l.slotId === slotId : !l.slotId || l.slotId === slotId)
+              ? { ...l, quantity }
+              : l,
+          );
     uiDispatch({ type: 'UPDATE_STORE_CART', storeCart: next });
   };
 
@@ -542,7 +598,11 @@ export const StoreModal = (): JSX.Element => {
   if (!open) return null;
 
   const shelfModalOpen = Boolean(storeShelfModal?.open);
-  const activeShelf = layout?.furniture.find((f) => f.id === (storeShelfModal.shelfId || selectedId));
+  const activeShelfRaw = layout?.furniture.find((f) => f.id === (storeShelfModal.shelfId || selectedId));
+  const activeShelf =
+    activeShelfRaw && isShelfItemId(activeShelfRaw.itemId) ? normalizeShelfPiece(activeShelfRaw) : null;
+  const listedProducts = activeShelf ? pieceListedSlots(activeShelf) : [];
+  const isRack = activeShelf ? isRackShelfKind(activeShelf.kind) : false;
 
   return (
     <>
@@ -563,7 +623,7 @@ export const StoreModal = (): JSX.Element => {
             {!storeCart.length ? <p className="hint">Empty — walk to a shelf and press E / Enter.</p> : null}
             <ul>
               {storeCart.map((line) => (
-                <li key={line.shelfId}>
+                <li key={`${line.shelfId}:${line.slotId || 'legacy'}`}>
                   <div>
                     <strong>{line.title}</strong>
                     <div className="muted">
@@ -571,11 +631,11 @@ export const StoreModal = (): JSX.Element => {
                     </div>
                   </div>
                   <div className="qty">
-                    <Button size={2} onClick={() => handleCartQty(line.shelfId, line.quantity - 1)}>
+                    <Button size={2} onClick={() => handleCartQty(line.shelfId, line.quantity - 1, line.slotId)}>
                       −
                     </Button>
                     <span>{line.quantity}</span>
-                    <Button size={2} onClick={() => handleCartQty(line.shelfId, line.quantity + 1)}>
+                    <Button size={2} onClick={() => handleCartQty(line.shelfId, line.quantity + 1, line.slotId)}>
                       +
                     </Button>
                   </div>
@@ -610,7 +670,7 @@ export const StoreModal = (): JSX.Element => {
             if (isTerminalItemId(id)) {
               setStatusMsg('Terminal selected — click a floor tile, then Confirm');
             } else if (isShelfItemId(id)) {
-              setStatusMsg('Shelf selected — click a floor tile, then Confirm');
+              setStatusMsg(`${shelfDisplayName(id)} selected — click a floor tile, then Confirm`);
             } else if (isCashierItemId(id)) {
               setStatusMsg('Cashier selected — click a floor tile, then Confirm');
             } else {
@@ -629,73 +689,148 @@ export const StoreModal = (): JSX.Element => {
           canBindListing={Boolean(layout?.furniture.some((f) => f.id === selectedId && isShelfItemId(f.itemId)))}
           onBindListing={() => {
             const piece = layout?.furniture.find((f) => f.id === selectedId);
-            if (piece) openShelf(piece);
+            if (piece) {
+              setStoreBuildMode(false);
+              setTimeout(() => openShelf(piece), 0);
+            }
           }}
           onExit={() => setStoreBuildMode(false)}
         />
       ) : null}
 
       <Modal
-        title={
-          activeShelf
-            ? isConsoleItemId(activeShelf.itemId)
-              ? `Console L${consoleLevelFromItemId(activeShelf.itemId)}`
-              : activeShelf.listing?.title || 'Shelf'
-            : 'Shelf'
-        }
+        title={activeShelf ? shelfDisplayName(activeShelf.itemId) : 'Shelf'}
         open={shelfModalOpen}
         onClose={() => uiDispatch({ type: 'UPDATE_STORE_SHELF_MODAL', storeShelfModal: { open: false } })}
         light
       >
         <div className="shelf-modal">
-          {activeShelf?.listing ? (
-            <>
-              <p>{activeShelf.listing.description || 'No description'}</p>
-              <p>
-                <strong>
-                  {activeShelf.listing.price} {activeShelf.listing.currency}
-                </strong>
-              </p>
-              <Button size={2} onClick={handleAddToCart}>
-                Add to cart
-              </Button>
-            </>
+          <h4>Products for sale</h4>
+          {listedProducts.length ? (
+            <ul className="product-list">
+              {listedProducts.map((slot) => (
+                <li
+                  key={slot.id}
+                  className={bindSlotId === slot.id ? 'active' : ''}
+                  onClick={() => {
+                    setBindSlotId(slot.id);
+                    if (slot.listing) setBindForm({ ...slot.listing });
+                  }}
+                >
+                  <div>
+                    <strong>{slot.listing!.title}</strong>
+                    <div className="muted">
+                      {slot.listing!.description || `${slot.size.toUpperCase()} holder`}
+                    </div>
+                    <div>
+                      <strong>
+                        {slot.listing!.price} {slot.listing!.currency}
+                      </strong>
+                    </div>
+                  </div>
+                  <Button size={2} onClick={() => handleAddToCart(slot.id)}>
+                    Add to cart
+                  </Button>
+                </li>
+              ))}
+            </ul>
           ) : (
-            <p className="muted">No listing bound.</p>
+            <p className="muted">No products on this shelf yet.</p>
           )}
-          {isOwner && bindForm ? (
+
+          {isOwner && activeShelf ? (
             <div className="bind-form">
-              <h4>Bind listing</h4>
-              <label>
-                Listing id
-                <input
-                  value={bindForm.listingId}
-                  onChange={(e) => setBindForm({ ...bindForm, listingId: e.target.value })}
-                />
-              </label>
-              <label>
-                Title
-                <input
-                  value={bindForm.title}
-                  onChange={(e) => setBindForm({ ...bindForm, title: e.target.value })}
-                />
-              </label>
-              <label>
-                Price (SIM)
-                <input
-                  type="number"
-                  value={bindForm.price}
-                  onChange={(e) => setBindForm({ ...bindForm, price: Number(e.target.value) })}
-                />
-              </label>
-              <div className="bind-actions">
-                <Button size={2} onClick={handleBindSave}>
-                  Save bind
-                </Button>
-                <Button size={2} secondary onClick={handleBindClear}>
-                  Clear
-                </Button>
+              {isRack ? (
+                <div className="rack-config">
+                  <h4>Rack setup</h4>
+                  <div className="bind-actions">
+                    {([1, 2, 3] as const).map((n) => (
+                      <Button
+                        key={n}
+                        size={2}
+                        secondary={activeShelf.shelfCount !== n}
+                        onClick={() => handleRackConfigure(n, activeShelf.holderLayout || '3sm')}
+                      >
+                        {n} shelf{n > 1 ? 'ves' : ''}
+                      </Button>
+                    ))}
+                  </div>
+                  <div className="bind-actions">
+                    {(['3sm', '2md', '1lg'] as HolderLayout[]).map((layoutOpt) => (
+                      <Button
+                        key={layoutOpt}
+                        size={2}
+                        secondary={activeShelf.holderLayout !== layoutOpt}
+                        onClick={() =>
+                          handleRackConfigure((activeShelf.shelfCount || 1) as 1 | 2 | 3, layoutOpt)
+                        }
+                      >
+                        {layoutOpt}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              <h4>Bind listing to holder</h4>
+              <div className="slot-picker">
+                {(activeShelf.slots || []).map((slot) => (
+                  <button
+                    key={slot.id}
+                    type="button"
+                    className={`slot-chip${bindSlotId === slot.id ? ' active' : ''}`}
+                    onClick={() => {
+                      setBindSlotId(slot.id);
+                      setBindForm(slot.listing ? { ...slot.listing } : makeDemoListing(1));
+                    }}
+                  >
+                    {slot.size.toUpperCase()}
+                    {slot.listing ? ' ●' : ''}
+                    {isRack ? ` T${slot.tier + 1}` : ''}
+                  </button>
+                ))}
               </div>
+              {bindForm ? (
+                <>
+                  <label>
+                    Listing id
+                    <input
+                      value={bindForm.listingId}
+                      onChange={(e) => setBindForm({ ...bindForm, listingId: e.target.value })}
+                    />
+                  </label>
+                  <label>
+                    Title
+                    <input
+                      value={bindForm.title}
+                      onChange={(e) => setBindForm({ ...bindForm, title: e.target.value })}
+                    />
+                  </label>
+                  <label>
+                    Description
+                    <input
+                      value={bindForm.description || ''}
+                      onChange={(e) => setBindForm({ ...bindForm, description: e.target.value })}
+                    />
+                  </label>
+                  <label>
+                    Price (SIM)
+                    <input
+                      type="number"
+                      value={bindForm.price}
+                      onChange={(e) => setBindForm({ ...bindForm, price: Number(e.target.value) })}
+                    />
+                  </label>
+                  <div className="bind-actions">
+                    <Button size={2} onClick={handleBindSave}>
+                      Save bind
+                    </Button>
+                    <Button size={2} secondary onClick={handleBindClear}>
+                      Clear
+                    </Button>
+                  </div>
+                </>
+              ) : null}
             </div>
           ) : null}
         </div>

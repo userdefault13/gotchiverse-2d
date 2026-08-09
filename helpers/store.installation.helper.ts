@@ -10,6 +10,9 @@ import {
   CASHIER_ITEM_ID_END,
   CASHIER_ITEM_ID_START,
   SHELF_ITEM_ID,
+  FEATURE_TABLE_ITEM_ID,
+  RACK_H_ITEM_ID,
+  RACK_V_ITEM_ID,
   STORE_FURNITURE_TYPE,
   TERMINAL_ITEM_ID,
   isCashierItemId,
@@ -20,7 +23,8 @@ import {
 
 /**
  * Soft-launch Store catalog lives in `store.installations.local.json` (not official installations.json).
- * Store L1–9: 180–188 · Cashier L1–9: 189–197 (Maaker-style levels) · Shelf L1: 198 · Terminal L1: 208
+ * Store L1–9: 180–188 · Cashier L1–9: 189–197 · Display Table 198 · Console 199–207 · Terminal 208
+ * Feature Table 213 · Rack H 214 · Rack V 215
  */
 export const STORE_ITEM_ID_START = 180;
 export const STORE_ITEM_ID_END = 188;
@@ -30,6 +34,10 @@ export const STORE_INSTALLATION_TYPE = 9;
 export const STORE_SPRITE_KEY = 'store';
 export const CASHIER_SPRITE_KEY = 'cashier';
 export const SHELF_SPRITE_KEY = 'shelf';
+export const DISPLAY_TABLE_SPRITE_KEY = 'display_table';
+export const FEATURE_TABLE_SPRITE_KEY = 'feature_table';
+export const RACK_H_SPRITE_KEY = 'rack_h';
+export const RACK_V_SPRITE_KEY = 'rack_v';
 export const TERMINAL_SPRITE_KEY = 'terminal';
 
 export function isStoreItemId(itemId: number | string): boolean {
@@ -283,4 +291,13 @@ export function syncStoreInventoryFromScene(itemId: number): void {
   setOffchainInventoryQty(itemId, quantity);
 }
 
-export { CASHIER_ITEM_ID, CASHIER_ITEM_ID_END, CASHIER_ITEM_ID_START, SHELF_ITEM_ID, TERMINAL_ITEM_ID };
+export {
+  CASHIER_ITEM_ID,
+  CASHIER_ITEM_ID_END,
+  CASHIER_ITEM_ID_START,
+  SHELF_ITEM_ID,
+  FEATURE_TABLE_ITEM_ID,
+  RACK_H_ITEM_ID,
+  RACK_V_ITEM_ID,
+  TERMINAL_ITEM_ID,
+};

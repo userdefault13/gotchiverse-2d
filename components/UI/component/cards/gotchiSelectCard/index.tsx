@@ -15,6 +15,7 @@ import { collateralFromSimId } from 'helpers/cartridgeHero.helper';
 import { buildCollateralGotchiSvg, fetchCollateralGotchiBlobUrl } from 'helpers/collateralPreview';
 import { convertInlineSVGToBlobURL } from 'helpers/aavegotchi';
 import { traitNumber } from 'helpers/composeGotchi';
+import { isRhH3BrandName } from 'helpers/ethers.helper';
 import { useWeb3 } from 'contexts/Web3Context';
 
 interface Props {
@@ -113,19 +114,31 @@ export const GotchiSelectCard = ({ gotchi, handleSelect, isSelected }: Props): J
     return collateralFromSimId(gotchi?.cartridgeCollateral)?.primaryColor;
   }, [isCartridgeHero, gotchi?.cartridgeCollateral]);
 
+  // Lime RH H3 name bars need black type (white on #ccff00 is unreadable)
+  const isH3Brand = useMemo(
+    () =>
+      gotchi?.hauntId === 3 ||
+      isRhH3BrandName(gotchi?.cartridgeCollateral) ||
+      isRhH3BrandName(String(gotchi?.name || '').replace(/^c/i, '')),
+    [gotchi?.hauntId, gotchi?.cartridgeCollateral, gotchi?.name],
+  );
+
   return (
     <>
       <div
         className={`gotchi-panel clickable ${rarity} ${isLent ? 'borrowed' : ''} ${
           isCartridgeHero ? 'cartridge-hero' : ''
-        } ${gameConfig.gotchiverseTheme} ${isSelected ? 'selected' : ''}`}
+        } ${isH3Brand ? 'h3-brand' : ''} ${gameConfig.gotchiverseTheme} ${isSelected ? 'selected' : ''}`}
         style={
           collateralColor
             ? ({
                 '--border-color': collateralColor,
                 '--label-bg-color': collateralColor,
+                ...(isH3Brand ? { '--label-text-color': '#000000' } : {}),
               } as CSSProperties)
-            : undefined
+            : isH3Brand
+              ? ({ '--label-text-color': '#000000' } as CSSProperties)
+              : undefined
         }
         onClick={() => {
           if (!isBlocked) {

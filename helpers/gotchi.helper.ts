@@ -34,7 +34,7 @@ import {
   removeLeftHandWearables,
   replaceParts,
 } from 'overrides/gotchiStyles';
-import { collateralByAddress, maxQuantityToRarity } from './ethers.helper';
+import { collateralByAddress, getRhH3Collaterals, maxQuantityToRarity } from './ethers.helper';
 import { traitNumber } from './composeGotchi';
 import React from 'react';
 import { showNotificationWithTimeout } from 'contexts/NotificationContext/actions';
@@ -57,8 +57,11 @@ export async function fetchAndSetGlobalAavegotchis(
     channelReady?: boolean;
   },
 ): Promise<void> {
-  // RH aarena path: no Base/Matic diamond or core subgraph ownership.
-  if (GlobalState.WEB3.state.currentNetwork === 'robinhood') {
+  // RH / BTC aarena path: no Base/Matic diamond or core subgraph ownership.
+  if (
+    GlobalState.WEB3.state.currentNetwork === 'robinhood' ||
+    GlobalState.WEB3.state.currentNetwork === 'bitcoin'
+  ) {
     GlobalState.USER.dispatch({
       type: 'UPDATE_USER_AAVEGOTCHIS',
       userAavegotchis: [],
@@ -171,7 +174,7 @@ export async function fetchAavegotchis(
     // Base soft-launch: never fall back to diamond RPC. Subgraph/proxy failures used to
     // call allAavegotchisOfOwner + per-gotchi lending reads against public mainnet.base.org
     // → ABI noise + 429 floods. Wallet gotchis come from subgraph / cartridge, not L1 scan.
-    if (network === 'base' || network === 'robinhood') {
+    if (network === 'base' || network === 'robinhood' || network === 'bitcoin') {
       console.error(
         '@fetchAavegotchis:ERR (Base) — subgraph failed; skipping contract fallback to avoid RPC 429',
         error,
@@ -188,7 +191,9 @@ const fetchContractUserAavegotchis = async (owner: string, provider: ethers.prov
   // fetch all contract owner aavegotchis including portals
   try {
     const network =
-      GlobalState.WEB3.state.currentNetwork === 'base' || GlobalState.WEB3.state.currentNetwork === 'robinhood'
+      GlobalState.WEB3.state.currentNetwork === 'base' ||
+      GlobalState.WEB3.state.currentNetwork === 'robinhood' ||
+      GlobalState.WEB3.state.currentNetwork === 'bitcoin'
         ? 'base'
         : 'matic';
     const res = await useDiamondCall<AavegotchiObject[]>(provider, network, {
@@ -1247,16 +1252,64 @@ export const renderSpiritForce = (amount: string, collateral: string) => {
   if (!collateral) {
     return '';
   }
+  const raw = String(collateral).trim();
+  const rawLower = raw.toLowerCase();
+  const safeAmount = amount || '0';
+
   const name = Object.keys(collateralObjects).find((key) => {
     const addresses = collateralObjects[key];
 
     // CHANGED - To allow for Matic gotchis on test networks
     // return addresses[currentNetwork || 'matic'].toLowerCase() === collateral.toLowerCase();
-    return addresses.matic.toLowerCase() === collateral.toLowerCase();
+    return addresses.matic?.toLowerCase() === rawLower || addresses.main?.toLowerCase() === rawLower;
   });
-  const collateralObject: CollateralObject = collateralObjects[name];
-  const decimals = collateralObject.decimals;
-  return `${Number(formatUnits(amount, decimals)).toFixed(4)} ${name}`;
+
+  if (name && collateralObjects[name]) {
+    const collateralObject: CollateralObject = collateralObjects[name];
+    const decimals = collateralObject.decimals ?? 18;
+    try {
+      return `${Number(formatUnits(safeAmount, decimals)).toFixed(4)} ${name}`;
+    } catch {
+      return `0.0000 ${name}`;
+    }
+  }
+
+  // RH H3 brand cAavegotchis use placeholder matic addresses / brand names not in vars.collateralObjects
+  const rh = getRhH3Collaterals().find(
+    (c) =>
+      c.name.toLowerCase() === rawLower ||
+      (c.maticDisplay || '').toLowerCase() === rawLower ||
+      (c.maticAddress || '').toLowerCase() === rawLower ||
+      (c.mainnetAddress || '').toLowerCase() === rawLower,
+  );
+  if (rh) {
+    const label = rh.maticDisplay || rh.name;
+    const decimals = rh.decimals ?? 18;
+    try {
+      return `${Number(formatUnits(safeAmount, decimals)).toFixed(4)} ${label}`;
+    } catch {
+      return `0.0000 ${label}`;
+    }
+  }
+
+  // Sim id (e.g. "amazon", "dai") via cartridge helper
+  const fromSim = collateralFromSimId(raw);
+  if (fromSim) {
+    const label = fromSim.maticDisplay || fromSim.name;
+    const decimals = fromSim.decimals ?? 18;
+    try {
+      return `${Number(formatUnits(safeAmount, decimals)).toFixed(4)} ${label}`;
+    } catch {
+      return `0.0000 ${label}`;
+    }
+  }
+
+  // Unknown collateral — never crash details panel
+  try {
+    return `${Number(formatUnits(safeAmount, 18)).toFixed(4)}`;
+  } catch {
+    return safeAmount;
+  }
 };
 
 export const formatTimeLeft = (seconds: number) => {

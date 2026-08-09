@@ -22,6 +22,30 @@ const SIM_COLLATERAL_IDS = new Set([
   'frax',
   'lusd',
   'rai',
+  // RH Haunt 3 brand starters
+  'amazon',
+  'apple',
+  'disney',
+  'gamestop',
+  'microsoft',
+  'nike',
+  'nvidia',
+  'spacex',
+  'tesla',
+  'usoilfund',
+]);
+
+const RH_H3_BRAND_IDS = new Set([
+  'amazon',
+  'apple',
+  'disney',
+  'gamestop',
+  'microsoft',
+  'nike',
+  'nvidia',
+  'spacex',
+  'tesla',
+  'usoilfund',
 ]);
 
 type MintPhase = 'ensure' | 'bind' | 'bind-owned' | 'bind-rental';
@@ -54,13 +78,16 @@ function normalizeSourceTokenId(raw: unknown): string | null {
   return /^\d+$/.test(id) ? id : null;
 }
 
-/** Map gallery names (aDAI, amWETH, amWMATIC, …) → cartridge-sim collateral ids. */
+/** Map gallery names (aDAI, amWETH, amazon, …) → cartridge-sim collateral ids. */
 function toSimCollateralId(raw: unknown): string | null {
   const name = String(raw || '')
     .trim()
     .toLowerCase();
   if (!name) return null;
   if (SIM_COLLATERAL_IDS.has(name)) return name;
+
+  // Do not strip "a" from brand names like "amazon" / "apple".
+  if (RH_H3_BRAND_IDS.has(name)) return name;
 
   const stripped = name.replace(/^am/, '').replace(/^a/, '');
   const aliases: Record<string, string> = {
@@ -134,6 +161,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   const phase = normalizePhase(req.body?.phase);
   const gameId = normalizeGameId(req.body?.gameId || process.env.NEXT_PUBLIC_AARCADE_CARTRIDGE_GAME_ID);
   const isBtcTrack = gameId === 'gotchiverse-btc' || gameId === 'aarena-btc';
+  const isRhTrack = gameId === 'gotchiverse-rh';
 
   const needsCollateral = phase === 'bind' || phase === 'bind-owned' || phase === 'bind-rental';
   // Bitcoin soft-launch: only BTC cAavegotchi (wbtc). Ignore other gallery collaterals.
@@ -148,6 +176,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       });
     }
     collateral = 'wbtc';
+  }
+  // RH track: Haunt 3 brand starters only (no L1 wallet bind).
+  if (needsCollateral && isRhTrack) {
+    if (phase === 'bind-owned' || phase === 'bind-rental') {
+      return res.status(400).json({
+        error: 'Robinhood track only supports Haunt 3 brand starter mints (amazon, tesla, …).',
+        code: 'RH_ONLY_STARTER',
+      });
+    }
+    if (!collateral || !RH_H3_BRAND_IDS.has(collateral)) {
+      return res.status(400).json({
+        error: 'Invalid RH brand collateral',
+        code: 'INVALID_RH_COLLATERAL',
+      });
+    }
   }
   if (needsCollateral && !collateral) {
     return res.status(400).json({
@@ -164,6 +207,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       code: 'INVALID_SOURCE_TOKEN',
     });
   }
+  const hauntId =
+    RH_H3_BRAND_IDS.has(String(collateral || '')) || gameId === 'gotchiverse-rh'
+      ? 3
+      : collateral === 'wbtc' || collateral === 'matic'
+        ? 2
+        : 1;
   const templateId = String(req.body?.templateId || DEFAULT_TEMPLATE_ID).trim() || DEFAULT_TEMPLATE_ID;
   const simPay = req.body?.simPay !== false;
 
@@ -292,6 +341,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         collateral,
         sessionToken,
         simPay,
+        hauntId,
       }),
       cache: 'no-store',
     });

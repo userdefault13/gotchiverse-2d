@@ -8,6 +8,9 @@ import { isWaallItemId, isWaallInstallationId } from './waalls.helper';
 import { isStoreInstallationId, isStoreItemId } from './store.installation.helper';
 import { getLocalBroadcasterRecipes } from './broadcaster.installation.helper';
 import { isBounceGateInstallationId, isBounceGateItemId } from './bounceGate.helper';
+import { isBazaarInstallationId, isBazaarItemId } from './bazaar.installation.helper';
+import { isDaoOfficeInstallationId, isDaoOfficeItemId } from './daoOffice.installation.helper';
+import { isPotionShopInstallationId, isPotionShopItemId } from './potionShop.installation.helper';
 import { adjustOffchainInventoryQty, getOffchainInventory, setOffchainInventoryQty } from './offchain.store';
 
 /** Local-only Gotchi Lodge itemIds (not deployed on InstallationDiamond / subgraph). */
@@ -34,13 +37,29 @@ export function isLodgeInstallationId(id: string): boolean {
   }
 }
 
-/** Waall, Lodge, Store, or Bounce Gate — local off-chain parcel installs (not Shelf/Cashier/Console furniture). */
+/** Waall, Lodge, Store, Bazaar, DAO Office, Potion Shop, or Bounce Gate — local off-chain parcel installs (not Shelf/Cashier/Console furniture). */
 export function isLocalOffchainItemId(itemId: number | string): boolean {
-  return isWaallItemId(itemId) || isLodgeItemId(itemId) || isStoreItemId(itemId) || isBounceGateItemId(itemId);
+  return (
+    isWaallItemId(itemId) ||
+    isLodgeItemId(itemId) ||
+    isStoreItemId(itemId) ||
+    isBazaarItemId(itemId) ||
+    isDaoOfficeItemId(itemId) ||
+    isPotionShopItemId(itemId) ||
+    isBounceGateItemId(itemId)
+  );
 }
 
 export function isLocalOffchainInstallationId(id: string): boolean {
-  return isWaallInstallationId(id) || isLodgeInstallationId(id) || isStoreInstallationId(id) || isBounceGateInstallationId(id);
+  return (
+    isWaallInstallationId(id) ||
+    isLodgeInstallationId(id) ||
+    isStoreInstallationId(id) ||
+    isBazaarInstallationId(id) ||
+    isDaoOfficeInstallationId(id) ||
+    isPotionShopInstallationId(id) ||
+    isBounceGateInstallationId(id)
+  );
 }
 
 export function adjustLocalLodgeQuantity(itemId: number, delta: number): number {

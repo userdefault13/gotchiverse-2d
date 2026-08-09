@@ -23,8 +23,8 @@ export const env = {
   gotchiverseSubgraphUrl:
     process.env.GOTCHIVERSE_SUBGRAPH_URL || 'https://aarcadeghst.com/api/subgraph/gotchiverse-base',
   skipOwnershipCheck: String(process.env.SKIP_OWNERSHIP_CHECK || 'true').toLowerCase() === 'true',
-  /** Flip via COMBAT_IS_LIVE=true after AarenaRoom join is verified in prod. */
-  combatIsLive: String(process.env.COMBAT_IS_LIVE || 'false').toLowerCase() === 'true',
+  /** Override with COMBAT_IS_LIVE=false to show Join Aarena as COMING SOON. */
+  combatIsLive: String(process.env.COMBAT_IS_LIVE || 'true').toLowerCase() === 'true',
   /** Aarcade cartridge-sim base (no trailing slash required). */
   aarcadeCartridgeSimUrl: (
     process.env.AARCADE_CARTRIDGE_SIM_URL || 'https://aarcadeghst.com/api/cartridge-sim'

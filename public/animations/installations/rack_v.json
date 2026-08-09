@@ -1,0 +1,19 @@
+{
+  "columns": 1,
+  "image": "rack_v.png",
+  "imageheight": 192,
+  "imagewidth": 64,
+  "margin": 0,
+  "name": "rack_v",
+  "spacing": 0,
+  "tilecount": 1,
+  "tiledversion": "1.7.0",
+  "tileheight": 192,
+  "tilewidth": 64,
+  "type": "tileset",
+  "version": "1.6",
+  "offset": {
+    "x": 0,
+    "y": -32
+  }
+}

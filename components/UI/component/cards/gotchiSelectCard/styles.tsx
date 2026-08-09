@@ -57,16 +57,23 @@ export default css`
 
   .gotchi-name {
     font-family: Pixelar, sans-serif;
-    font-size: 1.2rem;
-    line-height: 1.4;
+    font-size: 1.8rem;
+    line-height: 1.2;
     background: var(--label-bg-color);
     margin: 0;
-    padding: 0.8rem 0.8rem;
+    padding: 0.85rem 0.8rem;
     text-align: center;
-    color: white;
+    color: var(--label-text-color, white);
     border-bottom-left-radius: 0.4rem;
     border-bottom-right-radius: 0.4rem;
     z-index: 20;
+  }
+
+  .gotchi-panel.h3-brand .gotchi-name {
+    color: #000000;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
   }
 
   .icons {

@@ -1,0 +1,17 @@
+{
+   "212": {
+      "itemId": 212,
+      "width": 4,
+      "height": 4,
+      "name": "Potion Shop",
+      "type": "INSTALLATION",
+      "installationType": 13,
+      "alchemicaType": 0,
+      "level": 1,
+      "craftTime": 0,
+      "spillRadius": 0,
+      "spillRate": 0,
+      "harvestRate": 0,
+      "alchemicaCost": [0, 0, 0, 0]
+   }
+}

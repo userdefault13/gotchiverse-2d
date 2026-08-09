@@ -108,7 +108,7 @@ export class LodgeScene extends Phaser.Scene {
 
     // Furniture sheets may already be on the citaadel scene textures — copy via load if missing.
     if (!this.textures.exists('shelf')) {
-      this.load.spritesheet('shelf', '/animations/installations/shelf.png', { frameWidth: 256, frameHeight: 256 });
+      this.load.spritesheet('shelf', '/animations/installations/shelf.png', { frameWidth: 128, frameHeight: 128 });
     }
     if (!this.textures.exists('cashier')) {
       this.load.spritesheet('cashier', '/animations/installations/cashier.png', { frameWidth: 256, frameHeight: 256 });

@@ -1,19 +1,19 @@
 {
   "columns": 1,
   "image": "shelf.png",
-  "imageheight": 256,
-  "imagewidth": 256,
+  "imageheight": 128,
+  "imagewidth": 128,
   "margin": 0,
   "name": "shelf",
   "spacing": 0,
   "tilecount": 1,
   "tiledversion": "1.7.0",
-  "tileheight": 256,
-  "tilewidth": 256,
+  "tileheight": 128,
+  "tilewidth": 128,
   "type": "tileset",
   "version": "1.6",
   "offset": {
-    "x": -64,
-    "y": -64
+    "x": -32,
+    "y": -32
   }
 }

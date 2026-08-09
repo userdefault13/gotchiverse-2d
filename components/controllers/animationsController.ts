@@ -11,7 +11,6 @@ import GameController from './GameController';
 
 const animConfigs = {};
 const depositStations = [];
-const landsWip = [];
 const alchemicaSpritesFrames = {
   alpha_small: 0,
   alpha_medium: 6,
@@ -64,7 +63,6 @@ interface animationsControllerInterface {
 
 const create = async (): Promise<void> => {
   depositStations.length = 0;
-  landsWip.length = 0;
 
   // createAnimaiton for all preload textures
   const preloadAnim = _.values(AssetsController.allAnimationsConfig) as TextureConfig[];
@@ -188,34 +186,25 @@ const spawnDepositStations = () => {
   }
 };
 
-const spawnLandsWip = () => {
-  const objects = _.flatMap(_.values(MapController.objectsJSON));
-
-  objects.forEach(({ type, position }) => {
-    if (type === 'tent') {
-      const land = scene.add
-        .sprite((position.x - 2) * 64, (position.y - 2.8) * 64, 'land_wip')
-        .setOrigin(0, 0.5)
-        .setDepth(100);
-      landsWip.push(land);
-    }
-  });
-};
-
 const playObjectsAnim = () => {
   spawnDepositStations();
-  spawnLandsWip();
+  // Circus tents → world Bazaar + DAO Satellite Office installations.
+  try {
+    // Lazy require avoids circular import at module load (Installations → AnimationsController).
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const Installations = require('components/phaser/Installations').default;
+    Installations.spawnWorldBazaarsFromTents?.();
+    Installations.spawnWorldDaoOffices?.();
+    Installations.spawnWorldPotionShops?.();
+  } catch (e) {
+    console.warn('spawnWorldBazaars/DaoOffices/PotionShops failed', e);
+  }
   // deposit stations
   depositStations.forEach((deposit) => {
     const vortex = deposit.v;
     const crystal = deposit.c;
     play(vortex, 'deposit_vortex');
     play(crystal, 'deposit_crystal');
-  });
-
-  // lands wip
-  landsWip.forEach((land) => {
-    AnimationsController.play(land, 'land_wip');
   });
 };
 

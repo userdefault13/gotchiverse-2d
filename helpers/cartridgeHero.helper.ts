@@ -1,5 +1,11 @@
 import type { GotchiverseAavegotchi, Tuple } from 'types';
-import { collateralByAddress, collaterals, type CollateralObject } from 'helpers/ethers.helper';
+import {
+  collateralByAddress,
+  collaterals,
+  getRhH3Collaterals,
+  isRhH3BrandName,
+  type CollateralObject,
+} from 'helpers/ethers.helper';
 import {
   padEquippedWearables,
   resolveHeroEquippedWearables,
@@ -13,7 +19,7 @@ export type CartridgeHero = {
   collateral: string;
   templateId?: string;
   sourceTokenId?: string;
-  /** Haunt 1|2 from L1 — needed for mythical eye shapes. */
+  /** Haunt 1|2|3 — L1 mythical eyes or RH H3 body library. */
   hauntId?: number;
   traits?: number[];
   equippedWearables?: number[];
@@ -34,6 +40,17 @@ const SIM_TO_GALLERY_NAME: Record<string, string> = {
   yfi: 'aYFI',
   wbtc: 'amWBTC',
   matic: 'amWMATIC',
+  // RH H3 brands map 1:1 to gallery name
+  amazon: 'amazon',
+  apple: 'apple',
+  disney: 'disney',
+  gamestop: 'gamestop',
+  microsoft: 'microsoft',
+  nike: 'nike',
+  nvidia: 'nvidia',
+  spacex: 'spacex',
+  tesla: 'tesla',
+  usoilfund: 'usoilfund',
 };
 
 /** Parse soft-launch hero ids like `starter-uni-1` → `uni`. */
@@ -70,6 +87,9 @@ export function collateralFromSimId(simId: string | undefined | null): Collatera
   if (!id) return null;
   // Full collateral list (not mint gallery): aTUSD shares svgId with aUSDC and is
   // filtered out of getMintableCollaterals(), but bound heroes still need preview data.
+  if (isRhH3BrandName(id)) {
+    return getRhH3Collaterals().find((c) => c.name === id) || null;
+  }
   const pool = collaterals.filter((c) => c.name && c.name !== 'testGHST');
   const galleryName = SIM_TO_GALLERY_NAME[id];
   if (galleryName) {
@@ -107,7 +127,7 @@ export function normalizeCartridgeHeroes(raw: unknown): CartridgeHero[] {
         sourceTokenId: row.sourceTokenId != null ? String(row.sourceTokenId) : undefined,
         hauntId: (() => {
           const h = Number(row.hauntId);
-          return h === 1 || h === 2 ? h : undefined;
+          return h === 1 || h === 2 || h === 3 ? h : undefined;
         })(),
         traits,
         equippedWearables: padEquippedWearables(row.equippedWearables),
@@ -145,13 +165,14 @@ export function mapCartridgeHeroToGotchi(
     hero.equippedWearables,
   ) as Tuple<number, 16>;
   const hauntId =
-    hero.hauntId === 1 || hero.hauntId === 2
+    hero.hauntId === 1 || hero.hauntId === 2 || hero.hauntId === 3
       ? hero.hauntId
-      : // Haunt-2-only starters (amWBTC) must not default to haunt 1.
+      : // Infer haunt for starters when sim omits it.
         (() => {
           const name = String(coll?.name || coll?.maticDisplay || hero.collateral || '')
             .trim()
             .toLowerCase();
+          if (isRhH3BrandName(name)) return 3 as const;
           if (name === 'amwbtc' || name === 'amwmatic' || name.startsWith('am') || name === 'wbtc' || name === 'matic') {
             return 2 as const;
           }

@@ -78,6 +78,33 @@ export interface State {
     buildMode?: boolean;
   };
 
+  /** Soft-launch Bazaar interior (installationType 11). */
+  bazaarState: {
+    open: boolean;
+    isOwner?: boolean;
+    installationId?: string;
+    ownerAddress?: string;
+    cartridgeId?: string;
+  };
+
+  /** Soft-launch DAO Satellite Office interior (installationType 12). */
+  daoOfficeState: {
+    open: boolean;
+    isOwner?: boolean;
+    installationId?: string;
+    ownerAddress?: string;
+    cartridgeId?: string;
+  };
+
+  /** Soft-launch Potion Shop interior (installationType 13) — hosts ItemShop. */
+  potionShopState: {
+    open: boolean;
+    isOwner?: boolean;
+    installationId?: string;
+    ownerAddress?: string;
+    cartridgeId?: string;
+  };
+
   /** Soft-launch Console furniture inside a Store — Unity game picker / embed. */
   consoleState: {
     open: boolean;
@@ -105,6 +132,7 @@ export interface State {
   /** Session cart while inside a store (cleared on leave). */
   storeCart: Array<{
     shelfId: string;
+    slotId?: string;
     listingId: string;
     title: string;
     price: number;
@@ -115,6 +143,7 @@ export interface State {
   storeShelfModal: {
     open: boolean;
     shelfId?: string;
+    slotId?: string;
     isOwner?: boolean;
   };
 
@@ -231,6 +260,15 @@ export const initialState: State = {
     open: false,
   },
   lodgeState: {
+    open: false,
+  },
+  bazaarState: {
+    open: false,
+  },
+  daoOfficeState: {
+    open: false,
+  },
+  potionShopState: {
     open: false,
   },
   consoleState: {

@@ -93,16 +93,19 @@ export const GotchiSelectPanel = ({
   const [channelReady, setChannelReady] = useState<boolean>();
   const [optionLoaded, setOptionLoaded] = useState<boolean>(false);
 
-  // Soft-launch Base/RH: left rail is Freebie + Manage + bound cAavegotchis (wallet gotchis mint from right tab).
-  const cartridgeSelectMode = currentNetwork === 'base' || currentNetwork === 'robinhood';
+  // Soft-launch Base/RH/BTC: left rail is Freebie + Manage + bound cAavegotchis (wallet gotchis mint from right tab).
+  const cartridgeSelectMode =
+    currentNetwork === 'base' || currentNetwork === 'robinhood' || currentNetwork === 'bitcoin';
   const wearablesManageMode = mintStep === 'wearables';
   const paarcelsManageMode = mintStep === 'paarcels';
   const installationsManageMode = mintStep === 'installations';
   const inventoryManageMode = wearablesManageMode || paarcelsManageMode || installationsManageMode;
   /** After Manage: show cWearables (+ Base cPaarcels / cInstallations) entry + keep roster. */
   const manageRailActive = Boolean(mintMode && hasCartridge);
-  const showPaarcelsCard = manageRailActive && currentNetwork !== 'robinhood';
-  const showInstallationsCard = manageRailActive && currentNetwork !== 'robinhood';
+  const showPaarcelsCard =
+    manageRailActive && currentNetwork !== 'robinhood' && currentNetwork !== 'bitcoin';
+  const showInstallationsCard =
+    manageRailActive && currentNetwork !== 'robinhood' && currentNetwork !== 'bitcoin';
 
   const unequippedInstallCount = useMemo(
     () => (installationInventory || []).filter((i) => !i.equippedToParcelId).length,

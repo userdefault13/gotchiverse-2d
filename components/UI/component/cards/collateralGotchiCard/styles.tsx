@@ -9,6 +9,7 @@ export default css`
     cursor: url('/cursors/pointer.png'), pointer;
     --border-color: var(--col-gotchi-common-card-border);
     --label-bg-color: var(--col-gotchi-common-card-label-bg);
+    --label-text-color: white;
   }
 
   .gotchi-panel:before {
@@ -54,7 +55,7 @@ export default css`
     margin: 0;
     padding: 0.8rem 0.8rem;
     text-align: center;
-    color: white;
+    color: var(--label-text-color);
     border-bottom-left-radius: 0.4rem;
     border-bottom-right-radius: 0.4rem;
     z-index: 20;

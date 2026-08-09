@@ -1,0 +1,3 @@
+Tiles derived from ALTTP Hyrule Castle interior rips for layout reference.
+Colors remapped to Hyrule Castle Dungeon Tiles palette (Image #2).
+For fan / non-commercial prototype art only — replace before commercial ship.

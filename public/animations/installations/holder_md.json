@@ -1,0 +1,19 @@
+{
+  "columns": 1,
+  "image": "holder_md.png",
+  "imageheight": 48,
+  "imagewidth": 48,
+  "margin": 0,
+  "name": "holder_md",
+  "spacing": 0,
+  "tilecount": 1,
+  "tiledversion": "1.7.0",
+  "tileheight": 48,
+  "tilewidth": 48,
+  "type": "tileset",
+  "version": "1.6",
+  "offset": {
+    "x": 0,
+    "y": 0
+  }
+}

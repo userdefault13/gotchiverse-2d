@@ -1,0 +1,19 @@
+{
+  "columns": 1,
+  "image": "display_table.png",
+  "imageheight": 128,
+  "imagewidth": 128,
+  "margin": 0,
+  "name": "display_table",
+  "spacing": 0,
+  "tilecount": 1,
+  "tiledversion": "1.7.0",
+  "tileheight": 128,
+  "tilewidth": 128,
+  "type": "tileset",
+  "version": "1.6",
+  "offset": {
+    "x": -32,
+    "y": -32
+  }
+}

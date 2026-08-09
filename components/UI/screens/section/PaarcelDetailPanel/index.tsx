@@ -73,7 +73,7 @@ export const PaarcelDetailPanel = ({ parcel, onBack }: Props): JSX.Element => {
       }
       setAccessStatus('loading');
       try {
-        const net = currentNetwork === 'robinhood' ? 'base' : currentNetwork;
+        const net = (currentNetwork === 'robinhood' || currentNetwork === 'bitcoin') ? 'base' : currentNetwork;
         const rights = await getParcelAccessRights([realmTokenId], net, globalProvider);
         if (cancelled) return;
         setAccessRights(rights[0] || null);

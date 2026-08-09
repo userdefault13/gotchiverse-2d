@@ -97,6 +97,31 @@ import {
   syncLodgeInventoryFromScene,
 } from 'helpers/lodge.helper';
 import { getLocalStoreUpgradeInfo, isStoreInstallationId, isStoreItemId, syncStoreInventoryFromScene } from 'helpers/store.installation.helper';
+import {
+  BAZAAR_ITEM_ID,
+  BAZAAR_SPRITE_KEY,
+  BAZAAR_WORLD_PARCEL_ID,
+  isBazaarInstallationId,
+  isBazaarItemId,
+  isWorldBazaarId,
+} from 'helpers/bazaar.installation.helper';
+import {
+  DAO_OFFICE_ITEM_ID,
+  DAO_OFFICE_SPRITE_KEY,
+  DAO_OFFICE_WORLD_PARCEL_ID,
+  isDaoOfficeInstallationId,
+  isDaoOfficeItemId,
+  isWorldDaoOfficeId,
+} from 'helpers/daoOffice.installation.helper';
+import {
+  POTION_SHOP_ITEM_ID,
+  POTION_SHOP_SPRITE_KEY,
+  POTION_SHOP_WORLD_PARCEL_ID,
+  isPotionShopInstallationId,
+  isPotionShopItemId,
+  isWorldPotionShopId,
+} from 'helpers/potionShop.installation.helper';
+import { getLandWipPixelAnchor, getLandWipPixelCenter, LAND_WIP_COLLISION_PX } from 'helpers/worldRoom.helper';
 import { isBounceGateItemId } from 'helpers/bounceGate.helper';
 import {
   readOffchainPlacements,
@@ -105,6 +130,7 @@ import {
 } from 'helpers/offchain.placements.helper';
 import { flushOffchainStore, hydrateOffchainStore } from 'helpers/offchain.store';
 import { isCParcelInInventory, resolveOnChainParcelId } from 'helpers/softChannel.helper';
+import MapController from 'components/controllers/MapController';
 
 const uiContainers: { marker? } = {};
 // let markerBtnContainer = null;
@@ -133,6 +159,9 @@ interface InstallationInterface {
   resetStates: () => void;
   tryInteractActive: () => boolean;
   updateNearbyStorePrompt: () => void;
+  spawnWorldBazaarsFromTents: () => void;
+  spawnWorldDaoOffices: () => void;
+  spawnWorldPotionShops: () => void;
 }
 
 // Create Destroy by ID
@@ -202,6 +231,12 @@ const spawnSprite = async (installationData: InstallationMetadata, options?: Cre
     const footprintH = height * GOTCHI_SIZE.UNIT;
     const isStore = Number(installationType) === 9 || key === 'store';
     const isLodge = Number(installationType) === 4 || key === 'lodge';
+    const isPotionShop = Number(installationType) === 13 || isPotionShopItemId(itemId);
+    const isDaoOffice = !isPotionShop && (Number(installationType) === 12 || isDaoOfficeItemId(itemId));
+    const isBazaar =
+      !isDaoOffice &&
+      !isPotionShop &&
+      (Number(installationType) === 11 || isBazaarItemId(itemId) || key === BAZAAR_SPRITE_KEY);
     // Store sheet is 256×256 on a 2×2 (128×128) pad — scale to footprint.
     // Console is Store furniture (not a parcel installation).
     if (isStore) {
@@ -216,6 +251,16 @@ const spawnSprite = async (installationData: InstallationMetadata, options?: Cre
       offset.y = -(384 - footprintH);
       await AssetsController.ensureSpritesheet('lodge', 'installations', 320, 384);
     }
+    if (isBazaar || isDaoOffice || isPotionShop) {
+      offset.x = 0;
+      offset.y = 0;
+      const sheet = isPotionShop
+        ? POTION_SHOP_SPRITE_KEY
+        : isDaoOffice
+          ? DAO_OFFICE_SPRITE_KEY
+          : BAZAAR_SPRITE_KEY;
+      await AssetsController.checkLocalTexture(sheet);
+    }
     // Always top-left origin on the footprint — do not use tileset originX/Y here
     // (those values break marker sizing / grid snap when non-zero, e.g. aaltar 0.3/0.6).
     let textureOk = key && scene.textures.exists(key) && scene.textures.get(key)?.key !== '__MISSING';
@@ -227,6 +272,30 @@ const spawnSprite = async (installationData: InstallationMetadata, options?: Cre
         .setOrigin(0);
       if (isStore) {
         installationImage.setDisplaySize(footprintW, footprintH);
+      }
+      if (isBazaar) {
+        installationImage.setDisplaySize(footprintW, footprintH);
+        try {
+          AnimationsController.play(installationImage, BAZAAR_SPRITE_KEY);
+        } catch {
+          /* ignore */
+        }
+      }
+      if (isDaoOffice) {
+        installationImage.setDisplaySize(footprintW, footprintH);
+        try {
+          AnimationsController.play(installationImage, DAO_OFFICE_SPRITE_KEY);
+        } catch {
+          /* ignore */
+        }
+      }
+      if (isPotionShop) {
+        installationImage.setDisplaySize(footprintW, footprintH);
+        try {
+          AnimationsController.play(installationImage, POTION_SHOP_SPRITE_KEY);
+        } catch {
+          /* ignore */
+        }
       }
       installationImage.setName('sprite');
     } else if (isStore) {
@@ -484,6 +553,24 @@ const createInstallationBuildModeUI = (installationContainer) => {
         handleEnterLodge(id);
         return;
       }
+      if (installationType?.installationType === 11 || isBazaarInstallationId(id) || isBazaarItemId(installationType?.itemId)) {
+        SFXController.playFX('click');
+        void setActiveInstallation(id);
+        handleEnterBazaar(id);
+        return;
+      }
+      if (installationType?.installationType === 12 || isDaoOfficeInstallationId(id) || isDaoOfficeItemId(installationType?.itemId)) {
+        SFXController.playFX('click');
+        void setActiveInstallation(id);
+        handleEnterDaoOffice(id);
+        return;
+      }
+      if (installationType?.installationType === 13 || isPotionShopInstallationId(id) || isPotionShopItemId(installationType?.itemId)) {
+        SFXController.playFX('click');
+        void setActiveInstallation(id);
+        handleEnterPotionShop(id);
+        return;
+      }
       if (!isUpgradable(id) || installationType?.installationType === 5) {
         resetStates();
         return;
@@ -569,6 +656,18 @@ const handleUnownedInterractions = (id: string) => {
       handleEnterLodge(id);
       break;
 
+    case 11:
+      handleEnterBazaar(id);
+      break;
+
+    case 12:
+      handleEnterDaoOffice(id);
+      break;
+
+    case 13:
+      handleEnterPotionShop(id);
+      break;
+
     default:
       break;
   }
@@ -636,6 +735,18 @@ const handleOwnedInterraction = () => {
       handleEnterLodge(activeInstallationId);
       break;
 
+    case 11:
+      handleEnterBazaar(activeInstallationId);
+      break;
+
+    case 12:
+      handleEnterDaoOffice(activeInstallationId);
+      break;
+
+    case 13:
+      handleEnterPotionShop(activeInstallationId);
+      break;
+
     default:
       break;
   }
@@ -660,6 +771,9 @@ const handleEnterStore = (id: string): void => {
   if (Installations.buildModeState) return;
   if (GlobalState.UI?.state?.storeState?.open) return;
   if (GlobalState.UI?.state?.lodgeState?.open) return;
+  if (GlobalState.UI?.state?.bazaarState?.open) return;
+  if (GlobalState.UI?.state?.daoOfficeState?.open) return;
+  if (GlobalState.UI?.state?.potionShopState?.open) return;
   toggleFocus(id, true);
   InputController.updateDisableKeyboard(true);
   if (!scene || !GlobalState?.UI?.dispatch) return;
@@ -681,6 +795,9 @@ const handleEnterLodge = (id: string): void => {
   if (Installations.buildModeState) return;
   if (GlobalState.UI?.state?.lodgeState?.open) return;
   if (GlobalState.UI?.state?.storeState?.open) return;
+  if (GlobalState.UI?.state?.bazaarState?.open) return;
+  if (GlobalState.UI?.state?.daoOfficeState?.open) return;
+  if (GlobalState.UI?.state?.potionShopState?.open) return;
   toggleFocus(id, true);
   InputController.updateDisableKeyboard(true);
   if (!scene || !GlobalState?.UI?.dispatch) return;
@@ -698,10 +815,88 @@ const handleEnterLodge = (id: string): void => {
   setLodgeInteractPrompt(false);
 };
 
+const handleEnterBazaar = (id: string): void => {
+  if (Installations.buildModeState) return;
+  if (GlobalState.UI?.state?.bazaarState?.open) return;
+  if (GlobalState.UI?.state?.storeState?.open) return;
+  if (GlobalState.UI?.state?.lodgeState?.open) return;
+  if (GlobalState.UI?.state?.daoOfficeState?.open) return;
+  if (GlobalState.UI?.state?.potionShopState?.open) return;
+  if (!isWorldBazaarId(id)) toggleFocus(id, true);
+  InputController.updateDisableKeyboard(true);
+  if (!scene || !GlobalState?.UI?.dispatch) return;
+  const owned = isWorldBazaarId(id) ? false : isOwnedById(id);
+  GlobalState.UI.dispatch({
+    type: 'UPDATE_BAZAAR_MODAL',
+    bazaarState: {
+      open: true,
+      installationId: id,
+      isOwner: Boolean(owned),
+      ownerAddress: owned ? String((owned as Parcel).owner || '').toLowerCase() : undefined,
+      cartridgeId: GlobalState.USER?.state?.cartridgeId || undefined,
+    },
+  });
+  setBazaarInteractPrompt(false);
+};
+
+const handleEnterDaoOffice = (id: string): void => {
+  if (Installations.buildModeState) return;
+  if (GlobalState.UI?.state?.daoOfficeState?.open) return;
+  if (GlobalState.UI?.state?.potionShopState?.open) return;
+  if (GlobalState.UI?.state?.storeState?.open) return;
+  if (GlobalState.UI?.state?.lodgeState?.open) return;
+  if (GlobalState.UI?.state?.bazaarState?.open) return;
+  if (!isWorldDaoOfficeId(id)) toggleFocus(id, true);
+  InputController.updateDisableKeyboard(true);
+  if (!scene || !GlobalState?.UI?.dispatch) return;
+  const owned = isWorldDaoOfficeId(id) ? false : isOwnedById(id);
+  GlobalState.UI.dispatch({
+    type: 'UPDATE_DAO_OFFICE_MODAL',
+    daoOfficeState: {
+      open: true,
+      installationId: id,
+      isOwner: Boolean(owned),
+      ownerAddress: owned ? String((owned as Parcel).owner || '').toLowerCase() : undefined,
+      cartridgeId: GlobalState.USER?.state?.cartridgeId || undefined,
+    },
+  });
+  setDaoOfficeInteractPrompt(false);
+};
+
+const handleEnterPotionShop = (id: string): void => {
+  if (Installations.buildModeState) return;
+  if (GlobalState.UI?.state?.potionShopState?.open) return;
+  if (GlobalState.UI?.state?.storeState?.open) return;
+  if (GlobalState.UI?.state?.lodgeState?.open) return;
+  if (GlobalState.UI?.state?.bazaarState?.open) return;
+  if (GlobalState.UI?.state?.daoOfficeState?.open) return;
+  if (!isWorldPotionShopId(id)) toggleFocus(id, true);
+  InputController.updateDisableKeyboard(true);
+  if (!scene || !GlobalState?.UI?.dispatch) return;
+  const owned = isWorldPotionShopId(id) ? false : isOwnedById(id);
+  GlobalState.UI.dispatch({
+    type: 'UPDATE_POTION_SHOP_MODAL',
+    potionShopState: {
+      open: true,
+      installationId: id,
+      isOwner: Boolean(owned),
+      ownerAddress: owned ? String((owned as Parcel).owner || '').toLowerCase() : undefined,
+      cartridgeId: GlobalState.USER?.state?.cartridgeId || undefined,
+    },
+  });
+  setPotionShopInteractPrompt(false);
+};
+
 /** ~2 tiles from 2×2 Store center — standing on the doorstep. */
 const STORE_INTERACT_RADIUS_PX = 180;
 /** Lodge is 5×5 (320px); center→door is ~160px, so doorstep needs a larger radius than Store. */
 const LODGE_INTERACT_RADIUS_PX = 320;
+/** World Bazaar tents are ~4×4; generous doorstep radius. */
+const BAZAAR_INTERACT_RADIUS_PX = 280;
+/** DAO Satellite Offices reuse tent footprint. */
+const DAO_OFFICE_INTERACT_RADIUS_PX = 280;
+/** Potion shops reuse tent footprint. */
+const POTION_SHOP_INTERACT_RADIUS_PX = 280;
 
 function getSelectedPlayerWorldPos(): { x: number; y: number } | null {
   const id = Players.selectedPlayer?.id;
@@ -757,8 +952,80 @@ const getNearestLodgeId = (maxDistPx = LODGE_INTERACT_RADIUS_PX): string | null 
   return bestId;
 };
 
+/** Nearest Bazaar within radius (play mode). */
+const getNearestBazaarId = (maxDistPx = BAZAAR_INTERACT_RADIUS_PX): string | null => {
+  const player = getSelectedPlayerWorldPos();
+  if (!player || !scene?.installationGroup) return null;
+  let bestId: string | null = null;
+  let bestDist = maxDistPx;
+  scene.installationGroup.forEach((container: Phaser.GameObjects.Container, id: string) => {
+    if (!id || !container) return;
+    const type = getTypeById(id);
+    const isBazaar =
+      Number(type?.installationType) === 11 ||
+      isBazaarInstallationId(id) ||
+      isBazaarItemId(type?.itemId);
+    if (!isBazaar) return;
+    const d = Phaser.Math.Distance.Between(player.x, player.y, container.x, container.y);
+    if (d <= bestDist) {
+      bestDist = d;
+      bestId = id;
+    }
+  });
+  return bestId;
+};
+
+/** Nearest DAO Satellite Office within radius (play mode). */
+const getNearestDaoOfficeId = (maxDistPx = DAO_OFFICE_INTERACT_RADIUS_PX): string | null => {
+  const player = getSelectedPlayerWorldPos();
+  if (!player || !scene?.installationGroup) return null;
+  let bestId: string | null = null;
+  let bestDist = maxDistPx;
+  scene.installationGroup.forEach((container: Phaser.GameObjects.Container, id: string) => {
+    if (!id || !container) return;
+    const type = getTypeById(id);
+    const isOffice =
+      Number(type?.installationType) === 12 ||
+      isDaoOfficeInstallationId(id) ||
+      isDaoOfficeItemId(type?.itemId);
+    if (!isOffice) return;
+    const d = Phaser.Math.Distance.Between(player.x, player.y, container.x, container.y);
+    if (d <= bestDist) {
+      bestDist = d;
+      bestId = id;
+    }
+  });
+  return bestId;
+};
+
 let storePromptContainer: Phaser.GameObjects.Container | null = null;
 let lodgePromptContainer: Phaser.GameObjects.Container | null = null;
+let bazaarPromptContainer: Phaser.GameObjects.Container | null = null;
+let daoOfficePromptContainer: Phaser.GameObjects.Container | null = null;
+let potionShopPromptContainer: Phaser.GameObjects.Container | null = null;
+
+/** Nearest Potion Shop within radius (play mode). */
+const getNearestPotionShopId = (maxDistPx = POTION_SHOP_INTERACT_RADIUS_PX): string | null => {
+  const player = getSelectedPlayerWorldPos();
+  if (!player || !scene?.installationGroup) return null;
+  let bestId: string | null = null;
+  let bestDist = maxDistPx;
+  scene.installationGroup.forEach((container: Phaser.GameObjects.Container, id: string) => {
+    if (!id || !container) return;
+    const type = getTypeById(id);
+    const isShop =
+      Number(type?.installationType) === 13 ||
+      isPotionShopInstallationId(id) ||
+      isPotionShopItemId(type?.itemId);
+    if (!isShop) return;
+    const d = Phaser.Math.Distance.Between(player.x, player.y, container.x, container.y);
+    if (d <= bestDist) {
+      bestDist = d;
+      bestId = id;
+    }
+  });
+  return bestId;
+};
 
 function setStoreInteractPrompt(visible: boolean, storeId?: string | null): void {
   if (!scene) return;
@@ -816,42 +1083,165 @@ function setLodgeInteractPrompt(visible: boolean, lodgeId?: string | null): void
   lodgePromptContainer.setActive(true);
 }
 
-/** Call from player move — shows E prompt when standing near a Store or Lodge. */
+function setBazaarInteractPrompt(visible: boolean, bazaarId?: string | null): void {
+  if (!scene) return;
+  if (!visible || !bazaarId) {
+    if (bazaarPromptContainer) {
+      bazaarPromptContainer.setVisible(false);
+      bazaarPromptContainer.setActive(false);
+    }
+    return;
+  }
+  const bazaar = scene.installationGroup?.get(bazaarId);
+  if (!bazaar) return;
+  if (!bazaarPromptContainer) {
+    bazaarPromptContainer = scene.add.container(0, 0).setDepth(450);
+    const img = scene.add.image(0, 0, 'e_interact').setOrigin(0.5).setScale(0.7);
+    img.setName('e_interact_bazaar');
+    img.setInteractive({ cursor: 'url(/cursors/pointer.png), auto' });
+    img.on('pointerdown', () => {
+      void Installations.tryInteractActive?.();
+    });
+    bazaarPromptContainer.add(img);
+  }
+  const bazaarType = getTypeById(bazaarId);
+  const tileH = Math.max(1, Number(bazaarType?.height) || 4);
+  bazaarPromptContainer.setPosition(bazaar.x, bazaar.y - tileH * 32);
+  bazaarPromptContainer.setVisible(true);
+  bazaarPromptContainer.setActive(true);
+}
+
+function setDaoOfficeInteractPrompt(visible: boolean, officeId?: string | null): void {
+  if (!scene) return;
+  if (!visible || !officeId) {
+    if (daoOfficePromptContainer) {
+      daoOfficePromptContainer.setVisible(false);
+      daoOfficePromptContainer.setActive(false);
+    }
+    return;
+  }
+  const office = scene.installationGroup?.get(officeId);
+  if (!office) return;
+  if (!daoOfficePromptContainer) {
+    daoOfficePromptContainer = scene.add.container(0, 0).setDepth(450);
+    const img = scene.add.image(0, 0, 'e_interact').setOrigin(0.5).setScale(0.7);
+    img.setName('e_interact_dao_office');
+    img.setInteractive({ cursor: 'url(/cursors/pointer.png), auto' });
+    img.on('pointerdown', () => {
+      void Installations.tryInteractActive?.();
+    });
+    daoOfficePromptContainer.add(img);
+  }
+  const officeType = getTypeById(officeId);
+  const tileH = Math.max(1, Number(officeType?.height) || 4);
+  daoOfficePromptContainer.setPosition(office.x, office.y - tileH * 32);
+  daoOfficePromptContainer.setVisible(true);
+  daoOfficePromptContainer.setActive(true);
+}
+
+function setPotionShopInteractPrompt(visible: boolean, shopId?: string | null): void {
+  if (!scene) return;
+  if (!visible || !shopId) {
+    if (potionShopPromptContainer) {
+      potionShopPromptContainer.setVisible(false);
+      potionShopPromptContainer.setActive(false);
+    }
+    return;
+  }
+  const shop = scene.installationGroup?.get(shopId);
+  if (!shop) return;
+  if (!potionShopPromptContainer) {
+    potionShopPromptContainer = scene.add.container(0, 0).setDepth(450);
+    const img = scene.add.image(0, 0, 'e_interact').setOrigin(0.5).setScale(0.7);
+    img.setName('e_interact_potion_shop');
+    img.setInteractive({ cursor: 'url(/cursors/pointer.png), auto' });
+    img.on('pointerdown', () => {
+      void Installations.tryInteractActive?.();
+    });
+    potionShopPromptContainer.add(img);
+  }
+  const shopType = getTypeById(shopId);
+  const tileH = Math.max(1, Number(shopType?.height) || 4);
+  potionShopPromptContainer.setPosition(shop.x, shop.y - tileH * 32);
+  potionShopPromptContainer.setVisible(true);
+  potionShopPromptContainer.setActive(true);
+}
+
+/** Call from player move — shows E prompt when standing near a Store, Lodge, Bazaar, or DAO Office. */
 const updateNearbyStorePrompt = (): void => {
   if (!scene || Installations.buildModeState || scene.disableKeyboard) {
     setStoreInteractPrompt(false);
     setLodgeInteractPrompt(false);
+    setBazaarInteractPrompt(false);
+    setDaoOfficeInteractPrompt(false);
+    setPotionShopInteractPrompt(false);
     return;
   }
   if (
     GlobalState.UI?.state?.storeState?.open ||
     GlobalState.UI?.state?.lodgeState?.open ||
+    GlobalState.UI?.state?.bazaarState?.open ||
+    GlobalState.UI?.state?.daoOfficeState?.open ||
+    GlobalState.UI?.state?.potionShopState?.open ||
     GlobalState.UI?.state?.consoleState?.open ||
     GlobalState.UI?.state?.broadcasterState?.open
   ) {
     setStoreInteractPrompt(false);
     setLodgeInteractPrompt(false);
+    setBazaarInteractPrompt(false);
+    setDaoOfficeInteractPrompt(false);
+    setPotionShopInteractPrompt(false);
     return;
   }
-  // Don't fight alchemica deposit E prompt.
   if (scene.activeDeposit) {
     setStoreInteractPrompt(false);
     setLodgeInteractPrompt(false);
+    setBazaarInteractPrompt(false);
+    setDaoOfficeInteractPrompt(false);
+    setPotionShopInteractPrompt(false);
     return;
   }
   const nearStore = getNearestStoreId();
   if (nearStore) {
     setLodgeInteractPrompt(false);
+    setBazaarInteractPrompt(false);
+    setDaoOfficeInteractPrompt(false);
+    setPotionShopInteractPrompt(false);
     setStoreInteractPrompt(true, nearStore);
     return;
   }
   setStoreInteractPrompt(false);
   const nearLodge = getNearestLodgeId();
-  setLodgeInteractPrompt(Boolean(nearLodge), nearLodge);
+  if (nearLodge) {
+    setBazaarInteractPrompt(false);
+    setDaoOfficeInteractPrompt(false);
+    setPotionShopInteractPrompt(false);
+    setLodgeInteractPrompt(true, nearLodge);
+    return;
+  }
+  setLodgeInteractPrompt(false);
+  const nearBazaar = getNearestBazaarId();
+  if (nearBazaar) {
+    setDaoOfficeInteractPrompt(false);
+    setPotionShopInteractPrompt(false);
+    setBazaarInteractPrompt(true, nearBazaar);
+    return;
+  }
+  setBazaarInteractPrompt(false);
+  const nearOffice = getNearestDaoOfficeId();
+  if (nearOffice) {
+    setPotionShopInteractPrompt(false);
+    setDaoOfficeInteractPrompt(true, nearOffice);
+    return;
+  }
+  setDaoOfficeInteractPrompt(false);
+  const nearPotion = getNearestPotionShopId();
+  setPotionShopInteractPrompt(Boolean(nearPotion), nearPotion);
 };
 
 /**
- * E-key: enter nearest Store/Lodge (or active).
+ * E-key:/**
+ * E-key: enter nearest Store/Lodge/Bazaar/DAO Office (or active).
  * Returns true if handled so deposit E does not also fire.
  */
 const tryInteractActive = (): boolean => {
@@ -859,6 +1249,9 @@ const tryInteractActive = (): boolean => {
   if (
     GlobalState.UI?.state?.storeState?.open ||
     GlobalState.UI?.state?.lodgeState?.open ||
+    GlobalState.UI?.state?.bazaarState?.open ||
+    GlobalState.UI?.state?.daoOfficeState?.open ||
+    GlobalState.UI?.state?.potionShopState?.open ||
     GlobalState.UI?.state?.consoleState?.open ||
     GlobalState.UI?.state?.broadcasterState?.open
   ) {
@@ -867,6 +1260,9 @@ const tryInteractActive = (): boolean => {
 
   let storeId: string | null = null;
   let lodgeId: string | null = null;
+  let bazaarId: string | null = null;
+  let daoOfficeId: string | null = null;
+  let potionShopId: string | null = null;
   const activeId = scene.activeInstallation?.data?.get('id') as string | undefined;
   if (activeId) {
     const activeType = getTypeById(activeId);
@@ -877,9 +1273,21 @@ const tryInteractActive = (): boolean => {
     if (activeTypeNum === 4 || isLodgeInstallationId(activeId) || isLodgeItemId(activeType?.itemId)) {
       lodgeId = activeId;
     }
+    if (activeTypeNum === 11 || isBazaarInstallationId(activeId) || isBazaarItemId(activeType?.itemId)) {
+      bazaarId = activeId;
+    }
+    if (activeTypeNum === 12 || isDaoOfficeInstallationId(activeId) || isDaoOfficeItemId(activeType?.itemId)) {
+      daoOfficeId = activeId;
+    }
+    if (activeTypeNum === 13 || isPotionShopInstallationId(activeId) || isPotionShopItemId(activeType?.itemId)) {
+      potionShopId = activeId;
+    }
   }
   if (!storeId) storeId = getNearestStoreId();
   if (!lodgeId) lodgeId = getNearestLodgeId();
+  if (!bazaarId) bazaarId = getNearestBazaarId();
+  if (!daoOfficeId) daoOfficeId = getNearestDaoOfficeId();
+  if (!potionShopId) potionShopId = getNearestPotionShopId();
 
   if (storeId) {
     SFXController.playFX('click');
@@ -889,6 +1297,21 @@ const tryInteractActive = (): boolean => {
   if (lodgeId) {
     SFXController.playFX('click');
     handleEnterLodge(lodgeId);
+    return true;
+  }
+  if (bazaarId) {
+    SFXController.playFX('click');
+    handleEnterBazaar(bazaarId);
+    return true;
+  }
+  if (daoOfficeId) {
+    SFXController.playFX('click');
+    handleEnterDaoOffice(daoOfficeId);
+    return true;
+  }
+  if (potionShopId) {
+    SFXController.playFX('click');
+    handleEnterPotionShop(potionShopId);
     return true;
   }
   return false;
@@ -1045,11 +1468,25 @@ const destroyAudios = (id: string) => {
   if (spatialKey) SFXController.setSpatialAudios({ id, key: spatialKey, x: installation.x, y: installation.y }, false);
 };
 
+const isWorldRoomInstallation = (installation: Phaser.GameObjects.Container): boolean =>
+  Boolean(
+    installation?.getData?.('worldBazaar') ||
+      installation?.getData?.('worldDaoOffice') ||
+      installation?.getData?.('worldPotionShop'),
+  );
+
 const destroyAll = () => {
-  if (scene.installationGroup) {
-    scene.installationGroup.forEach((installation) => installation.destroy());
-    scene.installationGroup = new Map();
-  }
+  if (!scene.installationGroup) return;
+  // Keep world-room land_wips — they are not AOI parcel installations and must survive clearDynamicData.
+  const keep = new Map<string, Phaser.GameObjects.Container>();
+  scene.installationGroup.forEach((installation, id) => {
+    if (isWorldRoomInstallation(installation)) {
+      keep.set(id, installation);
+      return;
+    }
+    installation.destroy();
+  });
+  scene.installationGroup = keep;
 };
 
 // BUILD MARKER & EQUIPING (used for equiping on parcel and move installations)
@@ -2409,6 +2846,130 @@ const destroyMaakerBots = (id) => {
   }
 };
 
+type WorldRoomSpawnKind = 'bazaar' | 'dao_office' | 'potion_shop';
+
+/**
+ * Place enterable world-room land_wip at the classic circus WIP coords:
+ *   (x - 2) * 64, (y - 2.8) * 64, origin (0, 0.5) — see spawnLandsWip.
+ */
+const spawnWorldRoomFromObject = (
+  obj: { type?: string; position?: { x: number; y: number }; dimensions?: { width: number; height: number } },
+  kind: WorldRoomSpawnKind,
+): void => {
+  if (!scene?.installationGroup || !scene?.add) return;
+  const anchor = getLandWipPixelAnchor(obj);
+  const center = getLandWipPixelCenter(obj);
+  if (!anchor || !center || !obj.position) return;
+
+  const tileX = Number(obj.position.x);
+  const tileY = Number(obj.position.y);
+  if (!Number.isFinite(tileX) || !Number.isFinite(tileY)) return;
+
+  const parcelId =
+    kind === 'bazaar'
+      ? BAZAAR_WORLD_PARCEL_ID
+      : kind === 'dao_office'
+        ? DAO_OFFICE_WORLD_PARCEL_ID
+        : POTION_SHOP_WORLD_PARCEL_ID;
+  const itemId =
+    kind === 'bazaar' ? BAZAAR_ITEM_ID : kind === 'dao_office' ? DAO_OFFICE_ITEM_ID : POTION_SHOP_ITEM_ID;
+  const spriteKey =
+    kind === 'bazaar' ? BAZAAR_SPRITE_KEY : kind === 'dao_office' ? DAO_OFFICE_SPRITE_KEY : POTION_SHOP_SPRITE_KEY;
+  const dataFlag =
+    kind === 'bazaar' ? 'worldBazaar' : kind === 'dao_office' ? 'worldDaoOffice' : 'worldPotionShop';
+
+  const id = createInstallationIdByData({
+    parcelId,
+    itemId,
+    x: tileX,
+    y: tileY,
+    type: 0,
+    state: 0,
+  });
+  if (scene.installationGroup.has(id)) return;
+
+  // Container at visual center; collider is 2 tiles smaller than the 12×12 land_wip art.
+  const container = scene.add.container(center.x, center.y).setDepth(100);
+  container.setSize(LAND_WIP_COLLISION_PX, LAND_WIP_COLLISION_PX);
+  container.setData('id', id);
+  container.setData(dataFlag, true);
+
+  // Sprite offset so world position matches original origin-(0, 0.5) anchor.
+  const spr = scene.add
+    .sprite(anchor.x - center.x, anchor.y - center.y, spriteKey, 0)
+    .setOrigin(0, 0.5)
+    .setName('sprite');
+  container.add(spr);
+
+  try {
+    AnimationsController.play(spr, 'land_wip');
+  } catch {
+    try {
+      AnimationsController.play(spr, `${spriteKey}_1`);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  container.setInteractive(
+    new Phaser.Geom.Rectangle(
+      -LAND_WIP_COLLISION_PX / 2,
+      -LAND_WIP_COLLISION_PX / 2,
+      LAND_WIP_COLLISION_PX,
+      LAND_WIP_COLLISION_PX,
+    ),
+    Phaser.Geom.Rectangle.Contains,
+  );
+  container.on('pointerdown', () => {
+    if (Installations.buildModeState) return;
+    SFXController.playFX('click');
+    if (kind === 'bazaar') handleEnterBazaar(id);
+    else if (kind === 'dao_office') handleEnterDaoOffice(id);
+    else handleEnterPotionShop(id);
+  });
+
+  scene.installationGroup.set(id, container);
+};
+
+/**
+ * Replace circus land_wip tents with enterable world Bazaar installations
+ * (parcelId BAZAAR, itemId 210). Placeholder art: land_wip.
+ */
+const spawnWorldBazaarsFromTents = (): void => {
+  if (!scene?.installationGroup || !scene?.add) return;
+  const objects = _.flatMap(_.values(MapController.objectsJSON || {}));
+  objects.forEach((obj) => {
+    if (obj?.type !== 'tent') return;
+    spawnWorldRoomFromObject(obj, 'bazaar');
+  });
+};
+
+/**
+ * World DAO Satellite Offices from objects.json type `dao_office`
+ * (parcelId DAO, itemId 211). Placeholder art: land_wip.
+ */
+const spawnWorldDaoOffices = (): void => {
+  if (!scene?.installationGroup || !scene?.add) return;
+  const objects = _.flatMap(_.values(MapController.objectsJSON || {}));
+  objects.forEach((obj) => {
+    if (obj?.type !== 'dao_office') return;
+    spawnWorldRoomFromObject(obj, 'dao_office');
+  });
+};
+
+/**
+ * World Potion Shops from objects.json type `potion_shop`
+ * (parcelId POTION, itemId 212). Placeholder art: land_wip. Opens ItemShop inside.
+ */
+const spawnWorldPotionShops = (): void => {
+  if (!scene?.installationGroup || !scene?.add) return;
+  const objects = _.flatMap(_.values(MapController.objectsJSON || {}));
+  objects.forEach((obj) => {
+    if (obj?.type !== 'potion_shop') return;
+    spawnWorldRoomFromObject(obj, 'potion_shop');
+  });
+};
+
 const Installations: InstallationInterface = {
   isActive: false,
   buildModeState: false,
@@ -2432,6 +2993,9 @@ const Installations: InstallationInterface = {
   upgradeLocalStore,
   tryInteractActive,
   updateNearbyStorePrompt,
+  spawnWorldBazaarsFromTents,
+  spawnWorldDaoOffices,
+  spawnWorldPotionShops,
 };
 
 export default Installations;

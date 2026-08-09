@@ -1,5 +1,12 @@
 /* eslint-disable multiline-ternary */
-import { EffectLayer, LandingStars, LandingDots, GotchiverseBaseCartridge, GotchiverseRhCartridge } from 'assets';
+import {
+  EffectLayer,
+  LandingStars,
+  LandingDots,
+  GotchiverseBaseCartridge,
+  GotchiverseBtcCartridge,
+  GotchiverseRhCartridge,
+} from 'assets';
 import { Button, SocialLinks } from 'components/UI/elements';
 import { Footer, JoinAarena, JoinEvent, Navigation, VideoBanner } from 'components/UI/structures';
 import { SpawnOnParcel } from 'components/UI/structures/SpawnOnParcel';
@@ -118,7 +125,13 @@ export const LandingScreen = (): JSX.Element => {
 
     // listen for spawnId query update to select spawn location
     const spawnId = queryParams?.spawnId;
-    if (spawnId && spawnId !== 'aarena' && !gotchiId && currentNetwork !== 'robinhood') {
+    if (
+      spawnId &&
+      spawnId !== 'aarena' &&
+      !gotchiId &&
+      currentNetwork !== 'robinhood' &&
+      currentNetwork !== 'bitcoin'
+    ) {
       parcelSection?.current?.scrollIntoView(false);
     }
     if (spawnId !== selectedSpawn) {
@@ -147,6 +160,8 @@ export const LandingScreen = (): JSX.Element => {
 
   const { click } = useAavegotchiSound();
   const isRh = currentNetwork === 'robinhood';
+  /** RH + BTC soft tracks are aarena-only (no Gotchiverse / parcels column). */
+  const isAarenaOnlyTrack = isRh || currentNetwork === 'bitcoin';
 
   const setVideoMode = (isShort: boolean) => {
     setBannerIsShort(isShort);
@@ -217,7 +232,7 @@ export const LandingScreen = (): JSX.Element => {
       });
       gameDispatch({
         type: 'UPDATE_GAME_CONFIG',
-        gameConfig: { isLive: true },
+        gameConfig: { isLive: true, combatIsLive: true },
       });
     }
   };
@@ -305,7 +320,7 @@ export const LandingScreen = (): JSX.Element => {
       const wearables = await getCartridgeWearables(address, status.cartridgeId);
       if (wearables.ok) wearableInventory = wearables.wearableInventory;
       // cPaarcels are Base soft-launch inventory; load for all citaadel nets (not RH-only aarena).
-      if (net !== 'robinhood') {
+      if (net !== 'robinhood' && net !== 'bitcoin') {
         const { getCartridgePaarcels } = await import('helpers/auth.helper');
         const paarcels = await getCartridgePaarcels(address, status.cartridgeId);
         if (paarcels.ok) {
@@ -372,15 +387,15 @@ export const LandingScreen = (): JSX.Element => {
             </Parallax>
           </div>
 
-          <div className={`main-container mx-auto grid grid-cols-1 ${isRh ? '' : 'lg:grid-cols-2'} gap-20`}>
-            {!isRh && (
+          <div className={`main-container mx-auto grid grid-cols-1 ${isAarenaOnlyTrack ? '' : 'lg:grid-cols-2'} gap-20`}>
+            {!isAarenaOnlyTrack && (
               <div className="join-event">
                 <JoinEvent handleSpawnSelect={handleSpawnSelect} />
               </div>
             )}
             <div className="starting-point">
               <JoinAarena handleSpawn={handleSpawnSelect} />
-              {!isRh && (
+              {!isAarenaOnlyTrack && (
                 <div className="leaderboard-button-container clickable">
                   <LeaderboardButton
                     onClick={() => {
@@ -392,7 +407,7 @@ export const LandingScreen = (): JSX.Element => {
                   />
                 </div>
               )}
-              {!isRh && (
+              {!isAarenaOnlyTrack && (
                 <div ref={parcelSection} className="parcel-section">
                   <SpawnOnParcel spawnParcelId={selectedSpawn} handleSpawnSelect={handleSpawnSelect} />
                 </div>
@@ -400,7 +415,7 @@ export const LandingScreen = (): JSX.Element => {
             </div>
           </div>
 
-          {!isRh && (
+          {!isAarenaOnlyTrack && (
             <div className="blue-bg">
               <div className="news gap-40 w-full flex">
                 <NewsList />
@@ -445,8 +460,20 @@ export const LandingScreen = (): JSX.Element => {
             <div className="cartridge-promo-art-wrap">
               <div className="cartridge-promo-art">
                 <Image
-                  alt={currentNetwork === 'robinhood' ? 'Gotchiverse RH cartridge' : 'Gotchiverse Base cartridge'}
-                  src={currentNetwork === 'robinhood' ? GotchiverseRhCartridge : GotchiverseBaseCartridge}
+                  alt={
+                    currentNetwork === 'robinhood'
+                      ? 'Gotchiverse RH cartridge'
+                      : currentNetwork === 'bitcoin'
+                        ? 'Gotchiverse BTC cartridge'
+                        : 'Gotchiverse Base cartridge'
+                  }
+                  src={
+                    currentNetwork === 'robinhood'
+                      ? GotchiverseRhCartridge
+                      : currentNetwork === 'bitcoin'
+                        ? GotchiverseBtcCartridge
+                        : GotchiverseBaseCartridge
+                  }
                   layout="fill"
                   objectFit="contain"
                   priority={false}

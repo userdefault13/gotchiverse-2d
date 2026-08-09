@@ -27,11 +27,26 @@ export const MAP_ID_CITAADEL = 'citaadel';
 export const MAP_ID_AARENA = 'aarena';
 export const MAP_ID_STORE = 'store';
 export const MAP_ID_LODGE = 'lodge';
+export const MAP_ID_BAZAAR = 'bazaar';
+export const MAP_ID_DAO_OFFICE = 'dao_office';
+export const MAP_ID_POTION_SHOP = 'potion_shop';
 /** Lodge interior reuses store 16×16 dimensions. */
 export const LODGE_GRID_SIZE = STORE_GRID_SIZE;
 export const LODGE_WIDTH = STORE_WIDTH;
 export const LODGE_HEIGHT = STORE_HEIGHT;
-/** Zone servers only — store/lodge use secondary Colyseus rooms, not ENABLED_MAPS zones. */
+/** Bazaar interior matches world tent / humble parcel footprint: 8×8. */
+export const BAZAAR_GRID_SIZE = 8;
+export const BAZAAR_WIDTH = BAZAAR_GRID_SIZE * TILE_SIZE;
+export const BAZAAR_HEIGHT = BAZAAR_WIDTH;
+/** DAO Satellite Office interior matches world tent / humble parcel footprint: 8×8. */
+export const DAO_OFFICE_GRID_SIZE = 8;
+export const DAO_OFFICE_WIDTH = DAO_OFFICE_GRID_SIZE * TILE_SIZE;
+export const DAO_OFFICE_HEIGHT = DAO_OFFICE_WIDTH;
+/** Potion Shop interior reuses store 16×16 dimensions. */
+export const POTION_SHOP_GRID_SIZE = STORE_GRID_SIZE;
+export const POTION_SHOP_WIDTH = STORE_WIDTH;
+export const POTION_SHOP_HEIGHT = STORE_HEIGHT;
+/** Zone servers only — store/lodge/bazaar/dao_office/potion_shop use secondary Colyseus rooms, not ENABLED_MAPS zones. */
 export const ENABLED_MAPS = [MAP_ID_CITAADEL, MAP_ID_AARENA];
 export const TOKEN_TO_ADDRESS = {
   FUD: '0x403E967b044d4Be25170310157cB1A4Bf10bdD0f',
@@ -160,6 +175,27 @@ MAP_CONFIG_BY_ID[MAP_ID_LODGE] = Object.assign({}, MAP_CONFIG_BY_ID[MAP_ID_STORE
   ID: MAP_ID_LODGE,
   WIDTH: LODGE_WIDTH,
   HEIGHT: LODGE_HEIGHT,
+});
+
+/** World/parcel Bazaar interior — clone of store 16×16 room. */
+MAP_CONFIG_BY_ID[MAP_ID_BAZAAR] = Object.assign({}, MAP_CONFIG_BY_ID[MAP_ID_STORE], {
+  ID: MAP_ID_BAZAAR,
+  WIDTH: BAZAAR_WIDTH,
+  HEIGHT: BAZAAR_HEIGHT,
+});
+
+/** World DAO Satellite Office interior — clone of store 16×16 room. */
+MAP_CONFIG_BY_ID[MAP_ID_DAO_OFFICE] = Object.assign({}, MAP_CONFIG_BY_ID[MAP_ID_STORE], {
+  ID: MAP_ID_DAO_OFFICE,
+  WIDTH: DAO_OFFICE_WIDTH,
+  HEIGHT: DAO_OFFICE_HEIGHT,
+});
+
+/** World Potion Shop interior — clone of store 16×16 room. */
+MAP_CONFIG_BY_ID[MAP_ID_POTION_SHOP] = Object.assign({}, MAP_CONFIG_BY_ID[MAP_ID_STORE], {
+  ID: MAP_ID_POTION_SHOP,
+  WIDTH: POTION_SHOP_WIDTH,
+  HEIGHT: POTION_SHOP_HEIGHT,
 });
 
 MAP_CONFIG_BY_ID[MAP_ID_AARENA] = Object.assign({}, BASE_MAP_CONFIG, {
@@ -496,7 +532,7 @@ export const GAME_CONFIG: GameConfig = {
   // Boolean: if REALM is in an accessible state. Set to false to disable public access. Users won't be able to connect to the socket and will only see a closed portal landing page.
   isLive: true,
   // Boolean: if COMBAT Aarena is in an accessible state.
-  combatIsLive: false,
+  combatIsLive: true,
   enableQuestHint: false,
   enableTipping: true, // set to true to enable tipping / superchat based features
   enablePlayerWallet: true, // set to true to enable player wallet based features including deposits, withdraws, decrementing funds from player wallet for in-game actions
@@ -789,6 +825,9 @@ DEFAULT_MAP_CONFIG[MAP_ID_CITAADEL] = Object.assign({}, MAP_CONFIG_BY_ID[MAP_ID_
 DEFAULT_MAP_CONFIG[MAP_ID_AARENA] = Object.assign({}, MAP_CONFIG_BY_ID[MAP_ID_AARENA]);
 DEFAULT_MAP_CONFIG[MAP_ID_STORE] = Object.assign({}, MAP_CONFIG_BY_ID[MAP_ID_STORE]);
 DEFAULT_MAP_CONFIG[MAP_ID_LODGE] = Object.assign({}, MAP_CONFIG_BY_ID[MAP_ID_LODGE]);
+DEFAULT_MAP_CONFIG[MAP_ID_BAZAAR] = Object.assign({}, MAP_CONFIG_BY_ID[MAP_ID_BAZAAR]);
+DEFAULT_MAP_CONFIG[MAP_ID_DAO_OFFICE] = Object.assign({}, MAP_CONFIG_BY_ID[MAP_ID_DAO_OFFICE]);
+DEFAULT_MAP_CONFIG[MAP_ID_POTION_SHOP] = Object.assign({}, MAP_CONFIG_BY_ID[MAP_ID_POTION_SHOP]);
 
 // a cache of changed default proeprties to forward to newly connected FE clients so all props aren't always sent
 export const CHANGED_GAME_CONFIG_CACHE = {};
@@ -797,6 +836,9 @@ CHANGED_MAP_CONFIG_CACHE[MAP_ID_CITAADEL] = {};
 CHANGED_MAP_CONFIG_CACHE[MAP_ID_AARENA] = {};
 CHANGED_MAP_CONFIG_CACHE[MAP_ID_STORE] = {};
 CHANGED_MAP_CONFIG_CACHE[MAP_ID_LODGE] = {};
+CHANGED_MAP_CONFIG_CACHE[MAP_ID_BAZAAR] = {};
+CHANGED_MAP_CONFIG_CACHE[MAP_ID_DAO_OFFICE] = {};
+CHANGED_MAP_CONFIG_CACHE[MAP_ID_POTION_SHOP] = {};
 
 // the redis stream and consumer group that executes alchemica pickups
 export const ALCHEMICA_TAKE_STREAM_NAME = 'alchemica-take-stream';

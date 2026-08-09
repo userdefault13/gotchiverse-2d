@@ -45,9 +45,13 @@ export const CollateralGotchiGallery = ({
   const [{ currentNetwork }] = useWeb3();
   const network = networkProp || currentNetwork;
   const isBitcoin = network === 'bitcoin';
+  const isRobinhood = network === 'robinhood';
+  /** BTC + RH soft tracks: starter collaterals only (no L1 wallet bind). */
+  const collateralOnlyTrack = isBitcoin || isRobinhood;
+  /** Soft-launch starter mint price (sim) — RH/BTC $30, Base $5. */
+  const starterMintUsd = collateralOnlyTrack ? 30 : 5;
   const items = useMemo(() => getMintableCollateralsForNetwork(network), [network]);
-  // BTC track: soft-mint BTC cAavegotchi only — hide L1 wallet bind tabs.
-  const walletGotchis = isBitcoin ? [] : userAavegotchis || [];
+  const walletGotchis = collateralOnlyTrack ? [] : userAavegotchis || [];
 
   const mintedIds = useMemo(() => mintedSourceTokenIds(cartridgeHeroes), [cartridgeHeroes]);
   const unmintedOwned = useMemo(
@@ -56,14 +60,14 @@ export const CollateralGotchiGallery = ({
   );
 
   // Prefer Wallet Gotchis when the player has any — Mint All lives on that tab.
-  // Bitcoin track: collateral-only (BTC cAavegotchi).
+  // Bitcoin / RH: collateral-only starters.
   const [tab, setTab] = useState<MintTab>(() =>
-    isBitcoin ? 'caavegotchi' : walletGotchis.length > 0 ? 'wallet' : 'caavegotchi',
+    collateralOnlyTrack ? 'caavegotchi' : walletGotchis.length > 0 ? 'wallet' : 'caavegotchi',
   );
   const [mintWithWearables, setMintWithWearables] = useState(true);
 
   useEffect(() => {
-    if (isBitcoin) {
+    if (collateralOnlyTrack) {
       setTab('caavegotchi');
       return;
     }
@@ -72,7 +76,7 @@ export const CollateralGotchiGallery = ({
     }
     // Only auto-switch when roster first becomes available.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [walletGotchis.length, isBitcoin]);
+  }, [walletGotchis.length, collateralOnlyTrack]);
 
   const handleMintCollateral = () => {
     if (minting || !selectedCollateral) return;
@@ -128,7 +132,7 @@ export const CollateralGotchiGallery = ({
           <span className="title-lead">Mint</span>{' '}
           <SoftCText>cAavegotchi</SoftCText>
         </h2>
-        {!isBitcoin && (
+        {!collateralOnlyTrack && (
           <div className="mint-tabs" role="tablist">
             <button
               type="button"
@@ -163,12 +167,19 @@ export const CollateralGotchiGallery = ({
               {isBitcoin ? (
                 <>
                   Bitcoin track — mint a <strong>BTC cAavegotchi</strong> only (amWBTC).{' '}
-                  <span className="price-tag">$5 USDC</span>{' '}
+                  <span className="price-tag">${starterMintUsd} USDC</span>{' '}
+                  <span className="price-note">(sim — not live)</span>
+                </>
+              ) : isRobinhood ? (
+                <>
+                  Robinhood track — Haunt 3 brand collaterals only (amazon, tesla, …).{' '}
+                  <span className="price-tag">${starterMintUsd} USDC</span>{' '}
                   <span className="price-note">(sim — not live)</span>
                 </>
               ) : (
                 <>
-                  Base-level cAavegotchi — pick a collateral spirit. <span className="price-tag">$5 USDC</span>{' '}
+                  Base-level cAavegotchi — pick a collateral spirit.{' '}
+                  <span className="price-tag">${starterMintUsd} USDC</span>{' '}
                   <span className="price-note">(sim — not live)</span>
                 </>
               )}
@@ -188,7 +199,11 @@ export const CollateralGotchiGallery = ({
             </div>
             <div className="mint-cta">
               <Button size={2.4} fullWidth onClick={handleMintCollateral} disabled={!selectedCollateral || minting}>
-                {minting ? 'Binding…' : label ? `Bind ${label} · $5 USDC` : 'Select a Collateral'}
+                {minting
+                  ? 'Binding…'
+                  : label
+                    ? `Bind ${label} · $${starterMintUsd} USDC`
+                    : 'Select a Collateral'}
               </Button>
               <p className="mint-hint">Payment sim not live — bind proceeds without charge for now.</p>
               {mintError ? <p className="mint-error">{mintError}</p> : null}

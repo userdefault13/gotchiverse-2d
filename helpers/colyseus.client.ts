@@ -7,6 +7,7 @@ import { resolveColyseusMove, isColyseusPositionBlocked } from 'helpers/colyseus
 import { colyseusSeedParcels, colyseusUpdateCurrentParcel } from 'helpers/colyseus.parcels';
 import { colyseusPreloadNearbyInstallations } from 'helpers/colyseus.installations';
 import { getParcelSpawnPixels } from 'helpers/parcels.helper';
+import { saveLastCitaadelPosition } from 'helpers/lastPosition.helper';
 import { getRealmUrlSync, resolveRealmBaseUrl } from 'helpers/realm.url';
 import { toggleFollowGotchi } from 'helpers/phaser.helper';
 import { getColyseusMap, setColyseusMap, isColyseusAarenaMap } from 'helpers/colyseus.map';
@@ -203,6 +204,7 @@ function applyLocalPosition(
   if (!localGotchiId) return;
   const next = { x: Math.round(x), y: Math.round(y) };
   lastLocalPos = next;
+  if (isCitaadelMap()) saveLastCitaadelPosition(localGotchiId, next.x, next.y);
   Players.handlePositions([
     {
       id: localGotchiId,

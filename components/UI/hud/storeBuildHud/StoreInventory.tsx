@@ -4,17 +4,24 @@ import { InventoryCard } from 'components/UI/component';
 import useAavegotchiSound from 'hooks/useAavegotchiSound';
 import {
   SHELF_ITEM_ID,
+  FEATURE_TABLE_ITEM_ID,
+  RACK_H_ITEM_ID,
+  RACK_V_ITEM_ID,
   CASHIER_ITEM_ID,
   CONSOLE_ITEM_ID,
   TERMINAL_ITEM_ID,
   STORE_FURNITURE_TYPE,
   getFurnitureQty,
   getConsoleBagCount,
+  shelfDisplayName,
 } from 'helpers/store.layout.helper';
 import inventoryStyles from '../components/Inventory/styles';
 
 export type StoreFurnitureBrush =
   | typeof SHELF_ITEM_ID
+  | typeof FEATURE_TABLE_ITEM_ID
+  | typeof RACK_H_ITEM_ID
+  | typeof RACK_V_ITEM_ID
   | typeof CASHIER_ITEM_ID
   | typeof CONSOLE_ITEM_ID
   | typeof TERMINAL_ITEM_ID;
@@ -37,16 +44,23 @@ interface Props {
 }
 
 function buildStoreInstallations(): StoreInstallCard[] {
+  const shelfCards = [
+    SHELF_ITEM_ID,
+    FEATURE_TABLE_ITEM_ID,
+    RACK_H_ITEM_ID,
+    RACK_V_ITEM_ID,
+  ].map((itemId) => ({
+    id: itemId,
+    itemId,
+    name: shelfDisplayName(itemId),
+    quantity: getFurnitureQty(itemId),
+    level: 1,
+    itemType: STORE_FURNITURE_TYPE,
+    type: 'INSTALLATION' as const,
+  }));
+
   return [
-    {
-      id: SHELF_ITEM_ID,
-      itemId: SHELF_ITEM_ID,
-      name: 'Shelf Level 1',
-      quantity: getFurnitureQty(SHELF_ITEM_ID),
-      level: 1,
-      itemType: STORE_FURNITURE_TYPE,
-      type: 'INSTALLATION',
-    },
+    ...shelfCards,
     {
       id: CASHIER_ITEM_ID,
       itemId: CASHIER_ITEM_ID,
@@ -148,14 +162,6 @@ export const StoreInventory = ({ placeBrush, invTick, onSelectBrush, onExit }: P
           font-size: 1.2rem;
           color: var(--col-success-300);
           line-height: 1.2;
-        }
-        .shadow.active {
-          filter: drop-shadow(0rem 0.1rem 0.1rem var(--col-success-300))
-            drop-shadow(0rem -0.1rem 0.1rem var(--col-success-300)) drop-shadow(0.1rem 0rem 0.1rem var(--col-success-300))
-            drop-shadow(-0.1rem 0rem 0.1rem var(--col-success-300)) drop-shadow(0rem 0rem 0.4rem var(--col-success-300));
-        }
-        .installation-wrapper.active {
-          background: var(--col-success-300);
         }
       `}</style>
     </>

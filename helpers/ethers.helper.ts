@@ -562,11 +562,61 @@ export function getMintableCollaterals(): CollateralObject[] {
   });
 }
 
+/** RH Haunt-3 brand collaterals (amazon, apple, …) — lime body, black logos. */
+export const RH_H3_BRAND_NAMES = [
+  'amazon',
+  'apple',
+  'disney',
+  'gamestop',
+  'microsoft',
+  'nike',
+  'nvidia',
+  'spacex',
+  'tesla',
+  'usoilfund',
+] as const;
+
+export function isRhH3BrandName(name?: string | null): boolean {
+  const n = String(name || '')
+    .trim()
+    .toLowerCase();
+  return (RH_H3_BRAND_NAMES as readonly string[]).includes(n);
+}
+
+/** Soft-mint gallery entries for Robinhood H3 brands. */
+export function getRhH3Collaterals(): CollateralObject[] {
+  return RH_H3_BRAND_NAMES.map((name, i) => {
+    const display =
+      name === 'usoilfund' ? 'USOIL' : name.length <= 6 ? name.toUpperCase() : name.charAt(0).toUpperCase() + name.slice(1);
+    return {
+      name,
+      kovanAddress: '',
+      mainnetAddress: '',
+      // Placeholder — compose uses name for H3, not on-chain address.
+      maticAddress: `0x${(i + 1).toString(16).padStart(40, '0')}`,
+      primaryColor: '#ccff00',
+      secondaryColor: '#e8ff66',
+      cheekColor: '#F696C6',
+      svgId: 200 + i,
+      eyeShapeSvgId: 18,
+      modifiers: [i % 6 === 0 ? 1 : 0, i % 6 === 1 ? 1 : 0, i % 6 === 2 ? 1 : 0, i % 6 === 3 ? 1 : 0, i % 6 === 4 ? 1 : 0, i % 6 === 5 ? 1 : 0],
+      conversionRate: 1,
+      decimals: 18,
+      maticDisplay: display,
+    } as CollateralObject;
+  });
+}
+
 /**
- * Gallery for soft-launch mint: Bitcoin track is BTC cAavegotchi only (amWBTC / wbtc).
- * Base / RH keep the full mintable set.
+ * Gallery for soft-launch mint:
+ * - Bitcoin: BTC cAavegotchi only (amWBTC / wbtc)
+ * - Robinhood: Haunt 3 brand collaterals only (no L1 wallet bind)
+ * - Base: classic aToken mintable set
  */
 export function getMintableCollateralsForNetwork(network?: string | null): CollateralObject[] {
+  if (network === 'robinhood') {
+    return getRhH3Collaterals();
+  }
   const all = getMintableCollaterals();
   if (network === 'bitcoin') {
     return all.filter((c) => {

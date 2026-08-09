@@ -1,7 +1,7 @@
 import styles from './styles';
 import useAavegotchiSound from 'hooks/useAavegotchiSound';
 import { fetchCollateralGotchiBlobUrl } from 'helpers/collateralPreview';
-import { collateralDisplayName, type CollateralObject } from 'helpers/ethers.helper';
+import { collateralDisplayName, isRhH3BrandName, type CollateralObject } from 'helpers/ethers.helper';
 import { useEffect, useState } from 'react';
 import { useWeb3 } from 'contexts/Web3Context';
 import { GotchiLoading } from 'assets';
@@ -43,6 +43,8 @@ export const CollateralGotchiCard = ({ collateral, isSelected, onSelect }: Props
           // @ts-expect-error CSS custom properties
           '--border-color': collateral.primaryColor,
           '--label-bg-color': collateral.primaryColor,
+          // Lime RH H3 brand bars need black type (white on #ccff00 is unreadable)
+          '--label-text-color': isRhH3BrandName(collateral.name) ? '#000000' : 'white',
         }}
         onClick={() => {
           click();

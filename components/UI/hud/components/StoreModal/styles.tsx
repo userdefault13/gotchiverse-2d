@@ -160,6 +160,49 @@ export default css`
     gap: 1rem;
     min-width: min(90vw, 36rem);
   }
+  .product-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+  .product-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.8rem;
+    border: 1px solid #ddd;
+    cursor: pointer;
+  }
+  .product-list li.active {
+    border-color: #00bfa5;
+    background: rgba(0, 191, 165, 0.08);
+  }
+  .slot-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .slot-chip {
+    border: 1px solid #bbb;
+    background: #f7f7f7;
+    padding: 0.4rem 0.7rem;
+    font-size: 1.2rem;
+    cursor: pointer;
+  }
+  .slot-chip.active {
+    border-color: #00bfa5;
+    background: #e6fff8;
+  }
+  .rack-config {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-bottom: 0.6rem;
+  }
   .bind-form {
     display: flex;
     flex-direction: column;
@@ -180,5 +223,6 @@ export default css`
   .bind-actions {
     display: flex;
     gap: 0.8rem;
+    flex-wrap: wrap;
   }
 `;

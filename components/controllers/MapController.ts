@@ -17,6 +17,7 @@ import GlobalState from 'contexts/GlobalState';
 import SFXController from './SFXController';
 import { getStaticAssetPrefix } from 'helpers/realm.helper';
 import { isNaked, isTrueSpectator } from 'helpers/gotchi.helper';
+import { getLandWipPixelCenter } from 'helpers/worldRoom.helper';
 
 const staticAssetPrefix = getStaticAssetPrefix();
 
@@ -165,6 +166,38 @@ const removeMinimapElement = (name: string): void => {
   if (element) element.destroy();
 };
 
+/** Runtime circle textures for world-room markers (bazaar / DAO / potion shop). */
+const ensureMinimapCircleTexture = (key: string, fill: number, stroke = 0xffffff): void => {
+  if (!scene || scene.textures.exists(key)) return;
+  const g = scene.make.graphics({ x: 0, y: 0 });
+  g.fillStyle(fill, 1);
+  g.fillCircle(16, 16, 13);
+  g.lineStyle(3, stroke, 0.95);
+  g.strokeCircle(16, 16, 13);
+  g.generateTexture(key, 32, 32);
+  g.destroy();
+};
+
+const WORLD_ROOM_MINIMAP_MARKERS: Array<{ type: string; key: string; color: number; mult: number }> = [
+  { type: 'tent', key: 'minimap_marker_bazaar', color: 0xff2bd6, mult: 0.14 }, // pink — bazaar
+  { type: 'dao_office', key: 'minimap_marker_dao', color: 0x00f470, mult: 0.14 }, // green — DAO
+  { type: 'potion_shop', key: 'minimap_marker_potion_shop', color: 0xffe14a, mult: 0.14 }, // yellow — potion
+];
+
+const addWorldRoomMinimapMarkers = (): void => {
+  if (!scene || GameController.MAP !== 'citaadel') return;
+  const objects = _.flatMap(_.values(MapController.objectsJSON || {}));
+  WORLD_ROOM_MINIMAP_MARKERS.forEach(({ key, color }) => ensureMinimapCircleTexture(key, color));
+
+  objects.forEach((obj: { type?: string; position?: { x: number; y: number }; dimensions?: { width: number; height: number } }, index: number) => {
+    const marker = WORLD_ROOM_MINIMAP_MARKERS.find((m) => m.type === obj?.type);
+    if (!marker) return;
+    const center = getLandWipPixelCenter(obj);
+    if (!center) return;
+    addMiniMapElement(center.x, center.y, marker.key, `${marker.key}_${index}`, marker.mult);
+  });
+};
+
 const getMinimapSprite = () => {
   if (GameController.MAP === 'aarena') return 'aarena01_4x_minimap';
   else return GlobalState.GAME.state.gameConfig.gotchiverseTheme === 'halloween' ? 'minimap_v2_halloween' : 'minimap_v2_playable';
@@ -240,6 +273,7 @@ const createMinimap = (size: number): void => {
       position: { x: aarenaIconX, y: aarenaIconY },
     } = _.find(citaadelExtrasJSON.C82, (item) => item.type === 'pad' && item.use === 'aarena');
     scene.minimapAarenaIcon = addMiniMapElement(aarenaIconX * 64, aarenaIconY * 64, 'minimap_aarena_icon');
+    addWorldRoomMinimapMarkers();
   }
   if (!Players.selectedPlayer.isSpectator || isNaked(Players.selectedPlayer.isSpectator)) {
     scene.minimapGotchi = addMiniMapElement(player.x, player.y, 'minimap-gotchi');

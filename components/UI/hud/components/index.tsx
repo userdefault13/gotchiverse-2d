@@ -34,5 +34,8 @@ export * from './FoundryPanel';
 export * from './RhStockPrizePanel';
 export * from './StoreModal';
 export * from './LodgeModal';
+export * from './BazaarModal';
+export * from './DaoOfficeModal';
+export * from './PotionShopModal';
 export * from './ConsoleModal';
 export * from './BroadcasterModal';

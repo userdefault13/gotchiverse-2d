@@ -24,8 +24,13 @@ export const CASHIER_ITEM_ID_END = 197;
 /** Level-1 Cashier craft/place id */
 export const CASHIER_ITEM_ID = CASHIER_ITEM_ID_START;
 
-/** Shelf L1 only (own spritesheet `shelf`). */
+/** Shelf family — Display Table 198 (+ Feature/Racks share store ids when placed). */
 export const SHELF_ITEM_ID = 198;
+export const DISPLAY_TABLE_ITEM_ID = 198;
+export const FEATURE_TABLE_ITEM_ID = 213;
+export const RACK_H_ITEM_ID = 214;
+export const RACK_V_ITEM_ID = 215;
+const SHELF_FAMILY_ITEM_IDS = [198, 213, 214, 215] as const;
 
 /** Terminal L1 only (own spritesheet `terminal`) — owner store SaaS desk. */
 export const TERMINAL_ITEM_ID = 208;
@@ -202,7 +207,7 @@ export type ConsoleBagInstance = {
 };
 
 export function isShelfItemId(itemId: number | string): boolean {
-  return Number(itemId) === SHELF_ITEM_ID;
+  return (SHELF_FAMILY_ITEM_IDS as readonly number[]).includes(Number(itemId));
 }
 
 export function isCashierItemId(itemId: number | string): boolean {

@@ -16,7 +16,8 @@ export const CartridgeMintPanel = ({
   mintError = null,
 }: Props): JSX.Element => {
   const { click } = useAavegotchiSound();
-  const chainLabel = network === 'robinhood' ? 'Robinhood' : 'Base';
+  const chainLabel =
+    network === 'robinhood' ? 'Robinhood' : network === 'bitcoin' ? 'Bitcoin' : 'Base';
 
   const handleMint = () => {
     if (minting) return;

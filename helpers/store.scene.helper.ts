@@ -22,7 +22,7 @@ export type StoreSceneBuildState = {
 };
 
 export type StoreSceneCallbacks = {
-  onInteractShelf: (piece: StoreFurniturePiece) => void;
+  onInteractShelf: (piece: StoreFurniturePiece, slotId?: string) => void;
   onInteractCashier: (piece: StoreFurniturePiece) => void;
   onInteractConsole: (piece: StoreFurniturePiece) => void;
   onInteractTerminal: (piece: StoreFurniturePiece) => void;

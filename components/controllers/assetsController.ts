@@ -185,6 +185,13 @@ const installationList: TextureConfig[] = [
   { id: 'store', preload: true, local: true },
   { id: 'cashier', preload: true, local: true },
   { id: 'shelf', preload: true, local: true },
+  { id: 'display_table', preload: true, local: true },
+  { id: 'feature_table', preload: true, local: true },
+  { id: 'rack_h', preload: true, local: true },
+  { id: 'rack_v', preload: true, local: true },
+  { id: 'holder_sm', preload: true, local: true },
+  { id: 'holder_md', preload: true, local: true },
+  { id: 'holder_lg', preload: true, local: true },
   { id: 'terminal', preload: true, local: true },
   { id: 'console', preload: true, local: true },
   { id: 'broadcaster', preload: true, local: true },
@@ -824,11 +831,23 @@ const loadTexture = async (texture: TextureConfig): Promise<void> => {
         // Soft-launch local sheets: still load PNG with known frame size if JSON import missed.
         if (texture.local && (texture.id === 'store' || texture.id === 'cashier')) {
           config = { frameWidth: 256, frameHeight: 256 };
+        } else if (texture.local && (texture.id === 'shelf' || texture.id === 'display_table' || texture.id === 'feature_table')) {
+          config = { frameWidth: 128, frameHeight: 128 };
         } else if (
           texture.local &&
-          (texture.id === 'shelf' || texture.id === 'terminal' || texture.id === 'console' || texture.id === 'broadcaster')
+          (texture.id === 'terminal' || texture.id === 'console' || texture.id === 'broadcaster')
         ) {
           config = { frameWidth: 256, frameHeight: 256 };
+        } else if (texture.local && texture.id === 'rack_h') {
+          config = { frameWidth: 192, frameHeight: 64 };
+        } else if (texture.local && texture.id === 'rack_v') {
+          config = { frameWidth: 64, frameHeight: 192 };
+        } else if (texture.local && texture.id === 'holder_sm') {
+          config = { frameWidth: 32, frameHeight: 32 };
+        } else if (texture.local && texture.id === 'holder_md') {
+          config = { frameWidth: 48, frameHeight: 48 };
+        } else if (texture.local && texture.id === 'holder_lg') {
+          config = { frameWidth: 64, frameHeight: 64 };
         } else {
           console.error(`@globalLoadTexture: ${texture.id}, missing spritesheet json`);
           return;

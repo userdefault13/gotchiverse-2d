@@ -71,6 +71,9 @@ export type Action =
   | { type: 'UPDATE_NFT_DISPLAY_ADMIN'; nftDisplayAdminState: State['nftDisplayAdminState'] }
   | { type: 'UPDATE_STORE_MODAL'; storeState: State['storeState'] }
   | { type: 'UPDATE_LODGE_MODAL'; lodgeState: State['lodgeState'] }
+  | { type: 'UPDATE_BAZAAR_MODAL'; bazaarState: State['bazaarState'] }
+  | { type: 'UPDATE_DAO_OFFICE_MODAL'; daoOfficeState: State['daoOfficeState'] }
+  | { type: 'UPDATE_POTION_SHOP_MODAL'; potionShopState: State['potionShopState'] }
   | { type: 'UPDATE_CONSOLE_MODAL'; consoleState: State['consoleState'] }
   | { type: 'UPDATE_BROADCASTER_MODAL'; broadcasterState: State['broadcasterState'] }
   | { type: 'UPDATE_STORE_CART'; storeCart: State['storeCart'] }
@@ -196,6 +199,21 @@ export const reducer = (state: State, action: Action): State => {
       return {
         ...state,
         lodgeState: action.lodgeState,
+      };
+    case 'UPDATE_BAZAAR_MODAL':
+      return {
+        ...state,
+        bazaarState: action.bazaarState,
+      };
+    case 'UPDATE_DAO_OFFICE_MODAL':
+      return {
+        ...state,
+        daoOfficeState: action.daoOfficeState,
+      };
+    case 'UPDATE_POTION_SHOP_MODAL':
+      return {
+        ...state,
+        potionShopState: action.potionShopState,
       };
     case 'UPDATE_CONSOLE_MODAL':
       return {

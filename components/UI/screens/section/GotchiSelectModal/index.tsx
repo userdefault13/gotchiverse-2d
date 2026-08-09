@@ -415,15 +415,17 @@ export const GotchiSelectModal = ({
         };
       }
       if (selectedCollateral) {
+        const starterUsd =
+          currentNetwork === 'robinhood' || currentNetwork === 'bitcoin' ? 30 : 5;
         return {
           title: selectedCollateral.maticDisplay || selectedCollateral.name,
-          caption: 'Base traits 50 · ES 50 · EC 50 · $5 USDC (sim)',
+          caption: `Base traits 50 · ES 50 · EC 50 · $${starterUsd} USDC (sim)`,
         };
       }
       return { title: 'cAavegotchi', caption: 'Choose collateral or a wallet gotchi →' };
     }
     return null;
-  }, [mintStep, importSourceGotchi, selectedWalletGotchi, selectedCollateral]);
+  }, [mintStep, importSourceGotchi, selectedWalletGotchi, selectedCollateral, currentNetwork]);
 
   const checkIsEvent = (spawnId: string): boolean => {
     return spawnId && spawnId[0] !== 'C' && spawnId !== 'aarena';
@@ -649,7 +651,10 @@ export const GotchiSelectModal = ({
       options: { sound: true },
     });
     try {
-      // $5 USDC sim not live — bind still runs without charge.
+      // Soft-launch USDC sim not live — bind still runs without charge.
+      // RH/BTC starters: $30 · Base: $5
+      const starterUsd =
+        currentNetwork === 'robinhood' || currentNetwork === 'bitcoin' ? 30 : 5;
       setMintGhost({ label: `Binding ${label}…`, progress: 55 });
       const result = await bindAarcadeStarter(currentAccount, selectedCollateral.name, {
         network: currentNetwork,
@@ -670,7 +675,7 @@ export const GotchiSelectModal = ({
         'success',
         result.alreadyBound
           ? 'Already bound'
-          : `Bound ${label} ($5 USDC sim — not charged)`,
+          : `Bound ${label} ($${starterUsd} USDC sim — not charged)`,
       );
       resetMintFlow();
       const bound =

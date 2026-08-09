@@ -1,7 +1,7 @@
 /**
  * Offline Aavegotchi composer from the JSON SVG library under /data/.
  * Ported from AavegotchiQuerey `src/utils/composeGotchi.js`.
- * Used for soft-launch cAavegotchi previews (not wallet L1 gotchis).
+ * Used for soft-launch cAavegotchi portraits (not wallet L1 gotchis).
  */
 
 export const VIEW_NAMES = ['Front', 'Left', 'Right', 'Back']
@@ -20,21 +20,18 @@ const DATA_BASE = '/data'
 
 let libraryCache = null
 
+/** Coerce trait / numeric field; keep 0 (e.g. mythical eyes) unlike `Number(n) || fallback`. */
+export function traitNumber(value: unknown, fallback = 50): number {
+  const n = Number(value)
+  return Number.isFinite(n) ? n : fallback
+}
+
 function hexFrom0x(value) {
   if (!value) return '#000000'
   const s = String(value).trim()
   if (s.startsWith('#')) return s
   if (s.startsWith('0x') || s.startsWith('0X')) return `#${s.slice(2)}`
   return `#${s}`
-}
-
-/**
- * Trait values are 0–99. Mythical eye shape is 0 — never use `Number(n) || 50`
- * (that silently turns Single Dot into Common rectangles).
- */
-export function traitNumber(value: unknown, fallback = 50): number {
-  const n = Number(value)
-  return Number.isFinite(n) ? n : fallback
 }
 
 /** Eye color trait → fill. Common band uses collateral primary. */
@@ -55,37 +52,57 @@ export async function loadLibrary() {
 
   const [
     main,
+    mainH3,
     collateralsH1,
     collateralsH2,
+    collateralsH3,
     eyeShapesH1,
     eyeShapesH2,
+    eyeShapesH3,
     wearables,
     rarity
   ] = await Promise.all([
     fetch(`${DATA_BASE}/aavegotchi_db_main.json`).then((r) => r.json()),
+    fetch(`${DATA_BASE}/aavegotchi_db_main_haunt3.json`).then((r) => r.json()),
     fetch(`${DATA_BASE}/aavegotchi_db_collaterals_haunt1.json`).then((r) => r.json()),
     fetch(`${DATA_BASE}/aavegotchi_db_collaterals_haunt2.json`).then((r) => r.json()),
+    fetch(`${DATA_BASE}/aavegotchi_db_collaterals_haunt3.json`).then((r) => r.json()),
     fetch(`${DATA_BASE}/aavegotchi_db_eye_shapes_haunt1.json`).then((r) => r.json()),
     fetch(`${DATA_BASE}/aavegotchi_db_eye_shapes_haunt2.json`).then((r) => r.json()),
+    fetch(`${DATA_BASE}/aavegotchi_db_eye_shapes_haunt3.json`).then((r) => r.json()),
     fetch(`${DATA_BASE}/aavegotchi_db_wearables.json`).then((r) => r.json()),
     fetch(`${DATA_BASE}/aavegotchi_db_rarity.json`).then((r) => r.json()).catch(() => null)
   ])
 
   libraryCache = {
     main,
+    /** Per-haunt body/hands/mouth/eyes/shadow libraries (H3 from rh-gotchi.aseprite). */
+    mainByHaunt: {
+      1: main,
+      2: main,
+      3: mainH3,
+    },
     collaterals: {
       1: collateralsH1.collaterals || [],
-      2: collateralsH2.collaterals || []
+      2: collateralsH2.collaterals || [],
+      3: collateralsH3.collaterals || []
     },
     eyeShapes: {
       1: eyeShapesH1.eyeShapes || [],
-      2: eyeShapesH2.eyeShapes || []
+      2: eyeShapesH2.eyeShapes || [],
+      3: eyeShapesH3.eyeShapes || []
     },
     wearables: wearables.wearables || [],
     wearablesById: new Map((wearables.wearables || []).map((w) => [Number(w.id), w])),
     rarity
   }
   return libraryCache
+}
+
+/** Body/hands/mouth/eyes/shadow SVG library for a haunt (H3 = RH ase export). */
+export function getMainForHaunt(library, hauntId) {
+  const hid = Number(hauntId)
+  return library.mainByHaunt?.[hid] || library.main
 }
 
 export function clearLibraryCache() {
@@ -96,31 +113,80 @@ export function getCollateralsForHaunt(library, hauntId) {
   return library.collaterals[Number(hauntId)] || []
 }
 
-export function findCollateral(library, hauntId, collateralTypeOrName) {
-  const list = getCollateralsForHaunt(library, hauntId)
-  const key = String(collateralTypeOrName || '').toLowerCase()
+/** Strip ma/am/a prefixes → spirit id (dai, weth, link, wbtc, aave, amazon, …). */
+function collateralSpiritKey(nameOrAddr) {
+  const raw = String(nameOrAddr || '').trim().toLowerCase()
+  if (!raw) return ''
+  if (raw.startsWith('0x')) return ''
+  // am*/ma* only when remainder is a known aToken spirit — never "amazon" → "azon"
+  const aTokens = new Set(['dai', 'weth', 'aave', 'link', 'usdt', 'usdc', 'tusd', 'uni', 'yfi'])
+  const isRest = (rest) => aTokens.has(rest) || rest === 'wbtc' || rest === 'wmatic' || rest === 'matic'
+  let n = raw
+  if (raw.startsWith('am') && isRest(raw.slice(2))) n = raw.slice(2)
+  else if (raw.startsWith('ma') && isRest(raw.slice(2))) n = raw.slice(2)
+  else if (raw.startsWith('a') && aTokens.has(raw.slice(1))) n = raw.slice(1)
+  if (n === 'wmatic' || n === 'matic') return 'matic'
+  if (n === 'btc' || n === 'bitcoin') return 'wbtc'
+  return n
+}
+
+function matchCollateralInList(list, key) {
+  if (!key || !list?.length) return null
+  const k = key.toLowerCase()
   return (
-    list.find((c) => c.collateralType?.toLowerCase() === key) ||
-    list.find((c) => c.name?.toLowerCase() === key) ||
+    list.find((c) => c.collateralType?.toLowerCase() === k) ||
+    list.find((c) => c.name?.toLowerCase() === k) ||
+    list.find((c) => collateralSpiritKey(c.name) === collateralSpiritKey(k)) ||
     null
   )
 }
 
 /**
- * Soft-mint gallery mixes haunt-1 aTokens (aUSDC) and haunt-2 amTokens (amWBTC).
- * Resolve collateral in the requested haunt first, then the other.
+ * Resolve collateral SVG/colors for a haunt.
+ * Accepts library name (amWBTC), short name (wbtc), or any haunt's on-chain address.
+ * Haunt-2 gotchis sometimes carry Haunt-1 (ma*) addresses from Base/snap — map by spirit.
  */
-export function findCollateralAnyHaunt(
-  library,
-  hauntId,
-  collateralTypeOrName,
-): { collateral: any; hauntId: number } | null {
-  const preferred = Number(hauntId) === 2 ? 2 : 1
-  const other = preferred === 2 ? 1 : 2
-  const inPreferred = findCollateral(library, preferred, collateralTypeOrName)
-  if (inPreferred) return { collateral: inPreferred, hauntId: preferred }
-  const inOther = findCollateral(library, other, collateralTypeOrName)
-  if (inOther) return { collateral: inOther, hauntId: other }
+export function findCollateral(library, hauntId, collateralTypeOrName) {
+  const key = String(collateralTypeOrName || '').trim().toLowerCase()
+  if (!key) return null
+
+  const hid = Number(hauntId)
+  const haunt = hid === 3 ? 3 : hid === 2 ? 2 : 1
+  const preferred = getCollateralsForHaunt(library, haunt)
+  // H1↔H2 spirit crosswalk only. Never pull maDAI into H3 (was painting RH bodies orange).
+  const others =
+    haunt === 3
+      ? []
+      : [1, 2].filter((h) => h !== haunt).map((h) => getCollateralsForHaunt(library, h))
+
+  // 1) Exact address / name in preferred haunt
+  const hit = matchCollateralInList(preferred, key)
+  if (hit) return hit
+
+  // 2) Exact address / name in other haunts (H1/H2 same spirit art family)
+  for (const other of others) {
+    const cross = matchCollateralInList(other, key)
+    if (cross) {
+      const spirit = collateralSpiritKey(cross.name)
+      if (spirit) {
+        const sameHaunt = preferred.find((c) => collateralSpiritKey(c.name) === spirit)
+        if (sameHaunt) return sameHaunt
+      }
+      return cross
+    }
+  }
+
+  // 3) Short / vars-style names: "link", "aLINK", "wbtc", "amazon"
+  const spirit = collateralSpiritKey(key)
+  if (spirit) {
+    const fromPreferred = preferred.find((c) => collateralSpiritKey(c.name) === spirit)
+    if (fromPreferred) return fromPreferred
+    for (const other of others) {
+      const found = other.find((c) => collateralSpiritKey(c.name) === spirit)
+      if (found) return found
+    }
+  }
+
   return null
 }
 
@@ -134,7 +200,6 @@ export function findEyeShape(library, hauntId, eyeShapeTrait) {
       const max = Number(s.rangeMax)
       if (!Number.isFinite(min) || !Number.isFinite(max)) return false
       if (min === max) return v === min
-      // Prefer half-open [min, max) when max > min (library convention)
       if (v >= min && v < max) return true
       return false
     }) ||
@@ -156,49 +221,55 @@ function pickViewFragment(arr, viewIndex) {
   return arr[0] || ''
 }
 
-/** Like pickViewFragment but never falls back to another view (critical for sleeves). */
-function pickViewFragmentExact(arr, viewIndex) {
-  if (!arr || !arr.length) return ''
-  if (arr[viewIndex] != null && arr[viewIndex] !== '') return arr[viewIndex]
-  return ''
-}
+/** RH ase body fill (art/rh-gotchi body layer lime) — same for every H3 brand. */
+const H3_BODY_LIME = '#ccff00'
+const H3_BODY_LIME_SECONDARY = '#e8ff66'
 
-/** True when body SVG has sleeve geometry that CSS would actually show (not only sleeves-up). */
-function bodyHasVisibleEmbeddedSleeves(bodyFrag: string): boolean {
-  if (!bodyFrag || !bodyFrag.includes('gotchi-sleeves')) return false
-  if (bodyFrag.includes('gotchi-sleeves-down')) return true
-  // Plain .gotchi-sleeves groups without -up/-down are visible; -up alone is CSS-hidden.
-  const strippedUp = bodyFrag.replace(/<g\b[^>]*gotchi-sleeves-up[^>]*>[\s\S]*?<\/g>/gi, '')
-  return /class="[^"]*gotchi-sleeves(?!-up)/.test(strippedUp) || /class='[^']*gotchi-sleeves(?!-up)/.test(strippedUp)
-}
-
-function buildStyleBlock(collateral, eyeColorHex, hasBodyWearable) {
-  const primary = hexFrom0x(collateral.primaryColor)
-  const secondary = hexFrom0x(collateral.secondaryColor)
+function buildStyleBlock(collateral, eyeColorHex, hasBodyWearable, hauntId = 1) {
+  const isH3 = Number(hauntId) === 3
+  // H3: fixed lime body for all brands; collateral logos stay hardcoded black in SVG.
+  const primary = isH3 ? H3_BODY_LIME : hexFrom0x(collateral.primaryColor)
+  const secondary = isH3 ? H3_BODY_LIME_SECONDARY : hexFrom0x(collateral.secondaryColor)
   const cheek = hexFrom0x(collateral.cheekColor)
   const open = hasBodyWearable
-  // Use !important so Phaser / nested <image> spritesheets keep class fills.
-  // Do NOT use `*` on eyeColor — nested `.gotchi-primary` paths inside eyes must keep primary.
+  // H3 RH ase: black face features (eyes/mouth/hands via gotchi-face)
+  const mouthFill = isH3 ? '#000000' : primary
+  const eyeFill = isH3 ? '#000000' : eyeColorHex
+  const faceRule = isH3 ? '.gotchi-face{fill:#000000!important;}\n' : ''
+  // Collateral marks: never recolor with brand primary
+  const collateralRule = isH3
+    ? '.gotchi-collateral,.gotchi-collateral *{fill:#000000!important;}\n'
+    : ''
+  // Use !important so nested spritesheet / img rendering keeps class fills.
+  // Do NOT use `*` on eyeColor — nested `.gotchi-primary` paths inside eyes must keep primary (H1/H2).
   return `<style>
 .gotchi-primary{fill:${primary}!important;}
 .gotchi-secondary{fill:${secondary}!important;}
 .gotchi-cheek{fill:${cheek}!important;}
-.gotchi-eyeColor{fill:${eyeColorHex}!important;}
-.gotchi-primary-mouth{fill:${primary}!important;}
-.gotchi-sleeves-up{display:none;}
+.gotchi-eyeColor{fill:${eyeFill}!important;}
+.gotchi-primary-mouth{fill:${mouthFill}!important;}
+${faceRule}${collateralRule}.gotchi-sleeves-up{display:none;}
 .gotchi-handsUp{display:none;}
 .gotchi-handsDownOpen{display:${open ? 'block' : 'none'};}
 .gotchi-handsDownClosed{display:${open ? 'none' : 'block'};}
 </style>`
 }
 
-/** Bake class fills onto elements so Phaser texture load keeps eye/cheek colors. */
+/** RH H3 face layers (eyes/mouth) are stored as gotchi-primary — force black face class. */
+function reclassH3FaceLayer(frag: string): string {
+  if (!frag) return ''
+  return String(frag)
+    .replace(/\bclass="gotchi-primary"/g, 'class="gotchi-face"')
+    .replace(/\bclass="gotchi-primary-mouth"/g, 'class="gotchi-face"')
+    .replace(/\bclass="gotchi-eyeColor"/g, 'class="gotchi-face"')
+}
+
+/** Bake class fills onto elements so texture load keeps eye/cheek colors. */
 export function bakeGotchiSvgClassFills(svg: string): string {
   if (!svg || typeof DOMParser === 'undefined') return svg
   try {
     const doc = new DOMParser().parseFromString(svg, 'image/svg+xml')
-    const styleEl = doc.querySelector('style')
-    const styleText = styleEl?.textContent || ''
+    const styleText = doc.querySelector('style')?.textContent || ''
     const colorFor = (cls: string): string | null => {
       const re = new RegExp(`\\.${cls}\\s*\\{[^}]*fill:\\s*([^;!}]+)`, 'i')
       const m = styleText.match(re)
@@ -210,6 +281,7 @@ export function bakeGotchiSvgClassFills(svg: string): string {
       'gotchi-cheek',
       'gotchi-eyeColor',
       'gotchi-primary-mouth',
+      'gotchi-face',
     ] as const
     for (const cls of classes) {
       const color = colorFor(cls)
@@ -219,22 +291,13 @@ export function bakeGotchiSvgClassFills(svg: string): string {
         el.querySelectorAll('path,rect,circle,polygon,polyline,ellipse').forEach((child) => {
           const childEl = child as Element
           const childClass = childEl.getAttribute('class') || ''
-          if (/gotchi-(primary|secondary|cheek|eyeColor|primary-mouth)/.test(childClass)) return
+          if (/gotchi-(primary|secondary|cheek|eyeColor|primary-mouth|face)/.test(childClass)) return
+          // Preserve explicit black outlines on body
           const existing = childEl.getAttribute('fill')
-          // Keep explicit fills (Haunt 2 mythical eyes use fill="#fff" for the dot/hole).
-          if (existing && existing !== 'none') return
+          if (existing && existing !== 'none' && existing !== 'currentColor') return
           childEl.setAttribute('fill', color)
         })
       })
-    }
-    // Drop class fill rules after baking so !important CSS cannot override #fff eye holes.
-    if (styleEl) {
-      styleEl.textContent = styleText
-        .replace(
-          /\.gotchi-(?:primary|secondary|cheek|eyeColor|primary-mouth)\s*\{[^}]*\}/gi,
-          '',
-        )
-        .replace(/\n{2,}/g, '\n')
     }
     const root = doc.documentElement
     return root ? new XMLSerializer().serializeToString(root) : svg
@@ -301,8 +364,11 @@ function handWearableLayers(wearables, lib, viewIndex) {
   return layers
 }
 
-/** Body wearable nested <svg x y> (or previewoffsets) — sleeves use the same local space. */
-function wearableViewOffset(wearable, viewIndex): { x: string; y: string } | null {
+/**
+ * Body wearable SVGs already nest `<svg x y>`; sleeve fragments are local and need the same offset.
+ * Prefer x/y from the body fragment, else previewoffsets for that view.
+ */
+function wearableViewOffset(wearable, viewIndex) {
   const frag = pickViewFragment(wearable?.svgs, viewIndex) || ''
   const mx = frag.match(/\bx="([^"]+)"/i)
   const my = frag.match(/\by="([^"]+)"/i)
@@ -313,54 +379,18 @@ function wearableViewOffset(wearable, viewIndex): { x: string; y: string } | nul
   if (off && (off.x != null || off.y != null)) {
     return { x: String(off.x ?? 0), y: String(off.y ?? 0) }
   }
+  const d = wearable?.dimensions
+  if (Array.isArray(d) && d.length >= 2 && (Number(d[0]) || Number(d[1]))) {
+    return { x: String(d[0] || 0), y: String(d[1] || 0) }
+  }
   return null
-}
-
-/** Body SVGs often embed sleeve groups — strip them so the overlay can paint above hands. */
-function stripEmbeddedSleeves(fragment: string): string {
-  if (!fragment || !fragment.includes('gotchi-sleeves')) return fragment
-  if (typeof DOMParser === 'undefined') return fragment
-  try {
-    const doc = new DOMParser().parseFromString(
-      `<svg xmlns="http://www.w3.org/2000/svg">${fragment}</svg>`,
-      'image/svg+xml',
-    )
-    doc.querySelectorAll('.gotchi-sleeves').forEach((el) => el.remove())
-    const root = doc.documentElement
-    if (!root) return fragment
-    return Array.from(root.childNodes)
-      .map((n) => new XMLSerializer().serializeToString(n))
-      .join('')
-  } catch {
-    return fragment
-  }
-}
-
-/** Pick sleeve SVG for a view. Back often stores a copy of the right (side) sleeve —
- *  treat that as missing and reuse front so enter-portal / rear facing looks correct. */
-function sleeveFragmentForView(wearable, viewIndex: number): string {
-  const sleeves = wearable?.sleeves
-  if (!sleeves?.length) return ''
-  const exact = pickViewFragmentExact(sleeves, viewIndex)
-  if (viewIndex === 3) {
-    const right = pickViewFragmentExact(sleeves, 2)
-    if (!exact || (right && exact === right)) {
-      return pickViewFragmentExact(sleeves, 0)
-    }
-  }
-  return exact
 }
 
 function sleevesForWearable(wearable, viewIndex, hasBodyWearable) {
   if (!wearable?.sleeves || !hasBodyWearable) return ''
-  const sleeve = sleeveFragmentForView(wearable, viewIndex)
+  const sleeve = pickViewFragment(wearable.sleeves, viewIndex)
   if (!sleeve) return ''
-  const bodyFrag = pickViewFragmentExact(wearable?.svgs, viewIndex) || ''
-  // Body already has visible sleeve geometry — don't double-layer (enter portal / Phaser back).
-  if (bodyHasVisibleEmbeddedSleeves(bodyFrag)) return ''
-  // Front-sleeve fallback on back uses front local coords; otherwise match this view's body offset.
-  const usedFrontFallback = viewIndex === 3 && sleeve === pickViewFragmentExact(wearable.sleeves, 0)
-  const off = wearableViewOffset(wearable, usedFrontFallback ? 0 : viewIndex)
+  const off = wearableViewOffset(wearable, viewIndex)
   const inner = off ? `<svg x="${off.x}" y="${off.y}">${sleeve}</svg>` : sleeve
   // Prefer sleeves-down content when present; CSS hides sleeves-up
   return `<g class="gotchi-wearable wearable-sleeves">${inner}</g>`
@@ -369,6 +399,8 @@ function sleevesForWearable(wearable, viewIndex, hasBodyWearable) {
 export type ComposeGotchiInput = {
   hauntId?: number
   collateralType?: string
+  /** When ES ≥ 98, optional override for collateral eye SVG (does not change spirit force). */
+  eyeShapeCollateral?: string | null
   numericTraits?: number[]
   equippedWearables?: number[]
 }
@@ -382,30 +414,37 @@ export async function composeAllViews(
   library?: any,
 ): Promise<Record<string, string>> {
   const lib = library || (await loadLibrary())
-  const requestedHaunt = Number(input.hauntId) || 1
+  const hauntId = Number(input.hauntId) || 1
   const traits = (input.numericTraits || [50, 50, 50, 50, 50, 50]).map(Number)
   const wearables = Array.from({ length: 16 }, (_, i) => Number(input.equippedWearables?.[i] || 0))
 
-  const resolved = findCollateralAnyHaunt(lib, requestedHaunt, input.collateralType)
-  if (!resolved) {
-    throw new Error(`Collateral not found for haunt ${requestedHaunt}: ${input.collateralType}`)
+  const collateral = findCollateral(lib, hauntId, input.collateralType)
+  if (!collateral) {
+    throw new Error(`Collateral not found for haunt ${hauntId}: ${input.collateralType}`)
   }
-  const { collateral, hauntId } = resolved
 
   const eyeShapeTrait = traits[4] ?? 50
   const eyeColorTrait = traits[5] ?? 50
   const eyeColorHex = getEyeColorHex(eyeColorTrait, collateral.primaryColor)
   const hasBodyWearable = wearables[0] > 0
+  const isH3 = hauntId === 3
 
-  const useCollateralEyes = eyeShapeTrait >= 98
-  const eyeShape = useCollateralEyes ? null : findEyeShape(lib, hauntId, eyeShapeTrait)
+  // H3 RH ase uses fixed base eyes/mouth from main_haunt3 — not classic eye-shape SVGs.
+  const useCollateralEyes = !isH3 && eyeShapeTrait >= 98
+  const eyeShape = isH3 || useCollateralEyes ? null : findEyeShape(lib, hauntId, eyeShapeTrait)
+  const eyeCollateral =
+    useCollateralEyes && input.eyeShapeCollateral
+      ? findCollateral(lib, hauntId, input.eyeShapeCollateral) || collateral
+      : collateral
 
   const result: Record<string, string> = {}
   for (let viewIndex = 0; viewIndex < 4; viewIndex++) {
     result[VIEW_NAMES[viewIndex]] = bakeGotchiSvgClassFills(
       composeSvgView({
         lib,
+        hauntId,
         collateral,
+        eyeCollateral,
         eyeShape,
         useCollateralEyes,
         eyeColorHex,
@@ -420,7 +459,9 @@ export async function composeAllViews(
 
 function composeSvgView({
   lib,
+  hauntId = 1,
   collateral,
+  eyeCollateral,
   eyeShape,
   useCollateralEyes,
   eyeColorHex,
@@ -428,37 +469,56 @@ function composeSvgView({
   wearables,
   viewIndex
 }) {
-  const main = lib.main
+  const main = getMainForHaunt(lib, hauntId)
+  const isH3 = Number(hauntId) === 3
   const layers = []
+  const eyesFrom = eyeCollateral || collateral
 
-  layers.push(buildStyleBlock(collateral, eyeColorHex, hasBodyWearable))
+  layers.push(buildStyleBlock(collateral, eyeColorHex, hasBodyWearable, hauntId))
 
-  // Background wearable (slot 7) behind body
+  // H3 RH ase bg (black / lime checker) — behind everything, class gotchi-bg-rh so strip keeps it
+  if (isH3 && main.bg) {
+    const bg = pickViewFragment(main.bg, viewIndex)
+    if (bg) layers.push(bg)
+  }
+
+  // Background wearable (slot 7) behind body (still above RH checker bg)
   if (wearables[7] > 0) {
     const w = lib.wearablesById.get(wearables[7])
     if (w) layers.push(wrapWearable(pickViewFragment(w.svgs, viewIndex), 7, viewIndex))
   }
 
-  // Body
+  // Body (H3 RH ase: outline + lime fill; shadow is a separate layer for float anim)
   layers.push(pickViewFragment(main.body, viewIndex))
 
-  // Back view: held items sit behind the body (before eyes / clothing / hands)
+  // Back view: hand wearables sit behind the body (before eyes/hands)
   if (viewIndex === 3) {
     layers.push(...handWearableLayers(wearables, lib, viewIndex))
   }
 
-  // Mouth (library only has front fragments; skip if empty)
+  // Mouth — H1/H2 front body embeds mouth; H3 RH ase has a separate black mouth layer
   if (viewIndex === 0) {
-    // Front body already embeds a mouth; skip extra mouth to avoid double
-  } else if (main.mouth_neutral?.[0] && viewIndex !== 3) {
+    if (isH3 && main.mouth_happy?.[0]) {
+      layers.push(reclassH3FaceLayer(main.mouth_happy[0]))
+    } else {
+      const bodyFrag = String(pickViewFragment(main.body, 0) || '')
+      const bodyHasMouth = bodyFrag.includes('gotchi-primary-mouth') || bodyFrag.includes('gotchi-mouth')
+      if (!bodyHasMouth && main.mouth_happy?.[0]) {
+        layers.push(main.mouth_happy[0])
+      }
+    }
+  } else if (!isH3 && main.mouth_neutral?.[0] && viewIndex !== 3) {
     // side mouths not in library; leave empty
   }
 
   // Eyes (not on back)
   if (viewIndex !== 3) {
     let eyeFrag = ''
-    if (useCollateralEyes && collateral.eyeShapeSvgs) {
-      eyeFrag = pickViewFragment(collateral.eyeShapeSvgs, Math.min(viewIndex, collateral.eyeShapeSvgs.length - 1))
+    if (isH3 && main.eyes_happy?.[0]) {
+      // RH ase base eyes (black squares) — match art/rh-gotchi/preview-front.svg
+      eyeFrag = reclassH3FaceLayer(main.eyes_happy[0])
+    } else if (useCollateralEyes && eyesFrom.eyeShapeSvgs) {
+      eyeFrag = pickViewFragment(eyesFrom.eyeShapeSvgs, Math.min(viewIndex, eyesFrom.eyeShapeSvgs.length - 1))
     } else if (eyeShape?.svgs) {
       // eyeShapes: [front, left, right]
       const eyeView = viewIndex === 0 ? 0 : viewIndex === 1 ? 1 : 2
@@ -473,24 +533,17 @@ function composeSvgView({
     if (logo) layers.push(logo)
   }
 
-  // On-chain front order (SvgFacet.addBodyAndWearableSvgLayers):
-  // bodyWearable → hands → face → eyes → head → sleeves → handL → handR → pet
-  // Hand items must paint after body/sleeves or suit arms cover the held gear.
-  const pushSlot = (slot: number) => {
+  // Hands + wearables. Front matches SvgFacet: sleeves under hand items.
+  // H3: closed strokes are gotchi-face (black); open-down/open-up use primary lime/body fill.
+  const hands = pickViewFragment(main.hands, viewIndex)
+  const handWearables = viewIndex === 3 ? [] : handWearableLayers(wearables, lib, viewIndex)
+
+  const pushSlot = (slot) => {
     const id = wearables[slot]
     if (!id) return
     const w = lib.wearablesById.get(id)
     if (!w) return
-    let frag = pickViewFragment(w.svgs, viewIndex)
-    // Body: only strip embedded sleeves when we will paint a separate sleeve overlay for this view.
-    // Back bodies often embed sleeves-up only (CSS-hidden) — keep stripping so sleeves-down overlay can show.
-    if (slot === 0 && w.sleeves) {
-      const sleeveOverlay = sleeveFragmentForView(w, viewIndex)
-      if (sleeveOverlay && !bodyHasVisibleEmbeddedSleeves(frag)) {
-        frag = stripEmbeddedSleeves(frag)
-      }
-    }
-    layers.push(wrapWearable(frag, slot, viewIndex))
+    layers.push(wrapWearable(pickViewFragment(w.svgs, viewIndex), slot, viewIndex))
   }
   const pushSleeves = () => {
     const id = wearables[0]
@@ -499,18 +552,16 @@ function composeSvgView({
     if (w) layers.push(sleevesForWearable(w, viewIndex, hasBodyWearable))
   }
 
-  const hands = pickViewFragment(main.hands, viewIndex)
-  const handWearables = viewIndex === 3 ? [] : handWearableLayers(wearables, lib, viewIndex)
-
-  if (viewIndex === 3) {
-    // Back: body → head slots → hands → sleeves on top (embedded sleeves stripped above)
+  if (viewIndex === 0) {
+    // Front: body → hands → face/eyes/head → sleeves → hand items → pet
     pushSlot(0)
-    for (const slot of [1, 2, 3]) pushSlot(slot)
     if (hands) layers.push(hands)
+    for (const slot of [1, 2, 3]) pushSlot(slot)
     pushSleeves()
+    layers.push(...handWearables)
     pushSlot(6)
   } else if (viewIndex === 1 || viewIndex === 2) {
-    // Side: clothing first; items under hand strokes (gripping look); sleeves above hands
+    // Side: clothing → near-hand item under strokes → hands → sleeves → pet
     pushSlot(0)
     for (const slot of [1, 2, 3]) pushSlot(slot)
     layers.push(...handWearables)
@@ -518,25 +569,29 @@ function composeSvgView({
     pushSleeves()
     pushSlot(6)
   } else {
-    // Front: match SvgFacet — hand wearables last so they sit on top of hands/sleeves
-    pushSlot(0)
+    // Back: hand items already behind body; body/head → hands → sleeves → pet
     if (hands) layers.push(hands)
+    pushSlot(0)
     for (const slot of [1, 2, 3]) pushSlot(slot)
     pushSleeves()
-    layers.push(...handWearables)
     pushSlot(6)
   }
 
-  // Shadow (if not already in body — body front includes shadow; still ok to skip duplicate)
-  // Only add separate shadow for views where body may not include it
-  if (viewIndex !== 0) {
-    const shadow = pickViewFragment(main.shadow, viewIndex === 3 ? 0 : Math.min(viewIndex, (main.shadow || []).length - 1))
-    if (shadow && !String(pickViewFragment(main.body, viewIndex)).includes('gotchi-shadow')) {
+  // Shadow as sibling layer (not nested in body) so float CSS can animate it opposite the body.
+  // H1/H2 front body often already embeds .gotchi-shadow — skip duplicate in that case.
+  {
+    const bodyFrag = String(pickViewFragment(main.body, viewIndex) || '')
+    const shadow = pickViewFragment(
+      main.shadow,
+      viewIndex === 3 ? 0 : Math.min(viewIndex, Math.max((main.shadow || []).length - 1, 0)),
+    )
+    if (shadow && !bodyFrag.includes('gotchi-shadow')) {
       layers.push(shadow)
     }
   }
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">${layers.filter(Boolean).join('')}</svg>`
+  const crisp = isH3 ? ' shape-rendering="crispEdges"' : ''
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"${crisp}>${layers.filter(Boolean).join('')}</svg>`
 }
 
 /** Parse ethers previewSideAavegotchi response into string[4]. */
