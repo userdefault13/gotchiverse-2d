@@ -578,8 +578,8 @@ export const fetchAavegotchiSideSVGs = async (
     const sourceKey = String(opts?.sourceTokenId || '');
     const hauntKey =
       Number(opts?.hauntId) === 3 ? 'h3' : Number(opts?.hauntId) === 2 ? 'h2' : Number(opts?.hauntId) === 1 ? 'h1' : 'h?';
-    // v21: solid fill-opacity without overwriting black face/primary nested paints
-    const cacheKey = `cartridge:base-sides-v21:${simCollateral}:src${sourceKey}:${hauntKey}:w${equipKey}:t${traitKey}`;
+    // v22: preserve multi-color collaterals (WBTC orange) while keeping solid H3 black logos
+    const cacheKey = `cartridge:base-sides-v22:${simCollateral}:src${sourceKey}:${hauntKey}:w${equipKey}:t${traitKey}`;
     if (GlobalState.CHAT.state.gotchiSides[cacheKey]) {
       return GlobalState.CHAT.state.gotchiSides[cacheKey];
     }

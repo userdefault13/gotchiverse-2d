@@ -183,12 +183,16 @@ export function buildCollateralGotchiSvgFromBase(
   const secondary = isH3 ? '#e8ff66' : collateral.secondaryColor;
   const cheek = collateral.cheekColor;
   const face = isH3 ? '#000000' : primary;
-  const collFill = isH3 ? '#000000' : collateral.primaryColor;
+  // H3 brands: mono black logos. H1/H2 (e.g. amWBTC) keep multi-color SVG fills
+  // (black ring + #ff5e00 B) — never force primary onto every path.
+  const collateralRule = isH3
+    ? `.gotchi-collateral,.gotchi-collateral *{fill:#000000!important}`
+    : '';
   // No `*` on eyeColor — nested gotchi-primary / fill="#fff" mythical dots must survive.
   const style = `<style>
     .gotchi-primary,.gotchi-primary *{fill:${primary}!important}
     .gotchi-secondary,.gotchi-secondary *{fill:${secondary}!important}
-    .gotchi-collateral,.gotchi-collateral *{fill:${collFill}!important}
+    ${collateralRule}
     .gotchi-cheek,.gotchi-cheek *{fill:${cheek}!important}
     .gotchi-eyeColor{fill:${face}!important}
     .gotchi-primary-mouth,.gotchi-primary-mouth *{fill:${face}!important}
@@ -462,8 +466,8 @@ export async function fetchCollateralGotchiSvg(
   // H3 brands compose by name (amazon, tesla, …); H1/H2 use on-chain address.
   const composeKey = isH3 ? brandName || addr || '' : addr || brandName || '';
   // v15: in-game sheets strip RH bg; gallery thumbs still use keepRhBg via composeOfflineSvg
-  // v21: solid fill-opacity without overwriting black face/primary nested paints
-  const cacheKey = `json:v21:${tid || composeKey}:h${hauntId}:t${traitArr.join(',')}:w${equipped.join(',')}`;
+  // v22: preserve multi-color collaterals (WBTC orange) while keeping solid H3 black logos
+  const cacheKey = `json:v22:${tid || composeKey}:h${hauntId}:t${traitArr.join(',')}:w${equipped.join(',')}`;
   if (svgCache.has(cacheKey)) return svgCache.get(cacheKey);
 
   if (!composeKey) {

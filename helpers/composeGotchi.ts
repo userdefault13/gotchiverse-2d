@@ -275,8 +275,9 @@ export function bakeGotchiSvgClassFills(svg: string): string {
     const doc = new DOMParser().parseFromString(svg, 'image/svg+xml')
     const styleText = doc.querySelector('style')?.textContent || ''
     const colorFor = (cls: string): string | null => {
+      // Match `.cls{fill:…}` and grouped rules like `.gotchi-collateral,.gotchi-collateral *{…}`.
       // Capture fill color before optional !important (do not swallow '#000000').
-      const re = new RegExp(`\\.${cls}\\s*\\{[^}]*fill:\\s*([^;!}\\s]+)`, 'i')
+      const re = new RegExp(`\\.${cls}(?:\\s*,[^,{]*)*\\s*\\{[^}]*fill:\\s*([^;!}\\s]+)`, 'i')
       const m = styleText.match(re)
       return m ? m[1].trim() : null
     }
@@ -304,17 +305,30 @@ export function bakeGotchiSvgClassFills(svg: string): string {
       }
       return false
     }
+    // H3 brands force mono-black logos via style; WBTC/etc keep multi-color SVG fills.
+    const forceMonoCollateral = Boolean(colorFor('gotchi-collateral'))
     for (const cls of classes) {
-      // Prefer style block color; H3 face + logos default black when rule is missing.
+      // Face defaults black. Collateral only paints when style provides a color
+      // (H3 black logos) — never invent black and wipe WBTC orange (#ff5e00).
       const color =
         colorFor(cls) ||
-        (cls === 'gotchi-collateral' ? '#000000' : null) ||
         (cls === 'gotchi-face' ? '#000000' : null)
       if (!color) continue
       doc.querySelectorAll(`.${cls}`).forEach((el) => {
+        if (cls === 'gotchi-collateral' && !forceMonoCollateral) {
+          // Multi-color collateral (e.g. amWBTC): leave authored fills alone.
+          el.querySelectorAll('path,rect,circle,polygon,polyline,ellipse,g').forEach((child) => {
+            const childEl = child as Element
+            if (childEl.getAttribute('fill') && childEl.getAttribute('fill') !== 'none') {
+              childEl.setAttribute('fill-opacity', '1')
+            }
+          })
+          return
+        }
         solidFill(el, color)
         // Paint bare shape descendants only — never recolor nested paint-class groups.
-        el.querySelectorAll('path,rect,circle,polygon,polyline,ellipse').forEach((child) => {
+        // Include nested <g fill="…"> so H3 mono-black can override multi-color groups.
+        el.querySelectorAll('path,rect,circle,polygon,polyline,ellipse,g').forEach((child) => {
           const childEl = child as Element
           const childClass = childEl.getAttribute('class') || ''
           if (hasOtherPaintClass(childClass, cls)) return
@@ -329,21 +343,29 @@ export function bakeGotchiSvgClassFills(svg: string): string {
             ancestor = ancestor.parentElement
           }
           if (nestedOther) return
+          if (childEl.localName === 'g') {
+            // Only recolor groups that already declare a fill (e.g. WBTC orange pocket).
+            if (!childEl.getAttribute('fill') || childEl.getAttribute('fill') === 'none') return
+          }
           solidFill(childEl, color)
         })
       })
     }
-    // Ensure painted body/face shapes are opaque without inventing a primary fallback
-    // that would wash black shell / black primary collaterals to lime.
+    // Opaque painted shapes; do not invent fills on multi-color collaterals.
     doc
       .querySelectorAll(
-        '.gotchi-primary, .gotchi-secondary, .gotchi-cheek, .gotchi-eyeColor, .gotchi-primary-mouth, .gotchi-face, .gotchi-collateral',
+        '.gotchi-primary, .gotchi-secondary, .gotchi-cheek, .gotchi-eyeColor, .gotchi-primary-mouth, .gotchi-face',
       )
       .forEach((el) => {
         if (!(el.getAttribute('class') || '').includes('gotchi-shadow')) {
           if (!el.getAttribute('fill-opacity')) el.setAttribute('fill-opacity', '1')
         }
       })
+    // Collateral: only force opacity on shapes that already have a fill (keeps BTC orange).
+    doc.querySelectorAll('.gotchi-collateral path, .gotchi-collateral rect, .gotchi-collateral g').forEach((el) => {
+      const fill = el.getAttribute('fill')
+      if (fill && fill !== 'none') el.setAttribute('fill-opacity', '1')
+    })
     const root = doc.documentElement
     return root ? new XMLSerializer().serializeToString(root) : svg
   } catch {
