@@ -15,6 +15,11 @@ export const BAZAAR_WALLS_KEY = 'bazaar_castle_walls';
 export const BAZAAR_WALLS_PATH = '/animations/tiles/bazaar_castle_walls.png';
 export const BAZAAR_WALLS_FRAME = 64;
 
+/** ALttP-inspired castle towers and walls for the Citaadel exterior. */
+export const CITAADEL_TOWERS_KEY = 'citaadel_castle_towers';
+export const CITAADEL_TOWERS_PATH = '/animations/tiles/citaadel_castle_towers.png';
+export const CITAADEL_TOWERS_FRAME = 64;
+
 type WallFrameTable = {
   wallN: number;
   wallN2: number;
@@ -33,6 +38,29 @@ type WallFrameTable = {
   floorA: number;
   floorB: number;
   floorC: number;
+};
+
+/** Tower and wall frame indices for Citaadel exterior. */
+export type CitaadelTowerFrames = {
+  towerCornerNW: number;
+  towerCornerNE: number;
+  towerCornerSW: number;
+  towerCornerSE: number;
+  wallHorizontal: number;
+  wallHorizontalAlt: number;
+  wallVertical: number;
+  wallVerticalAlt: number;
+};
+
+export const CitaadelTowerFrame: CitaadelTowerFrames = {
+  towerCornerNW: 0,
+  towerCornerNE: 1,
+  towerCornerSW: 2,
+  towerCornerSE: 3,
+  wallHorizontal: 4,
+  wallHorizontalAlt: 5,
+  wallVertical: 6,
+  wallVerticalAlt: 7,
 };
 
 export const DungeonWallFrame: WallFrameTable = {
