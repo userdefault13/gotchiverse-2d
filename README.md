@@ -82,3 +82,14 @@ docker run --rm -p 3001:3001 --env-file .env gotchiverse-2d
 - Run `gitleaks dir . --redact` before publishing sensitive changes.
 
 GitHub secret scanning, push protection, and Dependabot security updates are enabled on the public repository.
+
+## Author
+
+**Julius Wong** (userDef@ult) — [userdefault.dev](https://www.userdefault.dev) · [GitHub](https://github.com/userdefault13) · [X](https://x.com/userDefault_0x)
+
+Freelance engineer working on AI agent orchestration, AI developer tooling, and Unity/WebGL
+multiplayer games. Write-up of the multiplayer game work behind this project:
+[userdefault.dev/work/gotchiverse-2d](https://www.userdefault.dev/work/gotchiverse-2d).
+
+Available for freelance and contract work — [book a consult](https://www.userdefault.dev/hire),
+or read more about [Unity & WebGL game development](https://www.userdefault.dev/services/unity-game-development).
