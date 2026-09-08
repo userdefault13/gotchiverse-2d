@@ -44,6 +44,14 @@ export function createHttpRouter(): Router {
     });
   });
 
+  /**
+   * Soft stub — FE falls back to computeClientCombatTraits when empty.
+   * Keeps /user/combat-traits from 404-spamming the console in local/dev.
+   */
+  router.get('/user/combat-traits', (_req, res) => {
+    res.json({ data: { gotchis: {} } });
+  });
+
   /** Foundry PoC probe — disabled stub so FE doesn't 404 when PoC isn't on this host. */
   router.get('/foundry/config', (_req, res) => {
     res.json({
