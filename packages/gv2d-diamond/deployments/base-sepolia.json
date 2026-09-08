@@ -1,0 +1,41 @@
+{
+  "chainId": 84532,
+  "network": "base-sepolia",
+  "deployedAt": "2026-09-08T20:27:07Z",
+  "deployer": "0x8842E0986F9974209593C8dCB5Aa78226435873a",
+  "paymentEnabled": false,
+  "diamond": "0x34a851523A6f3351940d235373038b2A0A85e872",
+  "facets": {
+    "DiamondCutFacet": "0x5f9B69eb57B495b628200E42D686d2fA85ed359A",
+    "DiamondLoupeFacet": "0x8ad781a19D60de376174A2D45d57D24D64342fE6",
+    "OwnershipFacet": "0xE045616D779C8602bCBbc6FFBCD9B040589F538a",
+    "GvRulesFacet": "0x8E671AEDc767f0CF9492b2D4f698f7F09530D582",
+    "GvTileMintFacet": "0x93335053d0E23Aaa1c807116561d76901Ba3368B",
+    "GvInventoryFacet": "0xc686558c8B0c6a7C8E33934160DD566e837d5d8D"
+  },
+  "transactions": {
+    "DiamondCutFacet": "0xfae1508329eb3535732b517653572afe952a92ab07c5c898b36097fcab64df02",
+    "Diamond": "0x53522e43139e6117a57121f09d84051d2e95e6ae28f52890e58a05a73813e747",
+    "DiamondLoupeFacet": "0x11793b67c84d46fb5a81845ca830243aca7444f3a740203eb8f0e9d68cc3964a",
+    "OwnershipFacet": "0x5a19f99d625ad9bcd1955263c211b91d403e61015fac729decd2130a444e8744",
+    "GvRulesFacet": "0x2931972f5fffbf5908dd5e6b7945751e127741bf20e90e71ab67c1e5b1e8a013",
+    "GvTileMintFacet": "0x73c2ef6d4cecd667a63ce637602a394418648029d14bf1f8587773a011d7351d",
+    "GvInventoryFacet": "0x300d0d5a138df5c94953aa89d790ee86a0f2c028295e66d7075235ad5c0c6cf9",
+    "diamondCut": "0xa6cb3a1cae65cb453df194a2eedb9fe9fdc9bd8b67db98a0b45105aecfc137a9",
+    "initGvRules": "0x97db30ef1313d6e4b22fade6c0f39ac0a2b426ff6e50f6ee94d1448442214ed5",
+    "registerTiles": "0x8b69775fadb84a8e4844c6b5be3bd7a54fb9c6099f3ee045f5ada931a5b424a2",
+    "smokeMintTile8": "0xca0cda277b8e7a1daca5ae7db4d137925c5775869f59994ddc9811e348f03759"
+  },
+  "smoke": {
+    "tileId": 8,
+    "amount": 1,
+    "minter": "0x8842E0986F9974209593C8dCB5Aa78226435873a",
+    "balanceOf": 1,
+    "txHash": "0xca0cda277b8e7a1daca5ae7db4d137925c5775869f59994ddc9811e348f03759"
+  },
+  "softTileIdRange": [
+    8,
+    47
+  ],
+  "notes": "Deployed via forge script DeployGv2dDiamond; tiles 8-47 seeded in same broadcast; paymentEnabled=false for permissionless free mint smoke."
+}
