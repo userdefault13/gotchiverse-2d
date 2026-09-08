@@ -1,6 +1,6 @@
 /* eslint-disable multiline-ternary */
 import { Input, SearchInput, SortSelect, StyledTitle, Toggle } from 'components/UI/elements';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { sortParcels } from 'helpers/parcels.helper';
 import { cPaarcelsToGotchiverseParcels } from 'helpers/cartridgePaarcel.helper';
 import { HOOD_COL_COUNT, HOOD_ROW_COUNT } from 'shared_code/constants/const.game';
@@ -122,11 +122,16 @@ export const SpawnOnParcel = ({ spawnParcelId, handleSpawnSelect }: Props): JSX.
   const spawnParcels = cPaarcelParcels.length > 0 ? cPaarcelParcels : fallbackOwnedParcels;
   const showingCPaarcels = cPaarcelParcels.length > 0;
 
+  const parcelInventoryRef = useRef(parcelInventory);
+  const ownedParcelsRef = useRef(ownedParcels);
+  parcelInventoryRef.current = parcelInventory;
+  ownedParcelsRef.current = ownedParcels;
+
   const loadOwnedFallback = useCallback(async () => {
     if (!currentAccount || !globalProvider || !currentNetwork) return;
     if (currentNetwork === 'robinhood' || currentNetwork === 'bitcoin') return;
-    if ((parcelInventory || []).length > 0) return;
-    if ((ownedParcels || []).length > 0) return;
+    if ((parcelInventoryRef.current || []).length > 0) return;
+    if ((ownedParcelsRef.current || []).length > 0) return;
     setLoading(true);
     try {
       const { fetchSubgraphOwnedParcel } = await import('helpers/parcels.helper');
@@ -140,14 +145,7 @@ export const SpawnOnParcel = ({ spawnParcelId, handleSpawnSelect }: Props): JSX.
     } finally {
       setLoading(false);
     }
-  }, [
-    currentAccount,
-    globalProvider,
-    currentNetwork,
-    parcelInventory,
-    ownedParcels,
-    userDispatch,
-  ]);
+  }, [currentAccount, globalProvider, currentNetwork, userDispatch]);
 
   /** Refresh cartridge cPaarcels when opening spawn (inventory may be stale after mint). */
   const refreshCPaarcels = useCallback(async () => {
@@ -189,7 +187,14 @@ export const SpawnOnParcel = ({ spawnParcelId, handleSpawnSelect }: Props): JSX.
   const handleOpenBaazaar = () => window.open(gotchiverseLinks.aavegotchi.marketplace, '_blank');
 
   useEffect(() => {
-    void refreshCPaarcels().then(() => loadOwnedFallback());
+    let cancelled = false;
+    void (async () => {
+      await refreshCPaarcels();
+      if (!cancelled) await loadOwnedFallback();
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [refreshCPaarcels, loadOwnedFallback]);
 
   useEffect(() => {
