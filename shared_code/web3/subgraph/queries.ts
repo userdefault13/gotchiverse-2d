@@ -119,10 +119,16 @@ function getAavegotchiSideSVGs(id) {
 };
 
 export function getParcelOwners(ids) {
+  const url = process.env.NEXT_PUBLIC_GOTCHIVERSE_SUBGRAPH_URL || '';
+  const hasura =
+    url.includes('gotchiverse-base') ||
+    process.env.REALM_NETWORK === 'base' ||
+    process.env.NETWORK === 'base';
+  const ownerField = hasura ? 'owner_id' : 'owner { id }';
   return `{
     parcels (where: { id_in: [${ids}]}) {
       id
-      owner
+      ${ownerField}
     }
   }`;
 };

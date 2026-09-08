@@ -1,5 +1,13 @@
 import { ContractType } from 'types';
 
+
+/** Envio/Hasura (gotchiverse-base): User relation is unusable — filter/select owner_id. Classic The Graph keeps owner { id } / owner_in. */
+const useHasuraParcelOwnerFields = (): boolean => {
+  const url = process.env.NEXT_PUBLIC_GOTCHIVERSE_SUBGRAPH_URL || '';
+  if (url.includes('gotchiverse-base')) return true;
+  return process.env.REALM_NETWORK === 'base' || process.env.NETWORK === 'base';
+};
+
 export const getAllAavegotchisOfOwner = (owner: string, sortValue?: string, searchValue?: string): string => {
   const getSortQuery = (sort: string) => {
     switch (sort) {
@@ -109,19 +117,25 @@ export const getUsersParcels = (accounts: string[], filter?: { district?: number
 
   const first = resultsPerPage * currentPage;
   const skip = resultsPerPage * (currentPage - 1);
+  const owners = accounts.map((account) => `"${account.toLocaleLowerCase()}"`).join(', ');
+  const districtFilter = filter?.district ? `, district: ${filter.district}` : '';
+  const searchFilter = filter?.search ? `, parcelHash_contains: "${filter.search.toLowerCase()}"` : '';
+  const hasura = useHasuraParcelOwnerFields();
+  const ownerWhere = hasura ? `owner_id_in: [${owners}]` : `owner_in: [${owners}]`;
+  const ownerField = hasura
+    ? `owner_id`
+    : `owner {
+          id
+        }`;
 
   return `{
-      parcels (first: ${first}, skip: ${skip}, where: { owner_in: [${accounts.map((account) => `"${account.toLocaleLowerCase()}"`)}]${
-    filter?.district ? `, district: ${filter.district}` : ''
-  }${filter?.search ? `, parcelHash_contains: "${filter.search.toLowerCase()}"` : ''} }, orderBy: district) {
+      parcels (first: ${first}, skip: ${skip}, where: { ${ownerWhere}${districtFilter}${searchFilter} }, orderBy: district) {
         parcelId
         id
         parcelHash
         district
         size
-        owner {
-          id
-        }
+        ${ownerField}
         lastChanneledAlchemica
         equippedInstallations {
           id
@@ -175,15 +189,18 @@ export const getAavegotchiLastChanneled = (ids: number[]): string => {
 
 export const getParcelLastChanneled = (ids: number[]): string => {
   const idList = ids.map((id) => `"${id}"`).join(',');
+  const ownerField = useHasuraParcelOwnerFields()
+    ? `owner_id`
+    : `owner {
+        id
+      }`;
   return `{
     parcels (
       where: { id_in: [${idList}]}
       first: ${ids.length !== 0 ? ids.length : 1}
     ) {
       id
-      owner {
-        id
-      }
+      ${ownerField}
       lastChanneledAlchemica
       equippedInstallations {
         id

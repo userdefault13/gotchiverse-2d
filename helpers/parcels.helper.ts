@@ -237,14 +237,22 @@ export function getHoodPositionById(id: string): Vector2 {
 
 const PARCEL_SUBGRAPH_NETWORKS: NetworkNames[] = ['matic', 'base'];
 
-const parcelOwnerAddress = (owner: GotchiverseParcel['owner'] | { id?: string } | undefined): string | undefined => {
+const parcelOwnerAddress = (
+  owner: GotchiverseParcel['owner'] | { id?: string } | undefined,
+): string | undefined => {
   if (!owner) return undefined;
   if (typeof owner === 'string') return owner;
   if (typeof owner === 'object' && 'id' in owner && typeof owner.id === 'string') return owner.id;
   return undefined;
 };
 
-const normalizeParcels = (parcels: Array<Partial<GotchiverseParcel> & { tokenId?: string }> = []): GotchiverseParcel[] => {
+type ParcelOwnerFields = Partial<GotchiverseParcel> & {
+  tokenId?: string;
+  owner_id?: string;
+  owner?: GotchiverseParcel['owner'] | { id?: string };
+};
+
+const normalizeParcels = (parcels: ParcelOwnerFields[] = []): GotchiverseParcel[] => {
   const currentAccount = GlobalState.WEB3.state.currentAccount?.toLocaleLowerCase();
   return _.map(parcels, (parcel) => {
     const tokenId = String(parcel.tokenId ?? parcel.id ?? '');
@@ -252,7 +260,10 @@ const normalizeParcels = (parcels: Array<Partial<GotchiverseParcel> & { tokenId?
     const meta = PARCELS_BY_TOKEN_ID[tokenId] || PARCELS_BY_TOKEN_ID[Number(tokenId)];
     const rawParcelId = parcel.parcelId ? String(parcel.parcelId) : '';
     const parcelId = rawParcelId.charAt(0) === 'C' ? rawParcelId : meta?.parcelId || rawParcelId;
-    const owner = parcelOwnerAddress(parcel.owner as GotchiverseParcel['owner'] | { id?: string });
+    // Hasura/Envio may return owner_id; Aarcade proxy often remaps owner_id → owner string.
+    const owner =
+      parcelOwnerAddress(parcel.owner) ||
+      (typeof parcel.owner_id === 'string' ? parcel.owner_id : undefined);
     return {
       ...parcel,
       id,
@@ -430,10 +441,22 @@ export const mapInGotchiverseParcelData = async (parcels: ContractParcel[]): Pro
     return [];
   }
   const query = getParcelLastChanneled(parcels.map((parcel) => Number(parcel.id || parcel.tokenId)));
-  let resParcels: Array<{ lastChanneledAlchemica: string; id: string; equippedInstallations: Array<{ id: string }>; owner?: string }> = [];
+  let resParcels: Array<{
+    lastChanneledAlchemica: string;
+    id: string;
+    equippedInstallations: Array<{ id: string }>;
+    owner?: string | { id?: string };
+    owner_id?: string;
+  }> = [];
   try {
     const res = await useSubgraph<{
-      parcels: Array<{ lastChanneledAlchemica: string; id: string; equippedInstallations: Array<{ id: string }>; owner?: string }>;
+      parcels: Array<{
+        lastChanneledAlchemica: string;
+        id: string;
+        equippedInstallations: Array<{ id: string }>;
+        owner?: string | { id?: string };
+        owner_id?: string;
+      }>;
     }>(query, gotchiverseSubgraph);
     resParcels = res?.parcels || [];
   } catch (error) {
@@ -443,7 +466,10 @@ export const mapInGotchiverseParcelData = async (parcels: ContractParcel[]): Pro
     const tokenId = String(parcel.tokenId ?? parcel.id ?? '');
     const id = String(parcel.id ?? parcel.tokenId ?? '');
     const gotchiverseData = resParcels.find((item) => item.id === id || item.id === tokenId);
-    const owner = parcelOwnerAddress(parcel.owner) || parcelOwnerAddress(gotchiverseData?.owner);
+    const owner =
+      parcelOwnerAddress(parcel.owner) ||
+      parcelOwnerAddress(gotchiverseData?.owner) ||
+      (typeof gotchiverseData?.owner_id === 'string' ? gotchiverseData.owner_id : undefined);
     return {
       ...parcel,
       id,
