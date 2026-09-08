@@ -1,4 +1,4 @@
-import { LogoBase, LogoRh, SettingsIcon2, VerifyIcon } from 'assets';
+import { LogoBase, LogoBtc, LogoRh, SettingsIcon2, VerifyIcon } from 'assets';
 import { SettingsModal } from 'components/UI/screens/section';
 import { GameGuide } from 'components/UI/widgets/GameGuide';
 import { useUserWalletDataContext } from 'components/utility/WalletConnect';
@@ -42,8 +42,8 @@ export const Navigation = (): JSX.Element => {
 
   const isRobinhood = currentNetwork === 'robinhood';
   const isBitcoin = currentNetwork === 'bitcoin';
-  const brandLogo = isRobinhood ? LogoRh : LogoBase;
-  const navMod = isRobinhood ? ' rh' : isBitcoin ? ' btc' : '';
+  const brandLogo = isRobinhood ? LogoRh : isBitcoin ? LogoBtc : LogoBase;
+  const navMod = isRobinhood ? ' rh' : isBitcoin ? ' btc' : ' base';
 
   return (
     <>

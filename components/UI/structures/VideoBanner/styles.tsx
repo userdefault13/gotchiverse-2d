@@ -10,6 +10,52 @@ export default css`
     transition: all 1s;
   }
 
+  .banner-container.base::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0, 82, 255, 0.42) 0%, rgba(0, 57, 184, 0.28) 55%, rgba(0, 42, 140, 0.18) 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .banner-container.rh::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(143, 181, 26, 0.35) 0%, rgba(61, 79, 10, 0.22) 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .banner-container.btc::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(247, 147, 26, 0.35) 0%, rgba(92, 50, 5, 0.22) 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .banner-container.base .main-title {
+    color: var(--col-base-300);
+  }
+
+  .banner-container.rh .main-title {
+    color: var(--col-rh-neon);
+  }
+
+  .banner-container.btc .main-title {
+    color: var(--col-btc-neon);
+  }
+
+  .version-container,
+  .close-toggle-container,
+  .banner-contents {
+    position: relative;
+    z-index: 1;
+  }
+
   .banner-container.short {
     clip-path: polygon(0 0, 100% 0, 100% 40%, 50% 100%, 0 40%);
   }

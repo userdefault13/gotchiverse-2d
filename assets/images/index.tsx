@@ -36,9 +36,10 @@ import SpiderWebSmall from './spiderWeb-small.svg';
 import Spider from './spider.png';
 import PinkRay from './ray_pink.png';
 import Logo from './logo.png';
-import LogoBase from './logo-base.png';
+import LogoBase from './logo-base.svg';
 import LogoRh from './logo-rh.png';
-import GotchiverseBaseCartridge from './gotchiverse-base-cartridge.png';
+import LogoBtc from './logo-btc.svg';
+import GotchiverseBaseCartridge from './gotchiverse-base-cartridge.svg';
 import GotchiverseRhCartridge from './gotchiverse-rh-cartridge.png';
 import GotchiverseBtcCartridge from './gotchiverse-btc-cartridge.svg';
 import CompanyLogo from './pixelcraft.png';
@@ -110,6 +111,7 @@ export {
   Logo,
   LogoBase,
   LogoRh,
+  LogoBtc,
   GotchiverseBaseCartridge,
   GotchiverseRhCartridge,
   GotchiverseBtcCartridge,

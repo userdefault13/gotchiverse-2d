@@ -17,7 +17,7 @@ export default css`
     color: var(--col-legendary-450);
   }
   .guide-text.info {
-    color: var(--col-info-border);
+    color: var(--col-white);
     padding-bottom: 0.6rem;
     width: 15rem;
   }

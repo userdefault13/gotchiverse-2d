@@ -2,6 +2,7 @@ import Image from 'next/image';
 import { Button, ToggleIcon } from 'components/UI/elements';
 import styles from './styles';
 import { useGame } from 'contexts/GameContext';
+import { useWeb3 } from 'contexts/Web3Context';
 import { useEffect, useRef } from 'react';
 import { Banner } from 'assets';
 import { gotchiverseLinks } from 'data/links';
@@ -15,7 +16,12 @@ interface Props {
 }
 export const VideoBanner = ({ isShort, setIsShort }: Props): JSX.Element => {
   const [{ activeCount }] = useGame();
+  const [{ currentNetwork }] = useWeb3();
   const videoRef = useRef(null);
+
+  const isRobinhood = currentNetwork === 'robinhood';
+  const isBitcoin = currentNetwork === 'bitcoin';
+  const trackClass = isRobinhood ? 'rh' : isBitcoin ? 'btc' : 'base';
 
   useEffect(() => {
     if (!videoRef || !videoRef.current) return;
@@ -29,7 +35,7 @@ export const VideoBanner = ({ isShort, setIsShort }: Props): JSX.Element => {
 
   return (
     <>
-      <div className={`banner-container clickable ${isShort ? 'short' : ''}`}>
+      <div className={`banner-container clickable ${trackClass} ${isShort ? 'short' : ''}`}>
         <div className="version-container">{`REALM v${GameController.version} | ${activeCount} player${activeCount !== 1 ? 's' : ''} online`}</div>
         <div className="close-toggle-container">
           <button className="close-toggle" onClick={onToggleClose}>

@@ -14,6 +14,21 @@ export default css`
     z-index: 90;
   }
 
+  /* Base chain blue track */
+  .navigation-container.base {
+    --col-info-border: var(--col-base-neon);
+    --col-info-300: var(--col-base-300);
+    --col-info-500: var(--col-base-500);
+    --col-info-600: var(--col-base-600);
+    --col-info-700: var(--col-base-700);
+    --col-info-800: var(--col-base-neon);
+    background: var(--col-base-neon);
+  }
+
+  .navigation-container.base .setting-button-container {
+    filter: hue-rotate(35deg) saturate(1.2) brightness(1.05);
+  }
+
   /* Remap cyan info tokens → Robinhood neon while on RH */
   .navigation-container.rh {
     --col-info-border: var(--col-rh-neon);

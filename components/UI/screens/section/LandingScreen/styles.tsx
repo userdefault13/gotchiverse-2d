@@ -6,7 +6,6 @@ export default css`
     overflow-x: hidden;
     padding-top: 10rem; // Account for navigation
   }
-
   .main-container {
     padding: 20rem 4rem 0rem 4rem;
     max-width: 1400px;

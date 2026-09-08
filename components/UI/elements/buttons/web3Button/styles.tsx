@@ -64,7 +64,7 @@ export default css`
     color: var(--col-purple-300);
   }
   .network.info {
-    color: var(--col-info-border);
+    color: var(--col-white);
   }
 
   .dropdown {
