@@ -86,6 +86,24 @@ cast call $DIAMOND "supportsInterface(bytes4)(bool)" 0xd9b67a26 \
   --rpc-url $BASE_SEPOLIA_RPC_URL
 ```
 
+
+
+## Frontend (Gotchiverse-2D Crafting Table)
+
+Soft cTiles recipe UI is unchanged. With:
+
+```
+NEXT_PUBLIC_USE_GV2D_DIAMOND=true
+NEXT_PUBLIC_GV2D_DIAMOND_ADDRESS=0x34a851523A6f3351940d235373038b2A0A85e872
+```
+
+the Craft button for soft tiles **8–47** calls `mintTiles([id],[qty])` on this diamond
+(see `helpers/gv2dDiamond.helper.ts`) instead of `craftCTileLocally`. Wallet must be on
+**Base Sepolia** (helper prompts switch/add). Inventory refreshes from ERC1155 `balanceOf`.
+Golden tiles **1–3** still use the live Tile diamond `craftTiles` path.
+
+When the flag is off, soft cTiles keep the legacy local craft path.
+
 ## Success criteria
 
 - `forge build` + `forge test` green

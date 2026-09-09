@@ -10,6 +10,7 @@ Links to plan: [`GV2D_DIAMOND_PLAN.md`](./GV2D_DIAMOND_PLAN.md) · full `c*` cut
 | Append-only `LibAppStorage` | Done |
 | `GvRulesFacet` (mutable costs, `paymentEnabled`, ghost default) | Done |
 | `GvTileMintFacet.mintTiles` permissionless for ids **8–47** | Done |
+| FE flag `NEXT_PUBLIC_USE_GV2D_DIAMOND` → Craft soft cTiles via `mintTiles` | Done |
 | Inventory: **diamond-hosted ERC1155** (`GvInventoryFacet` + `LibERC1155`) | Done (upgraded from native balances; same slots) |
 | Seed tiles 8–47 from `tiles.json` (+ ghost default 5 FUD + 2 ALPHA) | Done |
 | Base Sepolia deploy script + README cast smoke | Done |

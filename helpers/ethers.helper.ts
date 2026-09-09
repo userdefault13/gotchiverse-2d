@@ -131,6 +131,8 @@ export function chainIdToName(chainId: number): NetworkNames {
       return 'goerli';
     case 8453:
       return 'base';
+    case 84532:
+      return 'base-sepolia';
     case 4663:
       return 'robinhood';
     /** Soft-launch Bitcoin (app UI only — not EIP-1193). */
@@ -732,6 +734,29 @@ export async function addBase(): Promise<void> {
           symbol: 'ETH',
         },
         blockExplorerUrls: ['https://basescan.org/'],
+      },
+    ],
+  });
+}
+
+/** Add / switch MetaMask to Base Sepolia (84532) for GV-2D soft cTile mint. */
+export async function addBaseSepolia(): Promise<void> {
+  const { clearBitcoinSoftTrack } = await import('helpers/softNetwork.helper');
+  clearBitcoinSoftTrack();
+  // @ts-expect-error
+  await window.ethereum?.request({
+    method: 'wallet_addEthereumChain',
+    params: [
+      {
+        chainId: '0x14a34',
+        rpcUrls: [process.env.NEXT_PUBLIC_BASE_SEPOLIA_RPC || 'https://sepolia.base.org'],
+        chainName: 'Base Sepolia',
+        nativeCurrency: {
+          name: 'Ether',
+          decimals: 18,
+          symbol: 'ETH',
+        },
+        blockExplorerUrls: ['https://sepolia.basescan.org/'],
       },
     ],
   });

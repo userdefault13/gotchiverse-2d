@@ -1,0 +1,49 @@
+[
+  {
+    "type": "function",
+    "name": "mintTiles",
+    "inputs": [
+      { "name": "ids", "type": "uint256[]", "internalType": "uint256[]" },
+      { "name": "amounts", "type": "uint256[]", "internalType": "uint256[]" }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "balanceOf",
+    "inputs": [
+      { "name": "account", "type": "address", "internalType": "address" },
+      { "name": "id", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "balanceOfBatch",
+    "inputs": [
+      { "name": "accounts", "type": "address[]", "internalType": "address[]" },
+      { "name": "ids", "type": "uint256[]", "internalType": "uint256[]" }
+    ],
+    "outputs": [{ "name": "", "type": "uint256[]", "internalType": "uint256[]" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "uri",
+    "inputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+    "outputs": [{ "name": "", "type": "string", "internalType": "string" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "event",
+    "name": "TilesMinted",
+    "inputs": [
+      { "name": "to", "type": "address", "indexed": true, "internalType": "address" },
+      { "name": "ids", "type": "uint256[]", "indexed": false, "internalType": "uint256[]" },
+      { "name": "amounts", "type": "uint256[]", "indexed": false, "internalType": "uint256[]" }
+    ],
+    "anonymous": false
+  }
+]

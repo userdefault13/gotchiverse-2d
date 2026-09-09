@@ -64,6 +64,11 @@ const moduleExports = {
 
     // Hybrid Grid Foundry PoC (also set on Vercel / .env.production)
     NEXT_PUBLIC_ENABLE_FOUNDRY_POC: process.env.NEXT_PUBLIC_ENABLE_FOUNDRY_POC,
+
+    // GV-2D diamond soft cTile mint (Base Sepolia)
+    NEXT_PUBLIC_USE_GV2D_DIAMOND: process.env.NEXT_PUBLIC_USE_GV2D_DIAMOND,
+    NEXT_PUBLIC_GV2D_DIAMOND_ADDRESS: process.env.NEXT_PUBLIC_GV2D_DIAMOND_ADDRESS,
+    NEXT_PUBLIC_BASE_SEPOLIA_RPC: process.env.NEXT_PUBLIC_BASE_SEPOLIA_RPC,
   },
 };
 

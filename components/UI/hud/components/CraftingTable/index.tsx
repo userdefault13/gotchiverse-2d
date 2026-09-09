@@ -43,6 +43,11 @@ import {
   peekPendingConsoleCraftTitle,
 } from 'helpers/console.installation.helper';
 import { craftCTileLocally, isCTileItemId } from 'helpers/ctile.helper';
+import {
+  isGv2dDiamondMintEnabled,
+  isGv2dSoftTileMintId,
+  mintSoftCTilesOnDiamond,
+} from 'helpers/gv2dDiamond.helper';
 import { mintCraftedItemsToCartridge } from 'helpers/auth.helper';
 import GlobalState from 'contexts/GlobalState';
 
@@ -125,7 +130,12 @@ export const CraftingTable = ({ open, onClose }: Props): JSX.Element => {
 
   const fetchAndSetAlchemicaBalances = async (account: string, network: NetworkNames, provider: providers.Provider) => {
     setPending(true);
-    await fetchAndSetAlchemicaBalance({ account, network, provider }, userDispatch);
+    try {
+      await fetchAndSetAlchemicaBalance({ account, network, provider }, userDispatch);
+    } catch (e) {
+      // Base Sepolia (GV-2D soft mint) has no alchemica vars — keep modal usable.
+      console.warn('CraftingTable: alchemica balance fetch skipped', e);
+    }
     setPending(false);
   };
 
@@ -174,6 +184,63 @@ export const CraftingTable = ({ open, onClose }: Props): JSX.Element => {
     setPending(true);
 
     const isConsole = isConsoleItemId(recipe.id);
+    const isCTileSoft = recipe.type === 'TILE' && recipe.softLaunch && isCTileItemId(recipe.id);
+    // Flag on → soft cTiles 8–47 mint via Base Sepolia GV-2D diamond (never craftCTileLocally).
+    if (isCTileSoft && isGv2dDiamondMintEnabled()) {
+      if (!isGv2dSoftTileMintId(recipe.id)) {
+        setPending(false);
+        craftError();
+        return;
+      }
+      if (!config.account || !config.signer || !config.provider) {
+        const notificationId = showTransactionNotification(notificationDispatch, {
+          message: 'Connect wallet to mint soft cTiles',
+        });
+        updateTransactionNotificationStatus(
+          notificationDispatch,
+          notificationId,
+          'error',
+          'Connect your wallet (Base Sepolia) to craft soft cTiles on the GV-2D diamond.',
+        );
+        craftError();
+        setPending(false);
+        return;
+      }
+      let notificationId;
+      try {
+        notificationId = showTransactionNotification(notificationDispatch, {
+          message: 'Minting cTile on GV-2D diamond (Base Sepolia)',
+        });
+        const result = await mintSoftCTilesOnDiamond({
+          itemId: Number(recipe.id),
+          quantity: quanity,
+          account: config.account,
+          signer: config.signer,
+          provider: config.provider,
+          name: recipe.name,
+        });
+        if (GlobalState.USER?.state?.inventory) {
+          userDispatch({ type: 'UPDATE_INVENTORY', inventory: [...GlobalState.USER.state.inventory] });
+        }
+        craft();
+        updateTransactionNotificationStatus(notificationDispatch, notificationId, 'success');
+        setCrafting(true);
+        setPending(false);
+        setTimeout(() => {
+          craftSuccess();
+          handleCompletedCraft(notificationDispatch, _.fill(Array(quanity), recipe.id), recipe.name);
+          setCrafting(false);
+        }, 1200);
+        console.info('[gv2d] soft cTile mint ok', result.txHash, 'balance=', result.balance);
+      } catch (e) {
+        notificationId &&
+          updateTransactionNotificationStatus(notificationDispatch, notificationId, 'error', getErrMessage(e));
+        craftError();
+        setPending(false);
+      }
+      return;
+    }
+
     const isSoftLocal =
       Boolean(recipe.softLaunch) ||
       isConsole ||
@@ -187,6 +254,7 @@ export const CraftingTable = ({ open, onClose }: Props): JSX.Element => {
       (recipe.type === 'TILE' && recipe.softLaunch && isCTileItemId(recipe.id));
 
     // Soft-launch local crafts (Waall / Lodge / Store / Terminal / Broadcaster / Console / cTiles) — no diamond.
+    // Soft cTiles only reach here when NEXT_PUBLIC_USE_GV2D_DIAMOND is off.
     if (isSoftLocal) {
       let notificationId;
       try {
@@ -365,7 +433,13 @@ export const CraftingTable = ({ open, onClose }: Props): JSX.Element => {
 
   useEffect(() => {
     if (selectedRecipe && alchemicaBalance) {
-      const max = getMaxQuantity(selectedRecipe.ingredients, alchemicaBalance);
+      const diamondSoft =
+        selectedRecipe.softLaunch &&
+        selectedRecipe.type === 'TILE' &&
+        isCTileItemId(selectedRecipe.id) &&
+        isGv2dDiamondMintEnabled();
+      // paymentEnabled=false on Sepolia — do not gate qty on local alchemica.
+      const max = diamondSoft ? 50 : getMaxQuantity(selectedRecipe.ingredients, alchemicaBalance);
       setMaxQuantity(max);
     }
   }, [selectedRecipe, alchemicaBalance]);
@@ -443,7 +517,20 @@ export const CraftingTable = ({ open, onClose }: Props): JSX.Element => {
               <RecipeBook selectRecipe={setSelectedRecipe} disabled={loading} />
               <Button
                 size={3.65}
-                disabled={!selectedRecipe || !quanity || !haveRequiredIngredients(selectedRecipe, alchemicaBalance) || pending || crafting || loading}
+                disabled={
+                  !selectedRecipe ||
+                  !quanity ||
+                  pending ||
+                  crafting ||
+                  loading ||
+                  (!(
+                    selectedRecipe.softLaunch &&
+                    selectedRecipe.type === 'TILE' &&
+                    isCTileItemId(selectedRecipe.id) &&
+                    isGv2dDiamondMintEnabled()
+                  ) &&
+                    !haveRequiredIngredients(selectedRecipe, alchemicaBalance))
+                }
                 color={gameConfig.gotchiverseTheme}
                 onClick={async () =>
                   selectedRecipe
