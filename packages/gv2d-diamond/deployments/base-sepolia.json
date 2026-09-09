@@ -14,7 +14,9 @@
     "GvRulesFacet": "0x8E671AEDc767f0CF9492b2D4f698f7F09530D582",
     "GvTileMintFacet": "0x502493bF1c934fEF6536dDE883fd340bb1fEF6F3",
     "GvInventoryFacet": "0x48038e3D742f73d15732Dd2b064593e4B120BF45",
-    "InitERC1155": "0x3B4EDc51Be6bb4653be124A96D655D6b7e1bCD8B"
+    "InitERC1155": "0x3B4EDc51Be6bb4653be124A96D655D6b7e1bCD8B",
+    "GvCatalogFacet": "0xe8C6E4bf7EB9467b713B9F35B21970578249193b",
+    "GvCraftFacet": "0xF11dc741e6Bd0aC5f1f280a8f4a569386B771BBb"
   },
   "facetsPrevious": {
     "GvTileMintFacet": "0x93335053d0E23Aaa1c807116561d76901Ba3368B",
@@ -36,7 +38,14 @@
     "GvTileMintFacet_erc1155": "0x4d3d76ae6e01a032ca9f7b6c8d0b4f740f48905e1825b37c1f19f3a1fef271ff",
     "InitERC1155": "0xc9f89ca29a03d9e17dec319177889086079d04e917468f4244548d475d9a916c",
     "diamondCut_erc1155": "0xb69d41c029eb1e2d62da09f8c70dc0a85b435f34c9ab379bd14e5685b6c43a31",
-    "smokeMintTile9_erc1155": "0x1358800bb35f66a0fb1911608ed0fb97f73e25343be21fc26b23c2d3bc80e571"
+    "smokeMintTile9_erc1155": "0x1358800bb35f66a0fb1911608ed0fb97f73e25343be21fc26b23c2d3bc80e571",
+    "GvCatalogFacet": "0xa6c3160e34a74a91205fcb0359079957a92796241657c1ac3b2b2a5de25d2b52",
+    "GvCraftFacet": "0x63f4efc5cc70ac9dc0421a592bf8e9146a98954de0d96e2a176145b19561bc95",
+    "diamondCut_softInstalls": "0x8e85f4005408e534a39335cf45f11b0f76512616dbfd93aec199733460fb022c",
+    "registerSoftInstalls_smoke": "0xf6f32507972286f6522a95e876486a730ac594ffe6270fbbd07bd43d6f0cb00a",
+    "setInstallBaseURI": "0x0e52e47ed07f2a110b83e4414534b14020617e674d6959649fe0825f671165fe",
+    "smokeCraftStore180": "0x5d4a1f5b2a7178ddef9fd49d679544aa671a0dadf4adcac91d4037815fd307b2",
+    "smokeCraftLodge171": "0x59cbae5bcc0d69e844a3bf6e328992e931a7eaf819b6c55eb31a811a016508d9"
   },
   "smoke": {
     "tileId": 8,
@@ -56,6 +65,36 @@
     "supportsInterfaceERC1155": true,
     "supportsInterfaceERC1155MetadataURI": true
   },
-  "softTileIdRange": [8, 47],
-  "notes": "Upgraded via UpgradeERC1155 diamondCut onto existing diamond; paymentEnabled=false; ownership retained; soft-install bag stays on Aarcade cartridge (not in this cut)."
+  "softTileIdRange": [
+    8,
+    47
+  ],
+  "notes": "Tiles 8-47 + soft-install staging bag 162-215 on GV ERC1155; paymentEnabled=false; ownership retained; locked soft-install bag SoT = Aarcade cartridge (bridge pending).",
+  "softInstallsUpgradedAt": "2026-09-09T06:05:56Z",
+  "softInstallIdRange": [
+    162,
+    215
+  ],
+  "softInstallSmokeRegistered": [
+    171,
+    180,
+    189,
+    198,
+    199,
+    208,
+    209
+  ],
+  "softInstallBagNote": "TEMPORARY: soft-install ERC1155 balances mint on GV diamond (disjoint from tiles 8-47). Locked SoT remains Aarcade cartridge ERC1155 \u2014 InventoryFacet has no soft-install mint yet (only mintWearable). Bridge-to-cartridge is next.",
+  "smokeSoftInstalls": {
+    "storeId": 180,
+    "lodgeId": 171,
+    "amount": 1,
+    "minter": "0x8842E0986F9974209593C8dCB5Aa78226435873a",
+    "balanceOfStore": 1,
+    "balanceOfLodge": 1,
+    "storeTxHash": "0x5d4a1f5b2a7178ddef9fd49d679544aa671a0dadf4adcac91d4037815fd307b2",
+    "lodgeTxHash": "0x59cbae5bcc0d69e844a3bf6e328992e931a7eaf819b6c55eb31a811a016508d9",
+    "installBaseURI": "https://gv2d.placeholder/soft-install/{id}.json",
+    "paymentEnabled": false
+  }
 }

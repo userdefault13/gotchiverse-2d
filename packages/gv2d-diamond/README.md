@@ -104,6 +104,26 @@ Golden tiles **1–3** still use the live Tile diamond `craftTiles` path.
 
 When the flag is off, soft cTiles keep the legacy local craft path.
 
+## Soft installs (Phase B staging)
+
+`GvCatalogFacet` + `GvCraftFacet` cut onto the same Sepolia diamond.
+
+- Soft-install id band **162–215** (disjoint from tiles **8–47**)
+- Smoke-registered: Lodge `171`, Store `180`, Cashier `189`, Display Table `198`, Console `199`, Terminal `208`, Broadcaster `209`
+- `craftInstallations([id],[qty])` is permissionless; with `paymentEnabled=false` costs are not pulled
+- **TEMPORARY bag:** mints credit **GV ERC1155** balances. Locked SoT = **Aarcade cartridge** ERC1155 — cartridge `InventoryFacet` currently only has `mintWearable` (no soft-install mint). Bridge next.
+- Placeholder `installBaseURI` is owner-updatable via `setInstallBaseURI`
+
+```bash
+forge script script/UpgradeSoftInstalls.s.sol:UpgradeSoftInstalls \
+  --rpc-url $BASE_SEPOLIA_RPC_URL --broadcast
+
+cast send $DIAMOND "craftInstallations(uint256[],uint256[])" "[180]" "[1]" \
+  --rpc-url $BASE_SEPOLIA_RPC_URL --private-key $PRIVATE_KEY
+```
+
+Inventory: `docs/GV2D_SOFT_INSTALLS_INVENTORY.md`
+
 ## Success criteria
 
 - `forge build` + `forge test` green

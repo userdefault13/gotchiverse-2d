@@ -6,8 +6,10 @@ import {OwnershipFacet} from "../src/facets/OwnershipFacet.sol";
 import {GvRulesFacet} from "../src/facets/GvRulesFacet.sol";
 import {GvTileMintFacet} from "../src/facets/GvTileMintFacet.sol";
 import {GvInventoryFacet} from "../src/facets/GvInventoryFacet.sol";
+import {GvCatalogFacet} from "../src/facets/GvCatalogFacet.sol";
+import {GvCraftFacet} from "../src/facets/GvCraftFacet.sol";
 
-/// @dev Shared selector lists for fresh deploy and ERC1155 upgrade cuts.
+/// @dev Shared selector lists for fresh deploy and upgrade cuts.
 library FacetSelectors {
     function loupe() internal pure returns (bytes4[] memory s) {
         s = new bytes4[](5);
@@ -98,5 +100,37 @@ library FacetSelectors {
         s[5] = GvInventoryFacet.setURI.selector;
         s[6] = GvInventoryFacet.burn.selector;
         s[7] = GvInventoryFacet.burnBatch.selector;
+    }
+
+    function catalog() internal pure returns (bytes4[] memory s) {
+        s = new bytes4[](8);
+        s[0] = GvCatalogFacet.registerSoftInstall.selector;
+        s[1] = GvCatalogFacet.registerSoftInstalls.selector;
+        s[2] = GvCatalogFacet.setSoftInstallCost.selector;
+        s[3] = GvCatalogFacet.setInstallBaseURI.selector;
+        s[4] = GvCatalogFacet.softInstall.selector;
+        s[5] = GvCatalogFacet.isSoftInstallRegistered.selector;
+        s[6] = GvCatalogFacet.softInstallCost.selector;
+        s[7] = GvCatalogFacet.installBaseURI.selector;
+        // softInstallIdRange appended below — keep arrays sized for cuts
+    }
+
+    function catalogAll() internal pure returns (bytes4[] memory s) {
+        s = new bytes4[](9);
+        s[0] = GvCatalogFacet.registerSoftInstall.selector;
+        s[1] = GvCatalogFacet.registerSoftInstalls.selector;
+        s[2] = GvCatalogFacet.setSoftInstallCost.selector;
+        s[3] = GvCatalogFacet.setInstallBaseURI.selector;
+        s[4] = GvCatalogFacet.softInstall.selector;
+        s[5] = GvCatalogFacet.isSoftInstallRegistered.selector;
+        s[6] = GvCatalogFacet.softInstallCost.selector;
+        s[7] = GvCatalogFacet.installBaseURI.selector;
+        s[8] = GvCatalogFacet.softInstallIdRange.selector;
+    }
+
+    function craft() internal pure returns (bytes4[] memory s) {
+        s = new bytes4[](2);
+        s[0] = GvCraftFacet.craftInstallations.selector;
+        s[1] = GvCraftFacet.quoteCraftCost.selector;
     }
 }
