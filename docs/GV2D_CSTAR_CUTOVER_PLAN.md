@@ -317,3 +317,95 @@ Disjoint id bands still apply (tiles 8–47; waalls 162–170; lodge 171–179; 
 - Update this file when a workstream ships a Sepolia milestone (checkboxes + date).
 - Keep [`GV2D_DIAMOND_SPIKE.md`](./GV2D_DIAMOND_SPIKE.md) as historical spike note; point deferred items here.
 - Cross-link from Aarcade `ONCHAIN_DIAMOND_PLAN.md` § ownership when Julius accepts matrix.
+
+---
+
+## 9. Decor installations + staking fees (locked direction 2026-09-08)
+
+**Scope:** RecipeBook **DECOR** page — L1 `installationType === 7` parcel decorations (Rofl Gnome, REALM Globe, Caamp Fire, etc.; ~48 type-7 L1 rows in catalog). Many catalog costs are currently `[0,0,0,0]` (raffle/airdrop/LE clutter).
+
+**Same principle as soft tiles**
+- Decor becomes **transferable ERC1155** (bag → place → unequip → resell), not soft-only local inventory.
+- **Actual decor holders** can **stake** their decor to earn a share of fees from **cInstallation mints** (Waall/Lodge/Store/furniture and/or cartridge `mintInstallation` — fee basis TBD in Rules).
+
+**Ownership sketch (align with bag locks)**
+| Piece | Home |
+|-------|------|
+| Decor ERC1155 bag | Prefer **same bag SoT as soft installs = Aarcade cartridge** (unless L1 Installation diamond already owns that typeId — then don’t duplicate; stake against L1 balance or bridged mirror) |
+| Place on parcel | GV-2D Place against cartridge cPaarcel / real Realm as already planned |
+| Staking + fee splitter | New facet(s): e.g. `GvDecorStakeFacet` + fee skim on cInstallation craft/mint into a claimable pool for stakers |
+| Soft tiles staking | Parallel pattern: tile stake for future tile-side rewards (already noted); decor stake specifically for **cInstallation mint fees** |
+
+**Sepolia**
+- Keep `paymentEnabled=false` until craft costs set.
+- Fee % / which mint events pay decor stakers → mutable `GvRules` (not immutables).
+
+**Open (decor-specific)**
+1. Fee basis: % of alchemica on soft-install craft, flat GHST, and/or cartridge SIM mint fee?
+2. Stake weight: per-token equal vs rarity-weighted (Common→Godlike bands)?
+3. L1 type-7 already on Installation diamond: stake live L1 ERC1155 vs wrap/mirror into cartridge?
+4. Zero-cost raffle decor: exclude from mint fee share, or include if staked?
+
+
+---
+
+## 10. Fee split + stake weight (locked 2026-09-08 / evening)
+
+### Craft alchemica fee split (on paid craft — when paymentEnabled)
+Of craft alchemica taken as protocol fee / cost routing (exact skim vs full cost TBD in Rules):
+
+| Share | Destination |
+|------:|-------------|
+| 50% | AarcadeGh$t treasury wallet |
+| 25% | Gotchiverse |
+| 10% | Gotchiverse burn wallet |
+| 15% | DAO |
+
+**Still need Julius:** where **staked decor** (and later staked tiles) take their cut — inside the 25% Gotchiverse bucket, a separate skim before this split, or a % of sales only?
+
+### Sales
+- **Cartridge mint:** free (no mint fee).
+- **On sale** (secondary / listing): **50% of sale** → AarcadeGh$t treasury. (Other 50% TBD — seller vs protocol.)
+
+### Stake weight
+- **Aavegotchis:** BRS-banded weights.
+- **Non-BRS items** (decor, tiles, soft installs, etc.): **equal weight per token**.
+
+### Decor craft costs
+- **Catalog rule (2026-09-08):** every `installationType === 7` level-1 row (`itemId > 0`) in `shared_code/data/installations.json` uses craft `alchemicaCost` = **2× the average non-zero soft-tile catalog cost** (tiles ids **8–47** from `shared_code/data/tiles.json`, excluding all-zero ghost rows 38–47 from the average).
+- Computed vector (1 dp, like tiles): **`[101, 9.6, 53, 13.9]`** = 2× avg of ids **8–37** → `[FUD, FOMO, ALPHA, KEK]`.
+- Sourced via `installationsCatalog.js` `require('./installations.json')` (no local type-7 overlays). Fixture for later on-chain register: `packages/gv2d-diamond/deployments/decor-craft-costs.base-sepolia.json`.
+- Julius can **rarity-tune later via GvRules**; Sepolia **`paymentEnabled` still false** until enabled.
+
+### L1 type-7 clarification (question 3)
+Live Base **Installation diamond** already has many `installationType === 7` decoration itemIds (Rofl Gnome, REALM Globe, …). So we must not mint a **second** conflicting ERC1155 with the same ids on GV/cartridge if players already hold them on L1.
+
+Options:
+- **A.** Stake/use **L1 Installation ERC1155** balances directly for decor staking.
+- **B.** Soft/new decor only on cartridge/GV (new id band); L1 decor stays on Installation diamond.
+- **C.** Bridge/wrap L1 decor into cartridge bag 1:1 for unified bag UX.
+
+Default recommendation until chosen: **A for existing L1 type-7**, **B for any new soft-only decor** — never double-mint the same id.
+
+
+---
+
+## 11. Decor-stake fee pool (locked 2026-09-08 night) — supersedes §10 craft split for this stream
+
+When fees are taken from **cInstallation mints / related craft** that decor stakers participate in:
+
+| Share | Destination |
+|------:|-------------|
+| **50%** | **Decor stakers** (equal weight per non-BRS token; gotchi stakes use BRS bands if applicable) |
+| **40%** | AarcadeGh$t treasury |
+| **5%** | Burn wallet |
+| **5%** | DAO |
+
+Notes:
+- Julius wrote `5$ burn` → recorded as **5%** burn.
+- This **supersedes** the earlier 50/25/10/15 craft split **for the decor-staking fee stream**.
+- Still in force unless changed: cartridge **mint free**; secondary **sale → 50% AarcadeGh$t treasury**; Sepolia `paymentEnabled=false` until costs set; Julius sets decor craft costs.
+
+
+### Sales (confirmed)
+- Secondary sales: **50% → AarcadeGh$t treasury only** (not the 50/40/5/5 staker split).
