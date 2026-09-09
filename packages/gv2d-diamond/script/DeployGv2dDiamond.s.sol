@@ -9,11 +9,14 @@ import {OwnershipFacet} from "../src/facets/OwnershipFacet.sol";
 import {GvRulesFacet} from "../src/facets/GvRulesFacet.sol";
 import {GvTileMintFacet} from "../src/facets/GvTileMintFacet.sol";
 import {GvInventoryFacet} from "../src/facets/GvInventoryFacet.sol";
+import {InitERC1155} from "../src/upgradeInitializers/InitERC1155.sol";
 import {IDiamondCut} from "../src/interfaces/IDiamondCut.sol";
 import {LibAppStorage} from "../src/libraries/LibAppStorage.sol";
 import {SeedTilesLib} from "./SeedTilesLib.sol";
+import {FacetSelectors} from "./FacetSelectors.sol";
 
-/// @notice Deploy Gotchiverse-2D soft diamond to Base Sepolia (or anvil).
+/// @notice Deploy Gotchiverse-2D soft diamond (ERC1155 soft tiles) to Base Sepolia (or anvil).
+/// Prefer UpgradeERC1155 for the live Sepolia diamond instead of a fresh redeploy.
 /// forge script script/DeployGv2dDiamond.s.sol:DeployGv2dDiamond \
 ///   --rpc-url $BASE_SEPOLIA_RPC_URL --broadcast
 contract DeployGv2dDiamond is Script {
@@ -25,8 +28,8 @@ contract DeployGv2dDiamond is Script {
         address fomo = vm.envOr("FOMO_TOKEN", address(0));
         address alpha = vm.envOr("ALPHA_TOKEN", address(0));
         address kek = vm.envOr("KEK_TOKEN", address(0));
-        // Default spike: free-mint smoke mode unless PAYMENT_ENABLED=true and tokens set.
         bool paymentEnabled = vm.envOr("PAYMENT_ENABLED", false);
+        string memory uri = vm.envOr("ERC1155_URI", string(""));
 
         vm.startBroadcast(pk);
 
@@ -38,17 +41,19 @@ contract DeployGv2dDiamond is Script {
         GvRulesFacet rules = new GvRulesFacet();
         GvTileMintFacet mint = new GvTileMintFacet();
         GvInventoryFacet inventory = new GvInventoryFacet();
+        InitERC1155 init = new InitERC1155();
 
         IDiamondCut.FacetCut[] memory cut = new IDiamondCut.FacetCut[](5);
-        cut[0] = _cut(address(loupe), _loupeSelectors());
-        cut[1] = _cut(address(own), _ownSelectors());
-        cut[2] = _cut(address(rules), _rulesSelectors());
-        cut[3] = _cut(address(mint), _mintSelectors());
-        cut[4] = _cut(address(inventory), _inventorySelectors());
-        DiamondCutFacet(address(diamond)).diamondCut(cut, address(0), "");
+        cut[0] = _cut(address(loupe), FacetSelectors.loupe());
+        cut[1] = _cut(address(own), FacetSelectors.ownership());
+        cut[2] = _cut(address(rules), FacetSelectors.rules());
+        cut[3] = _cut(address(mint), FacetSelectors.mint());
+        cut[4] = _cut(address(inventory), FacetSelectors.inventoryERC1155All());
+
+        bytes memory initCalldata = abi.encodeWithSelector(InitERC1155.init.selector, uri);
+        DiamondCutFacet(address(diamond)).diamondCut(cut, address(init), initCalldata);
 
         address[4] memory tokens = [fud, fomo, alpha, kek];
-        // Ghost zero-cost default: 5 FUD + 2 ALPHA (18 decimals), matching ctile.helper softCost.
         LibAppStorage.AlchemicaCost memory ghostDefault = LibAppStorage.AlchemicaCost({
             fud: 5 ether,
             fomo: 0,
@@ -66,6 +71,9 @@ contract DeployGv2dDiamond is Script {
         console2.log("Gv2dDiamond", diamondAddr);
         console2.log("paymentEnabled", paymentEnabled);
         console2.log("owner", deployer);
+        console2.log("GvInventoryFacet", address(inventory));
+        console2.log("GvTileMintFacet", address(mint));
+        console2.log("InitERC1155", address(init));
     }
 
     function _cut(address facet, bytes4[] memory selectors)
@@ -78,51 +86,5 @@ contract DeployGv2dDiamond is Script {
             action: IDiamondCut.FacetCutAction.Add,
             functionSelectors: selectors
         });
-    }
-
-    function _loupeSelectors() internal pure returns (bytes4[] memory s) {
-        s = new bytes4[](5);
-        s[0] = DiamondLoupeFacet.facets.selector;
-        s[1] = DiamondLoupeFacet.facetFunctionSelectors.selector;
-        s[2] = DiamondLoupeFacet.facetAddresses.selector;
-        s[3] = DiamondLoupeFacet.facetAddress.selector;
-        s[4] = DiamondLoupeFacet.supportsInterface.selector;
-    }
-
-    function _ownSelectors() internal pure returns (bytes4[] memory s) {
-        s = new bytes4[](2);
-        s[0] = OwnershipFacet.owner.selector;
-        s[1] = OwnershipFacet.transferOwnership.selector;
-    }
-
-    function _rulesSelectors() internal pure returns (bytes4[] memory s) {
-        s = new bytes4[](14);
-        s[0] = GvRulesFacet.initGvRules.selector;
-        s[1] = GvRulesFacet.setPaymentEnabled.selector;
-        s[2] = GvRulesFacet.setAlchemicaTokens.selector;
-        s[3] = GvRulesFacet.setGhostDefaultCost.selector;
-        s[4] = GvRulesFacet.registerTile.selector;
-        s[5] = GvRulesFacet.registerTiles.selector;
-        s[6] = GvRulesFacet.setTileCost.selector;
-        s[7] = GvRulesFacet.paymentEnabled.selector;
-        s[8] = GvRulesFacet.alchemicaTokens.selector;
-        s[9] = GvRulesFacet.ghostDefaultCost.selector;
-        s[10] = GvRulesFacet.tileCost.selector;
-        s[11] = GvRulesFacet.isTileRegistered.selector;
-        s[12] = GvRulesFacet.rulesVersion.selector;
-        s[13] = GvRulesFacet.softTileIdRange.selector;
-    }
-
-    function _mintSelectors() internal pure returns (bytes4[] memory s) {
-        s = new bytes4[](2);
-        s[0] = GvTileMintFacet.mintTiles.selector;
-        s[1] = GvTileMintFacet.quoteMintCost.selector;
-    }
-
-    function _inventorySelectors() internal pure returns (bytes4[] memory s) {
-        s = new bytes4[](3);
-        s[0] = GvInventoryFacet.balanceOf.selector;
-        s[1] = GvInventoryFacet.balanceOfBatch.selector;
-        s[2] = GvInventoryFacet.adminTransfer.selector;
     }
 }

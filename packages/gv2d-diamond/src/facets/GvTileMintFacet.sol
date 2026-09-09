@@ -2,10 +2,12 @@
 pragma solidity ^0.8.20;
 
 import {LibAppStorage} from "../libraries/LibAppStorage.sol";
+import {LibERC1155} from "../libraries/LibERC1155.sol";
 import {IERC20} from "../interfaces/IERC20.sol";
 
 /// @notice Permissionless soft-tile mint for ids [8,47]. No minter role.
-/// @dev Replaces FE `craftCTileLocally`. Golden LE tiles 1–3 stay on the live Tile diamond.
+/// @dev Credits diamond-hosted ERC1155 balances (TransferSingle from address(0)).
+///      Replaces FE `craftCTileLocally`. Golden LE tiles 1–3 stay on the live Tile diamond.
 contract GvTileMintFacet {
     event TilesMinted(address indexed to, uint256[] ids, uint256[] amounts);
 
@@ -19,6 +21,7 @@ contract GvTileMintFacet {
         LibAppStorage.AppStorage storage s = LibAppStorage.appStorage();
         require(s.initialized, "TileMint: !init");
 
+        // Validate + pull payment before mutating balances.
         for (uint256 i; i < ids.length; i++) {
             uint256 id = ids[i];
             uint256 amount = amounts[i];
@@ -30,8 +33,20 @@ contract GvTileMintFacet {
             if (s.paymentEnabled) {
                 _pullCost(s, msg.sender, cost, amount);
             }
+        }
 
-            s.balances[msg.sender][id] += amount;
+        // Credit ERC1155 balances + emit TransferBatch/Single via LibERC1155.
+        if (ids.length == 1) {
+            LibERC1155.mint(msg.sender, ids[0], amounts[0]);
+        } else {
+            // calldata → memory copy for library
+            uint256[] memory idsMem = new uint256[](ids.length);
+            uint256[] memory amtsMem = new uint256[](amounts.length);
+            for (uint256 i; i < ids.length; i++) {
+                idsMem[i] = ids[i];
+                amtsMem[i] = amounts[i];
+            }
+            LibERC1155.mintBatch(msg.sender, idsMem, amtsMem);
         }
 
         emit TilesMinted(msg.sender, ids, amounts);

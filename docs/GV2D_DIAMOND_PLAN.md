@@ -4,6 +4,8 @@
 
 **Not in scope (already live on Base):** Realm / Installation / Tile / Alchemica / GLTR / Aavegotchi diamonds. Aarcade cartridge diamonds stay separate (SIM → diamond cutover is its own track).
 
+**Cutover (remaining `c*`):** [`GV2D_CSTAR_CUTOVER_PLAN.md`](./GV2D_CSTAR_CUTOVER_PLAN.md) — workstreams for cTiles finish, soft installables, cPaarcels, soft channel, cPortals/cAavegotchis (Aarcade), ownership matrix, Sepolia→mainnet phases.
+
 ---
 
 ## A. Already on-chain (do not re-implement)
@@ -44,8 +46,9 @@ These are the main “non-onchain legacy” surfaces in `gotchiverse-2d` today:
 - Keep off-chain until combat/economy needs settlement; optional later “commit result” facet
 
 ### B5. Cartridge bridge (coordinate with Aarcade, don’t duplicate)
-- cPaarcel / cInstallation / cAavegotchi SIM via `AARCADE_CARTRIDGE_SIM_URL`
-- After craft, GV can `mintCraftToCartridge` — on-chain craft already paid; SIM mirror is free
+- cPaarcel / soft-install bag / cAavegotchi / cPortal / pocket = **Aarcade cartridge SoT** (locked)
+- After soft-install craft on GV, mint transferable ERC1155 into **cartridge bag** (required SoT — not optional mirror)
+- Tiles bag stays on **GV-2D** ERC1155 (separate from soft-install bag)
 
 ---
 
@@ -59,11 +62,11 @@ Working name: **Gotchiverse2DDiamond** (or `GvSoftDiamond`) on Base.
 | `GvCatalogFacet` | Register soft item types (Waall/Lodge/Store/furniture/cTile packs): size, level, costs, deprecated, nextLevelId |
 | `GvCraftFacet` | Craft soft installs (Waall/Lodge/Store/furniture) for alchemica/GHST; mint ERC1155 |
 | `GvTileMintFacet` | **Permissionless** mint for soft tiles `8–47` (greyscale + ghost). No whitelist / role. Costs from `GvRules` / catalog. Replaces `craftCTileLocally`. Golden `1–3` remain on live Tile diamond. |
-| `GvInventoryFacet` | Wallet balances for soft item types; transfer/burn |
-| `GvPlaceFacet` | Place/remove soft installs on a parcel (or interior instance id); x/y; conflict checks |
+| `GvInventoryFacet` / ERC1155 | **Tiles bag** (8–47) on GV-2D ERC1155; soft-install balances live on **cartridge** ERC1155, not here |
+| `GvPlaceFacet` | Place/remove soft installs **from cartridge bag** against **cartridge cPaarcel ids**; x/y; conflict checks |
 | `GvUpgradeFacet` | Level bumps for Waall/Lodge/Store/Cashier/Console using catalog |
 | `GvInteriorFacet` (phase 2) | Interior layout commits for Lodge/Store/Potion/DAO/Bazaar |
-| `GvChannelSoftFacet` (optional / migrate-off) | Only if soft channel must stay for cParcels without Realm; else deprecate in favor of Realm channel |
+| ~~`GvChannelSoftFacet`~~ (**do not ship**) | Soft channel **hard-killed** when Realm sigs work — no GV soft-channel facet |
 | `GvRulesFacet` | Mutable costs/params (same pattern as Aarcade GameRules — **not** constructor immutables) |
 
 ERC1155 can be diamond-hosted or a sibling token owned by the diamond.
@@ -84,15 +87,19 @@ ERC1155 can be diamond-hosted or a sibling token owned by the diamond.
 
 ## E. Locked + open decisions
 
-**Locked**
+**Locked** (incl. walkthrough 2026-09-08 — see [`GV2D_CSTAR_CUTOVER_PLAN.md`](./GV2D_CSTAR_CUTOVER_PLAN.md) §7)
 - Soft tiles `8–47`: **public mint** on GV-2D diamond — no legacy soft craft, no minter allowlist. Anyone who pays the catalog cost can mint.
+- Soft tiles: **ERC1155** on GV-2D (migrate Sepolia diamond-native balances → ERC1155); craft target ~**50% alchemica**; **stakeable later**. **Tiles bag = GV-2D.**
+- Soft installs (Waalls/Lodge/Store/furniture): on-chain craft + place + resell via transferable ERC1155 — **craft → bag → place**; **unequip → bag → resell**. **Soft-install bag SoT = Aarcade cartridge** (not GV-2D).
+- **cPaarcel home = Aarcade cartridge**; GV-2D only places soft installs against cartridge parcel ids.
+- Sepolia: stay `paymentEnabled=false` until Store/tile craft alchemica costs are set.
+- Soft channel: **hard-kill** when Realm sigs work; **no** GV soft-channel facet.
+- cPortals / cAavegotchis / cartridge pocket: remain **Aarcade-owned parallel** (not on GV-2D diamond).
 
-**Open**
-1. Soft installs as **new ERC1155 ids** vs extending Installation diamond (unlikely — those ids don’t exist there)?
-2. Soft tile / install craft spend **real Base alchemica** or a GV-2D play-token initially?
-3. cPaarcel soft channel → Realm channel when parcel is real NFT, diamond only for pure SIM parcels?
-4. Overlap with Aarcade cartridge diamond — inventory of record: GV-2D diamond, cartridge, or both with bridge?
-5. Tile mint: free (gas-only) vs catalog alchemica cost (today soft path uses catalog / ghost default `5 FUD + 2 ALPHA`)?
+**Open / TBD**
+1. Store / Lodge / Waall (and tile) **craft alchemica costs** — TBD; mutable GvRules placeholders until locked.
+2. **Id policy (optional)** — permanently reserve 162–208+ (and 8–47) as GV soft-native vs L1 Installation/Tile?
+3. Interior / `sim_credit` escrow — Sepolia Phase 2 or mainnet-only?
 
 ---
 

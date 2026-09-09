@@ -18,7 +18,7 @@ library LibAppStorage {
     }
 
     struct AppStorage {
-        // --- inventory (diamond-native balances; not a sibling ERC1155) ---
+        // --- inventory (same mapping slots serve ERC1155 balances) ---
         // account => tileId => balance
         mapping(address => mapping(uint256 => uint256)) balances;
         // --- tile catalog ---
@@ -31,6 +31,10 @@ library LibAppStorage {
         uint256 rulesVersion;
         bool initialized;
         // --- APPEND NEW FIELDS BELOW THIS LINE ONLY ---
+        // ERC1155 operator approvals: account => operator => approved
+        mapping(address => mapping(address => bool)) operatorApprovals;
+        // ERC1155 metadata URI template (may contain "{id}")
+        string uri;
     }
 
     function appStorage() internal pure returns (AppStorage storage s) {
