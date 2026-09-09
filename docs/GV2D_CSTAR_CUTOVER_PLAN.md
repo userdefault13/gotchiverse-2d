@@ -373,9 +373,20 @@ Of craft alchemica taken as protocol fee / cost routing (exact skim vs full cost
 
 ### Decor craft costs
 - **Catalog rule (2026-09-08):** every `installationType === 7` level-1 row (`itemId > 0`) in `shared_code/data/installations.json` uses craft `alchemicaCost` = **2× the average non-zero soft-tile catalog cost** (tiles ids **8–47** from `shared_code/data/tiles.json`, excluding all-zero ghost rows 38–47 from the average).
-- Computed vector (1 dp, like tiles): **`[101, 9.6, 53, 13.9]`** = 2× avg of ids **8–37** → `[FUD, FOMO, ALPHA, KEK]`.
+- Computed **base** vector (1 dp, like tiles): **`[101, 9.6, 53, 13.9]`** = 2× avg of ids **8–37** → `[FUD, FOMO, ALPHA, KEK]` (Common / no-rarity).
+- **Rarity multipliers (2026-09-09):** catalog has **no official rarity field** — parse rarity from the item `name` prefix when present. `cost[i] = round1(base[i] * multiplier)`.
+
+  | Rarity (name prefix) | Multiplier |
+  |----------------------|------------|
+  | Common (or none) | **1.0×** |
+  | Uncommon | **1.5×** |
+  | Rare | **2.0×** |
+  | Legendary | **4.0×** |
+  | Mythical | **8.0×** |
+  | Godlike | **16.0×** |
+
 - Sourced via `installationsCatalog.js` `require('./installations.json')` (no local type-7 overlays). Fixture for later on-chain register: `packages/gv2d-diamond/deployments/decor-craft-costs.base-sepolia.json`.
-- Julius can **rarity-tune later via GvRules**; Sepolia **`paymentEnabled` still false** until enabled.
+- Further tuning still possible via **GvRules**; Sepolia **`paymentEnabled` still false** until enabled. Tile costs unchanged.
 
 ### L1 type-7 clarification (question 3)
 Live Base **Installation diamond** already has many `installationType === 7` decoration itemIds (Rofl Gnome, REALM Globe, …). So we must not mint a **second** conflicting ERC1155 with the same ids on GV/cartridge if players already hold them on L1.

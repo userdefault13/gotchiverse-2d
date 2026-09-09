@@ -1,5 +1,5 @@
 {
-  "rule": "2x avg non-zero soft-tile catalog cost (ids 8-47 excl all-zero)",
+  "rule": "2x avg non-zero soft-tile catalog cost (ids 8-47 excl all-zero) × rarity multiplier from name prefix (Common/none 1.0, Uncommon 1.5, Rare 2.0, Legendary 4.0, Mythical 8.0, Godlike 16.0); cost[i]=round1(base[i]*mult). No official rarity field in installations.json — name prefix only.",
   "softTileIdsUsed": [
     8,
     9,
@@ -44,10 +44,22 @@
     53,
     13.9
   ],
+  "rarityMultipliers": {
+    "Common": 1.0,
+    "none": 1.0,
+    "Uncommon": 1.5,
+    "Rare": 2.0,
+    "Legendary": 4.0,
+    "Mythical": 8.0,
+    "Godlike": 16.0
+  },
   "paymentEnabled": false,
+  "note": "Rarity multipliers applied from name prefix (catalog has no rarity field). Sepolia paymentEnabled remains false until enabled. Do not change tile costs.",
   "items": {
     "19": {
       "name": "Common Rofl Gnome",
+      "rarity": "Common",
+      "multiplier": 1.0,
       "alchemicaCost": [
         101,
         9.6,
@@ -57,51 +69,63 @@
     },
     "20": {
       "name": "Uncommon Rofl Gnome",
+      "rarity": "Uncommon",
+      "multiplier": 1.5,
       "alchemicaCost": [
-        101,
-        9.6,
-        53,
-        13.9
+        151.5,
+        14.4,
+        79.5,
+        20.9
       ]
     },
     "21": {
       "name": "Rare Rofl Gnome",
+      "rarity": "Rare",
+      "multiplier": 2.0,
       "alchemicaCost": [
-        101,
-        9.6,
-        53,
-        13.9
+        202,
+        19.2,
+        106,
+        27.8
       ]
     },
     "22": {
       "name": "Legendary Rofl Gnome",
+      "rarity": "Legendary",
+      "multiplier": 4.0,
       "alchemicaCost": [
-        101,
-        9.6,
-        53,
-        13.9
+        404,
+        38.4,
+        212,
+        55.6
       ]
     },
     "23": {
       "name": "Mythical Rofl Gnome",
+      "rarity": "Mythical",
+      "multiplier": 8.0,
       "alchemicaCost": [
-        101,
-        9.6,
-        53,
-        13.9
+        808,
+        76.8,
+        424,
+        111.2
       ]
     },
     "24": {
       "name": "Godlike Rofl Gnome",
+      "rarity": "Godlike",
+      "multiplier": 16.0,
       "alchemicaCost": [
-        101,
-        9.6,
-        53,
-        13.9
+        1616,
+        153.6,
+        848,
+        222.4
       ]
     },
     "25": {
       "name": "Common REALM Globe",
+      "rarity": "Common",
+      "multiplier": 1.0,
       "alchemicaCost": [
         101,
         9.6,
@@ -111,51 +135,63 @@
     },
     "26": {
       "name": "Uncommon REALM Globe",
+      "rarity": "Uncommon",
+      "multiplier": 1.5,
       "alchemicaCost": [
-        101,
-        9.6,
-        53,
-        13.9
+        151.5,
+        14.4,
+        79.5,
+        20.9
       ]
     },
     "27": {
       "name": "Rare REALM Globe",
+      "rarity": "Rare",
+      "multiplier": 2.0,
       "alchemicaCost": [
-        101,
-        9.6,
-        53,
-        13.9
+        202,
+        19.2,
+        106,
+        27.8
       ]
     },
     "28": {
       "name": "Legendary REALM Globe",
+      "rarity": "Legendary",
+      "multiplier": 4.0,
       "alchemicaCost": [
-        101,
-        9.6,
-        53,
-        13.9
+        404,
+        38.4,
+        212,
+        55.6
       ]
     },
     "29": {
       "name": "Mythical REALM Globe",
+      "rarity": "Mythical",
+      "multiplier": 8.0,
       "alchemicaCost": [
-        101,
-        9.6,
-        53,
-        13.9
+        808,
+        76.8,
+        424,
+        111.2
       ]
     },
     "30": {
       "name": "Godlike REALM Globe",
+      "rarity": "Godlike",
+      "multiplier": 16.0,
       "alchemicaCost": [
-        101,
-        9.6,
-        53,
-        13.9
+        1616,
+        153.6,
+        848,
+        222.4
       ]
     },
     "31": {
       "name": "Common Smol Flower",
+      "rarity": "Common",
+      "multiplier": 1.0,
       "alchemicaCost": [
         101,
         9.6,
@@ -165,51 +201,63 @@
     },
     "32": {
       "name": "Uncommon Smol Flower",
+      "rarity": "Uncommon",
+      "multiplier": 1.5,
       "alchemicaCost": [
-        101,
-        9.6,
-        53,
-        13.9
+        151.5,
+        14.4,
+        79.5,
+        20.9
       ]
     },
     "33": {
       "name": "Rare Smol Flower",
+      "rarity": "Rare",
+      "multiplier": 2.0,
       "alchemicaCost": [
-        101,
-        9.6,
-        53,
-        13.9
+        202,
+        19.2,
+        106,
+        27.8
       ]
     },
     "34": {
       "name": "Legendary Smol Flower",
+      "rarity": "Legendary",
+      "multiplier": 4.0,
       "alchemicaCost": [
-        101,
-        9.6,
-        53,
-        13.9
+        404,
+        38.4,
+        212,
+        55.6
       ]
     },
     "35": {
       "name": "Mythical Smol Flower",
+      "rarity": "Mythical",
+      "multiplier": 8.0,
       "alchemicaCost": [
-        101,
-        9.6,
-        53,
-        13.9
+        808,
+        76.8,
+        424,
+        111.2
       ]
     },
     "36": {
       "name": "Godlike Smol Flower",
+      "rarity": "Godlike",
+      "multiplier": 16.0,
       "alchemicaCost": [
-        101,
-        9.6,
-        53,
-        13.9
+        1616,
+        153.6,
+        848,
+        222.4
       ]
     },
     "37": {
       "name": "Common Laava Lamp",
+      "rarity": "Common",
+      "multiplier": 1.0,
       "alchemicaCost": [
         101,
         9.6,
@@ -219,51 +267,63 @@
     },
     "38": {
       "name": "Uncommon Laava Lamp",
+      "rarity": "Uncommon",
+      "multiplier": 1.5,
       "alchemicaCost": [
-        101,
-        9.6,
-        53,
-        13.9
+        151.5,
+        14.4,
+        79.5,
+        20.9
       ]
     },
     "39": {
       "name": "Rare Laava Lamp",
+      "rarity": "Rare",
+      "multiplier": 2.0,
       "alchemicaCost": [
-        101,
-        9.6,
-        53,
-        13.9
+        202,
+        19.2,
+        106,
+        27.8
       ]
     },
     "40": {
       "name": "Legendary Laava Lamp",
+      "rarity": "Legendary",
+      "multiplier": 4.0,
       "alchemicaCost": [
-        101,
-        9.6,
-        53,
-        13.9
+        404,
+        38.4,
+        212,
+        55.6
       ]
     },
     "41": {
       "name": "Mythical Laava Lamp",
+      "rarity": "Mythical",
+      "multiplier": 8.0,
       "alchemicaCost": [
-        101,
-        9.6,
-        53,
-        13.9
+        808,
+        76.8,
+        424,
+        111.2
       ]
     },
     "42": {
       "name": "Godlike Laava Lamp",
+      "rarity": "Godlike",
+      "multiplier": 16.0,
       "alchemicaCost": [
-        101,
-        9.6,
-        53,
-        13.9
+        1616,
+        153.6,
+        848,
+        222.4
       ]
     },
     "43": {
       "name": "Common GM Light",
+      "rarity": "Common",
+      "multiplier": 1.0,
       "alchemicaCost": [
         101,
         9.6,
@@ -273,51 +333,63 @@
     },
     "44": {
       "name": "Uncommon GM Light",
+      "rarity": "Uncommon",
+      "multiplier": 1.5,
       "alchemicaCost": [
-        101,
-        9.6,
-        53,
-        13.9
+        151.5,
+        14.4,
+        79.5,
+        20.9
       ]
     },
     "45": {
       "name": "Rare GM Light",
+      "rarity": "Rare",
+      "multiplier": 2.0,
       "alchemicaCost": [
-        101,
-        9.6,
-        53,
-        13.9
+        202,
+        19.2,
+        106,
+        27.8
       ]
     },
     "46": {
       "name": "Legendary GM Light",
+      "rarity": "Legendary",
+      "multiplier": 4.0,
       "alchemicaCost": [
-        101,
-        9.6,
-        53,
-        13.9
+        404,
+        38.4,
+        212,
+        55.6
       ]
     },
     "47": {
       "name": "Mythical GM Light",
+      "rarity": "Mythical",
+      "multiplier": 8.0,
       "alchemicaCost": [
-        101,
-        9.6,
-        53,
-        13.9
+        808,
+        76.8,
+        424,
+        111.2
       ]
     },
     "48": {
       "name": "Godlike GM Light",
+      "rarity": "Godlike",
+      "multiplier": 16.0,
       "alchemicaCost": [
-        101,
-        9.6,
-        53,
-        13.9
+        1616,
+        153.6,
+        848,
+        222.4
       ]
     },
     "49": {
       "name": "Common Caamp Fire",
+      "rarity": "Common",
+      "multiplier": 1.0,
       "alchemicaCost": [
         101,
         9.6,
@@ -327,51 +399,63 @@
     },
     "50": {
       "name": "Uncommon Caamp Fire",
+      "rarity": "Uncommon",
+      "multiplier": 1.5,
       "alchemicaCost": [
-        101,
-        9.6,
-        53,
-        13.9
+        151.5,
+        14.4,
+        79.5,
+        20.9
       ]
     },
     "51": {
       "name": "Rare Caamp Fire",
+      "rarity": "Rare",
+      "multiplier": 2.0,
       "alchemicaCost": [
-        101,
-        9.6,
-        53,
-        13.9
+        202,
+        19.2,
+        106,
+        27.8
       ]
     },
     "52": {
       "name": "Legendary Caamp Fire",
+      "rarity": "Legendary",
+      "multiplier": 4.0,
       "alchemicaCost": [
-        101,
-        9.6,
-        53,
-        13.9
+        404,
+        38.4,
+        212,
+        55.6
       ]
     },
     "53": {
       "name": "Mythical Caamp Fire",
+      "rarity": "Mythical",
+      "multiplier": 8.0,
       "alchemicaCost": [
-        101,
-        9.6,
-        53,
-        13.9
+        808,
+        76.8,
+        424,
+        111.2
       ]
     },
     "54": {
       "name": "Godlike Caamp Fire",
+      "rarity": "Godlike",
+      "multiplier": 16.0,
       "alchemicaCost": [
-        101,
-        9.6,
-        53,
-        13.9
+        1616,
+        153.6,
+        848,
+        222.4
       ]
     },
     "55": {
       "name": "Graand Fountain",
+      "rarity": null,
+      "multiplier": 1.0,
       "alchemicaCost": [
         101,
         9.6,
@@ -381,6 +465,8 @@
     },
     "146": {
       "name": "Paampkin Trio",
+      "rarity": null,
+      "multiplier": 1.0,
       "alchemicaCost": [
         101,
         9.6,
@@ -390,6 +476,8 @@
     },
     "147": {
       "name": "Roflkin",
+      "rarity": null,
+      "multiplier": 1.0,
       "alchemicaCost": [
         101,
         9.6,
@@ -399,6 +487,8 @@
     },
     "148": {
       "name": "Scareye Crow",
+      "rarity": null,
+      "multiplier": 1.0,
       "alchemicaCost": [
         101,
         9.6,
@@ -408,6 +498,8 @@
     },
     "149": {
       "name": "Gotchi Caandle",
+      "rarity": null,
+      "multiplier": 1.0,
       "alchemicaCost": [
         101,
         9.6,
@@ -417,6 +509,8 @@
     },
     "150": {
       "name": "Sus Baatterfly",
+      "rarity": null,
+      "multiplier": 1.0,
       "alchemicaCost": [
         101,
         9.6,
@@ -426,6 +520,8 @@
     },
     "151": {
       "name": "Skeledator",
+      "rarity": null,
+      "multiplier": 1.0,
       "alchemicaCost": [
         101,
         9.6,
@@ -435,6 +531,8 @@
     },
     "152": {
       "name": "Feelin' Lit",
+      "rarity": null,
+      "multiplier": 1.0,
       "alchemicaCost": [
         101,
         9.6,
@@ -444,6 +542,8 @@
     },
     "153": {
       "name": "Bulby",
+      "rarity": null,
+      "multiplier": 1.0,
       "alchemicaCost": [
         101,
         9.6,
@@ -453,6 +553,8 @@
     },
     "154": {
       "name": "Rednosed Rofl",
+      "rarity": null,
+      "multiplier": 1.0,
       "alchemicaCost": [
         101,
         9.6,
@@ -462,6 +564,8 @@
     },
     "155": {
       "name": "Brrrooorrr",
+      "rarity": null,
+      "multiplier": 1.0,
       "alchemicaCost": [
         101,
         9.6,
@@ -471,6 +575,8 @@
     },
     "156": {
       "name": "Aangel Tree",
+      "rarity": null,
+      "multiplier": 1.0,
       "alchemicaCost": [
         101,
         9.6,
@@ -478,6 +584,5 @@
         13.9
       ]
     }
-  },
-  "note": "Julius can rarity-tune later via GvRules; Sepolia paymentEnabled remains false until enabled."
+  }
 }
