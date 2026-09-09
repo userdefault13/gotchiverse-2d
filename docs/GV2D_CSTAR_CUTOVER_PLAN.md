@@ -420,3 +420,14 @@ Notes:
 
 ### Sales (confirmed)
 - Secondary sales: **50% → AarcadeGh$t treasury only** (not the 50/40/5/5 staker split).
+
+---
+
+## 12. Soft-install bag SoT — corrected (2026-09-08 night)
+
+**Lock flip:** soft-install **bag / inventory lives on the GV-2D diamond** (ERC1155), not the Aarcade cartridge.
+
+- Cartridge `InventoryFacet.mintWearable` = **cWearables only** — unrelated to build bag.
+- Sepolia craft already mints Store/Lodge/etc. into GV ERC1155 ids **162–215** — treat as canonical bag SoT (no longer “temporary staging” pending cartridge mint).
+- Cartridge still owns cPaarcels / cWearables / arcade SIM as previously scoped; GV Place spends from **GV bag**.
+

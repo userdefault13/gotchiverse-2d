@@ -57,7 +57,7 @@
 | `craftStoreFurniture` / `craftConsoleFurniture` | `helpers/store.layout.helper.ts`, `lodge.layout.helper.ts` | localStorage furniture bags |
 | `craftLodgeFurniture` | `helpers/lodge.layout.helper.ts` | localStorage |
 | Broadcaster / Terminal | inventory via store furniture helpers + `isBroadcasterItemId` | local / offchain |
-| UI entry | `components/UI/hud/components/CraftingTable/index.tsx` | still calls `*Locally` for Store/Lodge/Waall; soft cTiles already gated to diamond when `NEXT_PUBLIC_USE_GV2D_DIAMOND` |
+| UI entry | `components/UI/hud/components/CraftingTable/index.tsx` | flag on → soft cTiles `mintTiles` + soft installs 162–215 `craftInstallations`; flag off → `*Locally` unchanged |
 
 ---
 
@@ -103,7 +103,7 @@
 ### Phase B temporary path (this cut)
 - Register soft types on **GV-2D** `GvCatalogFacet`.  
 - Permissionless `GvCraftFacet.craftInstallations` mints into **GV diamond ERC1155** balances for ids in soft band (**162–215**, disjoint from tiles **8–47**).  
-- **Explicit SoT debt:** balances on GV are a **bridge staging bag**, not the locked cartridge SoT. Next slice = cartridge Inventory mint entrypoint + bridge / dual-write, then FE cutover off `*Locally`.
+- **Bag SoT (locked):** GV-2D ERC1155 ids **162–215** (same diamond as tiles 8–47, disjoint id band).
 
 ---
 
@@ -125,9 +125,32 @@ Costs: zero placeholders; `paymentEnabled` stays **false**.
 
 ---
 
-## 8. FE next (after this contract slice)
+## 8. FE wiring (done on `feature/gv2d-diamond-tile-mint`)
 
-1. Extend `helpers/gv2dDiamond.helper.ts` with `craftInstallations([id],[qty])` (mirror `mintTiles`).  
-2. Gate CraftingTable Store/Lodge (then Waall/furniture) behind the same diamond flag.  
-3. Read soft-install balances via GV `balanceOf` until cartridge bridge lands — then switch bag reads to cartridge.  
-4. Place/resell still off-chain until `GvPlaceFacet` + cPaarcel wiring.
+| Piece | Detail |
+|-------|--------|
+| ABI | `web3/abi/Gv2dDiamond.json` — `craftInstallations`, `quoteCraftCost`, `InstallationsCrafted` |
+| Helper | `helpers/gv2dDiamond.helper.ts` — `craftSoftInstallsOnDiamond`, `isGv2dSoftInstallCraftId`, `syncSoftInstallInventoryFromDiamond` |
+| UI | `CraftingTable` — when `NEXT_PUBLIC_USE_GV2D_DIAMOND` + id ∈ **162–215**, calls diamond; does **not** call `craftStoreLocally` / `craftLodgeLocally` / `craftWaallLocally` / furniture `*Locally` |
+| Flag off | Local soft craft path unchanged |
+| Golden / L1 | Installation diamond `craftInstallations` + Tile diamond golden path untouched |
+| Payment | `paymentEnabled=false` — Craft button / max qty not gated on alchemica for diamond soft crafts |
+
+### How to test (Base Sepolia)
+
+1. Env: `NEXT_PUBLIC_USE_GV2D_DIAMOND=true`, `NEXT_PUBLIC_GV2D_DIAMOND_ADDRESS=0x34a851523A6f3351940d235373038b2A0A85e872` (see `.env.example`).
+2. Connect a wallet with Base Sepolia ETH; open **Crafting Table**.
+3. Craft a **registered** smoke id (do not expect Waalls / higher levels until registered):
+   - **171** Lodge L1, **180** Store L1, **189** Cashier L1, **198** Display Table, **199** Console L1, **208** Terminal, **209** Broadcaster.
+4. Expect wallet prompt on Base Sepolia → `craftInstallations` tx → success toast; inventory qty matches `balanceOf(account, id)` on the diamond (Basescan token/`balanceOf`).
+5. Wrong chain / no wallet → clear error (switch to Base Sepolia / connect wallet). No alchemica approve.
+6. Flag off (`NEXT_PUBLIC_USE_GV2D_DIAMOND=false`) → same recipes use `*Locally` again (no diamond tx).
+7. Golden tiles 1–3 / live L1 Installation crafts still use Tile / Installation diamonds.
+
+**Note:** Console still may require picking a title in RecipeBook UX; diamond mint is fungible ERC1155 (instance bag / loaded titles not written by the diamond path). Furniture non-Console qty also mirrors into store/lodge furniture bags after `balanceOf` sync.
+
+Place/resell still off-chain until `GvPlaceFacet` + cPaarcel wiring.
+
+## Bag SoT correction
+Soft-install bag SoT = **GV-2D diamond** (Julius 2026-09-08). Cartridge mintWearable is wearables-only.
+

@@ -44,7 +44,9 @@ import {
 } from 'helpers/console.installation.helper';
 import { craftCTileLocally, isCTileItemId } from 'helpers/ctile.helper';
 import {
+  craftSoftInstallsOnDiamond,
   isGv2dDiamondMintEnabled,
+  isGv2dSoftInstallCraftId,
   isGv2dSoftTileMintId,
   mintSoftCTilesOnDiamond,
 } from 'helpers/gv2dDiamond.helper';
@@ -241,6 +243,57 @@ export const CraftingTable = ({ open, onClose }: Props): JSX.Element => {
       return;
     }
 
+    // Flag on → soft installs 162–215 craft via Base Sepolia GV-2D diamond (never *Locally).
+    if (recipe.type === 'INSTALLATION' && isGv2dSoftInstallCraftId(recipe.id) && isGv2dDiamondMintEnabled()) {
+      if (!config.account || !config.signer || !config.provider) {
+        const notificationId = showTransactionNotification(notificationDispatch, {
+          message: 'Connect wallet to craft soft installs',
+        });
+        updateTransactionNotificationStatus(
+          notificationDispatch,
+          notificationId,
+          'error',
+          'Connect your wallet (Base Sepolia) to craft soft installs on the GV-2D diamond.',
+        );
+        craftError();
+        setPending(false);
+        return;
+      }
+      let notificationId;
+      try {
+        notificationId = showTransactionNotification(notificationDispatch, {
+          message: 'Crafting on GV-2D diamond (Base Sepolia)',
+        });
+        const result = await craftSoftInstallsOnDiamond({
+          itemId: Number(recipe.id),
+          quantity: quanity,
+          account: config.account,
+          signer: config.signer,
+          provider: config.provider,
+          name: recipe.name,
+        });
+        if (GlobalState.USER?.state?.inventory) {
+          userDispatch({ type: 'UPDATE_INVENTORY', inventory: [...GlobalState.USER.state.inventory] });
+        }
+        craft();
+        updateTransactionNotificationStatus(notificationDispatch, notificationId, 'success');
+        setCrafting(true);
+        setPending(false);
+        setTimeout(() => {
+          craftSuccess();
+          handleCompletedCraft(notificationDispatch, _.fill(Array(quanity), recipe.id), recipe.name);
+          setCrafting(false);
+        }, 1200);
+        console.info('[gv2d] soft-install craft ok', result.txHash, 'balance=', result.balance);
+      } catch (e) {
+        notificationId &&
+          updateTransactionNotificationStatus(notificationDispatch, notificationId, 'error', getErrMessage(e));
+        craftError();
+        setPending(false);
+      }
+      return;
+    }
+
     const isSoftLocal =
       Boolean(recipe.softLaunch) ||
       isConsole ||
@@ -254,7 +307,7 @@ export const CraftingTable = ({ open, onClose }: Props): JSX.Element => {
       (recipe.type === 'TILE' && recipe.softLaunch && isCTileItemId(recipe.id));
 
     // Soft-launch local crafts (Waall / Lodge / Store / Terminal / Broadcaster / Console / cTiles) — no diamond.
-    // Soft cTiles only reach here when NEXT_PUBLIC_USE_GV2D_DIAMOND is off.
+    // Soft cTiles / soft installs 162–215 only reach here when NEXT_PUBLIC_USE_GV2D_DIAMOND is off.
     if (isSoftLocal) {
       let notificationId;
       try {
@@ -434,10 +487,11 @@ export const CraftingTable = ({ open, onClose }: Props): JSX.Element => {
   useEffect(() => {
     if (selectedRecipe && alchemicaBalance) {
       const diamondSoft =
-        selectedRecipe.softLaunch &&
-        selectedRecipe.type === 'TILE' &&
-        isCTileItemId(selectedRecipe.id) &&
-        isGv2dDiamondMintEnabled();
+        isGv2dDiamondMintEnabled() &&
+        ((selectedRecipe.softLaunch &&
+          selectedRecipe.type === 'TILE' &&
+          isCTileItemId(selectedRecipe.id)) ||
+          (selectedRecipe.type === 'INSTALLATION' && isGv2dSoftInstallCraftId(selectedRecipe.id)));
       // paymentEnabled=false on Sepolia — do not gate qty on local alchemica.
       const max = diamondSoft ? 50 : getMaxQuantity(selectedRecipe.ingredients, alchemicaBalance);
       setMaxQuantity(max);
@@ -524,10 +578,12 @@ export const CraftingTable = ({ open, onClose }: Props): JSX.Element => {
                   crafting ||
                   loading ||
                   (!(
-                    selectedRecipe.softLaunch &&
-                    selectedRecipe.type === 'TILE' &&
-                    isCTileItemId(selectedRecipe.id) &&
-                    isGv2dDiamondMintEnabled()
+                    isGv2dDiamondMintEnabled() &&
+                    ((selectedRecipe.softLaunch &&
+                      selectedRecipe.type === 'TILE' &&
+                      isCTileItemId(selectedRecipe.id)) ||
+                      (selectedRecipe.type === 'INSTALLATION' &&
+                        isGv2dSoftInstallCraftId(selectedRecipe.id)))
                   ) &&
                     !haveRequiredIngredients(selectedRecipe, alchemicaBalance))
                 }

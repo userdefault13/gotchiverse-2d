@@ -11,6 +11,38 @@
   },
   {
     "type": "function",
+    "name": "craftInstallations",
+    "inputs": [
+      { "name": "ids", "type": "uint256[]", "internalType": "uint256[]" },
+      { "name": "amounts", "type": "uint256[]", "internalType": "uint256[]" }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "quoteCraftCost",
+    "inputs": [
+      { "name": "id", "type": "uint256", "internalType": "uint256" },
+      { "name": "amount", "type": "uint256", "internalType": "uint256" }
+    ],
+    "outputs": [
+      {
+        "name": "total",
+        "type": "tuple",
+        "internalType": "struct LibAppStorage.AlchemicaCost",
+        "components": [
+          { "name": "fud", "type": "uint256", "internalType": "uint256" },
+          { "name": "fomo", "type": "uint256", "internalType": "uint256" },
+          { "name": "alpha", "type": "uint256", "internalType": "uint256" },
+          { "name": "kek", "type": "uint256", "internalType": "uint256" }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
     "name": "balanceOf",
     "inputs": [
       { "name": "account", "type": "address", "internalType": "address" },
@@ -39,6 +71,16 @@
   {
     "type": "event",
     "name": "TilesMinted",
+    "inputs": [
+      { "name": "to", "type": "address", "indexed": true, "internalType": "address" },
+      { "name": "ids", "type": "uint256[]", "indexed": false, "internalType": "uint256[]" },
+      { "name": "amounts", "type": "uint256[]", "indexed": false, "internalType": "uint256[]" }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "InstallationsCrafted",
     "inputs": [
       { "name": "to", "type": "address", "indexed": true, "internalType": "address" },
       { "name": "ids", "type": "uint256[]", "indexed": false, "internalType": "uint256[]" },
