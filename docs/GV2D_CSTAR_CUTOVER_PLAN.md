@@ -401,27 +401,25 @@ Default recommendation until chosen: **A for existing L1 type-7**, **B for any n
 
 ---
 
-## 11. Decor-stake fee pool (locked 2026-09-08 night) — supersedes §10 craft split for this stream
+## 11. Decor / soft-install mint fee pool — aligned to SafeFeeRouter (2026-09-11)
 
-When fees are taken from **cInstallation mints / related craft** that decor stakers participate in:
+**Canonical split = SafeFeeRouter `LineBMint`** (AarcadeGh-t Base Sepolia `0x9476…3985`):
 
-| Share | Destination |
-|------:|-------------|
-| **50%** | **Decor stakers** (equal weight per non-BRS token; gotchi stakes use BRS bands if applicable) |
-| **40%** | AarcadeGh$t treasury |
-| **5%** | Burn wallet |
-| **5%** | DAO |
+| Share | Destination | Router bps |
+|------:|-------------|------------|
+| **40%** | **Stakers** (decor/tiles/non-BRS equal per token; gotchis BRS-banded) | 4000 |
+| **40%** | AarcadeGh$t treasury | 4000 |
+| **10%** | Burn wallet | 1000 |
+| **10%** | DAO | 1000 |
 
 Notes:
-- Julius wrote `5$ burn` → recorded as **5%** burn.
-- This **supersedes** the earlier 50/25/10/15 craft split **for the decor-staking fee stream**.
-- Still in force unless changed: cartridge **mint free**; secondary **sale → 50% AarcadeGh$t treasury**; Sepolia `paymentEnabled=false` until costs set; Julius sets decor craft costs.
-
+- **Align with router** (Julius 2026-09-11): supersedes earlier walk locks **50/40/5/5** and the older 50/25/10/15 draft for this stream.
+- GV craft payment (when `paymentEnabled`) should call / mirror `SafeFeeRouter.pay(LineBMint, …)` so one SoT for splits — don’t maintain a second bps table on GV unless it reads the router.
+- Still in force: cartridge **mint free**; secondary **sale → 50% AarcadeGh$t treasury only** (sales are **not** Line B); Sepolia `paymentEnabled=false` until costs set.
 
 ### Sales (confirmed)
-- Secondary sales: **50% → AarcadeGh$t treasury only** (not the 50/40/5/5 staker split).
+- Secondary sales: **50% → AarcadeGh$t treasury only** (not the Line B staker split).
 
----
 
 ## 12. Soft-install bag SoT — corrected (2026-09-08 night)
 
@@ -431,3 +429,6 @@ Notes:
 - Sepolia craft already mints Store/Lodge/etc. into GV ERC1155 ids **162–215** — treat as canonical bag SoT (no longer “temporary staging” pending cartridge mint).
 - Cartridge still owns cPaarcels / cWearables / arcade SIM as previously scoped; GV Place spends from **GV bag**.
 
+
+
+<!-- fee sync 2026-09-11: LineBMint 40/40/10/10 -->
