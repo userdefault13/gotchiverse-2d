@@ -259,7 +259,7 @@ FE: `interiorParcelKeyLocal(kind, installationId)` / `resolveGv2dInteriorParcelK
 
 - Console diamond craft is fungible ERC1155 — titled instance bag is not minted; place may use empty `loadedTitles` until a title is loaded in-modal.
 - Catalog Console footprint is **2×2** on-chain while FE ghosts often treat Console as **1×1** — leave space or expect on-chain occupied neighbors.
-- Upgrade (Cashier/Console L bumps) remains local layout-only this pass (no on-chain type swap).
+- Upgrade (Cashier/Console/Lodge/Store/Waall L bumps) uses `GvUpgradeFacet` when `NEXT_PUBLIC_USE_GV2D_DIAMOND=true` (bag: burn L mint L+1; placed: swap `placement.itemId`). Flag off stays local layout-only.
 - No SafeFeeRouter / `paymentEnabled` change.
 
 Node smoke (interior key, no wallet):
@@ -274,3 +274,20 @@ const key = utils.keccak256(utils.defaultAbiCoder.encode(
 console.log(key);
 "
 ```
+
+### Interior / exterior upgrades (GvUpgradeFacet)
+
+Diamond: `0x34a851523A6f3351940d235373038b2A0A85e872` · flag `NEXT_PUBLIC_USE_GV2D_DIAMOND` · `paymentEnabled=false`.
+
+1. Craft L1 (e.g. Cashier **189**, Console **199**, Lodge **171**).
+2. **Bag upgrade:** `upgradeSoftInstallInBag(fromId, amount)` burns L, mints `nextLevelId`.
+3. **Placed upgrade:** place first, then `upgradeSoftInstallPlacement(placementId)` — swaps `placement.itemId` in place (same footprint).
+4. FE: Lodge/Store furniture Upgrade + Console Manage Upgrade + exterior UpgradeModal (Lodge/Store/Waall) call diamond when flag on; flag off unchanged.
+5. Catalog `nextLevelId` already seeded for Waalls 162–170, Lodge 171–179, Store 180–188, Cashier 189–197, Console 199–207 (zeros costs OK while payment off).
+
+Sepolia smoke (bag Cashier L1→L2):
+
+- craft 189: `0x8ffd8d81117a40761864abe536ca73d93a8b3238caeb4940f0b87e4e0b93dbb5`
+- upgradeSoftInstallInBag(189,1): `0x7efbc108e30047863e9420b573e4fe4cd28bf31ecd579d0f00596d4fed5d6fb9`
+- GvUpgradeFacet: `0x2291C073247a767CFA296120df9fF041321FEa72`
+- diamondCut: `0x0b27deb95c720c9b9932960ecf4a46290cbc9109fb439687eb875d5b2532b4f4`

@@ -135,7 +135,11 @@ import {
   isGv2dSoftInstallCraftId,
   placeSoftInstallOnDiamond,
   unequipSoftInstallOnDiamond,
+  upgradeSoftInstallPlacementOnDiamond,
   resolveGv2dParcelKeyFromParcel,
+  getRememberedGv2dPlacementId,
+  rememberGv2dPlacementId,
+  shouldUpgradeSoftInstallOnDiamond,
 } from 'helpers/gv2dDiamond.helper';
 import MapController from 'components/controllers/MapController';
 
@@ -2454,6 +2458,24 @@ const upgradeLocalWaall = async (installationId: string): Promise<{ ok: boolean;
   const info = getLocalWaallUpgradeInfo(data.itemId);
   if (!info?.next) return { ok: false, message: 'Waall is already max level' };
 
+  if (shouldUpgradeSoftInstallOnDiamond(data.itemId)) {
+    const { account, signer, provider } = requireGv2dWallet();
+    const { parcelKey } = resolveActiveParcelKey();
+    await upgradeSoftInstallPlacementOnDiamond({
+      itemId: Number(data.itemId),
+      account,
+      signer,
+      provider,
+      placementId: getRememberedGv2dPlacementId(installationId),
+      parcelKey,
+      x: data.position.x,
+      y: data.position.y,
+      installationId,
+      name: info.current.name,
+      nextItemId: info.next.id,
+    });
+  }
+
   const nextId = createInstallationIdByData({
     parcelId: data.parcelId,
     itemId: info.next.id,
@@ -2470,6 +2492,10 @@ const upgradeLocalWaall = async (installationId: string): Promise<{ ok: boolean;
   await createByIds([{ id: nextId }]);
   removeOffchainPlacement(installationId);
   upsertOffchainPlacement(nextId);
+  const remembered = getRememberedGv2dPlacementId(installationId);
+  if (remembered) {
+    rememberGv2dPlacementId(nextId, remembered);
+  }
   void flushOffchainStore();
   SFXController.playFX('send');
   return { ok: true, message: `Upgraded to ${info.next.name}`, nextId };
@@ -2481,6 +2507,25 @@ const upgradeLocalLodge = async (installationId: string): Promise<{ ok: boolean;
   const info = getLocalLodgeUpgradeInfo(data.itemId);
   if (!info?.next) return { ok: false, message: 'Lodge is already max level' };
 
+  if (shouldUpgradeSoftInstallOnDiamond(data.itemId)) {
+    const { account, signer, provider } = requireGv2dWallet();
+    const { parcelKey } = resolveActiveParcelKey();
+    const upgraded = await upgradeSoftInstallPlacementOnDiamond({
+      itemId: Number(data.itemId),
+      account,
+      signer,
+      provider,
+      placementId: getRememberedGv2dPlacementId(installationId),
+      parcelKey,
+      x: data.position.x,
+      y: data.position.y,
+      installationId,
+      name: info.current.name,
+      nextItemId: info.next.id,
+    });
+    void upgraded;
+  }
+
   const nextId = createInstallationIdByData({
     parcelId: data.parcelId,
     itemId: info.next.id,
@@ -2497,6 +2542,11 @@ const upgradeLocalLodge = async (installationId: string): Promise<{ ok: boolean;
   await createByIds([{ id: nextId }]);
   removeOffchainPlacement(installationId);
   upsertOffchainPlacement(nextId);
+  // Carry placement memory to the new local installation id.
+  const remembered = getRememberedGv2dPlacementId(installationId);
+  if (remembered) {
+    rememberGv2dPlacementId(nextId, remembered);
+  }
   void flushOffchainStore();
   SFXController.playFX('send');
   return { ok: true, message: `Upgraded to ${info.next.name}`, nextId };
@@ -2508,6 +2558,24 @@ const upgradeLocalStore = async (installationId: string): Promise<{ ok: boolean;
   const info = getLocalStoreUpgradeInfo(data.itemId);
   if (!info?.next) return { ok: false, message: 'Store is already max level' };
 
+  if (shouldUpgradeSoftInstallOnDiamond(data.itemId)) {
+    const { account, signer, provider } = requireGv2dWallet();
+    const { parcelKey } = resolveActiveParcelKey();
+    await upgradeSoftInstallPlacementOnDiamond({
+      itemId: Number(data.itemId),
+      account,
+      signer,
+      provider,
+      placementId: getRememberedGv2dPlacementId(installationId),
+      parcelKey,
+      x: data.position.x,
+      y: data.position.y,
+      installationId,
+      name: info.current.name,
+      nextItemId: info.next.id,
+    });
+  }
+
   const nextId = createInstallationIdByData({
     parcelId: data.parcelId,
     itemId: info.next.id,
@@ -2524,6 +2592,10 @@ const upgradeLocalStore = async (installationId: string): Promise<{ ok: boolean;
   await createByIds([{ id: nextId }]);
   removeOffchainPlacement(installationId);
   upsertOffchainPlacement(nextId);
+  const remembered = getRememberedGv2dPlacementId(installationId);
+  if (remembered) {
+    rememberGv2dPlacementId(nextId, remembered);
+  }
   void flushOffchainStore();
   SFXController.playFX('send');
   return { ok: true, message: `Upgraded to ${info.next.name}`, nextId };

@@ -25,6 +25,7 @@ import {
   makeDemoListing,
   isShelfItemId,
   isCashierItemId,
+  CASHIER_ITEM_ID_END,
   isConsoleItemId,
   isTerminalItemId,
   isBroadcasterItemId,
@@ -38,7 +39,7 @@ import {
   lodgeInteriorFloorKeys,
   lodgeStructureAt,
 } from 'helpers/lodge.layout.helper';
-import { consoleLevelFromItemId } from 'helpers/console.installation.helper';
+import { consoleLevelFromItemId, getLocalConsoleUpgradeInfo } from 'helpers/console.installation.helper';
 import { useUser } from 'contexts/UserContext';
 import {
   subscribeLodgeLayout,
@@ -47,11 +48,14 @@ import {
 } from 'helpers/colyseus.lodge';
 import {
   shouldPlaceInteriorFurnitureOnDiamond,
+  shouldUpgradeSoftInstallOnDiamond,
   interiorParcelKeyLocal,
   placeSoftInstallOnDiamond,
   unequipSoftInstallOnDiamond,
+  upgradeSoftInstallPlacementOnDiamond,
   rememberGv2dPlacementId,
   forgetGv2dPlacementId,
+  getRememberedGv2dPlacementId,
 } from 'helpers/gv2dDiamond.helper';
 import GlobalState from 'contexts/GlobalState';
 import { useNotification } from 'contexts/NotificationContext';
@@ -341,10 +345,69 @@ export const LodgeModal = (): JSX.Element => {
   }, [applyLayout, click, installationId, isOwner, notificationDispatch]);
 
   const handleUpgradeFurniture = useCallback(
-    (piece: LodgeFurniturePiece) => {
+    async (piece: LodgeFurniturePiece) => {
       const current = layoutRef.current;
-      if (!current || !isOwner) return;
+      if (!current || !isOwner || !installationId) return;
       click();
+      const canUpgrade =
+        (isConsoleItemId(piece.itemId) && Boolean(getLocalConsoleUpgradeInfo(piece.itemId)?.next)) ||
+        (isCashierItemId(piece.itemId) && Number(piece.itemId) < CASHIER_ITEM_ID_END);
+      if (!canUpgrade) {
+        setStatusMsg(
+          isConsoleItemId(piece.itemId) || isCashierItemId(piece.itemId)
+            ? 'Already max level'
+            : 'This lodge installation cannot be upgraded',
+        );
+        return;
+      }
+
+      const useDiamond = shouldUpgradeSoftInstallOnDiamond(piece.itemId);
+      if (useDiamond) {
+        let notificationId: string | undefined;
+        try {
+          const { account, signer, provider } = requireGv2dWallet();
+          const parcelKey = interiorParcelKeyLocal('lodge', installationId);
+          const nextItemId = isConsoleItemId(piece.itemId)
+            ? getLocalConsoleUpgradeInfo(piece.itemId)?.next?.id
+            : Number(piece.itemId) + 1;
+          notificationId = showTransactionNotification(notificationDispatch, {
+            message: 'Upgrade lodge furniture on GV-2D diamond (Base Sepolia)',
+            options: { sound: true },
+          });
+          const upgraded = await upgradeSoftInstallPlacementOnDiamond({
+            itemId: Number(piece.itemId),
+            account,
+            signer,
+            provider,
+            placementId: getRememberedGv2dPlacementId(piece.id),
+            parcelKey,
+            x: piece.x,
+            y: piece.y,
+            installationId: piece.id,
+            name: `Lodge furniture ${piece.itemId}`,
+            nextItemId,
+          });
+          const r = isConsoleItemId(piece.itemId)
+            ? upgradeConsoleFurniture(current, piece.id)
+            : upgradeCashierFurniture(current, piece.id);
+          setStatusMsg(r.ok ? `${r.message} · on-chain` : r.message);
+          if (r.ok) {
+            applyLayout(r.layout, true);
+            refreshInv();
+            updateTransactionNotificationStatus(notificationDispatch, notificationId, 'success');
+          } else {
+            updateTransactionNotificationStatus(notificationDispatch, notificationId, 'error', r.message);
+          }
+          void upgraded;
+        } catch (e) {
+          setStatusMsg(getErrMessage(e));
+          if (notificationId) {
+            updateTransactionNotificationStatus(notificationDispatch, notificationId, 'error', getErrMessage(e));
+          }
+        }
+        return;
+      }
+
       if (isConsoleItemId(piece.itemId)) {
         const r = upgradeConsoleFurniture(current, piece.id);
         setStatusMsg(r.message);
@@ -365,7 +428,7 @@ export const LodgeModal = (): JSX.Element => {
       }
       setStatusMsg('This lodge installation cannot be upgraded');
     },
-    [applyLayout, click, isOwner],
+    [applyLayout, click, installationId, isOwner, notificationDispatch],
   );
 
   const handleMoveFurniture = useCallback(

@@ -27,6 +27,7 @@ import {
   makeDemoListing,
   isShelfItemId,
   isCashierItemId,
+  CASHIER_ITEM_ID_END,
   isConsoleItemId,
   isTerminalItemId,
   isRackShelfKind,
@@ -51,12 +52,16 @@ import {
 } from 'helpers/colyseus.store';
 import {
   shouldPlaceInteriorFurnitureOnDiamond,
+  shouldUpgradeSoftInstallOnDiamond,
   interiorParcelKeyLocal,
   placeSoftInstallOnDiamond,
   unequipSoftInstallOnDiamond,
+  upgradeSoftInstallPlacementOnDiamond,
   rememberGv2dPlacementId,
   forgetGv2dPlacementId,
+  getRememberedGv2dPlacementId,
 } from 'helpers/gv2dDiamond.helper';
+import { getLocalConsoleUpgradeInfo } from 'helpers/console.installation.helper';
 import GlobalState from 'contexts/GlobalState';
 import { useNotification } from 'contexts/NotificationContext';
 import {
@@ -334,10 +339,68 @@ export const StoreModal = (): JSX.Element => {
   }, [applyLayout, click, installationId, isOwner, notificationDispatch]);
 
   const handleUpgradeFurniture = useCallback(
-    (piece: StoreFurniturePiece) => {
+    async (piece: StoreFurniturePiece) => {
       const current = layoutRef.current;
-      if (!current || !isOwner) return;
+      if (!current || !isOwner || !installationId) return;
       click();
+      const canUpgrade =
+        (isConsoleItemId(piece.itemId) && Boolean(getLocalConsoleUpgradeInfo(piece.itemId)?.next)) ||
+        (isCashierItemId(piece.itemId) && Number(piece.itemId) < CASHIER_ITEM_ID_END);
+      if (!canUpgrade) {
+        setStatusMsg(
+          isConsoleItemId(piece.itemId) || isCashierItemId(piece.itemId)
+            ? 'Already max level'
+            : 'This store installation cannot be upgraded',
+        );
+        return;
+      }
+
+      const useDiamond = shouldUpgradeSoftInstallOnDiamond(piece.itemId);
+      if (useDiamond) {
+        let notificationId: string | undefined;
+        try {
+          const { account, signer, provider } = requireGv2dWallet();
+          const parcelKey = interiorParcelKeyLocal('store', installationId);
+          const nextItemId = isConsoleItemId(piece.itemId)
+            ? getLocalConsoleUpgradeInfo(piece.itemId)?.next?.id
+            : Number(piece.itemId) + 1;
+          notificationId = showTransactionNotification(notificationDispatch, {
+            message: 'Upgrade store furniture on GV-2D diamond (Base Sepolia)',
+            options: { sound: true },
+          });
+          await upgradeSoftInstallPlacementOnDiamond({
+            itemId: Number(piece.itemId),
+            account,
+            signer,
+            provider,
+            placementId: getRememberedGv2dPlacementId(piece.id),
+            parcelKey,
+            x: piece.x,
+            y: piece.y,
+            installationId: piece.id,
+            name: `Store furniture ${piece.itemId}`,
+            nextItemId,
+          });
+          const r = isConsoleItemId(piece.itemId)
+            ? upgradeConsoleFurniture(current, piece.id)
+            : upgradeCashierFurniture(current, piece.id);
+          setStatusMsg(r.ok ? `${r.message} · on-chain` : r.message);
+          if (r.ok) {
+            applyLayout(r.layout, true);
+            refreshInv();
+            updateTransactionNotificationStatus(notificationDispatch, notificationId, 'success');
+          } else {
+            updateTransactionNotificationStatus(notificationDispatch, notificationId, 'error', r.message);
+          }
+        } catch (e) {
+          setStatusMsg(getErrMessage(e));
+          if (notificationId) {
+            updateTransactionNotificationStatus(notificationDispatch, notificationId, 'error', getErrMessage(e));
+          }
+        }
+        return;
+      }
+
       if (isConsoleItemId(piece.itemId)) {
         const r = upgradeConsoleFurniture(current, piece.id);
         setStatusMsg(r.message);
@@ -358,7 +421,7 @@ export const StoreModal = (): JSX.Element => {
       }
       setStatusMsg('This store installation cannot be upgraded');
     },
-    [applyLayout, click, isOwner],
+    [applyLayout, click, installationId, isOwner, notificationDispatch],
   );
 
   const handleMoveFurniture = useCallback(

@@ -106,7 +106,7 @@ When the flag is off, soft cTiles keep the legacy local craft path.
 
 ## Soft installs (Phase B staging)
 
-`GvCatalogFacet` + `GvCraftFacet` + `GvPlaceFacet` on the same Sepolia diamond.
+`GvCatalogFacet` + `GvCraftFacet` + `GvPlaceFacet, GvUpgradeFacet` on the same Sepolia diamond.
 
 - Soft-install id band **162–215** (disjoint from tiles **8–47**) — **fully registered** (Waalls 162–170 + Lodge/Store/Cashier/Console levels + furniture/world 198–215)
 - `craftInstallations([id],[qty])` is permissionless; with `paymentEnabled=false` costs are not pulled (zeros OK)

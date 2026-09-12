@@ -17,7 +17,8 @@
     "InitERC1155": "0x3B4EDc51Be6bb4653be124A96D655D6b7e1bCD8B",
     "GvCatalogFacet": "0xe8C6E4bf7EB9467b713B9F35B21970578249193b",
     "GvCraftFacet": "0xF11dc741e6Bd0aC5f1f280a8f4a569386B771BBb",
-    "GvPlaceFacet": "0x7A4561De880c24104e98eC1Ac7074158A29EDFD1"
+    "GvPlaceFacet": "0x7A4561De880c24104e98eC1Ac7074158A29EDFD1",
+    "GvUpgradeFacet": "0x2291C073247a767CFA296120df9fF041321FEa72"
   },
   "facetsPrevious": {
     "GvTileMintFacet": "0x93335053d0E23Aaa1c807116561d76901Ba3368B",
@@ -55,7 +56,11 @@
     "smokeUnequipStore180": "0xd1032720724f7e09d48d940ce4e5d7528e48a29d74d72a841b28ba72eaf4e742",
     "smokeCraftWaall162": "0x2258d32a930f6fc2eabccaeba138b3de97f0dab385411dfc0ba9748908897b68",
     "smokePlaceLodge171": "0xf9f695f113c70cdff6041705cd14a0ef63d223bde3858182c687a8a357c86346",
-    "smokeUnequipLodge171": "0x9c201f391c1ac568d5b0ad33e8f8f8d25549a9ea05b2f755ac981a1b0fa811ea"
+    "smokeUnequipLodge171": "0x9c201f391c1ac568d5b0ad33e8f8f8d25549a9ea05b2f755ac981a1b0fa811ea",
+    "GvUpgradeFacet": "0xf6de1ee45e5943f740e5484a73a787eddb0578da8e96ca519206d637724c5085",
+    "diamondCut_upgrade": "0x0b27deb95c720c9b9932960ecf4a46290cbc9109fb439687eb875d5b2532b4f4",
+    "smokeCraftCashier189_upgrade": "0x8ffd8d81117a40761864abe536ca73d93a8b3238caeb4940f0b87e4e0b93dbb5",
+    "smokeUpgradeCashier189to190": "0x7efbc108e30047863e9420b573e4fe4cd28bf31ecd579d0f00596d4fed5d6fb9"
   },
   "smoke": {
     "tileId": 8,
@@ -145,5 +150,21 @@
     },
     "waallCraftTx": "0x2258d32a930f6fc2eabccaeba138b3de97f0dab385411dfc0ba9748908897b68",
     "paymentEnabled": false
+  },
+  "upgradeFacetCutAt": "2026-09-12T06:14:08Z",
+  "smokeUpgrade": {
+    "mode": "bag",
+    "fromId": 189,
+    "toId": 190,
+    "amount": 1,
+    "account": "0x8842E0986F9974209593C8dCB5Aa78226435873a",
+    "craftTx": "0x8ffd8d81117a40761864abe536ca73d93a8b3238caeb4940f0b87e4e0b93dbb5",
+    "upgradeTx": "0x7efbc108e30047863e9420b573e4fe4cd28bf31ecd579d0f00596d4fed5d6fb9",
+    "balanceAfter": {
+      "189": 0,
+      "190": 1
+    },
+    "paymentEnabled": false,
+    "note": "GvUpgradeFacet bag path: burn 189 mint 190"
   }
 }

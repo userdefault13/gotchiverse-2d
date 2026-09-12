@@ -3,11 +3,12 @@
  * - soft cTiles 8–47 → `mintTiles`
  * - soft installs 162–215 → `craftInstallations` (GvCraftFacet)
  * - soft installs 162–215 → `placeSoftInstall` / `unequipSoftInstall` (GvPlaceFacet)
+ * - soft installs 162–215 → `upgradeSoftInstallInBag` / `upgradeSoftInstallPlacement` (GvUpgradeFacet)
  *
  * When NEXT_PUBLIC_USE_GV2D_DIAMOND=true, Crafting Table soft recipes, Phaser
- * soft place/unequip, and Lodge/Store interior furniture Confirm call the diamond
- * instead of local-only helpers. Golden tiles 1–3 and L1 Installation diamond
- * crafts stay on their existing paths.
+ * soft place/unequip, Lodge/Store interior furniture Confirm, and Lodge/Store/
+ * Cashier/Console upgrades call the diamond instead of local-only helpers.
+ * Golden tiles 1–3 and L1 Installation diamond crafts stay on their existing paths.
  *
  * Deployed diamond: packages/gv2d-diamond/deployments/base-sepolia.json
  * paymentEnabled=false on Sepolia — no alchemica approve for mint/craft; place
@@ -825,4 +826,233 @@ export async function fetchGv2dCellPlacementId(
   const contract = getGv2dDiamondContract(provider);
   const id = await contract.cellPlacementId(parcelKey, x, y);
   return id?.toString?.() || String(id);
+}
+
+
+// ---------------------------------------------------------------------------
+// Upgrade (GvUpgradeFacet) — soft installs 162–215 level bumps
+// ---------------------------------------------------------------------------
+
+export function shouldUpgradeSoftInstallOnDiamond(itemId: number | string): boolean {
+  return isGv2dDiamondMintEnabled() && isGv2dSoftInstallCraftId(itemId);
+}
+
+export type Gv2dUpgradeResult = {
+  ok: true;
+  txHash: string;
+  fromId: number;
+  toId: number;
+  mode: 'bag' | 'placement';
+  placementId?: string;
+  balanceFrom: number;
+  balanceTo: number;
+  message: string;
+};
+
+function parseUpgradeToIdFromReceipt(
+  receipt: { logs?: Array<{ topics?: string[]; data?: string }> },
+  contract: ethers.Contract,
+): { toId: number; placementId?: string } | null {
+  try {
+    for (const log of receipt.logs || []) {
+      try {
+        const parsed = contract.interface.parseLog(log as any);
+        if (parsed?.name === 'SoftInstallUpgradedInBag' && parsed.args?.toId != null) {
+          return { toId: Number(parsed.args.toId.toString()) };
+        }
+        if (parsed?.name === 'SoftInstallUpgradedPlacement' && parsed.args?.toId != null) {
+          return {
+            toId: Number(parsed.args.toId.toString()),
+            placementId:
+              parsed.args.placementId != null ? parsed.args.placementId.toString() : undefined,
+          };
+        }
+      } catch {
+        /* not our event */
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
+/** Catalog next level is usually fromId+1 for soft bands; prefer on-chain softInstall when available. */
+export function localNextSoftInstallId(fromId: number): number | null {
+  const id = Number(fromId);
+  if (!isGv2dSoftInstallCraftId(id)) return null;
+  // Bands with level chains
+  const bands: Array<[number, number]> = [
+    [162, 170], // Waalls
+    [171, 179], // Lodge
+    [180, 188], // Store
+    [189, 197], // Cashier
+    [199, 207], // Console
+  ];
+  for (const [start, end] of bands) {
+    if (id >= start && id < end) return id + 1;
+  }
+  return null;
+}
+
+/**
+ * Upgrade soft install in bag via `upgradeSoftInstallInBag(fromId, amount)`.
+ * Burns L, mints L+1; syncs local inventory for both ids.
+ */
+export async function upgradeSoftInstallInBagOnDiamond(opts: {
+  itemId: number;
+  quantity?: number;
+  account: string;
+  signer: Signer;
+  provider: providers.Provider;
+  name?: string;
+  nextItemId?: number;
+}): Promise<Gv2dUpgradeResult> {
+  const { itemId, account, signer, provider, name } = opts;
+  const qty = Math.max(1, Math.floor(opts.quantity || 1));
+  if (!isGv2dSoftInstallCraftId(itemId)) {
+    throw new Error(`Item ${itemId} is not a soft-install id (162–215).`);
+  }
+  if (!account) {
+    throw new Error('Connect your wallet to upgrade soft installs on the GV-2D diamond.');
+  }
+
+  const { liveSigner, liveProvider } = await bindLiveSigner(
+    signer,
+    provider,
+    'upgrade soft installs on the GV-2D diamond',
+  );
+  const contract = getGv2dDiamondContract(liveSigner);
+  const tx = await contract.upgradeSoftInstallInBag(itemId, qty, {
+    ...(await gasPriceDict(liveSigner)),
+  });
+  const receipt = await tx.wait();
+  if (receipt.status !== 1) {
+    throw new Error('upgradeSoftInstallInBag transaction failed');
+  }
+
+  const parsed = parseUpgradeToIdFromReceipt(receipt, contract);
+  const toId =
+    parsed?.toId ??
+    opts.nextItemId ??
+    localNextSoftInstallId(itemId) ??
+    itemId + 1;
+
+  let balanceFrom = 0;
+  let balanceTo = qty;
+  try {
+    balanceFrom = await syncSoftInstallInventoryFromDiamond(account, itemId, liveProvider);
+    balanceTo = await syncSoftInstallInventoryFromDiamond(account, toId, liveProvider);
+  } catch (e) {
+    console.warn('[gv2d] soft-install balance sync after bag upgrade failed; applying local delta', e);
+    balanceFrom = applySoftInstallInventoryBalance(itemId, undefined, -qty);
+    balanceTo = applySoftInstallInventoryBalance(toId, undefined, qty);
+  }
+
+  const label = name || `Install ${itemId}`;
+  return {
+    ok: true,
+    txHash: receipt.transactionHash as string,
+    fromId: itemId,
+    toId,
+    mode: 'bag',
+    balanceFrom,
+    balanceTo,
+    message: `Upgraded ${qty}× ${label} → ${toId} on GV-2D diamond`,
+  };
+}
+
+/**
+ * Upgrade a placed soft install in place via `upgradeSoftInstallPlacement`.
+ * Prefer placementId; else resolve cellPlacementId(parcelKey,x,y).
+ * Does not change bag balances (item stays placed).
+ */
+export async function upgradeSoftInstallPlacementOnDiamond(opts: {
+  itemId: number;
+  account: string;
+  signer: Signer;
+  provider: providers.Provider;
+  placementId?: string | number | null;
+  parcelKey?: string;
+  x?: number;
+  y?: number;
+  installationId?: string;
+  name?: string;
+  nextItemId?: number;
+}): Promise<Gv2dUpgradeResult> {
+  const { itemId, account, signer, provider, installationId, name } = opts;
+  if (!isGv2dSoftInstallCraftId(itemId)) {
+    throw new Error(`Item ${itemId} is not a soft-install id (162–215).`);
+  }
+  if (!account) {
+    throw new Error('Connect your wallet to upgrade soft installs on the GV-2D diamond.');
+  }
+
+  const { liveSigner, liveProvider } = await bindLiveSigner(
+    signer,
+    provider,
+    'upgrade soft installs on the GV-2D diamond',
+  );
+  const contract = getGv2dDiamondContract(liveSigner);
+
+  let placementId =
+    opts.placementId != null && String(opts.placementId) !== '' && String(opts.placementId) !== '0'
+      ? String(opts.placementId)
+      : installationId
+        ? getRememberedGv2dPlacementId(installationId)
+        : undefined;
+
+  if ((!placementId || placementId === '0') && opts.parcelKey) {
+    const x = Math.max(0, Math.floor(Number(opts.x)) || 0);
+    const y = Math.max(0, Math.floor(Number(opts.y)) || 0);
+    const cellId = await contract.cellPlacementId(opts.parcelKey, x, y);
+    placementId = cellId?.toString?.() || String(cellId);
+  }
+  if (!placementId || placementId === '0') {
+    throw new Error(
+      'Missing on-chain placementId for GV-2D upgrade. Place via diamond first, or pass parcelKey+x+y.',
+    );
+  }
+
+  const tx = await contract.upgradeSoftInstallPlacement(placementId, {
+    ...(await gasPriceDict(liveSigner)),
+  });
+  const receipt = await tx.wait();
+  if (receipt.status !== 1) {
+    throw new Error('upgradeSoftInstallPlacement transaction failed');
+  }
+
+  const parsed = parseUpgradeToIdFromReceipt(receipt, contract);
+  const toId =
+    parsed?.toId ??
+    opts.nextItemId ??
+    localNextSoftInstallId(itemId) ??
+    itemId + 1;
+
+  if (installationId) {
+    rememberGv2dPlacementId(installationId, placementId);
+  }
+
+  // Placed upgrade does not touch bag; still refresh fromId/toId for UI consistency.
+  let balanceFrom = 0;
+  let balanceTo = 0;
+  try {
+    balanceFrom = await syncSoftInstallInventoryFromDiamond(account, itemId, liveProvider);
+    balanceTo = await syncSoftInstallInventoryFromDiamond(account, toId, liveProvider);
+  } catch (e) {
+    console.warn('[gv2d] soft-install balance sync after placement upgrade failed', e);
+  }
+
+  const label = name || `Install ${itemId}`;
+  return {
+    ok: true,
+    txHash: receipt.transactionHash as string,
+    fromId: itemId,
+    toId,
+    mode: 'placement',
+    placementId: String(placementId),
+    balanceFrom,
+    balanceTo,
+    message: `Upgraded placed ${label} → ${toId} on GV-2D diamond`,
+  };
 }

@@ -9,6 +9,7 @@ import {GvInventoryFacet} from "../src/facets/GvInventoryFacet.sol";
 import {GvCatalogFacet} from "../src/facets/GvCatalogFacet.sol";
 import {GvCraftFacet} from "../src/facets/GvCraftFacet.sol";
 import {GvPlaceFacet} from "../src/facets/GvPlaceFacet.sol";
+import {GvUpgradeFacet} from "../src/facets/GvUpgradeFacet.sol";
 
 /// @dev Shared selector lists for fresh deploy and upgrade cuts.
 library FacetSelectors {
@@ -149,5 +150,11 @@ library FacetSelectors {
         s[9] = GvPlaceFacet.parcelKeyFromUint.selector;
         s[10] = GvPlaceFacet.parcelKeyFromRealm.selector;
     }
-}
 
+    function upgrade() internal pure returns (bytes4[] memory s) {
+        s = new bytes4[](3);
+        s[0] = GvUpgradeFacet.upgradeSoftInstallInBag.selector;
+        s[1] = GvUpgradeFacet.upgradeSoftInstallPlacement.selector;
+        s[2] = GvUpgradeFacet.quoteUpgradeCost.selector;
+    }
+}
