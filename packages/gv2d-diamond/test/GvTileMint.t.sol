@@ -96,8 +96,8 @@ contract GvTileMintTest is Test {
         IDiamondCut.FacetCut[] memory cut = new IDiamondCut.FacetCut[](5);
         cut[0] = _cut(address(loupeImpl), FacetSelectors.loupe());
         cut[1] = _cut(address(own), FacetSelectors.ownership());
-        cut[2] = _cut(address(rulesImpl), FacetSelectors.rules());
-        cut[3] = _cut(address(mintImpl), FacetSelectors.mint());
+        cut[2] = _cut(address(rulesImpl), FacetSelectors.rulesAll());
+        cut[3] = _cut(address(mintImpl), FacetSelectors.mintAll());
         cut[4] = _cut(address(invImpl), FacetSelectors.inventoryERC1155All());
 
         bytes memory initCalldata = abi.encodeWithSelector(InitERC1155.init.selector, "ipfs://gv2d/{id}.json");
@@ -284,10 +284,190 @@ contract GvTileMintTest is Test {
         cut[1] = IDiamondCut.FacetCut({
             facetAddress: address(mint2),
             action: IDiamondCut.FacetCutAction.Replace,
-            functionSelectors: FacetSelectors.mint()
+            functionSelectors: FacetSelectors.mintAll()
         });
         DiamondCutFacet(address(diamond)).diamondCut(cut, address(0), "");
         assertEq(inventory.balanceOf(alice, 8), 1);
+    }
+
+
+    // -------------------------------------------------------------------------
+    // Progressive soft-tile craft cooldowns (bands 10/20/30…; CD 0,1h,2h,4h…)
+    // -------------------------------------------------------------------------
+
+    function test_cooldown_firstBandInstant_mintedCountTracks() public {
+        uint256[] memory ids = new uint256[](1);
+        uint256[] memory amounts = new uint256[](1);
+        ids[0] = 8;
+
+        // Mint 9 (still in band 0: lifetime 0–9)
+        amounts[0] = 9;
+        vm.prank(alice);
+        mint.mintTiles(ids, amounts);
+        assertEq(mint.mintedCount(alice, 8), 9);
+        assertEq(mint.nextCooldown(alice, 8), 0);
+        assertEq(mint.cooldownRemaining(alice, 8), 0);
+
+        // 10th mint still instant (count 9 → still band 0)
+        amounts[0] = 1;
+        vm.prank(alice);
+        mint.mintTiles(ids, amounts);
+        assertEq(mint.mintedCount(alice, 8), 10);
+        assertEq(inventory.balanceOf(alice, 8), 10);
+
+        // Now in band 1 → nextCooldown = 1 hour
+        assertEq(mint.nextCooldown(alice, 8), 1 hours);
+        assertEq(mint.cooldownRemaining(alice, 8), 1 hours);
+    }
+
+    function test_cooldown_band1GatesUntilWarp() public {
+        uint256[] memory ids = new uint256[](1);
+        uint256[] memory amounts = new uint256[](1);
+        ids[0] = 12;
+        amounts[0] = 10; // exhaust free band in one call
+        vm.prank(alice);
+        mint.mintTiles(ids, amounts);
+        assertEq(mint.mintedCount(alice, 12), 10);
+        assertEq(mint.nextCooldown(alice, 12), 1 hours);
+
+        // Immediate remint reverts with remaining time
+        amounts[0] = 1;
+        vm.prank(alice);
+        vm.expectRevert(abi.encodeWithSelector(GvTileMintFacet.CooldownActive.selector, uint256(12), uint256(1 hours)));
+        mint.mintTiles(ids, amounts);
+
+        // Warp just under full hour — still blocked
+        vm.warp(block.timestamp + 1 hours - 1);
+        uint256 rem = mint.cooldownRemaining(alice, 12);
+        assertEq(rem, 1);
+        vm.prank(alice);
+        vm.expectRevert(abi.encodeWithSelector(GvTileMintFacet.CooldownActive.selector, uint256(12), uint256(1)));
+        mint.mintTiles(ids, amounts);
+
+        // Warp the last second — allowed
+        vm.warp(block.timestamp + 1);
+        assertEq(mint.cooldownRemaining(alice, 12), 0);
+        vm.prank(alice);
+        mint.mintTiles(ids, amounts);
+        assertEq(mint.mintedCount(alice, 12), 11);
+        assertEq(mint.lastMintAt(alice, 12), block.timestamp);
+    }
+
+    function test_cooldown_rulesParamsRoundTrip() public {
+        rules.setTileCooldownParams(10, 1 hours, 0);
+        (uint256 step, uint256 first, uint256 cap) = rules.tileCooldownParams();
+        assertEq(step, 10);
+        assertEq(first, 1 hours);
+        assertEq(cap, 0);
+    }
+
+    function test_cooldown_perWalletPerTileId() public {
+        uint256[] memory ids = new uint256[](1);
+        uint256[] memory amounts = new uint256[](1);
+        ids[0] = 15;
+        amounts[0] = 10;
+        vm.prank(alice);
+        mint.mintTiles(ids, amounts);
+
+        // Alice blocked on 15; Bob still free on 15; Alice free on other tile
+        assertGt(mint.cooldownRemaining(alice, 15), 0);
+        assertEq(mint.cooldownRemaining(bob, 15), 0);
+        assertEq(mint.cooldownRemaining(alice, 16), 0);
+
+        ids[0] = 16;
+        amounts[0] = 1;
+        vm.prank(alice);
+        mint.mintTiles(ids, amounts);
+        assertEq(mint.mintedCount(alice, 16), 1);
+
+        ids[0] = 15;
+        amounts[0] = 1;
+        vm.prank(bob);
+        mint.mintTiles(ids, amounts);
+        assertEq(mint.mintedCount(bob, 15), 1);
+    }
+
+    function test_cooldown_maxCapOptional() public {
+        // Cap at 90 minutes — band2 would be 2h, capped to 90m
+        rules.setTileCooldownParams(10, 1 hours, 90 minutes);
+
+        uint256[] memory ids = new uint256[](1);
+        uint256[] memory amounts = new uint256[](1);
+        ids[0] = 20;
+        // Push into band 2 (need lifetime >= 30)
+        amounts[0] = 30;
+        vm.prank(alice);
+        mint.mintTiles(ids, amounts);
+        assertEq(mint.mintedCount(alice, 20), 30);
+        assertEq(mint.nextCooldown(alice, 20), 90 minutes);
+
+        amounts[0] = 1;
+        vm.prank(alice);
+        vm.expectRevert(
+            abi.encodeWithSelector(GvTileMintFacet.CooldownActive.selector, uint256(20), uint256(90 minutes))
+        );
+        mint.mintTiles(ids, amounts);
+
+        vm.warp(block.timestamp + 90 minutes);
+        vm.prank(alice);
+        mint.mintTiles(ids, amounts);
+        assertEq(mint.mintedCount(alice, 20), 31);
+    }
+
+    function test_cooldown_zeroParamsUseDefaults() public {
+        rules.setTileCooldownParams(0, 0, 0);
+        uint256[] memory ids = new uint256[](1);
+        uint256[] memory amounts = new uint256[](1);
+        ids[0] = 22;
+        amounts[0] = 10;
+        vm.prank(alice);
+        mint.mintTiles(ids, amounts);
+        assertEq(mint.nextCooldown(alice, 22), 1 hours);
+    }
+
+    function test_cooldown_bandEdges_viaMintAndWarp() public {
+        rules.setTileCooldownParams(10, 1 hours, 0);
+        uint256 tileId = 41;
+        uint256[] memory ids = new uint256[](1);
+        uint256[] memory amounts = new uint256[](1);
+        ids[0] = tileId;
+
+        // 0 → next 0
+        assertEq(mint.nextCooldown(alice, tileId), 0);
+
+        amounts[0] = 10;
+        vm.prank(alice);
+        mint.mintTiles(ids, amounts);
+        assertEq(mint.mintedCount(alice, tileId), 10);
+        assertEq(mint.nextCooldown(alice, tileId), 1 hours);
+
+        // Advance through band 1 (need 20 more to reach 30) with warps
+        for (uint256 i; i < 20; i++) {
+            vm.warp(block.timestamp + 1 hours);
+            amounts[0] = 1;
+            vm.prank(alice);
+            mint.mintTiles(ids, amounts);
+        }
+        assertEq(mint.mintedCount(alice, tileId), 30);
+        assertEq(mint.nextCooldown(alice, tileId), 2 hours);
+
+        // One more after 2h → count 31, still band 2 until 60
+        vm.warp(block.timestamp + 2 hours);
+        amounts[0] = 1;
+        vm.prank(alice);
+        mint.mintTiles(ids, amounts);
+        assertEq(mint.mintedCount(alice, tileId), 31);
+        assertEq(mint.nextCooldown(alice, tileId), 2 hours);
+
+        // Jump to band 3 edge: mint 29 more with 2h warps → count 60
+        for (uint256 i; i < 29; i++) {
+            vm.warp(block.timestamp + 2 hours);
+            amounts[0] = 1;
+            vm.prank(alice);
+            mint.mintTiles(ids, amounts);
+        }
+        assertEq(mint.mintedCount(alice, tileId), 60);
+        assertEq(mint.nextCooldown(alice, tileId), 4 hours);
     }
 
     function _cut(address facet, bytes4[] memory selectors)

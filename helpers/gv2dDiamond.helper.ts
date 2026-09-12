@@ -355,9 +355,35 @@ export async function mintSoftCTilesOnDiamond(opts: {
   );
 
   const contract = getGv2dDiamondContract(liveSigner);
-  const tx = await contract.mintTiles([itemId], [qty], {
-    ...(await gasPriceDict(liveSigner)),
-  });
+
+  // Surface cooldown before wallet popup when possible.
+  try {
+    const remaining = await contract.cooldownRemaining(account, itemId);
+    const remSec = Number(remaining.toString());
+    if (remSec > 0) {
+      throw new Error(
+        `Soft cTile ${itemId} craft cooldown: ${formatGv2dCooldownRemaining(remSec)} remaining`,
+      );
+    }
+  } catch (e) {
+    if (e instanceof Error && e.message.includes('craft cooldown')) throw e;
+    console.warn('[gv2d] cooldownRemaining precheck skipped', e);
+  }
+
+  let tx;
+  try {
+    tx = await contract.mintTiles([itemId], [qty], {
+      ...(await gasPriceDict(liveSigner)),
+    });
+  } catch (e) {
+    const cd = parseGv2dTileCooldownError(e);
+    if (cd) {
+      throw new Error(
+        `Soft cTile ${cd.tileId} craft cooldown: ${formatGv2dCooldownRemaining(cd.remainingSeconds)} remaining`,
+      );
+    }
+    throw e;
+  }
   const receipt = await tx.wait();
   if (receipt.status !== 1) {
     throw new Error('mintTiles transaction failed');
@@ -379,6 +405,105 @@ export async function mintSoftCTilesOnDiamond(opts: {
     balance,
     message: `Minted ${qty}× ${label} on GV-2D diamond`,
   };
+}
+
+/** Format remaining cooldown seconds for Craft UX. */
+export function formatGv2dCooldownRemaining(seconds: number): string {
+  const s = Math.max(0, Math.floor(Number(seconds) || 0));
+  if (s <= 0) return 'ready';
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  if (h > 0) return `${h}h ${m}m`;
+  if (m > 0) return `${m}m ${sec}s`;
+  return `${sec}s`;
+}
+
+export type Gv2dTileCooldownInfo = {
+  tileId: number;
+  mintedCount: number;
+  lastMintAt: number;
+  nextCooldownSeconds: number;
+  remainingSeconds: number;
+  ready: boolean;
+};
+
+/**
+ * Read progressive soft-tile craft cooldown for a wallet+tileId.
+ * Band 0 (lifetime 0–9): instant. Later bands: 1h, 2h, 4h… (tunable via GvRules).
+ */
+export async function fetchGv2dTileCooldown(
+  account: string,
+  tileId: number,
+  provider: providers.Provider,
+): Promise<Gv2dTileCooldownInfo> {
+  if (!isGv2dSoftTileMintId(tileId)) {
+    throw new Error(`Not a soft cTile id: ${tileId}`);
+  }
+  const contract = getGv2dDiamondContract(provider);
+  const [minted, last, nextCd, remaining] = await Promise.all([
+    contract.mintedCount(account, tileId),
+    contract.lastMintAt(account, tileId),
+    contract.nextCooldown(account, tileId),
+    contract.cooldownRemaining(account, tileId),
+  ]);
+  const remainingSeconds = Number(remaining.toString());
+  return {
+    tileId,
+    mintedCount: Number(minted.toString()),
+    lastMintAt: Number(last.toString()),
+    nextCooldownSeconds: Number(nextCd.toString()),
+    remainingSeconds,
+    ready: remainingSeconds <= 0,
+  };
+}
+
+/** Decode TileMint CooldownActive(tileId, remainingSeconds) from an ethers error if present. */
+export function parseGv2dTileCooldownError(err: unknown): { tileId: number; remainingSeconds: number } | null {
+  const e = err as any;
+  const data: string | undefined =
+    e?.error?.data?.data ||
+    e?.error?.data ||
+    e?.data?.data ||
+    e?.data ||
+    e?.error?.error?.data;
+  // Custom error selector: keccak256("CooldownActive(uint256,uint256)")[0:4]
+  const selector = '0x'; // filled below via ethers id if available
+  try {
+    const iface = new ethers.utils.Interface([
+      'error CooldownActive(uint256 tileId, uint256 remainingSeconds)',
+    ]);
+    const raw =
+      typeof data === 'string' && data.startsWith('0x')
+        ? data
+        : typeof e?.reason === 'string' && e.reason.startsWith('0x')
+          ? e.reason
+          : null;
+    // Also try nested body
+    const candidates = [raw, e?.error?.data, e?.data, e?.message].filter(
+      (x): x is string => typeof x === 'string' && x.includes('0x'),
+    );
+    for (const c of candidates) {
+      const idx = c.indexOf('0x');
+      const hex = c.slice(idx).match(/0x[0-9a-fA-F]+/)?.[0];
+      if (!hex || hex.length < 10) continue;
+      try {
+        const parsed = iface.parseError(hex);
+        if (parsed?.name === 'CooldownActive') {
+          return {
+            tileId: Number(parsed.args.tileId.toString()),
+            remainingSeconds: Number(parsed.args.remainingSeconds.toString()),
+          };
+        }
+      } catch {
+        /* try next */
+      }
+    }
+  } catch {
+    /* ignore */
+  }
+  void selector;
+  return null;
 }
 
 /**

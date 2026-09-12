@@ -79,6 +79,15 @@ library LibAppStorage {
         mapping(uint256 => Placement) placements; // placementId => Placement
         // parcelId => packed(x,y) => placementId (0 = empty). Footprint cells share one id.
         mapping(bytes32 => mapping(uint32 => uint256)) parcelCellPlacement;
+        // --- soft-tile craft cooldowns (per wallet, per tileId) ---
+        // Lifetime successful mint count for soft tiles 8–47 (not ERC1155 balance).
+        mapping(address => mapping(uint256 => uint256)) tileMintedCount;
+        // Timestamp of last successful mintTiles credit for that wallet+tileId.
+        mapping(address => mapping(uint256 => uint256)) tileLastMintAt;
+        // Tunables (0 = use defaults in GvTileMintFacet: bandStep=10, firstCooldown=3600, maxCap=none).
+        uint256 tileCooldownBandStep; // band sizes = step, 2*step, 3*step, ...
+        uint256 tileFirstCooldownSeconds; // band1 duration; band k (k>=1) = this * 2^(k-1)
+        uint256 tileCooldownMaxSeconds; // optional cap; 0 = uncapped
     }
 
     function appStorage() internal pure returns (AppStorage storage s) {

@@ -46,10 +46,52 @@ library FacetSelectors {
         s[13] = GvRulesFacet.softTileIdRange.selector;
     }
 
+    /// @notice Existing Rules selectors (for Replace cuts).
+    function rulesExisting() internal pure returns (bytes4[] memory s) {
+        return rules();
+    }
+
+    /// @notice New Rules selectors for soft-tile cooldown tunables (Add cut).
+    function rulesCooldownNew() internal pure returns (bytes4[] memory s) {
+        s = new bytes4[](2);
+        s[0] = GvRulesFacet.setTileCooldownParams.selector;
+        s[1] = GvRulesFacet.tileCooldownParams.selector;
+    }
+
+    function rulesAll() internal pure returns (bytes4[] memory s) {
+        s = new bytes4[](16);
+        bytes4[] memory base = rules();
+        for (uint256 i; i < base.length; i++) {
+            s[i] = base[i];
+        }
+        s[14] = GvRulesFacet.setTileCooldownParams.selector;
+        s[15] = GvRulesFacet.tileCooldownParams.selector;
+    }
+
+    /// @notice Pre-cooldown mint selectors (for Replace cuts on live diamond).
     function mint() internal pure returns (bytes4[] memory s) {
         s = new bytes4[](2);
         s[0] = GvTileMintFacet.mintTiles.selector;
         s[1] = GvTileMintFacet.quoteMintCost.selector;
+    }
+
+    /// @notice New mint view helpers for progressive craft cooldowns (Add cut).
+    function mintCooldownNew() internal pure returns (bytes4[] memory s) {
+        s = new bytes4[](4);
+        s[0] = GvTileMintFacet.cooldownRemaining.selector;
+        s[1] = GvTileMintFacet.nextCooldown.selector;
+        s[2] = GvTileMintFacet.mintedCount.selector;
+        s[3] = GvTileMintFacet.lastMintAt.selector;
+    }
+
+    function mintAll() internal pure returns (bytes4[] memory s) {
+        s = new bytes4[](6);
+        s[0] = GvTileMintFacet.mintTiles.selector;
+        s[1] = GvTileMintFacet.quoteMintCost.selector;
+        s[2] = GvTileMintFacet.cooldownRemaining.selector;
+        s[3] = GvTileMintFacet.nextCooldown.selector;
+        s[4] = GvTileMintFacet.mintedCount.selector;
+        s[5] = GvTileMintFacet.lastMintAt.selector;
     }
 
     /// @notice Selectors present on the pre-ERC1155 spike inventory facet.

@@ -781,5 +781,234 @@
       }
     ],
     "anonymous": false
+  },
+  {
+    "type": "function",
+    "name": "cooldownRemaining",
+    "inputs": [
+      {
+        "name": "wallet",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "tileId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "lastMintAt",
+    "inputs": [
+      {
+        "name": "wallet",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "tileId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "mintedCount",
+    "inputs": [
+      {
+        "name": "wallet",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "tileId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "nextCooldown",
+    "inputs": [
+      {
+        "name": "wallet",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "tileId",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "quoteMintCost",
+    "inputs": [
+      {
+        "name": "id",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "amount",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "total",
+        "type": "tuple",
+        "internalType": "struct LibAppStorage.AlchemicaCost",
+        "components": [
+          {
+            "name": "fud",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "fomo",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "alpha",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "kek",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "error",
+    "name": "CooldownActive",
+    "inputs": [
+      {
+        "name": "tileId",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "remainingSeconds",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "setTileCooldownParams",
+    "inputs": [
+      {
+        "name": "bandStep",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "firstCooldownSeconds",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "maxCapSeconds",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "tileCooldownParams",
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "bandStep",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "firstCooldownSeconds",
+        "type": "uint256",
+        "internalType": "uint256"
+      },
+      {
+        "name": "maxCapSeconds",
+        "type": "uint256",
+        "internalType": "uint256"
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "event",
+    "name": "TileCooldownParamsSet",
+    "inputs": [
+      {
+        "name": "bandStep",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "firstCooldownSeconds",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      },
+      {
+        "name": "maxCapSeconds",
+        "type": "uint256",
+        "indexed": false,
+        "internalType": "uint256"
+      }
+    ],
+    "anonymous": false
   }
 ]

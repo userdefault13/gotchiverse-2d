@@ -148,3 +148,23 @@ Inventory: `docs/GV2D_SOFT_INSTALLS_INVENTORY.md`
 - Mint credits ERC1155 balances + `TransferSingle`/`TransferBatch`
 - `safeTransferFrom` / approvals work
 - Rules mutable by owner; ownership not renounced; `paymentEnabled=false` on Sepolia
+
+## Soft-tile craft cooldowns
+
+```bash
+export GV2D_DIAMOND=0x34a851523A6f3351940d235373038b2A0A85e872
+forge script script/UpgradeTileCooldown.s.sol:UpgradeTileCooldown \
+  --rpc-url $BASE_SEPOLIA_RPC_URL --broadcast
+
+# Smoke (first band still instant)
+cast send $GV2D_DIAMOND "mintTiles(uint256[],uint256[])" "[10]" "[1]" \
+  --rpc-url $BASE_SEPOLIA_RPC_URL --private-key $PRIVATE_KEY
+cast call $GV2D_DIAMOND "mintedCount(address,uint256)(uint256)" $DEPLOYER_ADDRESS 10 \
+  --rpc-url $BASE_SEPOLIA_RPC_URL
+cast call $GV2D_DIAMOND "cooldownRemaining(address,uint256)(uint256)" $DEPLOYER_ADDRESS 10 \
+  --rpc-url $BASE_SEPOLIA_RPC_URL
+cast call $GV2D_DIAMOND "nextCooldown(address,uint256)(uint256)" $DEPLOYER_ADDRESS 10 \
+  --rpc-url $BASE_SEPOLIA_RPC_URL
+```
+
+Band math + Rules tunables: `docs/GV2D_DIAMOND_SPIKE.md`.

@@ -36,3 +36,58 @@ Ownership is **not** renounced. Costs and `paymentEnabled` retune via `GvRulesFa
 ## ERC1155 cut (Sepolia)
 
 Upgraded live diamond `0x34a851523A6f3351940d235373038b2A0A85e872` via `UpgradeERC1155` — replaced inventory/mint facets, added ERC1155 selectors, registered `supportsInterface(0xd9b67a26)`. Existing `AppStorage.balances` preserved (no wipe).
+
+## Soft-tile progressive craft cooldowns (2026-09-12)
+
+Live on Base Sepolia diamond `0x34a851523A6f3351940d235373038b2A0A85e872`.
+
+### Rules (Julius)
+
+- **Per wallet, per tileId** (soft tiles **8–47** only; Decor / soft installs unchanged)
+- Lifetime `tileMintedCount[wallet][tileId]` = successful `mintTiles` credits (not ERC1155 balance)
+- Cooldown = time since `tileLastMintAt[wallet][tileId]`
+- Band sizes: **10, 20, 30, 40, 50…** (`bandStep`, `2*bandStep`, …)
+  - Band 0 (lifetime **0–9**): **instant** (0)
+  - Band 1 (10–29): **1h**, then doubles each band (**2h, 4h, 8h, …**)
+- Tunable via `GvRulesFacet.setTileCooldownParams(bandStep, firstCooldownSeconds, maxCapSeconds)`  
+  (`0` bandStep/first → facet defaults **10 / 3600**; `maxCapSeconds=0` → uncapped)
+
+### Band math
+
+```
+size(i) = bandStep * (i + 1)          // i = 0,1,2,…
+band for lifetime n = smallest i with n < sum_{k=0..i} size(k)
+cooldown(band0) = 0
+cooldown(band i>=1) = min(first * 2^(i-1), maxCap or ∞)
+```
+
+### API
+
+| Call | Facet |
+|------|--------|
+| `mintTiles` (enforces `CooldownActive(tileId, remaining)`) | `GvTileMintFacet` |
+| `cooldownRemaining(wallet, tileId)` | `GvTileMintFacet` |
+| `nextCooldown(wallet, tileId)` | `GvTileMintFacet` |
+| `mintedCount` / `lastMintAt` | `GvTileMintFacet` |
+| `setTileCooldownParams` / `tileCooldownParams` | `GvRulesFacet` |
+
+`paymentEnabled` stays **false**. No Decor changes.
+
+### Testing later bands without waiting
+
+- **Forge only:** `vm.warp` (see `test/GvTileMint.t.sol`)
+- **Sepolia QA:** owner may temporarily `setTileCooldownParams(10, 60, 0)` (1‑minute first band), exercise, then restore `(10, 3600, 0)`. Do **not** ship short cooldowns as the live default.
+
+### Upgrade
+
+`forge script script/UpgradeTileCooldown.s.sol:UpgradeTileCooldown --rpc-url $BASE_SEPOLIA_RPC_URL --broadcast`
+
+| Item | Value |
+|------|--------|
+| `GvTileMintFacet` | `0x91E13D4DCe7aeA970e0b0Cc7fea4b26059028488` |
+| `GvRulesFacet` | `0x85509Cc3845f2A8650E531142afa43D181F5134D` |
+| `diamondCut` | `0xc1a1fcea96ac0c4e6aabe89c0890fa1360a428a82f779783885eec0bbe685b2b` |
+| `setTileCooldownParams` | `0x2a2e21f2fb2112ee1e38316d2fb9c7310ad4cac6b63cc64d275553474a54b0ac` |
+| Smoke mint 14×3 | `0x2a6e82f5ba38a75c76b2ec28f9f9f7abe1d0788c76093bd473dd54350a965074` |
+
+

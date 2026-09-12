@@ -45,6 +45,8 @@ import {
 import { craftCTileLocally, isCTileItemId } from 'helpers/ctile.helper';
 import {
   craftSoftInstallsOnDiamond,
+  fetchGv2dTileCooldown,
+  formatGv2dCooldownRemaining,
   isGv2dDiamondMintEnabled,
   isGv2dSoftInstallCraftId,
   isGv2dSoftTileMintId,
@@ -81,6 +83,8 @@ export const CraftingTable = ({ open, onClose }: Props): JSX.Element => {
   const [loading, setLoading] = useState(true);
   const [quanity, setQuantity] = useState(1);
   const [maxQuantity, setMaxQuantity] = useState(0);
+  /** Soft cTile diamond craft cooldown remaining (seconds); null = n/a or loading. */
+  const [tileCooldownRemaining, setTileCooldownRemaining] = useState<number | null>(null);
 
   const [{ socket }, uiDispatch] = useUI();
 
@@ -493,10 +497,56 @@ export const CraftingTable = ({ open, onClose }: Props): JSX.Element => {
           isCTileItemId(selectedRecipe.id)) ||
           (selectedRecipe.type === 'INSTALLATION' && isGv2dSoftInstallCraftId(selectedRecipe.id)));
       // paymentEnabled=false on Sepolia — do not gate qty on local alchemica.
+      // Soft cTiles: still allow batching within free band; cooldown gates after band 0.
       const max = diamondSoft ? 50 : getMaxQuantity(selectedRecipe.ingredients, alchemicaBalance);
       setMaxQuantity(max);
     }
   }, [selectedRecipe, alchemicaBalance]);
+
+  // Soft cTile progressive craft cooldown (per wallet, per tileId) from GV-2D diamond.
+  useEffect(() => {
+    let cancelled = false;
+    let timer: ReturnType<typeof setInterval> | undefined;
+
+    const clear = () => {
+      if (!cancelled) setTileCooldownRemaining(null);
+    };
+
+    const load = async () => {
+      if (
+        !selectedRecipe ||
+        !isGv2dDiamondMintEnabled() ||
+        selectedRecipe.type !== 'TILE' ||
+        !isGv2dSoftTileMintId(selectedRecipe.id) ||
+        !currentAccount ||
+        !globalProvider
+      ) {
+        clear();
+        return;
+      }
+      try {
+        const info = await fetchGv2dTileCooldown(
+          currentAccount,
+          Number(selectedRecipe.id),
+          globalProvider,
+        );
+        if (!cancelled) setTileCooldownRemaining(info.remainingSeconds);
+      } catch (e) {
+        console.warn('[gv2d] tile cooldown fetch failed', e);
+        if (!cancelled) setTileCooldownRemaining(null);
+      }
+    };
+
+    void load();
+    timer = setInterval(() => {
+      void load();
+    }, 15_000);
+
+    return () => {
+      cancelled = true;
+      if (timer) clearInterval(timer);
+    };
+  }, [selectedRecipe, currentAccount, globalProvider, crafting, pending]);
 
   useEffect(() => {
     uiDispatch({
@@ -577,6 +627,7 @@ export const CraftingTable = ({ open, onClose }: Props): JSX.Element => {
                   pending ||
                   crafting ||
                   loading ||
+                  (tileCooldownRemaining != null && tileCooldownRemaining > 0) ||
                   (!(
                     isGv2dDiamondMintEnabled() &&
                     ((selectedRecipe.softLaunch &&
@@ -600,7 +651,13 @@ export const CraftingTable = ({ open, onClose }: Props): JSX.Element => {
                 }
                 preventPropagation
               >
-                {pending ? 'Pending...' : crafting ? 'Crafting...' : 'Craft'}
+                {pending
+                  ? 'Pending...'
+                  : crafting
+                    ? 'Crafting...'
+                    : tileCooldownRemaining != null && tileCooldownRemaining > 0
+                      ? `Cooldown ${formatGv2dCooldownRemaining(tileCooldownRemaining)}`
+                      : 'Craft'}
               </Button>
             </div>
           </div>

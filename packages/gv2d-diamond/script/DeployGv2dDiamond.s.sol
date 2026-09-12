@@ -46,8 +46,8 @@ contract DeployGv2dDiamond is Script {
         IDiamondCut.FacetCut[] memory cut = new IDiamondCut.FacetCut[](5);
         cut[0] = _cut(address(loupe), FacetSelectors.loupe());
         cut[1] = _cut(address(own), FacetSelectors.ownership());
-        cut[2] = _cut(address(rules), FacetSelectors.rules());
-        cut[3] = _cut(address(mint), FacetSelectors.mint());
+        cut[2] = _cut(address(rules), FacetSelectors.rulesAll());
+        cut[3] = _cut(address(mint), FacetSelectors.mintAll());
         cut[4] = _cut(address(inventory), FacetSelectors.inventoryERC1155All());
 
         bytes memory initCalldata = abi.encodeWithSelector(InitERC1155.init.selector, uri);

@@ -431,3 +431,10 @@ Notes:
 
 
 <!-- fee sync 2026-09-11: LineBMint 40/40/10/10 -->
+
+## Soft-tile craft cooldowns (shipped 2026-09-12)
+
+Progressive **per-wallet, per-tileId** cooldowns on GV-2D `mintTiles` for ids **8–47**:
+bands 10/20/30… with CD 0 → 1h → 2h → 4h… (GvRules-tunable). See [`GV2D_DIAMOND_SPIKE.md`](./GV2D_DIAMOND_SPIKE.md).
+`paymentEnabled` still false. Decor unchanged.
+

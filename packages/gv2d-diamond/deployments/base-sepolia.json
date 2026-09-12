@@ -11,8 +11,8 @@
     "DiamondCutFacet": "0x5f9B69eb57B495b628200E42D686d2fA85ed359A",
     "DiamondLoupeFacet": "0x8ad781a19D60de376174A2D45d57D24D64342fE6",
     "OwnershipFacet": "0xE045616D779C8602bCBbc6FFBCD9B040589F538a",
-    "GvRulesFacet": "0x8E671AEDc767f0CF9492b2D4f698f7F09530D582",
-    "GvTileMintFacet": "0x502493bF1c934fEF6536dDE883fd340bb1fEF6F3",
+    "GvRulesFacet": "0x85509Cc3845f2A8650E531142afa43D181F5134D",
+    "GvTileMintFacet": "0x91E13D4DCe7aeA970e0b0Cc7fea4b26059028488",
     "GvInventoryFacet": "0x48038e3D742f73d15732Dd2b064593e4B120BF45",
     "InitERC1155": "0x3B4EDc51Be6bb4653be124A96D655D6b7e1bCD8B",
     "GvCatalogFacet": "0xb1c0190f6d0B8ad05788C6f3853d44A691947234",
@@ -21,8 +21,9 @@
     "GvUpgradeFacet": "0x2291C073247a767CFA296120df9fF041321FEa72"
   },
   "facetsPrevious": {
-    "GvTileMintFacet": "0x93335053d0E23Aaa1c807116561d76901Ba3368B",
-    "GvInventoryFacet": "0xc686558c8B0c6a7C8E33934160DD566e837d5d8D"
+    "GvTileMintFacet": "0x502493bF1c934fEF6536dDE883fd340bb1fEF6F3",
+    "GvInventoryFacet": "0xc686558c8B0c6a7C8E33934160DD566e837d5d8D",
+    "GvRulesFacet": "0x8E671AEDc767f0CF9492b2D4f698f7F09530D582"
   },
   "transactions": {
     "DiamondCutFacet": "0xfae1508329eb3535732b517653572afe952a92ab07c5c898b36097fcab64df02",
@@ -65,7 +66,14 @@
     "upgradeDecorRegister": "0xb4e83da47cfefeaf1b68821fd40d19ce91d72f7e78e9ae48664f436e7c305bc6",
     "upgradeDecorCatalogCreate": "0xd997ff418da1ca105c33a28a46a661087efc15780e5480db3947082aa1aa65c8",
     "upgradeDecorCraftCreate": "0xd36650b887268425f817d19f5df4231c91c78ee3b8d2a3e221feff7bf856b07a",
-    "upgradeDecorPlaceCreate": "0xc6a3060c73ac86afcd994d87f07d4ea6e46eff93a3a9b2bd3d6beca28e324fed"
+    "upgradeDecorPlaceCreate": "0xc6a3060c73ac86afcd994d87f07d4ea6e46eff93a3a9b2bd3d6beca28e324fed",
+    "GvTileMintFacet_cooldown": "0x4ec84513ee1e4fb55b523072ef67cf69e13995f9f3719411f735a2e2eb12617e",
+    "GvRulesFacet_cooldown": "0x8502441e66b6f276db13d6e3b2b7267a725dc995fdc5c652d5b6028084e82f95",
+    "diamondCut_tileCooldown": "0xc1a1fcea96ac0c4e6aabe89c0890fa1360a428a82f779783885eec0bbe685b2b",
+    "setTileCooldownParams": "0x2a2e21f2fb2112ee1e38316d2fb9c7310ad4cac6b63cc64d275553474a54b0ac",
+    "smokeMintTile10_cooldown": "0x6535cb2e2c6116635e954d6eb43de0901cb6c19a967d89517143c3e89b4d5bf2",
+    "smokeMintTile11_cooldown": "0xbd60cd9153e869373cb30310dbe5967176fc2a7fbb174502511938724bf3700b",
+    "smokeMintTile14x3_cooldown": "0x2a6e82f5ba38a75c76b2ec28f9f9f7abe1d0788c76093bd473dd54350a965074"
   },
   "smoke": {
     "tileId": 8,
@@ -89,7 +97,7 @@
     8,
     47
   ],
-  "notes": "Tiles 8-47 + soft-install bag 162-215 + Decor type-7 as GV ids L1+1000 (48) on GV ERC1155; Waalls+full inventory band registered; GvPlaceFacet live; paymentEnabled=false; L1 Installation diamond type-7 is a different contract (no double-mint); ownership retained; placeholder URI unchanged; no SafeFeeRouter / staking facet this pass.",
+  "notes": "Tiles 8-47 + soft-install bag 162-215 + Decor type-7 as GV ids L1+1000 (48) on GV ERC1155; progressive soft-tile craft cooldowns live (per wallet/tileId; bands 10/20/30\u2026; CD 0/1h/2h/4h\u2026); Waalls+full inventory band registered; GvPlaceFacet live; paymentEnabled=false; L1 Installation diamond type-7 is a different contract (no double-mint); ownership retained; placeholder URI unchanged; no SafeFeeRouter / staking facet this pass.",
   "softInstallsUpgradedAt": "2026-09-09T06:05:56Z",
   "softInstallIdRange": [
     162,
@@ -190,5 +198,23 @@
     "x": 2,
     "y": 2,
     "note": "GV decor ids = L1+1000. Crafted Common+Godlike Rofl Gnome; placed/unequipped Common on parcelUint 999002."
+  },
+  "tileCooldownUpgradedAt": "2026-09-12T07:04:22Z",
+  "tileCooldown": {
+    "bandStep": 10,
+    "firstCooldownSeconds": 3600,
+    "maxCapSeconds": 0,
+    "note": "Per wallet per soft tileId 8-47. Band sizes step,2*step,... CD: 0 then first*2^(band-1)."
+  },
+  "smokeTileCooldown": {
+    "tileId": 14,
+    "amount": 3,
+    "minter": "0x8842E0986F9974209593C8dCB5Aa78226435873a",
+    "mintedCount": 3,
+    "balanceOf": 3,
+    "nextCooldown": 0,
+    "txHash": "0x2a6e82f5ba38a75c76b2ec28f9f9f7abe1d0788c76093bd473dd54350a965074",
+    "paymentEnabled": false,
+    "note": "First band (lifetime <10) still instant; views mintedCount/nextCooldown/cooldownRemaining live."
   }
 }

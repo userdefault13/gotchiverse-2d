@@ -13,6 +13,7 @@ contract GvRulesFacet {
     event TileRegistered(uint256 indexed tileId, uint256 fud, uint256 fomo, uint256 alpha, uint256 kek);
     event TileCostUpdated(uint256 indexed tileId, uint256 fud, uint256 fomo, uint256 alpha, uint256 kek);
     event RulesVersionBumped(uint256 rulesVersion);
+    event TileCooldownParamsSet(uint256 bandStep, uint256 firstCooldownSeconds, uint256 maxCapSeconds);
 
     function initGvRules(
         address[4] calldata alchemicaTokens_,
@@ -101,6 +102,33 @@ contract GvRulesFacet {
         s.rulesVersion += 1;
         emit TileCostUpdated(tileId, cost.fud, cost.fomo, cost.alpha, cost.kek);
         emit RulesVersionBumped(s.rulesVersion);
+    }
+
+    /// @notice Tune soft-tile progressive craft cooldowns (band step / first CD / optional max).
+    /// @dev band sizes = step, 2*step, 3*step, …; band0 CD=0; band k (k≥1) = first * 2^(k-1), capped.
+    ///      Pass 0 for bandStep or firstCooldownSeconds to restore facet defaults (10 / 1 hour).
+    ///      maxCapSeconds 0 = uncapped.
+    function setTileCooldownParams(uint256 bandStep, uint256 firstCooldownSeconds, uint256 maxCapSeconds)
+        external
+    {
+        LibDiamond.enforceIsContractOwner();
+        LibAppStorage.AppStorage storage s = LibAppStorage.appStorage();
+        s.tileCooldownBandStep = bandStep;
+        s.tileFirstCooldownSeconds = firstCooldownSeconds;
+        s.tileCooldownMaxSeconds = maxCapSeconds;
+        s.rulesVersion += 1;
+        emit TileCooldownParamsSet(bandStep, firstCooldownSeconds, maxCapSeconds);
+        emit RulesVersionBumped(s.rulesVersion);
+    }
+
+    /// @notice Raw stored cooldown tunables (0 bandStep/first = facet defaults at read time).
+    function tileCooldownParams()
+        external
+        view
+        returns (uint256 bandStep, uint256 firstCooldownSeconds, uint256 maxCapSeconds)
+    {
+        LibAppStorage.AppStorage storage s = LibAppStorage.appStorage();
+        return (s.tileCooldownBandStep, s.tileFirstCooldownSeconds, s.tileCooldownMaxSeconds);
     }
 
     function paymentEnabled() external view returns (bool) {
