@@ -16,7 +16,8 @@
     "GvInventoryFacet": "0x48038e3D742f73d15732Dd2b064593e4B120BF45",
     "InitERC1155": "0x3B4EDc51Be6bb4653be124A96D655D6b7e1bCD8B",
     "GvCatalogFacet": "0xe8C6E4bf7EB9467b713B9F35B21970578249193b",
-    "GvCraftFacet": "0xF11dc741e6Bd0aC5f1f280a8f4a569386B771BBb"
+    "GvCraftFacet": "0xF11dc741e6Bd0aC5f1f280a8f4a569386B771BBb",
+    "GvPlaceFacet": "0x7A4561De880c24104e98eC1Ac7074158A29EDFD1"
   },
   "facetsPrevious": {
     "GvTileMintFacet": "0x93335053d0E23Aaa1c807116561d76901Ba3368B",
@@ -45,7 +46,16 @@
     "registerSoftInstalls_smoke": "0xf6f32507972286f6522a95e876486a730ac594ffe6270fbbd07bd43d6f0cb00a",
     "setInstallBaseURI": "0x0e52e47ed07f2a110b83e4414534b14020617e674d6959649fe0825f671165fe",
     "smokeCraftStore180": "0x5d4a1f5b2a7178ddef9fd49d679544aa671a0dadf4adcac91d4037815fd307b2",
-    "smokeCraftLodge171": "0x59cbae5bcc0d69e844a3bf6e328992e931a7eaf819b6c55eb31a811a016508d9"
+    "smokeCraftLodge171": "0x59cbae5bcc0d69e844a3bf6e328992e931a7eaf819b6c55eb31a811a016508d9",
+    "GvPlaceFacet": "0x5ab04eb6ffb0d18018a324b7b7d7c0ee9591c4954213be31dbe88d641df43a47",
+    "diamondCut_place": "0x9b1ff7ee63da78d81d15470a82bd1361a29d50f9f669b23593a3d8a1f991e8a6",
+    "registerSoftInstalls_waalls": "0x9035438821b3c7dddd08a1b9bc29923ce8da5fe665bab255b1ef164f97746f15",
+    "registerSoftInstalls_missingInventory": "0x2ba8866d8d969f2177d875becac9280fe8fdbbda204360f4d79b9d2678bdc180",
+    "smokePlaceStore180": "0x664a267bbfb534c59fa96ff2a8862ee6cc48f07ce6f338d04a6266d56aaeb1e7",
+    "smokeUnequipStore180": "0xd1032720724f7e09d48d940ce4e5d7528e48a29d74d72a841b28ba72eaf4e742",
+    "smokeCraftWaall162": "0x2258d32a930f6fc2eabccaeba138b3de97f0dab385411dfc0ba9748908897b68",
+    "smokePlaceLodge171": "0xf9f695f113c70cdff6041705cd14a0ef63d223bde3858182c687a8a357c86346",
+    "smokeUnequipLodge171": "0x9c201f391c1ac568d5b0ad33e8f8f8d25549a9ea05b2f755ac981a1b0fa811ea"
   },
   "smoke": {
     "tileId": 8,
@@ -69,7 +79,7 @@
     8,
     47
   ],
-  "notes": "Tiles 8-47 + soft-install staging bag 162-215 on GV ERC1155; paymentEnabled=false; ownership retained; locked soft-install bag SoT = Aarcade cartridge (bridge pending).",
+  "notes": "Tiles 8-47 + soft-install bag 162-215 on GV ERC1155; Waalls+full inventory band registered; GvPlaceFacet live; paymentEnabled=false; ownership retained; placeholder URI unchanged; no SafeFeeRouter this pass.",
   "softInstallsUpgradedAt": "2026-09-09T06:05:56Z",
   "softInstallIdRange": [
     162,
@@ -95,6 +105,45 @@
     "storeTxHash": "0x5d4a1f5b2a7178ddef9fd49d679544aa671a0dadf4adcac91d4037815fd307b2",
     "lodgeTxHash": "0x59cbae5bcc0d69e844a3bf6e328992e931a7eaf819b6c55eb31a811a016508d9",
     "installBaseURI": "https://gv2d.placeholder/soft-install/{id}.json",
+    "paymentEnabled": false
+  },
+  "placeUpgradedAt": "2026-09-12T05:19:14Z",
+  "softInstallWaallsRegistered": [
+    162,
+    163,
+    164,
+    165,
+    166,
+    167,
+    168,
+    169,
+    170
+  ],
+  "softInstallFullyRegisteredBand": [
+    162,
+    215
+  ],
+  "smokePlace": {
+    "parcelModel": "bytes32 parcelId primary; parcelKeyFromUint(uint256); parcelKeyFromRealm(chainId, realmParcelId)=keccak256(abi.encode(...)). cPaarcel ownership remains on cartridge; GV stores placements only.",
+    "store": {
+      "itemId": 180,
+      "parcelUint": 999001,
+      "x": 1,
+      "y": 1,
+      "placeTx": "0x664a267bbfb534c59fa96ff2a8862ee6cc48f07ce6f338d04a6266d56aaeb1e7",
+      "unequipTx": "0xd1032720724f7e09d48d940ce4e5d7528e48a29d74d72a841b28ba72eaf4e742"
+    },
+    "lodge": {
+      "itemId": 171,
+      "parcelUint": 999002,
+      "x": 5,
+      "y": 5,
+      "placeTx": "0xf9f695f113c70cdff6041705cd14a0ef63d223bde3858182c687a8a357c86346",
+      "unequipTx": "0x9c201f391c1ac568d5b0ad33e8f8f8d25549a9ea05b2f755ac981a1b0fa811ea",
+      "balanceAfterPlace": 0,
+      "balanceAfterUnequip": 1
+    },
+    "waallCraftTx": "0x2258d32a930f6fc2eabccaeba138b3de97f0dab385411dfc0ba9748908897b68",
     "paymentEnabled": false
   }
 }

@@ -106,19 +106,26 @@ When the flag is off, soft cTiles keep the legacy local craft path.
 
 ## Soft installs (Phase B staging)
 
-`GvCatalogFacet` + `GvCraftFacet` cut onto the same Sepolia diamond.
+`GvCatalogFacet` + `GvCraftFacet` + `GvPlaceFacet` on the same Sepolia diamond.
 
-- Soft-install id band **162–215** (disjoint from tiles **8–47**)
-- Smoke-registered: Lodge `171`, Store `180`, Cashier `189`, Display Table `198`, Console `199`, Terminal `208`, Broadcaster `209`
-- `craftInstallations([id],[qty])` is permissionless; with `paymentEnabled=false` costs are not pulled
-- **TEMPORARY bag:** mints credit **GV ERC1155** balances. Locked SoT = **Aarcade cartridge** ERC1155 — cartridge `InventoryFacet` currently only has `mintWearable` (no soft-install mint). Bridge next.
-- Placeholder `installBaseURI` is owner-updatable via `setInstallBaseURI`
+- Soft-install id band **162–215** (disjoint from tiles **8–47**) — **fully registered** (Waalls 162–170 + Lodge/Store/Cashier/Console levels + furniture/world 198–215)
+- `craftInstallations([id],[qty])` is permissionless; with `paymentEnabled=false` costs are not pulled (zeros OK)
+- **TEMPORARY bag:** mints credit **GV ERC1155** balances. Locked SoT = **Aarcade cartridge** ERC1155 — bridge next.
+- Placeholder `installBaseURI` unchanged: `https://gv2d.placeholder/soft-install/{id}.json`
+
+### Place / unequip (`GvPlaceFacet`)
+
+- `placeSoftInstall(bytes32 parcelId, itemId, x, y)` — burns 1 from caller bag; records placement + footprint conflict checks
+- `unequipSoftInstall` / `unequipSoftInstallById` — owner-only; mints 1 back to placer
+- Parcel keys: opaque `bytes32`; helpers `parcelKeyFromUint(uint256)` and `parcelKeyFromRealm(chainId, realmParcelId)`. **cPaarcel ownership stays on cartridge**; GV only stores place state.
 
 ```bash
-forge script script/UpgradeSoftInstalls.s.sol:UpgradeSoftInstalls \
+forge script script/UpgradePlace.s.sol:UpgradePlace \
   --rpc-url $BASE_SEPOLIA_RPC_URL --broadcast
 
-cast send $DIAMOND "craftInstallations(uint256[],uint256[])" "[180]" "[1]" \
+cast send $DIAMOND "placeSoftInstallOnUint(uint256,uint256,uint16,uint16)" 999001 180 1 1 \
+  --rpc-url $BASE_SEPOLIA_RPC_URL --private-key $PRIVATE_KEY
+cast send $DIAMOND "unequipSoftInstallOnUint(uint256,uint16,uint16)" 999001 1 1 \
   --rpc-url $BASE_SEPOLIA_RPC_URL --private-key $PRIVATE_KEY
 ```
 

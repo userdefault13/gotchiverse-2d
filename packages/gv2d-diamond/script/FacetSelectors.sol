@@ -8,6 +8,7 @@ import {GvTileMintFacet} from "../src/facets/GvTileMintFacet.sol";
 import {GvInventoryFacet} from "../src/facets/GvInventoryFacet.sol";
 import {GvCatalogFacet} from "../src/facets/GvCatalogFacet.sol";
 import {GvCraftFacet} from "../src/facets/GvCraftFacet.sol";
+import {GvPlaceFacet} from "../src/facets/GvPlaceFacet.sol";
 
 /// @dev Shared selector lists for fresh deploy and upgrade cuts.
 library FacetSelectors {
@@ -133,4 +134,20 @@ library FacetSelectors {
         s[0] = GvCraftFacet.craftInstallations.selector;
         s[1] = GvCraftFacet.quoteCraftCost.selector;
     }
+
+    function place() internal pure returns (bytes4[] memory s) {
+        s = new bytes4[](11);
+        s[0] = GvPlaceFacet.placeSoftInstall.selector;
+        s[1] = GvPlaceFacet.placeSoftInstallOnUint.selector;
+        s[2] = GvPlaceFacet.unequipSoftInstall.selector;
+        s[3] = GvPlaceFacet.unequipSoftInstallOnUint.selector;
+        s[4] = GvPlaceFacet.unequipSoftInstallById.selector;
+        s[5] = GvPlaceFacet.placement.selector;
+        s[6] = GvPlaceFacet.placementCount.selector;
+        s[7] = GvPlaceFacet.cellPlacementId.selector;
+        s[8] = GvPlaceFacet.isCellOccupied.selector;
+        s[9] = GvPlaceFacet.parcelKeyFromUint.selector;
+        s[10] = GvPlaceFacet.parcelKeyFromRealm.selector;
+    }
 }
+

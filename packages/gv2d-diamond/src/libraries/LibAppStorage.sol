@@ -32,6 +32,17 @@ library LibAppStorage {
         AlchemicaCost cost;
     }
 
+    /// @dev Soft-install placement on a parcel key (GV-local; not cartridge ownership).
+    struct Placement {
+        uint256 itemId; // 0 = deleted / empty slot
+        address owner; // placer; receives item on unequip
+        bytes32 parcelId;
+        uint16 x;
+        uint16 y;
+        uint8 width;
+        uint8 height;
+    }
+
     struct AppStorage {
         // --- inventory (same mapping slots serve ERC1155 balances) ---
         // account => tileId => balance
@@ -56,6 +67,13 @@ library LibAppStorage {
         // gains a soft-install mint entrypoint (not mintWearable).
         mapping(uint256 => SoftInstallType) softInstalls;
         string installBaseURI; // mutable placeholder metadata for soft installs
+        // --- placements (Phase place) ---
+        // Soft-install place state keyed by opaque bytes32 parcelId (see GvPlaceFacet).
+        // cPaarcel ownership stays on cartridge; GV stores placements only.
+        uint256 placementCount; // next id = count (ids start at 1)
+        mapping(uint256 => Placement) placements; // placementId => Placement
+        // parcelId => packed(x,y) => placementId (0 = empty). Footprint cells share one id.
+        mapping(bytes32 => mapping(uint32 => uint256)) parcelCellPlacement;
     }
 
     function appStorage() internal pure returns (AppStorage storage s) {

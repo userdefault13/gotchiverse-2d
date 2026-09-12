@@ -140,7 +140,7 @@ Costs: zero placeholders; `paymentEnabled` stays **false**.
 
 1. Env: `NEXT_PUBLIC_USE_GV2D_DIAMOND=true`, `NEXT_PUBLIC_GV2D_DIAMOND_ADDRESS=0x34a851523A6f3351940d235373038b2A0A85e872` (see `.env.example`).
 2. Connect a wallet with Base Sepolia ETH; open **Crafting Table**.
-3. Craft a **registered** smoke id (do not expect Waalls / higher levels until registered):
+3. Craft any registered soft id in **162–215** (Waalls included):
    - **171** Lodge L1, **180** Store L1, **189** Cashier L1, **198** Display Table, **199** Console L1, **208** Terminal, **209** Broadcaster.
 4. Expect wallet prompt on Base Sepolia → `craftInstallations` tx → success toast; inventory qty matches `balanceOf(account, id)` on the diamond (Basescan token/`balanceOf`).
 5. Wrong chain / no wallet → clear error (switch to Base Sepolia / connect wallet). No alchemica approve.
@@ -149,8 +149,29 @@ Costs: zero placeholders; `paymentEnabled` stays **false**.
 
 **Note:** Console still may require picking a title in RecipeBook UX; diamond mint is fungible ERC1155 (instance bag / loaded titles not written by the diamond path). Furniture non-Console qty also mirrors into store/lodge furniture bags after `balanceOf` sync.
 
-Place/resell still off-chain until `GvPlaceFacet` + cPaarcel wiring.
+Place/unequip **on-chain** via `GvPlaceFacet` (2026-09-11); FE wiring + cPaarcel ownership checks still pending.
 
 ## Bag SoT correction
 Soft-install bag SoT = **GV-2D diamond** (Julius 2026-09-08). Cartridge mintWearable is wearables-only.
+
+---
+
+## 9. Place facet (2026-09-11 PT)
+
+`GvPlaceFacet` cut onto Sepolia diamond `0x34a851523A6f3351940d235373038b2A0A85e872` at facet `0x7A4561De880c24104e98eC1Ac7074158A29EDFD1`.
+
+| Item | Status |
+|------|--------|
+| Waalls **162–170** | Registered + craftable |
+| Remaining inventory band **172–215** (minus prior smoke) | Registered |
+| Place / unequip | Live — bag burn ↔ placement; footprint conflict checks |
+| Parcel key | `bytes32` (+ `parcelKeyFromUint` / `parcelKeyFromRealm`); cPaarcel still cartridge-owned |
+| Placeholder URI | Unchanged |
+| `paymentEnabled` | Still **false**; no SafeFeeRouter; ownership not renounced |
+
+### FE follow-up
+- Wire Phaser place/unequip to `placeSoftInstall` / `unequipSoftInstall` (flag on) instead of local placements
+- Choose parcel key scheme (cartridge cPaarcel id as uint → `parcelKeyFromUint`, or realm-linked `parcelKeyFromRealm`)
+- Refresh `web3/abi/Gv2dDiamond.json` with place selectors; sync bag qty after place/unequip
+- Parcel ownership / controller checks still off-chain until cartridge bridge
 
