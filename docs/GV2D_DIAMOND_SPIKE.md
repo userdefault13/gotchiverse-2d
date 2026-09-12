@@ -91,3 +91,42 @@ cooldown(band i>=1) = min(first * 2^(i-1), maxCap or ∞)
 | Smoke mint 14×3 | `0x2a6e82f5ba38a75c76b2ec28f9f9f7abe1d0788c76093bd473dd54350a965074` |
 
 
+
+## Payments — SafeFeeRouter LineBMint (shipped 2026-09-12)
+
+### Architecture (no dual ledger)
+| Leg | Token | When | Destination |
+|-----|-------|------|-------------|
+| **Craft resource** | Alchemica FUD/FOMO/ALPHA/KEK | `paymentEnabled` **and** `alchemicaTokens` configured | Pulled to GV diamond (catalog `AlchemicaCost`) |
+| **Protocol fee** | **USDC** (6 dec) | `paymentEnabled` **and** `lineBFeeEnabled` **and** `lineBMintFeeUsdc > 0` | `SafeFeeRouter.pay(LineBMint, pool, …)` → **40% stakers / 40% aarcade / 10% burn / 10% dao** |
+
+- Splits are **SoT on SafeFeeRouter** — GV does not store bps.
+- Line B is a **protocol fee**, not a second alchemica quote. On Sepolia (no alchemica faucet) USDC Line B is the payment path; alchemica pull stays coded for mainnet when tokens are set.
+- Pool keys (Aarcade convention): soft tiles → `keccak256("tile")`; soft installs / decor → `keccak256("installation")`.
+- Sales 50% treasury remains separate (not this cut).
+
+### Sepolia status
+| Flag | Value |
+|------|------:|
+| `paymentEnabled` | **false** (free-mint smoke intact) |
+| `lineBFeeEnabled` | **false** |
+| `safeFeeRouter` | `0x9476a6Fd296eB60822Ad72F91334e56B880b3985` |
+| `usdc` | `0x036CbD53842c5426634e7929541eC2318f3dCF7e` |
+| `lineBMintFeeUsdc` | `1000000` (1 USDC per unit, armed but not collecting) |
+
+Facets (payments cut): TileMint `0x0AEc…010e`, Craft `0xc63d…FD12`, Upgrade `0x9202…3d8A`, Rules `0x4445…9159`.  
+diamondCut: `0x878256e9e52f41027013a332e3e03b8c491f154d4b8ed53632155e34d8416fb0`.
+
+### Enable + smoke (after Julius confirms USDC faucet)
+```bash
+cd packages/gv2d-diamond
+# optional: LINE_B_MINT_FEE_USDC=1000000
+forge script script/EnablePayments.s.sol:EnablePayments \
+  --rpc-url $BASE_SEPOLIA_RPC_URL --broadcast
+```
+1. Fund wallet with Base Sepolia USDC (`0x036CbD…CF7e`).
+2. FE auto-approves USDC to diamond when flags are on (`ensureGv2dCraftApprovals`).
+3. Craft/mint a zero-alchemica soft install (e.g. Store 180) or ghost tile 38 — pays Line B only while alchemica tokens unset.
+4. Leave flags **false** if faucet unavailable; path is unit-tested in `test/GvPayment.t.sol`.
+
+Owner setters (no renounce): `configureLineBPayment`, `setPaymentEnabled`, `setLineBFeeEnabled`, `setLineBMintFeeUsdc`, `setSafeFeeRouter`, `setUsdc`, `setAlchemicaTokens`.

@@ -168,3 +168,15 @@ cast call $GV2D_DIAMOND "nextCooldown(address,uint256)(uint256)" $DEPLOYER_ADDRE
 ```
 
 Band math + Rules tunables: `docs/GV2D_DIAMOND_SPIKE.md`.
+
+
+## Payments (SafeFeeRouter LineBMint)
+
+Sepolia wires `safeFeeRouter` + USDC + `lineBMintFeeUsdc=1e6` but keeps **`paymentEnabled=false`** and **`lineBFeeEnabled=false`** so free-mint smoke stays green.
+
+Enable later:
+```bash
+forge script script/EnablePayments.s.sol:EnablePayments --rpc-url $BASE_SEPOLIA_RPC_URL --broadcast
+```
+
+Architecture: see `docs/GV2D_DIAMOND_SPIKE.md` § Payments. Unit tests: `test/GvPayment.t.sol`.

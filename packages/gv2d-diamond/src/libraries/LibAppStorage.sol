@@ -88,6 +88,12 @@ library LibAppStorage {
         uint256 tileCooldownBandStep; // band sizes = step, 2*step, 3*step, ...
         uint256 tileFirstCooldownSeconds; // band1 duration; band k (k>=1) = this * 2^(k-1)
         uint256 tileCooldownMaxSeconds; // optional cap; 0 = uncapped
+        // --- SafeFeeRouter LineBMint (USDC protocol fee; splits SoT on router) ---
+        address safeFeeRouter; // Aarcade SafeFeeRouter (LineBMint 40/40/10/10)
+        address usdc; // optional cache; address(0) => ISafeFeeRouter(safeFeeRouter).usdc()
+        bool lineBFeeEnabled; // when true + paymentEnabled, route USDC LineBMint per unit
+        uint256 lineBMintFeeUsdc; // per-unit USDC (6 decimals) protocol fee
+        address lineBPublisher; // publisher leg (LineBMint bps=0; usually address(0))
     }
 
     function appStorage() internal pure returns (AppStorage storage s) {

@@ -46,9 +46,17 @@ library FacetSelectors {
         s[13] = GvRulesFacet.softTileIdRange.selector;
     }
 
-    /// @notice Existing Rules selectors (for Replace cuts).
+    /// @notice Existing Rules selectors on live diamond before LineB payment cut (base + cooldown).
     function rulesExisting() internal pure returns (bytes4[] memory s) {
-        return rules();
+        bytes4[] memory base = rules();
+        bytes4[] memory cd = rulesCooldownNew();
+        s = new bytes4[](base.length + cd.length);
+        for (uint256 i; i < base.length; i++) {
+            s[i] = base[i];
+        }
+        for (uint256 i; i < cd.length; i++) {
+            s[base.length + i] = cd[i];
+        }
     }
 
     /// @notice New Rules selectors for soft-tile cooldown tunables (Add cut).
@@ -59,20 +67,47 @@ library FacetSelectors {
     }
 
     function rulesAll() internal pure returns (bytes4[] memory s) {
-        s = new bytes4[](16);
         bytes4[] memory base = rules();
+        bytes4[] memory cd = rulesCooldownNew();
+        bytes4[] memory pay = rulesPaymentNew();
+        s = new bytes4[](base.length + cd.length + pay.length);
+        uint256 n;
         for (uint256 i; i < base.length; i++) {
-            s[i] = base[i];
+            s[n++] = base[i];
         }
-        s[14] = GvRulesFacet.setTileCooldownParams.selector;
-        s[15] = GvRulesFacet.tileCooldownParams.selector;
+        for (uint256 i; i < cd.length; i++) {
+            s[n++] = cd[i];
+        }
+        for (uint256 i; i < pay.length; i++) {
+            s[n++] = pay[i];
+        }
     }
 
-    /// @notice Pre-cooldown mint selectors (for Replace cuts on live diamond).
+    /// @notice New Rules selectors for SafeFeeRouter LineBMint wiring (Add cut).
+    function rulesPaymentNew() internal pure returns (bytes4[] memory s) {
+        s = new bytes4[](11);
+        s[0] = GvRulesFacet.setSafeFeeRouter.selector;
+        s[1] = GvRulesFacet.setUsdc.selector;
+        s[2] = GvRulesFacet.setLineBFeeEnabled.selector;
+        s[3] = GvRulesFacet.setLineBMintFeeUsdc.selector;
+        s[4] = GvRulesFacet.setLineBPublisher.selector;
+        s[5] = GvRulesFacet.configureLineBPayment.selector;
+        s[6] = GvRulesFacet.safeFeeRouter.selector;
+        s[7] = GvRulesFacet.usdc.selector;
+        s[8] = GvRulesFacet.lineBFeeEnabled.selector;
+        s[9] = GvRulesFacet.lineBMintFeeUsdc.selector;
+        s[10] = GvRulesFacet.lineBPublisher.selector;
+    }
+
+    /// @notice Pre-payment mint selectors present on live diamond (mint + cooldown views).
     function mint() internal pure returns (bytes4[] memory s) {
-        s = new bytes4[](2);
+        s = new bytes4[](6);
         s[0] = GvTileMintFacet.mintTiles.selector;
         s[1] = GvTileMintFacet.quoteMintCost.selector;
+        s[2] = GvTileMintFacet.cooldownRemaining.selector;
+        s[3] = GvTileMintFacet.nextCooldown.selector;
+        s[4] = GvTileMintFacet.mintedCount.selector;
+        s[5] = GvTileMintFacet.lastMintAt.selector;
     }
 
     /// @notice New mint view helpers for progressive craft cooldowns (Add cut).
@@ -85,13 +120,19 @@ library FacetSelectors {
     }
 
     function mintAll() internal pure returns (bytes4[] memory s) {
-        s = new bytes4[](6);
+        s = new bytes4[](7);
         s[0] = GvTileMintFacet.mintTiles.selector;
         s[1] = GvTileMintFacet.quoteMintCost.selector;
         s[2] = GvTileMintFacet.cooldownRemaining.selector;
         s[3] = GvTileMintFacet.nextCooldown.selector;
         s[4] = GvTileMintFacet.mintedCount.selector;
         s[5] = GvTileMintFacet.lastMintAt.selector;
+        s[6] = GvTileMintFacet.quoteMintLineBFeeUsdc.selector;
+    }
+
+    function mintPaymentNew() internal pure returns (bytes4[] memory s) {
+        s = new bytes4[](1);
+        s[0] = GvTileMintFacet.quoteMintLineBFeeUsdc.selector;
     }
 
     /// @notice Selectors present on the pre-ERC1155 spike inventory facet.
@@ -176,6 +217,18 @@ library FacetSelectors {
         s = new bytes4[](2);
         s[0] = GvCraftFacet.craftInstallations.selector;
         s[1] = GvCraftFacet.quoteCraftCost.selector;
+    }
+
+    function craftAll() internal pure returns (bytes4[] memory s) {
+        s = new bytes4[](3);
+        s[0] = GvCraftFacet.craftInstallations.selector;
+        s[1] = GvCraftFacet.quoteCraftCost.selector;
+        s[2] = GvCraftFacet.quoteCraftLineBFeeUsdc.selector;
+    }
+
+    function craftPaymentNew() internal pure returns (bytes4[] memory s) {
+        s = new bytes4[](1);
+        s[0] = GvCraftFacet.quoteCraftLineBFeeUsdc.selector;
     }
 
     function place() internal pure returns (bytes4[] memory s) {

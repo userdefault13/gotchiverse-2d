@@ -413,8 +413,8 @@ Live Base **Installation diamond** already has many `installationType === 7` dec
 
 Notes:
 - **Align with router** (Julius 2026-09-11): supersedes earlier walk locks **50/40/5/5** and the older 50/25/10/15 draft for this stream.
-- GV craft payment (when `paymentEnabled`) should call / mirror `SafeFeeRouter.pay(LineBMint, …)` so one SoT for splits — don’t maintain a second bps table on GV unless it reads the router.
-- Still in force: cartridge **mint free**; secondary **sale → 50% AarcadeGh$t treasury only** (sales are **not** Line B); Sepolia `paymentEnabled=false` until costs set.
+- **Shipped 2026-09-12:** GV craft/mint/upgrade call `SafeFeeRouter.pay(LineBMint, …)` via `LibGvPayment` when `paymentEnabled && lineBFeeEnabled`. Splits stay on the router (no GV bps table). Alchemica catalog pull is optional alongside (skipped while Sepolia tokens unset).
+- Still in force: cartridge **mint free**; secondary **sale → 50% AarcadeGh$t treasury only** (sales are **not** Line B); Sepolia `paymentEnabled=false` / `lineBFeeEnabled=false` until faucet confirmed — router+USDC+1 USDC fee already configured.
 
 ### Sales (confirmed)
 - Secondary sales: **50% → AarcadeGh$t treasury only** (not the Line B staker split).

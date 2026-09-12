@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import {LibAppStorage} from "../libraries/LibAppStorage.sol";
 import {LibERC1155} from "../libraries/LibERC1155.sol";
-import {IERC20} from "../interfaces/IERC20.sol";
+import {LibGvPayment} from "../libraries/LibGvPayment.sol";
 
 /// @notice Permissionless soft-tile mint for ids [8,47]. No minter role.
 /// @dev Credits diamond-hosted ERC1155 balances (TransferSingle from address(0)).
@@ -41,7 +41,14 @@ contract GvTileMintFacet {
 
             LibAppStorage.AlchemicaCost memory cost = _effectiveCost(s, id);
             if (s.paymentEnabled) {
-                _pullCost(s, msg.sender, cost, amount);
+                LibGvPayment.pullAlchemica(s, msg.sender, cost, amount);
+                LibGvPayment.payLineBMint(
+                    s,
+                    msg.sender,
+                    LibGvPayment.poolForSoftTile(),
+                    amount,
+                    LibGvPayment.refFor(msg.sender, id, amount)
+                );
             }
         }
 
@@ -82,6 +89,13 @@ contract GvTileMintFacet {
         total.fomo = unit.fomo * amount;
         total.alpha = unit.alpha * amount;
         total.kek = unit.kek * amount;
+    }
+
+    /// @notice USDC LineBMint fee for `amount` soft tiles (0 if lineB fee off / unset).
+    function quoteMintLineBFeeUsdc(uint256 amount) external view returns (uint256) {
+        LibAppStorage.AppStorage storage s = LibAppStorage.appStorage();
+        if (!s.paymentEnabled || !s.lineBFeeEnabled || s.safeFeeRouter == address(0)) return 0;
+        return s.lineBMintFeeUsdc * amount;
     }
 
     /// @notice Seconds until `wallet` may mint `tileId` again (0 = ready).
@@ -203,22 +217,4 @@ contract GvTileMintFacet {
         }
     }
 
-    function _pullCost(
-        LibAppStorage.AppStorage storage s,
-        address from,
-        LibAppStorage.AlchemicaCost memory unit,
-        uint256 amount
-    ) internal {
-        _pullOne(s.alchemicaTokens[0], from, unit.fud * amount);
-        _pullOne(s.alchemicaTokens[1], from, unit.fomo * amount);
-        _pullOne(s.alchemicaTokens[2], from, unit.alpha * amount);
-        _pullOne(s.alchemicaTokens[3], from, unit.kek * amount);
-    }
-
-    function _pullOne(address token, address from, uint256 amount) internal {
-        if (amount == 0) return;
-        require(token != address(0), "TileMint: token");
-        bool ok = IERC20(token).transferFrom(from, address(this), amount);
-        require(ok, "TileMint: transfer");
-    }
 }

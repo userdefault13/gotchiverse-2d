@@ -16,8 +16,9 @@
  * diamond from this path. GV decor bag ids are L1+1000 (see decor-id-map).
  *
  * Deployed diamond: packages/gv2d-diamond/deployments/base-sepolia.json
- * paymentEnabled=false on Sepolia — no alchemica approve for mint/craft; place
- * burns bag balance (payment flag irrelevant). Soft-install bag SoT = GV-2D
+ * Sepolia: paymentEnabled=false / lineBFeeEnabled=false by default (free mint).
+ * When enabled: approve USDC (SafeFeeRouter LineBMint) and/or alchemica before
+ * mint/craft/upgrade. Place still burns bag only. Soft-install bag SoT = GV-2D
  * ERC1155 (ids 162–215 + decor L1+1000). cPaarcel ownership remains cartridge.
  */
 import { ethers, Signer } from 'ethers';
@@ -120,6 +121,182 @@ export function getGv2dDiamondContract(
 ): ethers.Contract {
   return new ethers.Contract(getGv2dDiamondAddress(), Gv2dDiamondAbi as any, signerOrProvider);
 }
+
+/** Base Sepolia Circle USDC (SafeFeeRouter). Override with NEXT_PUBLIC_GV2D_USDC. */
+export const GV2D_USDC_DEFAULT = '0x036CbD53842c5426634e7929541eC2318f3dCF7e';
+
+const ERC20_ABI = [
+  'function approve(address spender, uint256 amount) returns (bool)',
+  'function allowance(address owner, address spender) view returns (uint256)',
+  'function decimals() view returns (uint8)',
+  'function balanceOf(address) view returns (uint256)',
+];
+
+export type Gv2dPaymentStatus = {
+  paymentEnabled: boolean;
+  lineBFeeEnabled: boolean;
+  lineBMintFeeUsdc: string; // atomic USDC units (6 decimals)
+  usdc: string;
+  safeFeeRouter: string;
+  alchemicaTokens: string[];
+};
+
+export async function fetchGv2dPaymentStatus(
+  provider: providers.Provider,
+): Promise<Gv2dPaymentStatus> {
+  const c = getGv2dDiamondContract(provider);
+  const [paymentEnabled, lineBFeeEnabled, lineBMintFeeUsdc, usdc, safeFeeRouter, alchemicaTokens] =
+    await Promise.all([
+      c.paymentEnabled(),
+      c.lineBFeeEnabled(),
+      c.lineBMintFeeUsdc(),
+      c.usdc(),
+      c.safeFeeRouter(),
+      c.alchemicaTokens(),
+    ]);
+  return {
+    paymentEnabled: Boolean(paymentEnabled),
+    lineBFeeEnabled: Boolean(lineBFeeEnabled),
+    lineBMintFeeUsdc: lineBMintFeeUsdc.toString(),
+    usdc:
+      usdc && usdc !== ethers.constants.AddressZero
+        ? ethers.utils.getAddress(usdc)
+        : GV2D_USDC_DEFAULT,
+    safeFeeRouter: safeFeeRouter
+      ? ethers.utils.getAddress(safeFeeRouter)
+      : ethers.constants.AddressZero,
+    alchemicaTokens: (alchemicaTokens || []).map((a: string) =>
+      a && a !== ethers.constants.AddressZero
+        ? ethers.utils.getAddress(a)
+        : ethers.constants.AddressZero,
+    ),
+  };
+}
+
+export type Gv2dQuotedCosts = {
+  alchemica: { fud: string; fomo: string; alpha: string; kek: string };
+  lineBFeeUsdc: string;
+  payment: Gv2dPaymentStatus;
+};
+
+/** Quote alchemica + LineB USDC for a soft tile mint (display / approve sizing). */
+export async function quoteGv2dTileMintCosts(
+  itemId: number,
+  quantity: number,
+  provider: providers.Provider,
+): Promise<Gv2dQuotedCosts> {
+  const qty = Math.max(1, Math.floor(quantity) || 1);
+  const c = getGv2dDiamondContract(provider);
+  const payment = await fetchGv2dPaymentStatus(provider);
+  const [alc, fee] = await Promise.all([
+    c.quoteMintCost(itemId, qty),
+    c.quoteMintLineBFeeUsdc(qty),
+  ]);
+  return {
+    alchemica: {
+      fud: alc.fud.toString(),
+      fomo: alc.fomo.toString(),
+      alpha: alc.alpha.toString(),
+      kek: alc.kek.toString(),
+    },
+    lineBFeeUsdc: fee.toString(),
+    payment,
+  };
+}
+
+/** Quote alchemica + LineB USDC for soft-install / decor craft. */
+export async function quoteGv2dCraftCosts(
+  itemId: number,
+  quantity: number,
+  provider: providers.Provider,
+): Promise<Gv2dQuotedCosts> {
+  const qty = Math.max(1, Math.floor(quantity) || 1);
+  const chainId = toGvSoftInstallChainId(itemId);
+  const c = getGv2dDiamondContract(provider);
+  const payment = await fetchGv2dPaymentStatus(provider);
+  const [alc, fee] = await Promise.all([
+    c.quoteCraftCost(chainId, qty),
+    c.quoteCraftLineBFeeUsdc(qty),
+  ]);
+  return {
+    alchemica: {
+      fud: alc.fud.toString(),
+      fomo: alc.fomo.toString(),
+      alpha: alc.alpha.toString(),
+      kek: alc.kek.toString(),
+    },
+    lineBFeeUsdc: fee.toString(),
+    payment,
+  };
+}
+
+async function ensureErc20Allowance(
+  token: string,
+  owner: string,
+  spender: string,
+  amount: ethers.BigNumberish,
+  signer: Signer,
+): Promise<void> {
+  if (!token || token === ethers.constants.AddressZero) return;
+  const need = ethers.BigNumber.from(amount || 0);
+  if (need.lte(0)) return;
+  const erc = new ethers.Contract(token, ERC20_ABI, signer);
+  const current: ethers.BigNumber = await erc.allowance(owner, spender);
+  if (current.gte(need)) return;
+  const tx = await erc.approve(spender, ethers.constants.MaxUint256, {
+    ...(await gasPriceDict(signer)),
+  });
+  await tx.wait();
+}
+
+/**
+ * When payment is on, approve USDC (LineB) and/or alchemica tokens for the diamond.
+ * No-ops while paymentEnabled is false (Sepolia default).
+ */
+export async function ensureGv2dCraftApprovals(opts: {
+  account: string;
+  signer: Signer;
+  provider: providers.Provider;
+  /** soft tile id OR soft-install/decor L1 id */
+  itemId: number;
+  quantity: number;
+  kind: 'tile' | 'craft' | 'upgrade';
+}): Promise<Gv2dQuotedCosts> {
+  const { account, signer, provider, itemId, quantity, kind } = opts;
+  const quoted =
+    kind === 'tile'
+      ? await quoteGv2dTileMintCosts(itemId, quantity, provider)
+      : await quoteGv2dCraftCosts(itemId, quantity, provider);
+  const { payment } = quoted;
+  if (!payment.paymentEnabled) return quoted;
+
+  const diamond = getGv2dDiamondAddress();
+
+  if (payment.lineBFeeEnabled && ethers.BigNumber.from(quoted.lineBFeeUsdc || 0).gt(0)) {
+    await ensureErc20Allowance(payment.usdc, account, diamond, quoted.lineBFeeUsdc, signer);
+  }
+
+  const toks = payment.alchemicaTokens || [];
+  const parts = [
+    quoted.alchemica.fud,
+    quoted.alchemica.fomo,
+    quoted.alchemica.alpha,
+    quoted.alchemica.kek,
+  ];
+  for (let i = 0; i < 4; i++) {
+    const amt = ethers.BigNumber.from(parts[i] || 0);
+    if (amt.lte(0)) continue;
+    const token = toks[i];
+    if (!token || token === ethers.constants.AddressZero) {
+      throw new Error(
+        'GV-2D paymentEnabled but alchemica tokens are unset while catalog cost is non-zero. Set tokens or keep payment off.',
+      );
+    }
+    await ensureErc20Allowance(token, account, diamond, amt, signer);
+  }
+  return quoted;
+}
+
 
 async function readChainId(provider: providers.Provider): Promise<number> {
   const net = await provider.getNetwork();
@@ -356,6 +533,27 @@ export async function mintSoftCTilesOnDiamond(opts: {
 
   const contract = getGv2dDiamondContract(liveSigner);
 
+  // Approve USDC / alchemica when paymentEnabled (no-op while Sepolia flags are off).
+  try {
+    const costs = await ensureGv2dCraftApprovals({
+      account,
+      signer: liveSigner,
+      provider: liveProvider,
+      itemId,
+      quantity: qty,
+      kind: 'tile',
+    });
+    if (costs.payment.paymentEnabled) {
+      console.info('[gv2d] tile mint costs', {
+        lineBFeeUsdc: costs.lineBFeeUsdc,
+        alchemica: costs.alchemica,
+      });
+    }
+  } catch (e) {
+    console.warn('[gv2d] payment approve precheck', e);
+    throw e;
+  }
+
   // Surface cooldown before wallet popup when possible.
   try {
     const remaining = await contract.cooldownRemaining(account, itemId);
@@ -509,7 +707,7 @@ export function parseGv2dTileCooldownError(err: unknown): { tileId: number; rema
 /**
  * Craft soft installs via diamond `craftInstallations([id],[qty])` (GvCraftFacet).
  * Requires wallet on Base Sepolia. Does not call craftStoreLocally / craftLodgeLocally / etc.
- * paymentEnabled=false — no alchemica approve.
+ * Approves USDC/alchemica when paymentEnabled (Sepolia default: off).
  */
 export async function craftSoftInstallsOnDiamond(opts: {
   itemId: number;
@@ -540,6 +738,28 @@ export async function craftSoftInstallsOnDiamond(opts: {
   );
 
   const contract = getGv2dDiamondContract(liveSigner);
+
+  try {
+    const costs = await ensureGv2dCraftApprovals({
+      account,
+      signer: liveSigner,
+      provider: liveProvider,
+      itemId,
+      quantity: qty,
+      kind: 'craft',
+    });
+    if (costs.payment.paymentEnabled) {
+      console.info('[gv2d] craft costs', {
+        chainId,
+        lineBFeeUsdc: costs.lineBFeeUsdc,
+        alchemica: costs.alchemica,
+      });
+    }
+  } catch (e) {
+    console.warn('[gv2d] craft payment approve precheck', e);
+    throw e;
+  }
+
   const tx = await contract.craftInstallations([chainId], [qty], {
     ...(await gasPriceDict(liveSigner)),
   });
@@ -1092,6 +1312,21 @@ export async function upgradeSoftInstallInBagOnDiamond(opts: {
     'upgrade soft installs on the GV-2D diamond',
   );
   const contract = getGv2dDiamondContract(liveSigner);
+
+  try {
+    await ensureGv2dCraftApprovals({
+      account,
+      signer: liveSigner,
+      provider: liveProvider,
+      itemId,
+      quantity: qty,
+      kind: 'upgrade',
+    });
+  } catch (e) {
+    console.warn('[gv2d] upgrade payment approve precheck', e);
+    throw e;
+  }
+
   const tx = await contract.upgradeSoftInstallInBag(itemId, qty, {
     ...(await gasPriceDict(liveSigner)),
   });
@@ -1163,6 +1398,20 @@ export async function upgradeSoftInstallPlacementOnDiamond(opts: {
     'upgrade soft installs on the GV-2D diamond',
   );
   const contract = getGv2dDiamondContract(liveSigner);
+
+  try {
+    await ensureGv2dCraftApprovals({
+      account,
+      signer: liveSigner,
+      provider: liveProvider,
+      itemId,
+      quantity: 1,
+      kind: 'upgrade',
+    });
+  } catch (e) {
+    console.warn('[gv2d] placement upgrade payment approve precheck', e);
+    throw e;
+  }
 
   let placementId =
     opts.placementId != null && String(opts.placementId) !== '' && String(opts.placementId) !== '0'

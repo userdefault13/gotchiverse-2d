@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import {LibAppStorage} from "../libraries/LibAppStorage.sol";
 import {LibERC1155} from "../libraries/LibERC1155.sol";
-import {IERC20} from "../interfaces/IERC20.sol";
+import {LibGvPayment} from "../libraries/LibGvPayment.sol";
 
 /// @notice Level-bump soft installs using catalog nextLevelId.
 /// @dev Bag: burn L, mint L+1. Placed: swap placement.itemId in place (same footprint).
@@ -32,7 +32,14 @@ contract GvUpgradeFacet {
         require(s.balances[msg.sender][fromId] >= amount, "GvUpgrade: bal");
 
         if (s.paymentEnabled) {
-            _pullCost(s, msg.sender, nextT.cost, amount);
+            LibGvPayment.pullAlchemica(s, msg.sender, nextT.cost, amount);
+            LibGvPayment.payLineBMint(
+                s,
+                msg.sender,
+                LibGvPayment.poolForSoftInstall(),
+                amount,
+                LibGvPayment.refFor(msg.sender, toId, amount)
+            );
         }
 
         LibERC1155.burn(msg.sender, fromId, amount);
@@ -54,7 +61,14 @@ contract GvUpgradeFacet {
         require(nextT.width == p.width && nextT.height == p.height, "GvUpgrade: size");
 
         if (s.paymentEnabled) {
-            _pullCost(s, msg.sender, nextT.cost, 1);
+            LibGvPayment.pullAlchemica(s, msg.sender, nextT.cost, 1);
+            LibGvPayment.payLineBMint(
+                s,
+                msg.sender,
+                LibGvPayment.poolForSoftInstall(),
+                1,
+                LibGvPayment.refFor(msg.sender, toId, 1)
+            );
         }
 
         p.itemId = toId;
@@ -87,22 +101,4 @@ contract GvUpgradeFacet {
         require(nextT.registered, "GvUpgrade: !next");
     }
 
-    function _pullCost(
-        LibAppStorage.AppStorage storage s,
-        address from,
-        LibAppStorage.AlchemicaCost memory unit,
-        uint256 amount
-    ) internal {
-        _pullOne(s.alchemicaTokens[0], from, unit.fud * amount);
-        _pullOne(s.alchemicaTokens[1], from, unit.fomo * amount);
-        _pullOne(s.alchemicaTokens[2], from, unit.alpha * amount);
-        _pullOne(s.alchemicaTokens[3], from, unit.kek * amount);
-    }
-
-    function _pullOne(address token, address from, uint256 amount) internal {
-        if (amount == 0) return;
-        require(token != address(0), "GvUpgrade: token");
-        bool ok = IERC20(token).transferFrom(from, address(this), amount);
-        require(ok, "GvUpgrade: transfer");
-    }
 }

@@ -11,19 +11,21 @@
     "DiamondCutFacet": "0x5f9B69eb57B495b628200E42D686d2fA85ed359A",
     "DiamondLoupeFacet": "0x8ad781a19D60de376174A2D45d57D24D64342fE6",
     "OwnershipFacet": "0xE045616D779C8602bCBbc6FFBCD9B040589F538a",
-    "GvRulesFacet": "0x85509Cc3845f2A8650E531142afa43D181F5134D",
-    "GvTileMintFacet": "0x91E13D4DCe7aeA970e0b0Cc7fea4b26059028488",
+    "GvRulesFacet": "0x4445856d498346a6B4EAC1E8384316d72E679159",
+    "GvTileMintFacet": "0x0AEc3C2E87188B411c17fa04b1Ebd97b0d91010e",
     "GvInventoryFacet": "0x48038e3D742f73d15732Dd2b064593e4B120BF45",
     "InitERC1155": "0x3B4EDc51Be6bb4653be124A96D655D6b7e1bCD8B",
     "GvCatalogFacet": "0xb1c0190f6d0B8ad05788C6f3853d44A691947234",
-    "GvCraftFacet": "0x0Ee4FaB4189Db0CD4E8Bf5ec2677d8b54cF23e15",
+    "GvCraftFacet": "0xc63dd9969c7b2A6d63c0d1Cf73874f90454aFD12",
     "GvPlaceFacet": "0xf088ff81bA27dC18b5E583066f3c7B5Fe1c16b41",
-    "GvUpgradeFacet": "0x2291C073247a767CFA296120df9fF041321FEa72"
+    "GvUpgradeFacet": "0x9202810239F8b516dDD0091b81288A9787013d8A"
   },
   "facetsPrevious": {
-    "GvTileMintFacet": "0x502493bF1c934fEF6536dDE883fd340bb1fEF6F3",
+    "GvTileMintFacet": "0x91E13D4DCe7aeA970e0b0Cc7fea4b26059028488",
     "GvInventoryFacet": "0xc686558c8B0c6a7C8E33934160DD566e837d5d8D",
-    "GvRulesFacet": "0x8E671AEDc767f0CF9492b2D4f698f7F09530D582"
+    "GvRulesFacet": "0x85509Cc3845f2A8650E531142afa43D181F5134D",
+    "GvCraftFacet": "0x0Ee4FaB4189Db0CD4E8Bf5ec2677d8b54cF23e15",
+    "GvUpgradeFacet": "0x2291C073247a767CFA296120df9fF041321FEa72"
   },
   "transactions": {
     "DiamondCutFacet": "0xfae1508329eb3535732b517653572afe952a92ab07c5c898b36097fcab64df02",
@@ -73,7 +75,13 @@
     "setTileCooldownParams": "0x2a2e21f2fb2112ee1e38316d2fb9c7310ad4cac6b63cc64d275553474a54b0ac",
     "smokeMintTile10_cooldown": "0x6535cb2e2c6116635e954d6eb43de0901cb6c19a967d89517143c3e89b4d5bf2",
     "smokeMintTile11_cooldown": "0xbd60cd9153e869373cb30310dbe5967176fc2a7fbb174502511938724bf3700b",
-    "smokeMintTile14x3_cooldown": "0x2a6e82f5ba38a75c76b2ec28f9f9f7abe1d0788c76093bd473dd54350a965074"
+    "smokeMintTile14x3_cooldown": "0x2a6e82f5ba38a75c76b2ec28f9f9f7abe1d0788c76093bd473dd54350a965074",
+    "GvTileMintFacet_payments": "0x20e3602e092c394563d081f75f8ff426d578e9066c378a09ab426b060ec44eee",
+    "GvCraftFacet_payments": "0x6d6643ac85a7a9a946482952d2fe15459bdc242c9677e67337add04e4c31b520",
+    "GvUpgradeFacet_payments": "0x23737657a734a9d46468c6d9ceddd9d74de08338c85fb88c94818c9dc06dc5c0",
+    "GvRulesFacet_payments": "0xba59c3aa7e1480744e637be7e0c9a76a399fc851e166081dc63a536dfb3cbb9a",
+    "diamondCut_payments": "0x878256e9e52f41027013a332e3e03b8c491f154d4b8ed53632155e34d8416fb0",
+    "configureLineBPayment": "0xf5427d6ce2342cd059e5c1a60777e6912ddb840ca8ee6d2440278f8330fd33b4"
   },
   "smoke": {
     "tileId": 8,
@@ -97,7 +105,7 @@
     8,
     47
   ],
-  "notes": "Tiles 8-47 + soft-install bag 162-215 + Decor type-7 as GV ids L1+1000 (48) on GV ERC1155; progressive soft-tile craft cooldowns live (per wallet/tileId; bands 10/20/30\u2026; CD 0/1h/2h/4h\u2026); Waalls+full inventory band registered; GvPlaceFacet live; paymentEnabled=false; L1 Installation diamond type-7 is a different contract (no double-mint); ownership retained; placeholder URI unchanged; no SafeFeeRouter / staking facet this pass.",
+  "notes": "Tiles 8-47 + soft-install bag 162-215 + Decor L1+1000 on GV ERC1155; progressive soft-tile craft cooldowns; SafeFeeRouter LineBMint wiring live (router+USDC+1 USDC fee configured; paymentEnabled=false, lineBFeeEnabled=false); ownership retained; free-mint smoke intact.",
   "softInstallsUpgradedAt": "2026-09-09T06:05:56Z",
   "softInstallIdRange": [
     162,
@@ -216,5 +224,30 @@
     "txHash": "0x2a6e82f5ba38a75c76b2ec28f9f9f7abe1d0788c76093bd473dd54350a965074",
     "paymentEnabled": false,
     "note": "First band (lifetime <10) still instant; views mintedCount/nextCooldown/cooldownRemaining live."
+  },
+  "paymentsUpgradedAt": "2026-09-12T07:15:44Z",
+  "safeFeeRouter": "0x9476a6Fd296eB60822Ad72F91334e56B880b3985",
+  "safePools": "0x688952B2Af4157DC75097c79A643d4826347E626",
+  "usdc": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+  "lineBFeeEnabled": false,
+  "lineBMintFeeUsdc": 1000000,
+  "lineBMintSplit": {
+    "stakersBps": 4000,
+    "aarcadeBps": 4000,
+    "burnBps": 1000,
+    "daoBps": 1000,
+    "publisherBps": 0,
+    "source": "SafeFeeRouter.LineBMint"
+  },
+  "lineBPools": {
+    "tile": "keccak256(\"tile\")",
+    "installation": "keccak256(\"installation\")"
+  },
+  "paymentArchitecture": {
+    "model": "dual-optional single path",
+    "alchemica": "Catalog AlchemicaCost pulled when paymentEnabled AND alchemicaTokens configured (mainnet). Skipped on Sepolia while tokens are unset.",
+    "lineB": "USDC protocol fee via SafeFeeRouter.pay(LineBMint) when paymentEnabled AND lineBFeeEnabled AND fee>0. Split SoT on router 40/40/10/10. Not a second alchemica ledger.",
+    "enable": "forge script script/EnablePayments.s.sol:EnablePayments --rpc-url $BASE_SEPOLIA_RPC_URL --broadcast (needs test USDC approve on diamond)",
+    "smokeTokens": "Base Sepolia USDC 0x036CbD\u2026CF7e; alchemica TBD faucet"
   }
 }

@@ -14,6 +14,11 @@ contract GvRulesFacet {
     event TileCostUpdated(uint256 indexed tileId, uint256 fud, uint256 fomo, uint256 alpha, uint256 kek);
     event RulesVersionBumped(uint256 rulesVersion);
     event TileCooldownParamsSet(uint256 bandStep, uint256 firstCooldownSeconds, uint256 maxCapSeconds);
+    event SafeFeeRouterSet(address router);
+    event UsdcSet(address usdc);
+    event LineBFeeEnabledSet(bool enabled);
+    event LineBMintFeeUsdcSet(uint256 feeUsdc);
+    event LineBPublisherSet(address publisher);
 
     function initGvRules(
         address[4] calldata alchemicaTokens_,
@@ -129,6 +134,104 @@ contract GvRulesFacet {
     {
         LibAppStorage.AppStorage storage s = LibAppStorage.appStorage();
         return (s.tileCooldownBandStep, s.tileFirstCooldownSeconds, s.tileCooldownMaxSeconds);
+    }
+
+    // -------------------------------------------------------------------------
+    // SafeFeeRouter LineBMint (USDC) — splits remain SoT on the router
+    // -------------------------------------------------------------------------
+
+    /// @notice Point at Aarcade SafeFeeRouter (LineBMint 40/40/10/10). Does not enable fees.
+    function setSafeFeeRouter(address router) external {
+        LibDiamond.enforceIsContractOwner();
+        LibAppStorage.AppStorage storage s = LibAppStorage.appStorage();
+        s.safeFeeRouter = router;
+        s.rulesVersion += 1;
+        emit SafeFeeRouterSet(router);
+        emit RulesVersionBumped(s.rulesVersion);
+    }
+
+    /// @notice Optional USDC cache. address(0) => read ISafeFeeRouter(safeFeeRouter).usdc().
+    function setUsdc(address usdc_) external {
+        LibDiamond.enforceIsContractOwner();
+        LibAppStorage.AppStorage storage s = LibAppStorage.appStorage();
+        s.usdc = usdc_;
+        s.rulesVersion += 1;
+        emit UsdcSet(usdc_);
+        emit RulesVersionBumped(s.rulesVersion);
+    }
+
+    /// @notice Toggle USDC LineBMint collection (also requires paymentEnabled + fee > 0 + router).
+    function setLineBFeeEnabled(bool enabled) external {
+        LibDiamond.enforceIsContractOwner();
+        LibAppStorage.AppStorage storage s = LibAppStorage.appStorage();
+        s.lineBFeeEnabled = enabled;
+        s.rulesVersion += 1;
+        emit LineBFeeEnabledSet(enabled);
+        emit RulesVersionBumped(s.rulesVersion);
+    }
+
+    /// @notice Per-unit USDC (6 decimals) LineBMint protocol fee. 0 = skip USDC leg.
+    function setLineBMintFeeUsdc(uint256 feeUsdc) external {
+        LibDiamond.enforceIsContractOwner();
+        LibAppStorage.AppStorage storage s = LibAppStorage.appStorage();
+        s.lineBMintFeeUsdc = feeUsdc;
+        s.rulesVersion += 1;
+        emit LineBMintFeeUsdcSet(feeUsdc);
+        emit RulesVersionBumped(s.rulesVersion);
+    }
+
+    /// @notice Publisher for LineBMint publisher leg (bps=0 on default split; usually address(0)).
+    function setLineBPublisher(address publisher) external {
+        LibDiamond.enforceIsContractOwner();
+        LibAppStorage.AppStorage storage s = LibAppStorage.appStorage();
+        s.lineBPublisher = publisher;
+        s.rulesVersion += 1;
+        emit LineBPublisherSet(publisher);
+        emit RulesVersionBumped(s.rulesVersion);
+    }
+
+    /// @notice Configure Line B wiring in one call (does not flip paymentEnabled).
+    function configureLineBPayment(
+        address router,
+        address usdc_,
+        uint256 feeUsdc,
+        bool lineBEnabled,
+        address publisher
+    ) external {
+        LibDiamond.enforceIsContractOwner();
+        LibAppStorage.AppStorage storage s = LibAppStorage.appStorage();
+        s.safeFeeRouter = router;
+        s.usdc = usdc_;
+        s.lineBMintFeeUsdc = feeUsdc;
+        s.lineBFeeEnabled = lineBEnabled;
+        s.lineBPublisher = publisher;
+        s.rulesVersion += 1;
+        emit SafeFeeRouterSet(router);
+        emit UsdcSet(usdc_);
+        emit LineBMintFeeUsdcSet(feeUsdc);
+        emit LineBFeeEnabledSet(lineBEnabled);
+        emit LineBPublisherSet(publisher);
+        emit RulesVersionBumped(s.rulesVersion);
+    }
+
+    function safeFeeRouter() external view returns (address) {
+        return LibAppStorage.appStorage().safeFeeRouter;
+    }
+
+    function usdc() external view returns (address) {
+        return LibAppStorage.appStorage().usdc;
+    }
+
+    function lineBFeeEnabled() external view returns (bool) {
+        return LibAppStorage.appStorage().lineBFeeEnabled;
+    }
+
+    function lineBMintFeeUsdc() external view returns (uint256) {
+        return LibAppStorage.appStorage().lineBMintFeeUsdc;
+    }
+
+    function lineBPublisher() external view returns (address) {
+        return LibAppStorage.appStorage().lineBPublisher;
     }
 
     function paymentEnabled() external view returns (bool) {

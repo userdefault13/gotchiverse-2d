@@ -168,7 +168,7 @@ Soft-install bag SoT = **GV-2D diamond** (Julius 2026-09-08). Cartridge mintWear
 | Place / unequip | Live — bag burn ↔ placement; footprint conflict checks |
 | Parcel key | `bytes32` (+ `parcelKeyFromUint` / `parcelKeyFromRealm`); cPaarcel still cartridge-owned |
 | Placeholder URI | Unchanged |
-| `paymentEnabled` | Still **false**; no SafeFeeRouter; ownership not renounced |
+| `paymentEnabled` / `lineBFeeEnabled` | Still **false**; SafeFeeRouter LineBMint **wired** (router+USDC+1e6 fee); ownership not renounced |
 
 ### FE wiring (2026-09-11 PT)
 
