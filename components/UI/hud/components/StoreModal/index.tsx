@@ -49,6 +49,21 @@ import {
   seedStoreLayout,
   publishStoreLayout,
 } from 'helpers/colyseus.store';
+import {
+  shouldPlaceInteriorFurnitureOnDiamond,
+  interiorParcelKeyLocal,
+  placeSoftInstallOnDiamond,
+  unequipSoftInstallOnDiamond,
+  rememberGv2dPlacementId,
+  forgetGv2dPlacementId,
+} from 'helpers/gv2dDiamond.helper';
+import GlobalState from 'contexts/GlobalState';
+import { useNotification } from 'contexts/NotificationContext';
+import {
+  showTransactionNotification,
+  updateTransactionNotificationStatus,
+} from 'contexts/NotificationContext/actions';
+import { getErrMessage } from 'helpers/ethers.helper';
 import styles from './styles';
 import { StoreBuildHud } from '../../storeBuildHud';
 import type { StoreFurnitureBrush } from '../../storeBuildHud/StoreInventory';
@@ -58,6 +73,7 @@ type PlaceBrush = StoreFurnitureBrush | null;
 export const StoreModal = (): JSX.Element => {
   const [{ storeState, storeCart, storeShelfModal, consoleState }, uiDispatch] = useUI();
   const [{ inventory }] = useUser();
+  const [, notificationDispatch] = useNotification();
   const { back, click } = useAavegotchiSound();
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
@@ -235,29 +251,87 @@ export const StoreModal = (): JSX.Element => {
     [applyLayout, click, installationId, isOwner, walletFloorTiles],
   );
 
-  const handleConfirmPlace = useCallback(() => {
+  const requireGv2dWallet = () => {
+    const account = GlobalState.WEB3?.state?.currentAccount;
+    const signer = GlobalState.WEB3?.state?.ethersSigner;
+    const provider = GlobalState.WEB3?.state?.globalProvider;
+    if (!account || !signer || !provider) {
+      throw new Error('Connect your wallet (Base Sepolia) to place/unequip interior furniture on the GV-2D diamond.');
+    }
+    return { account, signer, provider };
+  };
+
+  const clearPendingBrush = () => {
+    setPlaceBrush(null);
+    setPendingPlace(null);
+    buildRef.current.placeBrush = null;
+    buildRef.current.pendingPlace = null;
+    setStoreSceneBuildState({
+      buildMode: true,
+      placeBrush: null,
+      floorBrush: buildRef.current.floorBrush,
+      pendingPlace: null,
+    });
+  };
+
+  const handleConfirmPlace = useCallback(async () => {
     const current = layoutRef.current;
     const pending = buildRef.current.pendingPlace;
     const pb = buildRef.current.placeBrush;
     if (!current || !installationId || !isOwner || pb == null || !pending) return;
     click();
-    const result = placeFurniture(current, pb, pending.tx, pending.ty);
-    setStatusMsg(result.message);
-    refreshInv();
-    if (result.ok) {
-      applyLayout(result.layout, true);
-      setPlaceBrush(null);
-      setPendingPlace(null);
-      buildRef.current.placeBrush = null;
-      buildRef.current.pendingPlace = null;
-      setStoreSceneBuildState({
-        buildMode: true,
-        placeBrush: null,
-        floorBrush: buildRef.current.floorBrush,
-        pendingPlace: null,
-      });
+
+    const useDiamond = shouldPlaceInteriorFurnitureOnDiamond(pb);
+    if (!useDiamond) {
+      const result = placeFurniture(current, pb, pending.tx, pending.ty);
+      setStatusMsg(result.message);
+      refreshInv();
+      if (result.ok) {
+        applyLayout(result.layout, true);
+        clearPendingBrush();
+      }
+      return;
     }
-  }, [applyLayout, click, installationId, isOwner]);
+
+    let notificationId: string | undefined;
+    try {
+      const { account, signer, provider } = requireGv2dWallet();
+      const parcelKey = interiorParcelKeyLocal('store', installationId);
+      notificationId = showTransactionNotification(notificationDispatch, {
+        message: 'Place store furniture on GV-2D diamond (Base Sepolia)',
+        options: { sound: true },
+      });
+      const placed = await placeSoftInstallOnDiamond({
+        parcelKey,
+        itemId: Number(pb),
+        x: pending.tx,
+        y: pending.ty,
+        account,
+        signer,
+        provider,
+        name: `Store furniture ${pb}`,
+      });
+      const result = placeFurniture(current, pb, pending.tx, pending.ty, { skipInventory: true });
+      setStatusMsg(result.ok ? `${result.message} · on-chain` : result.message);
+      refreshInv();
+      if (result.ok) {
+        const piece = result.layout.furniture.find((f) => f.x === pending.tx && f.y === pending.ty);
+        if (piece?.id && placed.placementId) {
+          rememberGv2dPlacementId(piece.id, placed.placementId);
+        }
+        applyLayout(result.layout, true);
+        clearPendingBrush();
+        updateTransactionNotificationStatus(notificationDispatch, notificationId, 'success');
+      } else {
+        updateTransactionNotificationStatus(notificationDispatch, notificationId, 'error', result.message);
+      }
+    } catch (e) {
+      setStatusMsg(getErrMessage(e));
+      if (notificationId) {
+        updateTransactionNotificationStatus(notificationDispatch, notificationId, 'error', getErrMessage(e));
+      }
+    }
+  }, [applyLayout, click, installationId, isOwner, notificationDispatch]);
 
   const handleUpgradeFurniture = useCallback(
     (piece: StoreFurniturePiece) => {
@@ -288,10 +362,77 @@ export const StoreModal = (): JSX.Element => {
   );
 
   const handleMoveFurniture = useCallback(
-    (piece: StoreFurniturePiece) => {
+    async (piece: StoreFurniturePiece) => {
       const current = layoutRef.current;
-      if (!current || !isOwner) return;
+      if (!current || !isOwner || !installationId) return;
       click();
+
+      const useDiamond = shouldPlaceInteriorFurnitureOnDiamond(piece.itemId);
+      if (useDiamond) {
+        let notificationId: string | undefined;
+        try {
+          const { account, signer, provider } = requireGv2dWallet();
+          const parcelKey = interiorParcelKeyLocal('store', installationId);
+          notificationId = showTransactionNotification(notificationDispatch, {
+            message: 'Unequip store furniture on GV-2D diamond (move)',
+            options: { sound: true },
+          });
+          await unequipSoftInstallOnDiamond({
+            parcelKey,
+            x: piece.x,
+            y: piece.y,
+            itemId: Number(piece.itemId),
+            account,
+            signer,
+            provider,
+            installationId: piece.id,
+            name: `Store furniture ${piece.itemId}`,
+          });
+          forgetGv2dPlacementId(piece.id);
+          const r = removeFurniture(current, piece.id, { skipInventory: true });
+          if (!r.ok) {
+            setStatusMsg('On-chain unequip ok, but local layout remove failed');
+            updateTransactionNotificationStatus(notificationDispatch, notificationId, 'error', 'Local layout remove failed');
+            return;
+          }
+          applyLayout(r.layout, true);
+          setSelectedId(null);
+          setFloorBrush(null);
+          setPendingPlace(null);
+          const brush = (isConsoleItemId(piece.itemId) ? CONSOLE_ITEM_ID : piece.itemId) as PlaceBrush;
+          setPlaceBrush(brush);
+          setStatusMsg('Moving — click a floor tile, then Confirm (diamond)');
+          refreshInv();
+          updateTransactionNotificationStatus(notificationDispatch, notificationId, 'success');
+        } catch (e) {
+          const msg = getErrMessage(e);
+          if (/GvPlace:\s*empty|empty/i.test(msg) || /gone/i.test(msg)) {
+            const r = removeFurniture(current, piece.id);
+            if (!r.ok) {
+              setStatusMsg('Could not pick up furniture');
+              return;
+            }
+            applyLayout(r.layout, true);
+            setSelectedId(null);
+            setFloorBrush(null);
+            setPendingPlace(null);
+            const brush = (isConsoleItemId(piece.itemId) ? CONSOLE_ITEM_ID : piece.itemId) as PlaceBrush;
+            setPlaceBrush(brush);
+            setStatusMsg('Moving (local legacy) — click a floor tile, then Confirm');
+            refreshInv();
+            if (notificationId) {
+              updateTransactionNotificationStatus(notificationDispatch, notificationId, 'success');
+            }
+            return;
+          }
+          setStatusMsg(msg);
+          if (notificationId) {
+            updateTransactionNotificationStatus(notificationDispatch, notificationId, 'error', msg);
+          }
+        }
+        return;
+      }
+
       const r = removeFurniture(current, piece.id);
       if (!r.ok) {
         setStatusMsg('Could not pick up furniture');
@@ -306,14 +447,71 @@ export const StoreModal = (): JSX.Element => {
       setStatusMsg('Moving — click a floor tile, then Confirm');
       refreshInv();
     },
-    [applyLayout, click, isOwner],
+    [applyLayout, click, installationId, isOwner, notificationDispatch],
   );
 
   const handleRemoveFurniture = useCallback(
-    (piece: StoreFurniturePiece) => {
+    async (piece: StoreFurniturePiece) => {
       const current = layoutRef.current;
-      if (!current || !isOwner) return;
+      if (!current || !isOwner || !installationId) return;
       click();
+
+      const useDiamond = shouldPlaceInteriorFurnitureOnDiamond(piece.itemId);
+      if (useDiamond) {
+        let notificationId: string | undefined;
+        try {
+          const { account, signer, provider } = requireGv2dWallet();
+          const parcelKey = interiorParcelKeyLocal('store', installationId);
+          notificationId = showTransactionNotification(notificationDispatch, {
+            message: 'Unequip store furniture on GV-2D diamond',
+            options: { sound: true },
+          });
+          await unequipSoftInstallOnDiamond({
+            parcelKey,
+            x: piece.x,
+            y: piece.y,
+            itemId: Number(piece.itemId),
+            account,
+            signer,
+            provider,
+            installationId: piece.id,
+            name: `Store furniture ${piece.itemId}`,
+          });
+          forgetGv2dPlacementId(piece.id);
+          const r = removeFurniture(current, piece.id, { skipInventory: true });
+          if (r.ok) {
+            applyLayout(r.layout, true);
+            setSelectedId(null);
+            setStatusMsg('Furniture returned to bag (on-chain)');
+            refreshInv();
+            updateTransactionNotificationStatus(notificationDispatch, notificationId, 'success');
+          } else {
+            setStatusMsg('On-chain unequip ok, but local layout remove failed');
+            updateTransactionNotificationStatus(notificationDispatch, notificationId, 'error', 'Local layout remove failed');
+          }
+        } catch (e) {
+          const msg = getErrMessage(e);
+          if (/GvPlace:\s*empty|empty/i.test(msg) || /gone/i.test(msg)) {
+            const r = removeFurniture(current, piece.id);
+            if (r.ok) {
+              applyLayout(r.layout, true);
+              setSelectedId(null);
+              setStatusMsg('Furniture returned to bag (local legacy)');
+              refreshInv();
+              if (notificationId) {
+                updateTransactionNotificationStatus(notificationDispatch, notificationId, 'success');
+              }
+              return;
+            }
+          }
+          setStatusMsg(msg);
+          if (notificationId) {
+            updateTransactionNotificationStatus(notificationDispatch, notificationId, 'error', msg);
+          }
+        }
+        return;
+      }
+
       const r = removeFurniture(current, piece.id);
       if (r.ok) {
         applyLayout(r.layout, true);
@@ -324,7 +522,7 @@ export const StoreModal = (): JSX.Element => {
         setStatusMsg('Could not remove furniture');
       }
     },
-    [applyLayout, click, isOwner],
+    [applyLayout, click, installationId, isOwner, notificationDispatch],
   );
 
   const upgradeFurnitureRef = useRef(handleUpgradeFurniture);
@@ -470,6 +668,11 @@ export const StoreModal = (): JSX.Element => {
 
   const handleRemoveSelected = () => {
     if (!layout || !selectedId || !isOwner) return;
+    const piece = layout.furniture.find((f) => f.id === selectedId);
+    if (piece) {
+      void handleRemoveFurniture(piece);
+      return;
+    }
     const r = removeFurniture(layout, selectedId);
     if (r.ok) {
       applyLayout(r.layout, true);

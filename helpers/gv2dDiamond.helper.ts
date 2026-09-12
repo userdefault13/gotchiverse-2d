@@ -4,9 +4,10 @@
  * - soft installs 162–215 → `craftInstallations` (GvCraftFacet)
  * - soft installs 162–215 → `placeSoftInstall` / `unequipSoftInstall` (GvPlaceFacet)
  *
- * When NEXT_PUBLIC_USE_GV2D_DIAMOND=true, Crafting Table soft recipes and Phaser
- * soft place/unequip call the diamond instead of local-only helpers. Golden tiles
- * 1–3 and L1 Installation diamond crafts stay on their existing paths.
+ * When NEXT_PUBLIC_USE_GV2D_DIAMOND=true, Crafting Table soft recipes, Phaser
+ * soft place/unequip, and Lodge/Store interior furniture Confirm call the diamond
+ * instead of local-only helpers. Golden tiles 1–3 and L1 Installation diamond
+ * crafts stay on their existing paths.
  *
  * Deployed diamond: packages/gv2d-diamond/deployments/base-sepolia.json
  * paymentEnabled=false on Sepolia — no alchemica approve for mint/craft; place
@@ -24,6 +25,7 @@ import { setOffchainInventoryQty } from 'helpers/offchain.store';
 import {
   adjustFurnitureQty,
   getFurnitureQty,
+  getConsoleBagCount,
   isStoreFurnitureItemId,
 } from 'helpers/store.layout.helper';
 import {
@@ -31,7 +33,11 @@ import {
   getLodgeFurnitureQty,
   isLodgeFurnitureItemId,
 } from 'helpers/lodge.layout.helper';
-import { isConsoleItemId } from 'helpers/console.installation.helper';
+import {
+  isConsoleItemId,
+  CONSOLE_ITEM_ID_START,
+  CONSOLE_ITEM_ID_END,
+} from 'helpers/console.installation.helper';
 import type { Installation } from 'types';
 
 /** Base Sepolia — GV-2D soft-tile / soft-install diamond host chain. */
@@ -416,7 +422,7 @@ export type Gv2dParcelKeyInput = {
 
 export type Gv2dParcelKeyResolved = {
   parcelKey: string;
-  scheme: 'uint' | 'realm';
+  scheme: 'uint' | 'realm' | 'interior';
   sourceId: string;
 };
 
@@ -486,6 +492,81 @@ export function resolveGv2dParcelKeyFromParcel(parcel: {
   // Soft / cPaarcel (or any numeric local mirror): prefer uint key.
   // isCParcelInInventory is optional — any soft-launch parcel uses the same id space.
   return resolveGv2dParcelKey({ cPaarcelOrLocalParcelId: numeric });
+}
+
+// ---------------------------------------------------------------------------
+// Interior furniture parcel keys (Lodge / Store) — encode into bytes32 (no diamondCut)
+// ---------------------------------------------------------------------------
+
+/**
+ * Interior grids must NOT reuse the exterior `parcelKeyFromUint(cPaarcelId)`.
+ * Exterior installs and interior furniture share (x,y) ranges that would collide
+ * on the same footprint map.
+ *
+ * Scheme (stable, FE-computed; Solidity mirror = keccak256(abi.encode(...))):
+ *   keccak256(abi.encode(
+ *     keccak256("GV2D_INTERIOR_v1"),  // domain separator
+ *     uint8 kind,                     // 1=lodge, 2=store
+ *     keccak256(bytes(installationId))
+ *   ))
+ *
+ * `installationId` is the Lodge/Store exterior installation instance id (layout key).
+ * One interior instance → one place key. Future interiors (bazaar/dao/potion) can
+ * extend the kind enum without a facet change.
+ */
+export const GV2D_INTERIOR_DOMAIN = ethers.utils.id('GV2D_INTERIOR_v1');
+export const GV2D_INTERIOR_KIND = { lodge: 1, store: 2 } as const;
+export type Gv2dInteriorKind = keyof typeof GV2D_INTERIOR_KIND;
+
+/** Pure local mirror of interior place key (no RPC). */
+export function interiorParcelKeyLocal(
+  kind: Gv2dInteriorKind,
+  installationId: string | number,
+): string {
+  const id = String(installationId || '').trim();
+  if (!id) {
+    throw new Error('Missing Lodge/Store installationId for GV-2D interior place key.');
+  }
+  const installHash = ethers.utils.keccak256(ethers.utils.toUtf8Bytes(id));
+  return ethers.utils.keccak256(
+    ethers.utils.defaultAbiCoder.encode(
+      ['bytes32', 'uint8', 'bytes32'],
+      [GV2D_INTERIOR_DOMAIN, GV2D_INTERIOR_KIND[kind], installHash],
+    ),
+  );
+}
+
+export function resolveGv2dInteriorParcelKey(
+  kind: Gv2dInteriorKind,
+  installationId: string | number,
+): Gv2dParcelKeyResolved {
+  return {
+    parcelKey: interiorParcelKeyLocal(kind, installationId),
+    scheme: 'interior',
+    sourceId: `${kind}:${installationId}`,
+  };
+}
+
+/** Soft furniture ids 189–215 (+ Console) place via GvPlaceFacet when flag on. */
+export function shouldPlaceInteriorFurnitureOnDiamond(itemId: number | string): boolean {
+  return isGv2dDiamondMintEnabled() && isGv2dSoftInstallCraftId(itemId);
+}
+
+/**
+ * Console placeable qty when diamond flag is on: prefer instance bag, else
+ * sum fungible ERC1155 inventory slots 199–207 (diamond craft does not mint
+ * titled console bag instances).
+ */
+export function getConsolePlaceableQty(): number {
+  const bag = getConsoleBagCount();
+  if (!isGv2dDiamondMintEnabled()) return bag;
+  if (bag > 0) return bag;
+  let total = 0;
+  for (let id = CONSOLE_ITEM_ID_START; id <= CONSOLE_ITEM_ID_END; id += 1) {
+    const item = getLocalInventoryItem(id, 'INSTALLATION') as Installation | undefined;
+    total += Math.max(0, Number(item?.quantity || 0));
+  }
+  return total;
 }
 
 export type Gv2dPlaceResult = {

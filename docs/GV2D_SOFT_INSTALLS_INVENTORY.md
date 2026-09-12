@@ -57,7 +57,7 @@
 | `craftStoreFurniture` / `craftConsoleFurniture` | `helpers/store.layout.helper.ts`, `lodge.layout.helper.ts` | localStorage furniture bags |
 | `craftLodgeFurniture` | `helpers/lodge.layout.helper.ts` | localStorage |
 | Broadcaster / Terminal | inventory via store furniture helpers + `isBroadcasterItemId` | local / offchain |
-| UI entry | CraftingTable + Phaser `Installations.ts` | flag on → soft cTiles `mintTiles` + soft installs 162–215 `craftInstallations` + parcel place/unequip `placeSoftInstall`/`unequipSoftInstall`; flag off → local paths unchanged |
+| UI entry | CraftingTable + Phaser `Installations.ts` + Lodge/Store Confirm | flag on → soft cTiles `mintTiles` + soft installs 162–215 `craftInstallations` + parcel + **interior furniture** place/unequip `placeSoftInstall`/`unequipSoftInstall`; flag off → local paths unchanged |
 
 ---
 
@@ -203,3 +203,74 @@ cast call 0x34a851523A6f3351940d235373038b2A0A85e872 \
   "parcelKeyFromUint(uint256)(bytes32)" <PARCEL_UINT> --rpc-url https://sepolia.base.org
 ```
 
+---
+
+## 10. Interior furniture place (2026-09-12 PT)
+
+Lodge / Store interior **Confirm** (and Remove / Move) now reuse `GvPlaceFacet` behind `NEXT_PUBLIC_USE_GV2D_DIAMOND`. No diamondCut — interiors encode into `bytes32` parcel keys.
+
+### Item ids (already in catalog 162–215)
+
+| Family | Ids | Interior surface |
+|--------|-----|------------------|
+| Cashier | 189–197 | Store (+ lodge layout helpers) |
+| Display / Feature / Racks | 198, 213–215 | Store shelves |
+| Console | 199–207 | Lodge + Store |
+| Terminal | 208 | Store |
+| Broadcaster | 209 | Lodge |
+
+No separate registration needed — same soft-install band as exterior.
+
+### Interior parcel key (prefer encode; no facet change)
+
+```
+keccak256(abi.encode(
+  keccak256("GV2D_INTERIOR_v1"),   // domain
+  uint8 kind,                     // 1=lodge, 2=store
+  keccak256(bytes(installationId))
+))
+```
+
+FE: `interiorParcelKeyLocal(kind, installationId)` / `resolveGv2dInteriorParcelKey`.
+
+**Why not reuse exterior parcel key?** Exterior installs and interior furniture share small (x,y) ranges; one footprint map would collide. Key is scoped per Lodge/Store **installation instance** (layout id).
+
+### FE wiring
+
+| Piece | Status |
+|-------|--------|
+| `helpers/gv2dDiamond.helper.ts` | Interior key helpers + `getConsolePlaceableQty` |
+| `helpers/lodge.layout.helper.ts` / `store.layout.helper.ts` | `skipInventory` opt on place/remove (diamond SoT) |
+| `LodgeModal` / `StoreModal` | Flag on → Confirm `placeSoftInstall`; Remove/Move `unequipSoftInstall`; flag off → local |
+| Inventory trays | Console qty uses ERC1155 slots when bag empty (diamond craft) |
+| Flag off | Local furniture bags + Confirm unchanged |
+
+### How to test (Base Sepolia)
+
+1. `NEXT_PUBLIC_USE_GV2D_DIAMOND=true`, diamond `0x34a851523A6f3351940d235373038b2A0A85e872`.
+2. Craft furniture (e.g. Cashier **189**, Display Table **198**, Broadcaster **209**, Console **199**).
+3. Enter owned Lodge or Store → Build Mode → select brush → click floor → **Confirm**.
+   - Expect `placeSoftInstall` on interior key; bag −1 via `balanceOf` sync; layout updates.
+4. Remove / Move → `unequipSoftInstall` (or ById when remembered); bag +1.
+5. Legacy local-only placements (no on-chain cell) fall back to local unequip when diamond returns empty.
+6. Flag off → Confirm stays fully local (no GV txs).
+
+### Notes / known quirks
+
+- Console diamond craft is fungible ERC1155 — titled instance bag is not minted; place may use empty `loadedTitles` until a title is loaded in-modal.
+- Catalog Console footprint is **2×2** on-chain while FE ghosts often treat Console as **1×1** — leave space or expect on-chain occupied neighbors.
+- Upgrade (Cashier/Console L bumps) remains local layout-only this pass (no on-chain type swap).
+- No SafeFeeRouter / `paymentEnabled` change.
+
+Node smoke (interior key, no wallet):
+
+```bash
+node -e "
+const { utils } = require('ethers');
+const domain = utils.id('GV2D_INTERIOR_v1');
+const installHash = utils.keccak256(utils.toUtf8Bytes('lodge_demo_1'));
+const key = utils.keccak256(utils.defaultAbiCoder.encode(
+  ['bytes32','uint8','bytes32'], [domain, 1, installHash]));
+console.log(key);
+"
+```
