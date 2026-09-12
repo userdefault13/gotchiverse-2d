@@ -57,7 +57,7 @@
 | `craftStoreFurniture` / `craftConsoleFurniture` | `helpers/store.layout.helper.ts`, `lodge.layout.helper.ts` | localStorage furniture bags |
 | `craftLodgeFurniture` | `helpers/lodge.layout.helper.ts` | localStorage |
 | Broadcaster / Terminal | inventory via store furniture helpers + `isBroadcasterItemId` | local / offchain |
-| UI entry | `components/UI/hud/components/CraftingTable/index.tsx` | flag on → soft cTiles `mintTiles` + soft installs 162–215 `craftInstallations`; flag off → `*Locally` unchanged |
+| UI entry | CraftingTable + Phaser `Installations.ts` | flag on → soft cTiles `mintTiles` + soft installs 162–215 `craftInstallations` + parcel place/unequip `placeSoftInstall`/`unequipSoftInstall`; flag off → local paths unchanged |
 
 ---
 
@@ -149,7 +149,7 @@ Costs: zero placeholders; `paymentEnabled` stays **false**.
 
 **Note:** Console still may require picking a title in RecipeBook UX; diamond mint is fungible ERC1155 (instance bag / loaded titles not written by the diamond path). Furniture non-Console qty also mirrors into store/lodge furniture bags after `balanceOf` sync.
 
-Place/unequip **on-chain** via `GvPlaceFacet` (2026-09-11); FE wiring + cPaarcel ownership checks still pending.
+Place/unequip **on-chain** via `GvPlaceFacet` (2026-09-11). FE place/unequip wired behind `NEXT_PUBLIC_USE_GV2D_DIAMOND` (2026-09-11 PT). cPaarcel ownership checks still off-chain.
 
 ## Bag SoT correction
 Soft-install bag SoT = **GV-2D diamond** (Julius 2026-09-08). Cartridge mintWearable is wearables-only.
@@ -169,9 +169,37 @@ Soft-install bag SoT = **GV-2D diamond** (Julius 2026-09-08). Cartridge mintWear
 | Placeholder URI | Unchanged |
 | `paymentEnabled` | Still **false**; no SafeFeeRouter; ownership not renounced |
 
-### FE follow-up
-- Wire Phaser place/unequip to `placeSoftInstall` / `unequipSoftInstall` (flag on) instead of local placements
-- Choose parcel key scheme (cartridge cPaarcel id as uint → `parcelKeyFromUint`, or realm-linked `parcelKeyFromRealm`)
-- Refresh `web3/abi/Gv2dDiamond.json` with place selectors; sync bag qty after place/unequip
-- Parcel ownership / controller checks still off-chain until cartridge bridge
+### FE wiring (2026-09-11 PT)
+
+| Piece | Status |
+|-------|--------|
+| `helpers/gv2dDiamond.helper.ts` | `placeSoftInstallOnDiamond` / `unequipSoftInstallOnDiamond` (+ byId) + parcelKey helpers + bag sync |
+| `components/phaser/Installations.ts` | Flag on + soft id **162–215**: Confirm batch → diamond place/unequip; move/unequip immediate paths too |
+| Flag off | Existing local / offchain place path unchanged |
+| ABI | `web3/abi/Gv2dDiamond.json` already has place selectors |
+| Parcel ownership | Still off-chain / cartridge until bridge |
+
+#### Parcel key scheme
+
+- **Prefer** `parcelKeyFromUint(cPaarcelOrLocalParcelId)` for soft parcels. FE soft/cParcels use numeric `GotchiverseParcel.id` / `tokenId` (realmTokenId mirror) as that uint.
+- **Fallback** when only a Realm NFT id is available: `parcelKeyFromRealm(84532, id)`.
+- Documented in `resolveGv2dParcelKey` / `resolveGv2dParcelKeyFromParcel`.
+
+#### How to test (Base Sepolia)
+
+1. Set `NEXT_PUBLIC_USE_GV2D_DIAMOND=true` and `NEXT_PUBLIC_GV2D_DIAMOND_ADDRESS=0x34a851523A6f3351940d235373038b2A0A85e872` (or default).
+2. Connect wallet; switch / approve Base Sepolia when prompted (same as craft).
+3. Craft a soft install (e.g. Waall **162**) via Crafting Table → bag qty from `balanceOf`.
+4. Enter build mode on a soft/cPaarcel → place install → **Confirm**.
+   - Expect `placeSoftInstall` tx; bag −1; local scene keeps placement mirror.
+5. Unequip (queue + Confirm, or immediate unequip path) → `unequipSoftInstall` / `ById`; bag +1.
+6. Wrong chain / no wallet → clear error toast (same pattern as craft).
+7. Flag off → place/unequip stays local-only (no GV place txs).
+
+Cast smoke (optional):
+
+```bash
+cast call 0x34a851523A6f3351940d235373038b2A0A85e872 \
+  "parcelKeyFromUint(uint256)(bytes32)" <PARCEL_UINT> --rpc-url https://sepolia.base.org
+```
 

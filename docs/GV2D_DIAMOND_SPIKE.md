@@ -21,7 +21,7 @@ Conceptual kill (contracts only): soft craft path for cTiles 8–47 moves to dia
 ## Deferred (see [`GV2D_CSTAR_CUTOVER_PLAN.md`](./GV2D_CSTAR_CUTOVER_PLAN.md) + plan §C / §D)
 
 - **Waalls / Lodge / Store** catalog + craft (`GvCatalogFacet` / `GvCraftFacet`)
-- **Place** soft installs on parcel (`GvPlaceFacet`)
+- **Place** soft installs on parcel (`GvPlaceFacet`) — facet live; FE wired behind `NEXT_PUBLIC_USE_GV2D_DIAMOND` (see soft-installs inventory §9)
 - **SoftChannel** (`GvChannelSoftFacet`) / deprecate soft channel helper
 - Baazaar listing / marketplace integration (ERC1155 transfers done on diamond)
 - Interior facets, sim_credit escrow

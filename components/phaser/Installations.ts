@@ -130,6 +130,13 @@ import {
 } from 'helpers/offchain.placements.helper';
 import { flushOffchainStore, hydrateOffchainStore } from 'helpers/offchain.store';
 import { isCParcelInInventory, resolveOnChainParcelId } from 'helpers/softChannel.helper';
+import {
+  isGv2dDiamondMintEnabled,
+  isGv2dSoftInstallCraftId,
+  placeSoftInstallOnDiamond,
+  unequipSoftInstallOnDiamond,
+  resolveGv2dParcelKeyFromParcel,
+} from 'helpers/gv2dDiamond.helper';
 import MapController from 'components/controllers/MapController';
 
 const uiContainers: { marker? } = {};
@@ -2145,13 +2152,45 @@ const updateParcelLastChannel = async (id: string, parcelLastChanneled: string) 
   createAaltarChannelContainer(id, installationContainer, Number(parcelLastChanneled));
 };
 
+// WEB3 / GV-2D soft place
+const softInstallLabel = (itemId: number) => {
+  if (isStoreItemId(itemId)) return 'Store';
+  if (isBounceGateItemId(itemId)) return 'Bounce Gate';
+  if (isLodgeItemId(itemId)) return 'Lodge';
+  if (isBazaarItemId(itemId)) return 'Bazaar';
+  if (isDaoOfficeItemId(itemId)) return 'DAO Office';
+  if (isPotionShopItemId(itemId)) return 'Potion Shop';
+  if (isWaallItemId(itemId)) return 'Waall';
+  return `Install ${itemId}`;
+};
+
+/** Soft parcel installs (162–215) go through GvPlaceFacet when the diamond flag is on. */
+const shouldPlaceSoftInstallOnDiamond = (itemId: number | string) =>
+  isGv2dDiamondMintEnabled() && isGv2dSoftInstallCraftId(itemId);
+
+const requireGv2dWallet = () => {
+  const account = GlobalState.WEB3?.state?.currentAccount;
+  const signer = GlobalState.WEB3?.state?.ethersSigner;
+  const provider = GlobalState.WEB3?.state?.globalProvider;
+  if (!account || !signer || !provider) {
+    throw new Error('Connect your wallet (Base Sepolia) to place/unequip soft installs on the GV-2D diamond.');
+  }
+  return { account, signer, provider };
+};
+
+const resolveActiveParcelKey = () => {
+  if (!scene.activeParcel) throw new Error('No active parcel for GV-2D place.');
+  return resolveGv2dParcelKeyFromParcel(scene.activeParcel);
+};
+
 // WEB3
 const handleEquipUnequipMove = async (selectedInstallation: EquipUnequipMoveData, callMethod: 'equip' | 'unequip' | 'move') => {
   const { itemId, relativePosition, type, realmId, isMoving } = selectedInstallation;
   console.log('selectedInstallation', selectedInstallation);
 
   if (scene.activeParcel) {
-    // Local Waalls / Lodges — no InstallationDiamond tx.
+    // Local Waalls / Lodges / soft installs — no InstallationDiamond tx.
+    // When NEXT_PUBLIC_USE_GV2D_DIAMOND + soft id 162–215 → GvPlaceFacet instead.
     if (type === 'INSTALLATION' && isLocalOffchainItemId(itemId)) {
       const installationId = createInstallationIdByData({
         parcelId: scene.activeParcel.id,
@@ -2162,17 +2201,75 @@ const handleEquipUnequipMove = async (selectedInstallation: EquipUnequipMoveData
         state: 0,
       });
       removeInstallationBuildModeUI(scene.activeInstallation);
-      const label = isStoreItemId(itemId)
-        ? 'Store'
-        : isBounceGateItemId(itemId)
-          ? 'Bounce Gate'
-          : isLodgeItemId(itemId)
-            ? 'Lodge'
-            : 'Waall';
+      const label = softInstallLabel(Number(itemId));
+      const useDiamond = shouldPlaceSoftInstallOnDiamond(itemId);
 
       if (callMethod === 'move' && isMoving) {
         destroyMarker();
         // handleMove already freed the old cell — only occupy the new one.
+        if (useDiamond) {
+          let notificationId;
+          try {
+            const { account, signer, provider } = requireGv2dWallet();
+            const { parcelKey } = resolveActiveParcelKey();
+            const oldData = getInstallationIdDataById(isMoving) as unknown as InstallationIdData;
+            notificationId = showTransactionNotification(GlobalState.NOTIFICATION.dispatch, {
+              message: `Move ${label} on GV-2D diamond`,
+              options: { sound: true },
+            });
+            await unequipSoftInstallOnDiamond({
+              parcelKey,
+              x: oldData.position.x,
+              y: oldData.position.y,
+              itemId: Number(itemId),
+              account,
+              signer,
+              provider,
+              installationId: isMoving,
+              name: label,
+            });
+            await placeSoftInstallOnDiamond({
+              parcelKey,
+              itemId: Number(itemId),
+              x: relativePosition.x,
+              y: relativePosition.y,
+              account,
+              signer,
+              provider,
+              installationId,
+              name: label,
+            });
+            destroyByIds([{ id: isMoving }], true);
+            updateGridById(installationId);
+            await createByIds([{ id: installationId }]);
+            removeOffchainPlacement(isMoving);
+            upsertOffchainPlacement(installationId);
+            void flushOffchainStore();
+            SFXController.playFX('send');
+            if (notificationId) {
+              updateTransactionNotificationStatus(GlobalState.NOTIFICATION.dispatch, notificationId, 'success');
+            }
+          } catch (error) {
+            SFXController.playFX('oops');
+            if (notificationId) {
+              updateTransactionNotificationStatus(
+                GlobalState.NOTIFICATION.dispatch,
+                notificationId,
+                'error',
+                getErrMessage(error),
+              );
+            }
+            // Restore old placement visually on failure.
+            createByIds([{ id: isMoving }], { isMove: true });
+            scene.buildInstallation = undefined;
+            destroyMarker(true);
+            return;
+          }
+          scene.buildInstallation = undefined;
+          destroyMarker(true);
+          return;
+        }
+
         destroyByIds([{ id: isMoving }], true);
         updateGridById(installationId);
         await createByIds([{ id: installationId }]);
@@ -2193,6 +2290,53 @@ const handleEquipUnequipMove = async (selectedInstallation: EquipUnequipMoveData
       }
 
       if (callMethod === 'unequip') {
+        if (useDiamond) {
+          let notificationId;
+          try {
+            const { account, signer, provider } = requireGv2dWallet();
+            const { parcelKey } = resolveActiveParcelKey();
+            notificationId = showTransactionNotification(GlobalState.NOTIFICATION.dispatch, {
+              message: `Unequip ${label} on GV-2D diamond`,
+              options: { sound: true },
+            });
+            await unequipSoftInstallOnDiamond({
+              parcelKey,
+              x: relativePosition.x,
+              y: relativePosition.y,
+              itemId: Number(itemId),
+              account,
+              signer,
+              provider,
+              installationId,
+              name: label,
+            });
+            updateGridById(installationId);
+            unequipAnimationById(installationId);
+            removeOffchainPlacement(installationId);
+            if (isWaallItemId(itemId)) syncWaallInventoryFromScene(itemId);
+            if (isLodgeItemId(itemId)) syncLodgeInventoryFromScene(itemId);
+            if (isStoreItemId(itemId)) syncStoreInventoryFromScene(itemId);
+            void flushOffchainStore();
+            SFXController.playFX('send');
+            if (notificationId) {
+              updateTransactionNotificationStatus(GlobalState.NOTIFICATION.dispatch, notificationId, 'success');
+            }
+          } catch (error) {
+            SFXController.playFX('oops');
+            if (notificationId) {
+              updateTransactionNotificationStatus(
+                GlobalState.NOTIFICATION.dispatch,
+                notificationId,
+                'error',
+                getErrMessage(error),
+              );
+            }
+          }
+          scene.buildInstallation = undefined;
+          destroyMarker(true);
+          return;
+        }
+
         updateGridById(installationId);
         unequipAnimationById(installationId);
         removeOffchainPlacement(installationId);
@@ -2215,6 +2359,7 @@ const handleEquipUnequipMove = async (selectedInstallation: EquipUnequipMoveData
       }
 
       // equip is handled via batch queue + finalizeLocalOffchainBatchItems
+      // (diamond place happens in handleBatchEquip when flag is on)
       scene.buildInstallation = undefined;
       destroyMarker(true);
       return;
@@ -2443,9 +2588,102 @@ const handleBatchEquip = async () => {
       const localItems = (scene.batchQueue || []).filter((item) => isLocalOffchainInstallationId(item.id));
       const onChainItems = (scene.batchQueue || []).filter((item) => !isLocalOffchainInstallationId(item.id));
 
-      // Local-only Waalls / Lodges (not on InstallationDiamond) — commit without a diamond tx.
-      if (localItems.length) {
-        finalizeLocalOffchainBatchItems(localItems);
+      // Soft installs 162–215 + diamond flag → GvPlaceFacet place/unequip (bag burn/mint).
+      const diamondSoftItems = localItems.filter((item) => {
+        try {
+          const data = getInstallationIdDataById(item.id) as unknown as InstallationIdData;
+          return shouldPlaceSoftInstallOnDiamond(data.itemId);
+        } catch {
+          return false;
+        }
+      });
+      const remainingLocalItems = localItems.filter((item) => !diamondSoftItems.includes(item));
+
+      if (diamondSoftItems.length) {
+        const placeNoteId = showTransactionNotification(GlobalState.NOTIFICATION.dispatch, {
+          message: 'Place/unequip soft installs on GV-2D diamond (Base Sepolia)',
+          options: { sound: true },
+        });
+        try {
+          const { account, signer, provider } = requireGv2dWallet();
+          const { parcelKey, scheme, sourceId } = resolveActiveParcelKey();
+          console.info('[gv2d] place batch', { parcelKey, scheme, sourceId, count: diamondSoftItems.length });
+
+          for (const item of diamondSoftItems) {
+            const data = getInstallationIdDataById(item.id) as unknown as InstallationIdData;
+            const label = softInstallLabel(Number(data.itemId));
+            if (item.action === 'UNEQUIP') {
+              await unequipSoftInstallOnDiamond({
+                parcelKey,
+                x: data.position.x,
+                y: data.position.y,
+                itemId: Number(data.itemId),
+                account,
+                signer,
+                provider,
+                installationId: item.id,
+                name: label,
+              });
+            } else {
+              // EQUIP (default)
+              await placeSoftInstallOnDiamond({
+                parcelKey,
+                itemId: Number(data.itemId),
+                x: data.position.x,
+                y: data.position.y,
+                account,
+                signer,
+                provider,
+                installationId: item.id,
+                name: label,
+              });
+            }
+          }
+
+          finalizeLocalOffchainBatchItems(diamondSoftItems);
+          // Drop diamond items from the live queue; keep non-diamond local + on-chain.
+          scene.batchQueue = [...remainingLocalItems, ...onChainItems];
+          await flushOffchainStore();
+          if (placeNoteId) {
+            updateTransactionNotificationStatus(GlobalState.NOTIFICATION.dispatch, placeNoteId, 'success');
+          }
+          // Only close the batch toast when this Confirm had no further work.
+          if (notificationId && !remainingLocalItems.length && !onChainItems.length) {
+            updateTransactionNotificationStatus(GlobalState.NOTIFICATION.dispatch, notificationId, 'success');
+          }
+        } catch (error) {
+          SFXController.playFX('oops');
+          if (placeNoteId) {
+            updateTransactionNotificationStatus(
+              GlobalState.NOTIFICATION.dispatch,
+              placeNoteId,
+              'error',
+              getErrMessage(error),
+            );
+          }
+          if (notificationId) {
+            updateTransactionNotificationStatus(
+              GlobalState.NOTIFICATION.dispatch,
+              notificationId,
+              'error',
+              getErrMessage(error),
+            );
+          }
+          // Keep queue so the player can cancel / retry after switching network or reconnecting.
+          destroyMarker(true);
+          return;
+        }
+
+        if (!remainingLocalItems.length && !onChainItems.length) {
+          SFXController.playFX('send');
+          destroyMarker(true);
+          return;
+        }
+      }
+
+      // Local-only Waalls / Lodges outside diamond soft path — commit without a diamond tx.
+      if (remainingLocalItems.length) {
+        finalizeLocalOffchainBatchItems(remainingLocalItems);
         scene.batchQueue = onChainItems;
         await flushOffchainStore();
         if (!onChainItems.length) {
