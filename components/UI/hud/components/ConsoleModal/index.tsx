@@ -37,6 +37,19 @@ import {
 } from 'helpers/lodge.layout.helper';
 import { publishStoreLayout } from 'helpers/colyseus.store';
 import { publishLodgeLayout } from 'helpers/colyseus.lodge';
+import {
+  shouldUpgradeSoftInstallOnDiamond,
+  interiorParcelKeyLocal,
+  upgradeSoftInstallPlacementOnDiamond,
+  getRememberedGv2dPlacementId,
+} from 'helpers/gv2dDiamond.helper';
+import GlobalState from 'contexts/GlobalState';
+import { useNotification } from 'contexts/NotificationContext';
+import {
+  showTransactionNotification,
+  updateTransactionNotificationStatus,
+} from 'contexts/NotificationContext/actions';
+import { getErrMessage } from 'helpers/ethers.helper';
 import styles from './styles';
 
 type ConsoleStep = 'games' | 'manage' | 'cartridges' | 'playing';
@@ -61,6 +74,7 @@ function formatCapacity(cap: number): string {
 export const ConsoleModal = (): JSX.Element => {
   const [{ consoleState }, uiDispatch] = useUI();
   const [{ currentAccount }] = useWeb3();
+  const [, notificationDispatch] = useNotification();
   const { click } = useAavegotchiSound();
   const [step, setStep] = useState<ConsoleStep>('games');
   const [pendingGameId, setPendingGameId] = useState<string | null>(null);
@@ -297,14 +311,78 @@ export const ConsoleModal = (): JSX.Element => {
     }
   };
 
-  const handleUpgrade = () => {
+  const handleUpgrade = async () => {
     if (!isOwner || !layoutHostId || !furnitureId) return;
     click();
-    const result = persistLayout(() =>
-      inLodge
-        ? upgradeLodgeConsoleFurniture(loadLodgeLayout(layoutHostId), furnitureId)
-        : upgradeConsoleFurniture(loadStoreLayout(layoutHostId), furnitureId),
-    );
+    if (!upgradeInfo?.next) {
+      setStatusMsg('Console is max level');
+      return;
+    }
+
+    const applyLocal = () =>
+      persistLayout(() =>
+        inLodge
+          ? upgradeLodgeConsoleFurniture(loadLodgeLayout(layoutHostId), furnitureId)
+          : upgradeConsoleFurniture(loadStoreLayout(layoutHostId), furnitureId),
+      );
+
+    if (shouldUpgradeSoftInstallOnDiamond(itemId)) {
+      let notificationId: string | undefined;
+      try {
+        const account = GlobalState.WEB3?.state?.currentAccount;
+        const signer = GlobalState.WEB3?.state?.ethersSigner;
+        const provider = GlobalState.WEB3?.state?.globalProvider;
+        if (!account || !signer || !provider) {
+          throw new Error('Connect your wallet (Base Sepolia) to upgrade Console on the GV-2D diamond.');
+        }
+        const kind = inLodge ? 'lodge' : 'store';
+        const layout = inLodge ? loadLodgeLayout(layoutHostId) : loadStoreLayout(layoutHostId);
+        const piece = layout.furniture.find((f) => f.id === furnitureId);
+        if (!piece) throw new Error('Console furniture not found in layout');
+        const parcelKey = interiorParcelKeyLocal(kind, layoutHostId);
+        notificationId = showTransactionNotification(notificationDispatch, {
+          message: 'Upgrade Console on GV-2D diamond (Base Sepolia)',
+          options: { sound: true },
+        });
+        await upgradeSoftInstallPlacementOnDiamond({
+          itemId: Number(piece.itemId),
+          account,
+          signer,
+          provider,
+          placementId: getRememberedGv2dPlacementId(piece.id),
+          parcelKey,
+          x: piece.x,
+          y: piece.y,
+          installationId: piece.id,
+          name: `Console ${piece.itemId}`,
+          nextItemId: upgradeInfo.next.id,
+        });
+        const result = applyLocal();
+        setStatusMsg(result.ok ? `${result.message} · on-chain` : result.message);
+        if (result.ok) {
+          const nextPiece = result.layout?.furniture.find((f) => f.id === furnitureId);
+          if (nextPiece) {
+            setItemId(nextPiece.itemId);
+            setLoadedTitles(normalizeLoadedTitles(nextPiece.loadedTitles));
+            pushConsoleState({
+              itemId: nextPiece.itemId,
+              loadedTitles: normalizeLoadedTitles(nextPiece.loadedTitles),
+            });
+          }
+          updateTransactionNotificationStatus(notificationDispatch, notificationId, 'success');
+        } else {
+          updateTransactionNotificationStatus(notificationDispatch, notificationId, 'error', result.message);
+        }
+      } catch (e) {
+        setStatusMsg(getErrMessage(e));
+        if (notificationId) {
+          updateTransactionNotificationStatus(notificationDispatch, notificationId, 'error', getErrMessage(e));
+        }
+      }
+      return;
+    }
+
+    const result = applyLocal();
     setStatusMsg(result.message);
     if (result.ok) {
       const piece = result.layout?.furniture.find((f) => f.id === furnitureId);

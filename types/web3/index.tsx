@@ -11,6 +11,7 @@ export type NetworkNames =
   | 'goerli'
   | 'localhost'
   | 'base'
+  | 'base-sepolia'
   | 'robinhood'
   /** Soft-launch Bitcoin track (MetaMask SegWit / SRC-721 Aarena) — not an EVM chain id. */
   | 'bitcoin';

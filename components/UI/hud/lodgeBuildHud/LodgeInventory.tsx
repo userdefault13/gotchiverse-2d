@@ -6,9 +6,9 @@ import {
   BROADCASTER_ITEM_ID,
   CONSOLE_ITEM_ID,
   LODGE_FURNITURE_TYPE,
-  getConsoleBagCount,
   getLodgeFurnitureQty,
 } from 'helpers/lodge.layout.helper';
+import { getConsolePlaceableQty } from 'helpers/gv2dDiamond.helper';
 import inventoryStyles from '../components/Inventory/styles';
 
 export type LodgeFurnitureBrush = typeof BROADCASTER_ITEM_ID | typeof CONSOLE_ITEM_ID;
@@ -45,7 +45,7 @@ function buildLodgeInstallations(): LodgeInstallCard[] {
       id: CONSOLE_ITEM_ID,
       itemId: CONSOLE_ITEM_ID,
       name: 'Console Level 1',
-      quantity: getConsoleBagCount(),
+      quantity: getConsolePlaceableQty(),
       level: 1,
       itemType: LODGE_FURNITURE_TYPE,
       type: 'INSTALLATION',

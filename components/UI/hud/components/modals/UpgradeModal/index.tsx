@@ -31,6 +31,7 @@ import {
   isLodgeInstallationId,
   isLodgeItemId,
 } from 'helpers/lodge.helper';
+import { isGv2dDiamondMintEnabled } from 'helpers/gv2dDiamond.helper';
 import { getLocalStoreUpgradeInfo, isStoreInstallationId, isStoreItemId } from 'helpers/store.installation.helper';
 import Installations from 'components/phaser/Installations';
 
@@ -173,7 +174,7 @@ export const UpgradeModal = (): JSX.Element => {
     });
     let tx;
     try {
-      // Local Waall / Lodge / Store upgrade — instant, no diamond.
+      // Local / GV-2D soft Waall / Lodge / Store upgrade.
       if (isLocalOffchainInstallationId(upgradeModal.installationId)) {
         const label = isStoreInstallationId(upgradeModal.installationId)
           ? 'Store'
@@ -185,19 +186,18 @@ export const UpgradeModal = (): JSX.Element => {
           setLoading(false);
           return;
         }
+        const useDiamond = isGv2dDiamondMintEnabled();
         const cost = nextUpgrade.upgradeCost || [0, 0, 0, 0];
-        const canPay = !cost.some((value, i) => !validAlchemica(Number(value), i, alchemicaBalance));
-        if (!canPay) {
-          updateTransactionNotificationStatus(notificationDispatch, id, 'error', 'Not enough alchemica');
-          setLoading(false);
-          return;
+        // Diamond path: paymentEnabled=false on Sepolia — skip local alchemica gate.
+        // Flag off: keep soft-launch local alchemica deduction.
+        if (!useDiamond) {
+          const canPay = !cost.some((value, i) => !validAlchemica(Number(value), i, alchemicaBalance));
+          if (!canPay) {
+            updateTransactionNotificationStatus(notificationDispatch, id, 'error', 'Not enough alchemica');
+            setLoading(false);
+            return;
+          }
         }
-        const nextBalance = {
-          fud: alchemicaBalance.fud - Number(cost[0] || 0),
-          fomo: alchemicaBalance.fomo - Number(cost[1] || 0),
-          alpha: alchemicaBalance.alpha - Number(cost[2] || 0),
-          kek: alchemicaBalance.kek - Number(cost[3] || 0),
-        };
         const result = isStoreInstallationId(upgradeModal.installationId)
           ? await Installations.upgradeLocalStore(upgradeModal.installationId)
           : isLodgeInstallationId(upgradeModal.installationId)
@@ -208,7 +208,15 @@ export const UpgradeModal = (): JSX.Element => {
           setLoading(false);
           return;
         }
-        userDispatch({ type: 'UPDATE_ALCHEMICA_BALANCE', alchemicaBalance: nextBalance });
+        if (!useDiamond) {
+          const nextBalance = {
+            fud: alchemicaBalance.fud - Number(cost[0] || 0),
+            fomo: alchemicaBalance.fomo - Number(cost[1] || 0),
+            alpha: alchemicaBalance.alpha - Number(cost[2] || 0),
+            kek: alchemicaBalance.kek - Number(cost[3] || 0),
+          };
+          userDispatch({ type: 'UPDATE_ALCHEMICA_BALANCE', alchemicaBalance: nextBalance });
+        }
         send();
         updateTransactionNotificationStatus(notificationDispatch, id, 'success');
         handleClose();
