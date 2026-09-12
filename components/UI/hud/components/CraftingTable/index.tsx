@@ -243,7 +243,7 @@ export const CraftingTable = ({ open, onClose }: Props): JSX.Element => {
       return;
     }
 
-    // Flag on → soft installs 162–215 craft via Base Sepolia GV-2D diamond (never *Locally).
+    // Flag on → soft installs 162–215 + Decor type-7 craft via Base Sepolia GV-2D diamond (never *Locally / L1 Installation).
     if (recipe.type === 'INSTALLATION' && isGv2dSoftInstallCraftId(recipe.id) && isGv2dDiamondMintEnabled()) {
       if (!config.account || !config.signer || !config.provider) {
         const notificationId = showTransactionNotification(notificationDispatch, {
@@ -262,7 +262,7 @@ export const CraftingTable = ({ open, onClose }: Props): JSX.Element => {
       let notificationId;
       try {
         notificationId = showTransactionNotification(notificationDispatch, {
-          message: 'Crafting on GV-2D diamond (Base Sepolia)',
+          message: 'Crafting on GV-2D diamond (Base Sepolia)', // soft installs + Decor
         });
         const result = await craftSoftInstallsOnDiamond({
           itemId: Number(recipe.id),

@@ -2168,7 +2168,7 @@ const softInstallLabel = (itemId: number) => {
   return `Install ${itemId}`;
 };
 
-/** Soft parcel installs (162–215) go through GvPlaceFacet when the diamond flag is on. */
+/** Soft parcel installs (162–215 + Decor type-7) go through GvPlaceFacet when the diamond flag is on. */
 const shouldPlaceSoftInstallOnDiamond = (itemId: number | string) =>
   isGv2dDiamondMintEnabled() && isGv2dSoftInstallCraftId(itemId);
 
@@ -2194,7 +2194,7 @@ const handleEquipUnequipMove = async (selectedInstallation: EquipUnequipMoveData
 
   if (scene.activeParcel) {
     // Local Waalls / Lodges / soft installs — no InstallationDiamond tx.
-    // When NEXT_PUBLIC_USE_GV2D_DIAMOND + soft id 162–215 → GvPlaceFacet instead.
+    // When NEXT_PUBLIC_USE_GV2D_DIAMOND + soft id 162–215 / Decor → GvPlaceFacet instead.
     if (type === 'INSTALLATION' && isLocalOffchainItemId(itemId)) {
       const installationId = createInstallationIdByData({
         parcelId: scene.activeParcel.id,

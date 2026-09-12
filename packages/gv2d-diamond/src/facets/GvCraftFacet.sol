@@ -5,8 +5,9 @@ import {LibAppStorage} from "../libraries/LibAppStorage.sol";
 import {LibERC1155} from "../libraries/LibERC1155.sol";
 import {IERC20} from "../interfaces/IERC20.sol";
 
-/// @notice Permissionless soft-install craft for registered ids in [162,215].
+/// @notice Permissionless soft-install craft for registered ids in [162,215] and decor (L1+1000).
 /// @dev TEMPORARY bag: mints into GV diamond ERC1155 balances (disjoint from tiles 8–47).
+///      Decor uses ids L1+1000 so type-7 never shares balance slots with soft tiles.
 ///      Locked SoT = Aarcade cartridge ERC1155. Cartridge InventoryFacet currently has no
 ///      soft-install mint (only mintWearable) — bridge/mint-into-cartridge is the next slice.
 ///      Do not enable payment until Store/Lodge costs are locked.

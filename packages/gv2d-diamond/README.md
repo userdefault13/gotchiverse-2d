@@ -109,9 +109,19 @@ When the flag is off, soft cTiles keep the legacy local craft path.
 `GvCatalogFacet` + `GvCraftFacet` + `GvPlaceFacet, GvUpgradeFacet` on the same Sepolia diamond.
 
 - Soft-install id band **162–215** (disjoint from tiles **8–47**) — **fully registered** (Waalls 162–170 + Lodge/Store/Cashier/Console levels + furniture/world 198–215)
+- **Decor (type-7):** **48** level-1 L1 itemIds registered as GV ids **`L1 + 1000`** (e.g. Common Rofl Gnome L1 `19` → GV `1019`). Offset avoids collision with soft tiles **8–47** on the same ERC1155 balances map. See `deployments/decor-id-map.base-sepolia.json`.
+- **L1 Installation diamond ≠ GV bag:** Base Installation diamond also has type-7 itemIds. This diamond never mints those L1 ids — no double-mint. FE Crafting Table Decor page (flag on) crafts/places the GV+1000 ids only.
+- Rarity-scaled catalog costs registered (Common `[101,9.6,53,13.9]` … Godlike 16×); **`paymentEnabled` stays false** (costs for later — no alchemica pull yet).
 - `craftInstallations([id],[qty])` is permissionless; with `paymentEnabled=false` costs are not pulled (zeros OK)
 - **TEMPORARY bag:** mints credit **GV ERC1155** balances. Locked SoT = **Aarcade cartridge** ERC1155 — bridge next.
 - Placeholder `installBaseURI` unchanged: `https://gv2d.placeholder/soft-install/{id}.json`
+
+### Decor upgrade script
+
+```bash
+# Replace Catalog/Craft/Place (expanded isSoftInstallId) + register 48 decor
+forge script script/UpgradeDecor.s.sol:UpgradeDecor --rpc-url $BASE_SEPOLIA_RPC_URL --broadcast
+```
 
 ### Place / unequip (`GvPlaceFacet`)
 

@@ -81,6 +81,7 @@
 | Lodge 171–179 | Non-zero Realm-style numbers in catalog | Treat as placeholders until Store/Lodge costs locked; do **not** enable payment |
 | Waalls 162–170 | Small non-zero in catalog | Same — mutable via rules later |
 | Tiles 8–47 | Seeded on diamond (Decor L1 scaled separately) | Already on GV; payment still off |
+| Decor type-7 (48 L1) | Registered as GV ids L1+1000; rarity-scaled costs; payment off | Craft/place via GvCraft/GvPlace; FE flag wires Decor RecipeBook |
 
 ---
 

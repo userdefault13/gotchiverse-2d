@@ -15,9 +15,9 @@
     "GvTileMintFacet": "0x502493bF1c934fEF6536dDE883fd340bb1fEF6F3",
     "GvInventoryFacet": "0x48038e3D742f73d15732Dd2b064593e4B120BF45",
     "InitERC1155": "0x3B4EDc51Be6bb4653be124A96D655D6b7e1bCD8B",
-    "GvCatalogFacet": "0xe8C6E4bf7EB9467b713B9F35B21970578249193b",
-    "GvCraftFacet": "0xF11dc741e6Bd0aC5f1f280a8f4a569386B771BBb",
-    "GvPlaceFacet": "0x7A4561De880c24104e98eC1Ac7074158A29EDFD1",
+    "GvCatalogFacet": "0xb1c0190f6d0B8ad05788C6f3853d44A691947234",
+    "GvCraftFacet": "0x0Ee4FaB4189Db0CD4E8Bf5ec2677d8b54cF23e15",
+    "GvPlaceFacet": "0xf088ff81bA27dC18b5E583066f3c7B5Fe1c16b41",
     "GvUpgradeFacet": "0x2291C073247a767CFA296120df9fF041321FEa72"
   },
   "facetsPrevious": {
@@ -60,7 +60,12 @@
     "GvUpgradeFacet": "0xf6de1ee45e5943f740e5484a73a787eddb0578da8e96ca519206d637724c5085",
     "diamondCut_upgrade": "0x0b27deb95c720c9b9932960ecf4a46290cbc9109fb439687eb875d5b2532b4f4",
     "smokeCraftCashier189_upgrade": "0x8ffd8d81117a40761864abe536ca73d93a8b3238caeb4940f0b87e4e0b93dbb5",
-    "smokeUpgradeCashier189to190": "0x7efbc108e30047863e9420b573e4fe4cd28bf31ecd579d0f00596d4fed5d6fb9"
+    "smokeUpgradeCashier189to190": "0x7efbc108e30047863e9420b573e4fe4cd28bf31ecd579d0f00596d4fed5d6fb9",
+    "upgradeDecorDiamondCut": "0x097d02303dc8495f4e953e8e4e05b1302d1b0aa71e634412262862d49d8d5a77",
+    "upgradeDecorRegister": "0xb4e83da47cfefeaf1b68821fd40d19ce91d72f7e78e9ae48664f436e7c305bc6",
+    "upgradeDecorCatalogCreate": "0xd997ff418da1ca105c33a28a46a661087efc15780e5480db3947082aa1aa65c8",
+    "upgradeDecorCraftCreate": "0xd36650b887268425f817d19f5df4231c91c78ee3b8d2a3e221feff7bf856b07a",
+    "upgradeDecorPlaceCreate": "0xc6a3060c73ac86afcd994d87f07d4ea6e46eff93a3a9b2bd3d6beca28e324fed"
   },
   "smoke": {
     "tileId": 8,
@@ -84,7 +89,7 @@
     8,
     47
   ],
-  "notes": "Tiles 8-47 + soft-install bag 162-215 on GV ERC1155; Waalls+full inventory band registered; GvPlaceFacet live; paymentEnabled=false; ownership retained; placeholder URI unchanged; no SafeFeeRouter this pass.",
+  "notes": "Tiles 8-47 + soft-install bag 162-215 + Decor type-7 as GV ids L1+1000 (48) on GV ERC1155; Waalls+full inventory band registered; GvPlaceFacet live; paymentEnabled=false; L1 Installation diamond type-7 is a different contract (no double-mint); ownership retained; placeholder URI unchanged; no SafeFeeRouter / staking facet this pass.",
   "softInstallsUpgradedAt": "2026-09-09T06:05:56Z",
   "softInstallIdRange": [
     162,
@@ -166,5 +171,24 @@
     },
     "paymentEnabled": false,
     "note": "GvUpgradeFacet bag path: burn 189 mint 190"
+  },
+  "decorUpgradedAt": "2026-09-12T06:47:56Z",
+  "decorIdOffset": 1000,
+  "decorRegisteredCount": 48,
+  "decorIdMap": "deployments/decor-id-map.base-sepolia.json",
+  "decorCraftCosts": "deployments/decor-craft-costs.base-sepolia.json",
+  "smokeDecor": {
+    "commonCraftTx": "0x7455c61b4170dd40551834e70b9052b2e9f62b4c100a8bc90fd15d42ea701000",
+    "godlikeCraftTx": "0x849fa084fbbdd263e05a8d59ef05dba009334a86b7f7b1c3e7cc6a126f3a74c3",
+    "placeTx": "0x979a7ccdcdfcb4f0524e4f9e4a7fd35b26665a8a8d7142603df4fa66c7424faf",
+    "unequipTx": "0x0b2cd43371bfc6b378a0152d5c3da14c8fe3f3e77660fed811306d176516ce62",
+    "commonGvId": 1019,
+    "commonL1Id": 19,
+    "godlikeGvId": 1024,
+    "godlikeL1Id": 24,
+    "parcelUint": 999002,
+    "x": 2,
+    "y": 2,
+    "note": "GV decor ids = L1+1000. Crafted Common+Godlike Rofl Gnome; placed/unequipped Common on parcelUint 999002."
   }
 }

@@ -2,18 +2,23 @@
  * FE bridge to the Gotchiverse-2D diamond (Base Sepolia) for:
  * - soft cTiles 8–47 → `mintTiles`
  * - soft installs 162–215 → `craftInstallations` (GvCraftFacet)
- * - soft installs 162–215 → `placeSoftInstall` / `unequipSoftInstall` (GvPlaceFacet)
+ * - Decor type-7 (L1 ids) → craft/place via GV ids = L1+1000 (avoids tile collision)
+ * - soft installs 162–215 (+ decor) → `placeSoftInstall` / `unequipSoftInstall` (GvPlaceFacet)
  * - soft installs 162–215 → `upgradeSoftInstallInBag` / `upgradeSoftInstallPlacement` (GvUpgradeFacet)
  *
- * When NEXT_PUBLIC_USE_GV2D_DIAMOND=true, Crafting Table soft recipes, Phaser
- * soft place/unequip, Lodge/Store interior furniture Confirm, and Lodge/Store/
- * Cashier/Console upgrades call the diamond instead of local-only helpers.
- * Golden tiles 1–3 and L1 Installation diamond crafts stay on their existing paths.
+ * When NEXT_PUBLIC_USE_GV2D_DIAMOND=true, Crafting Table soft recipes (incl. Decor
+ * RecipeBook page), Phaser soft place/unequip, Lodge/Store interior furniture
+ * Confirm, and Lodge/Store/Cashier/Console upgrades call the diamond instead of
+ * local-only helpers. Golden tiles 1–3 stay on Tile diamond.
+ *
+ * IMPORTANT: Base Installation diamond also has type-7 itemIds. GV ERC1155 is a
+ * *different* contract — we never craft/mint those L1 ids on the Installation
+ * diamond from this path. GV decor bag ids are L1+1000 (see decor-id-map).
  *
  * Deployed diamond: packages/gv2d-diamond/deployments/base-sepolia.json
  * paymentEnabled=false on Sepolia — no alchemica approve for mint/craft; place
  * burns bag balance (payment flag irrelevant). Soft-install bag SoT = GV-2D
- * ERC1155 (ids 162–215). cPaarcel ownership remains cartridge / off-chain.
+ * ERC1155 (ids 162–215 + decor L1+1000). cPaarcel ownership remains cartridge.
  */
 import { ethers, Signer } from 'ethers';
 import type { providers } from 'ethers';
@@ -21,7 +26,8 @@ import Gv2dDiamondAbi from 'web3/abi/Gv2dDiamond.json';
 import { gasPriceDict } from 'web3/web3';
 import GlobalState from 'contexts/GlobalState';
 import { CTILE_ID_END, CTILE_ID_START, isCTileItemId, applyCTileInventoryBalance } from 'helpers/ctile.helper';
-import { getTypeByItemId, getLocalInventoryItem } from 'helpers/installations.helper';
+import { getTypeByItemId, getLocalInventoryItem, isL1DecorItemId } from 'helpers/installations.helper';
+export { isL1DecorItemId } from 'helpers/installations.helper';
 import { setOffchainInventoryQty } from 'helpers/offchain.store';
 import {
   adjustFurnitureQty,
@@ -52,6 +58,38 @@ export const GV2D_DIAMOND_DEFAULT = '0x34a851523A6f3351940d235373038b2A0A85e872'
 export const GV2D_SOFT_INSTALL_ID_START = 162;
 export const GV2D_SOFT_INSTALL_ID_END = 215;
 
+/**
+ * GV decor bag offset: on-chain ERC1155 id = L1 type-7 itemId + OFFSET.
+ * L1 ids 19–47 collide with soft tiles on the same balances mapping.
+ * See packages/gv2d-diamond/deployments/decor-id-map.base-sepolia.json.
+ */
+export const GV2D_DECOR_ID_OFFSET = 1000;
+
+export function toGvDecorId(l1ItemId: number | string): number {
+  return Number(l1ItemId) + GV2D_DECOR_ID_OFFSET;
+}
+
+export function fromGvDecorId(gvItemId: number | string): number {
+  return Number(gvItemId) - GV2D_DECOR_ID_OFFSET;
+}
+
+/** On-chain GV decor ERC1155 id (L1+1000). */
+export function isGvDecorInstallId(itemId: number | string): boolean {
+  const id = Number(itemId);
+  if (!Number.isFinite(id) || id < GV2D_DECOR_ID_OFFSET) return false;
+  return isL1DecorItemId(id - GV2D_DECOR_ID_OFFSET);
+}
+
+/**
+ * Map FE/L1 itemId → on-chain GV soft-install / decor id for craft/place/balance.
+ * Classic soft installs 162–215 pass through; type-7 decor → L1+1000.
+ */
+export function toGvSoftInstallChainId(itemId: number | string): number {
+  const id = Number(itemId);
+  if (isL1DecorItemId(id)) return toGvDecorId(id);
+  return id;
+}
+
 export function isGv2dDiamondMintEnabled(): boolean {
   const flag = String(process.env.NEXT_PUBLIC_USE_GV2D_DIAMOND || '').toLowerCase();
   return flag === 'true' || flag === '1' || flag === 'yes';
@@ -70,11 +108,11 @@ export function isGv2dSoftTileMintId(itemId: number | string): boolean {
 
 export function isGv2dSoftInstallCraftId(itemId: number | string): boolean {
   const id = Number(itemId);
-  return (
-    Number.isFinite(id) &&
-    id >= GV2D_SOFT_INSTALL_ID_START &&
-    id <= GV2D_SOFT_INSTALL_ID_END
-  );
+  if (!Number.isFinite(id)) return false;
+  if (id >= GV2D_SOFT_INSTALL_ID_START && id <= GV2D_SOFT_INSTALL_ID_END) return true;
+  // Decor RecipeBook uses L1 type-7 ids; diamond stores L1+1000.
+  if (isL1DecorItemId(id)) return true;
+  return false;
 }
 
 export function getGv2dDiamondContract(
@@ -253,9 +291,11 @@ export async function syncSoftInstallInventoryFromDiamond(
   provider: providers.Provider,
 ): Promise<number> {
   if (!isGv2dSoftInstallCraftId(itemId)) {
-    throw new Error(`Not a soft-install id (162–215): ${itemId}`);
+    throw new Error(`Not a soft-install / Decor id (162–215 or type-7): ${itemId}`);
   }
-  const qty = await fetchGv2dItemBalance(account, itemId, provider);
+  // Decor: query GV id (L1+1000), mirror into local L1 inventory slot.
+  const chainId = toGvSoftInstallChainId(itemId);
+  const qty = await fetchGv2dItemBalance(account, chainId, provider);
   applySoftInstallInventoryBalance(itemId, qty);
   return qty;
 }
@@ -359,12 +399,14 @@ export async function craftSoftInstallsOnDiamond(opts: {
 
   if (!isGv2dSoftInstallCraftId(itemId)) {
     throw new Error(
-      `Item ${itemId} is not a soft-install id (162–215). Golden/L1 Installation crafts use the live Installation diamond.`,
+      `Item ${itemId} is not a soft-install id (162–215) or Decor type-7. Golden/L1 Installation crafts use the live Installation diamond.`,
     );
   }
   if (!account) {
     throw new Error('Connect your wallet to craft soft installs on the GV-2D diamond.');
   }
+
+  const chainId = toGvSoftInstallChainId(itemId);
 
   const { liveSigner, liveProvider } = await bindLiveSigner(
     signer,
@@ -373,7 +415,7 @@ export async function craftSoftInstallsOnDiamond(opts: {
   );
 
   const contract = getGv2dDiamondContract(liveSigner);
-  const tx = await contract.craftInstallations([itemId], [qty], {
+  const tx = await contract.craftInstallations([chainId], [qty], {
     ...(await gasPriceDict(liveSigner)),
   });
   const receipt = await tx.wait();
@@ -644,7 +686,7 @@ export async function placeSoftInstallOnDiamond(opts: {
   const y = Math.max(0, Math.floor(Number(opts.y)) || 0);
 
   if (!isGv2dSoftInstallCraftId(itemId)) {
-    throw new Error(`Item ${itemId} is not a soft-install id (162–215).`);
+    throw new Error(`Item ${itemId} is not a soft-install id (162–215) or Decor type-7.`);
   }
   if (!account) {
     throw new Error('Connect your wallet to place soft installs on the GV-2D diamond.');
@@ -653,6 +695,8 @@ export async function placeSoftInstallOnDiamond(opts: {
     throw new Error('Invalid parcel key for GV-2D place.');
   }
 
+  const chainItemId = toGvSoftInstallChainId(itemId);
+
   const { liveSigner, liveProvider } = await bindLiveSigner(
     signer,
     provider,
@@ -660,7 +704,7 @@ export async function placeSoftInstallOnDiamond(opts: {
   );
 
   const contract = getGv2dDiamondContract(liveSigner);
-  const tx = await contract.placeSoftInstall(parcelKey, itemId, x, y, {
+  const tx = await contract.placeSoftInstall(parcelKey, chainItemId, x, y, {
     ...(await gasPriceDict(liveSigner)),
   });
   const receipt = await tx.wait();
@@ -714,7 +758,7 @@ export async function unequipSoftInstallOnDiamond(opts: {
   const y = Math.max(0, Math.floor(Number(opts.y)) || 0);
 
   if (!isGv2dSoftInstallCraftId(itemId)) {
-    throw new Error(`Item ${itemId} is not a soft-install id (162–215).`);
+    throw new Error(`Item ${itemId} is not a soft-install id (162–215) or Decor type-7.`);
   }
   if (!account) {
     throw new Error('Connect your wallet to unequip soft installs on the GV-2D diamond.');
@@ -780,7 +824,7 @@ export async function unequipSoftInstallByIdOnDiamond(opts: {
     throw new Error('Connect your wallet to unequip soft installs on the GV-2D diamond.');
   }
   if (!isGv2dSoftInstallCraftId(itemId)) {
-    throw new Error(`Item ${itemId} is not a soft-install id (162–215).`);
+    throw new Error(`Item ${itemId} is not a soft-install id (162–215) or Decor type-7.`);
   }
 
   const { liveSigner, liveProvider } = await bindLiveSigner(
@@ -911,7 +955,7 @@ export async function upgradeSoftInstallInBagOnDiamond(opts: {
   const { itemId, account, signer, provider, name } = opts;
   const qty = Math.max(1, Math.floor(opts.quantity || 1));
   if (!isGv2dSoftInstallCraftId(itemId)) {
-    throw new Error(`Item ${itemId} is not a soft-install id (162–215).`);
+    throw new Error(`Item ${itemId} is not a soft-install id (162–215) or Decor type-7.`);
   }
   if (!account) {
     throw new Error('Connect your wallet to upgrade soft installs on the GV-2D diamond.');
@@ -982,7 +1026,7 @@ export async function upgradeSoftInstallPlacementOnDiamond(opts: {
 }): Promise<Gv2dUpgradeResult> {
   const { itemId, account, signer, provider, installationId, name } = opts;
   if (!isGv2dSoftInstallCraftId(itemId)) {
-    throw new Error(`Item ${itemId} is not a soft-install id (162–215).`);
+    throw new Error(`Item ${itemId} is not a soft-install id (162–215) or Decor type-7.`);
   }
   if (!account) {
     throw new Error('Connect your wallet to upgrade soft installs on the GV-2D diamond.');

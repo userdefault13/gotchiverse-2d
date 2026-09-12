@@ -13,6 +13,11 @@ library LibAppStorage {
     uint256 internal constant SOFT_INSTALL_ID_START = 162;
     uint256 internal constant SOFT_INSTALL_ID_END = 215;
 
+    /// @dev GV decor bag ids = L1 type-7 itemId + DECOR_ID_OFFSET.
+    ///      Required because L1 decor ids 19–47 collide with soft tiles 8–47 on the same ERC1155 balances.
+    ///      L1 Base Installation diamond type-7 is a *different* contract — GV never mints those L1 ids.
+    uint256 internal constant DECOR_ID_OFFSET = 1000;
+
     /// @dev Alchemica cost in 18-decimal units: [FUD, FOMO, ALPHA, KEK]
     struct AlchemicaCost {
         uint256 fud;
@@ -88,6 +93,25 @@ library LibAppStorage {
     }
 
     function isSoftInstallId(uint256 id) internal pure returns (bool) {
-        return id >= SOFT_INSTALL_ID_START && id <= SOFT_INSTALL_ID_END;
+        return (id >= SOFT_INSTALL_ID_START && id <= SOFT_INSTALL_ID_END) || isDecorInstallId(id);
+    }
+
+    /// @notice L1 type-7 decor itemIds (level-1 catalog). Used only after +DECOR_ID_OFFSET on GV.
+    function isL1DecorId(uint256 l1Id) internal pure returns (bool) {
+        return (l1Id >= 19 && l1Id <= 55) || (l1Id >= 146 && l1Id <= 156);
+    }
+
+    function gvDecorIdFromL1(uint256 l1Id) internal pure returns (uint256) {
+        return l1Id + DECOR_ID_OFFSET;
+    }
+
+    function l1DecorIdFromGv(uint256 gvId) internal pure returns (uint256) {
+        return gvId - DECOR_ID_OFFSET;
+    }
+
+    /// @notice GV ERC1155 decor bag ids (L1 + 1000).
+    function isDecorInstallId(uint256 id) internal pure returns (bool) {
+        if (id < DECOR_ID_OFFSET) return false;
+        return isL1DecorId(id - DECOR_ID_OFFSET);
     }
 }

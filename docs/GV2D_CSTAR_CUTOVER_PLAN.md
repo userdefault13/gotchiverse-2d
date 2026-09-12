@@ -388,15 +388,14 @@ Of craft alchemica taken as protocol fee / cost routing (exact skim vs full cost
 - Sourced via `installationsCatalog.js` `require('./installations.json')` (no local type-7 overlays). Fixture for later on-chain register: `packages/gv2d-diamond/deployments/decor-craft-costs.base-sepolia.json`.
 - Further tuning still possible via **GvRules**; Sepolia **`paymentEnabled` still false** until enabled. Tile costs unchanged.
 
-### L1 type-7 clarification (question 3)
-Live Base **Installation diamond** already has many `installationType === 7` decoration itemIds (Rofl Gnome, REALM Globe, …). So we must not mint a **second** conflicting ERC1155 with the same ids on GV/cartridge if players already hold them on L1.
+### L1 type-7 clarification (question 3) — locked for Sepolia GV bag (2026-09-12)
+Live Base **Installation diamond** already has many `installationType === 7` decoration itemIds (Rofl Gnome, REALM Globe, …).
 
-Options:
-- **A.** Stake/use **L1 Installation ERC1155** balances directly for decor staking.
-- **B.** Soft/new decor only on cartridge/GV (new id band); L1 decor stays on Installation diamond.
-- **C.** Bridge/wrap L1 decor into cartridge bag 1:1 for unified bag UX.
-
-Default recommendation until chosen: **A for existing L1 type-7**, **B for any new soft-only decor** — never double-mint the same id.
+**Sepolia / GV-2D diamond choice = B (new id band on GV):**
+- GV ERC1155 decor ids = **L1 itemId + 1000** (48 level-1 rows). Documented in `packages/gv2d-diamond/deployments/decor-id-map.base-sepolia.json`.
+- Reason: L1 ids **19–47** collide with soft tiles **8–47** on the same GV `balances` mapping; offset keeps bags disjoint.
+- **Never mint type-7 on the L1 Installation diamond from the GV Crafting Table path** — different contract, no double-mint.
+- Staking against live L1 balances (option A) / wrap (C) remains open for mainnet stake design; this pass is craft + place on GV only. No staking facet this pass.
 
 
 ---
