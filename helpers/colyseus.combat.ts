@@ -170,6 +170,35 @@ export function attachColyseusCombat(
     }
   });
 
+  // RH weekly stock tournament: round clock + round results (aarena-rh only). Surfaced to the HUD
+  // through window events so RhStockPrizePanel stays decoupled from the room.
+  activeRoom.onMessage('round.state', (raw) => {
+    try {
+      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('rh-round-state', { detail: raw }));
+    } catch (e) {
+      console.warn('@round.state handler', e);
+    }
+  });
+
+  activeRoom.onMessage('round.end', (raw) => {
+    try {
+      const msg = raw as { winner?: { address?: string } | null; roundId?: string };
+      if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('rh-round-end', { detail: raw }));
+      void import('components/controllers/GameController').then((mod) => {
+        const toastFn = mod.default?.handleToastNotification;
+        if (!toastFn) return;
+        const w = String(msg?.winner?.address || '');
+        toastFn({
+          message: w ? `Round over — winner ${w.slice(0, 6)}…${w.slice(-4)}` : 'Round over — no winner',
+          autoClose: true,
+          type: 'info',
+        });
+      });
+    } catch (e) {
+      console.warn('@round.end handler', e);
+    }
+  });
+
   activeRoom.onMessage('combat.prize', (raw) => {
     try {
       const msg = raw as {
