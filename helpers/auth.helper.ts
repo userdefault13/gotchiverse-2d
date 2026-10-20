@@ -169,6 +169,52 @@ export const getAarcadeCartridgeManageUrl = (cartridgeId?: string | null): strin
   return `${AARCADE_HOME}/cartridges`;
 };
 
+/** Base cartridges live on mainnet; RH/BTC stay on cartridge-sim. */
+async function isMainnetCartridge(opts?: { network?: string | null; gameId?: string }): Promise<boolean> {
+  const { cartridgeGameIdForNetwork } = await import('helpers/cartridgeGameId');
+  const { isMainnetCartridgeGame } = await import('helpers/cartridgeChain.helper');
+  let network = opts?.network;
+  if (!opts?.gameId && network == null) {
+    network = (await import('contexts/GlobalState')).default.WEB3?.state?.currentNetwork;
+  }
+  return isMainnetCartridgeGame(String(opts?.gameId || cartridgeGameIdForNetwork(network)));
+}
+
+const MAINNET_UNSUPPORTED =
+  'Not available for mainnet cartridges yet. cPaarcels, cInstallations and cWearable minting were cartridge-sim only.';
+
+async function readMainnetCartridgeStatus(address: string, gameId: string): Promise<AarcadeCartridgeStatus> {
+  const { readPlayerCartridgeId, readCartridgeHeroes } = await import('helpers/cartridgeChain.helper');
+  const wallet = String(address).toLowerCase();
+  const cartridgeId = await readPlayerCartridgeId(wallet, gameId);
+  const { heroes, activeHeroId } = cartridgeId
+    ? await readCartridgeHeroes(cartridgeId)
+    : { heroes: [], activeHeroId: null };
+  return {
+    wallet,
+    gameId,
+    hasCartridge: Boolean(cartridgeId),
+    cartridgeId,
+    heroes,
+    activeCAavegotchiId: activeHeroId,
+    cartridges: cartridgeId
+      ? [
+          {
+            cartridgeId,
+            gameId,
+            createdAt: null,
+            updatedAt: null,
+            activeCAavegotchiId: activeHeroId,
+            heroCount: heroes.length,
+            heroLabel: null,
+          },
+        ]
+      : [],
+    catalogUrl: getAarcadeGamesCatalogUrl(),
+    checkedAt: new Date().toISOString(),
+  };
+}
+
 async function fetchCartridgeStatusForGameId(
   address: string,
   gameId: string,
@@ -276,6 +322,7 @@ export const getAarcadeCartridgeStatus = async (
       'helpers/cartridgeGameId'
     );
     const gameId = String(opts?.gameId || cartridgeGameIdForNetwork(opts?.network));
+    if (await isMainnetCartridge({ gameId })) return await readMainnetCartridgeStatus(address, gameId);
     const primary = await fetchCartridgeStatusForGameId(address, gameId, opts?.fresh);
     if (primary?.hasCartridge && primary.cartridgeId) return primary;
 
@@ -343,6 +390,7 @@ async function postAarcadeCartridgeMint(
       code: 'NO_WALLET',
     };
   }
+  if (await isMainnetCartridge({ gameId })) return mainnetCartridgeMint(address, gameId, body);
   try {
     const response = await fetch('/api/aarcade-cartridge-mint', {
       method: 'POST',
@@ -395,6 +443,62 @@ async function postAarcadeCartridgeMint(
       hasCartridge: false,
       error: 'Mint request failed',
       code: 'MINT_FAILED',
+    };
+  }
+}
+
+/** Mainnet mint/bind with the connected wallet; mirrors the cartridge-sim mint API result. */
+async function mainnetCartridgeMint(
+  address: string,
+  gameId: string,
+  body: Record<string, unknown>,
+): Promise<AarcadeCartridgeMintResult> {
+  const phase = body.phase as MintPhase;
+  const wallet = String(address).toLowerCase();
+  const sourceTokenId = body.sourceTokenId ? String(body.sourceTokenId) : undefined;
+  const collateral = body.collateral ? String(body.collateral) : undefined;
+  const chain = await import('helpers/cartridgeChain.helper');
+  const signer = (await import('contexts/GlobalState')).default.WEB3?.state?.ethersSigner;
+  let cartridgeId = '';
+  let alreadyBound = false;
+  try {
+    cartridgeId = await chain.mintOwnCartridge(signer, wallet, gameId);
+    try {
+      if (phase === 'bind-owned' && sourceTokenId) await chain.bindOwnedGotchi(signer, cartridgeId, sourceTokenId);
+      if (phase === 'bind-rental' && sourceTokenId) await chain.bindRentalGotchi(signer, cartridgeId, sourceTokenId);
+      if (phase === 'bind') await chain.bindStarterHero(signer, cartridgeId, collateral || 'dai');
+    } catch (err) {
+      if (!/Cartridge: bound/.test(String((err as Error)?.message || err))) throw err;
+      alreadyBound = true;
+    }
+    const { heroes } = await chain.readCartridgeHeroes(cartridgeId);
+    return {
+      ok: true,
+      phase,
+      alreadyBound,
+      wallet,
+      gameId,
+      collateral,
+      sourceTokenId,
+      cartridgeId,
+      hasCartridge: true,
+      heroes,
+    };
+  } catch (err) {
+    console.warn('mainnetCartridgeMint failed', err);
+    const e = err as { code?: string | number; reason?: string; message?: string };
+    const rejected = e?.code === 'ACTION_REJECTED' || e?.code === 4001;
+    return {
+      ok: false,
+      phase,
+      wallet,
+      gameId,
+      collateral,
+      sourceTokenId,
+      cartridgeId,
+      hasCartridge: Boolean(cartridgeId),
+      error: rejected ? 'Transaction rejected in wallet' : String(e?.reason || e?.message || 'Mint failed'),
+      code: rejected ? 'REJECTED' : 'MINT_FAILED',
     };
   }
 }
@@ -478,6 +582,15 @@ export const getCartridgeWearables = async (
   if (!wallet || !id) {
     return { ok: false, wallet, cartridgeId: id, wearableInventory: [], error: 'wallet and cartridgeId required' };
   }
+  if (await isMainnetCartridge()) {
+    try {
+      const { readCartridgeWearables } = await import('helpers/cartridgeChain.helper');
+      return { ok: true, wallet, cartridgeId: id, wearableInventory: await readCartridgeWearables(id) };
+    } catch (err) {
+      console.warn('getCartridgeWearables (mainnet) failed', err);
+      return { ok: false, wallet, cartridgeId: id, wearableInventory: [], error: 'Wearables lookup failed' };
+    }
+  }
   try {
     const qs = new URLSearchParams({ wallet, cartridgeId: id });
     const response = await fetch(`/api/aarcade-cartridge-wearables?${qs.toString()}`, {
@@ -529,6 +642,10 @@ export const importCartridgeWearables = async (
   const wallet = String(address || '').toLowerCase();
   if (!wallet) {
     return { ok: false, wallet: '', cartridgeId: '', wearableInventory: [], error: 'Wallet required' };
+  }
+  // Mainnet mintWearable charges WEARABLE_DROP_FEE = 2 ETH per cWearable; not wired until that is settled.
+  if (await isMainnetCartridge({ network: opts.network, gameId })) {
+    return { ok: false, wallet, cartridgeId: opts.cartridgeId || '', wearableInventory: [], error: MAINNET_UNSUPPORTED, code: 'MAINNET_UNSUPPORTED' };
   }
   try {
     const response = await fetch('/api/aarcade-cartridge-wearables', {
@@ -607,6 +724,10 @@ export const getCartridgePaarcels = async (
       error: 'wallet and cartridgeId required',
     };
   }
+  // cPaarcels were cartridge-sim only; mainnet cartridges have none, so Base uses real parcels.
+  if (await isMainnetCartridge()) {
+    return { ok: true, wallet, cartridgeId: id, parcelInventory: [], installationInventory: [] };
+  }
   try {
     const qs = new URLSearchParams({ wallet, cartridgeId: id });
     const response = await fetch(`/api/aarcade-cartridge-parcels?${qs.toString()}`, {
@@ -678,6 +799,17 @@ export const importCartridgePaarcels = async (
       parcelInventory: [],
       installationInventory: [],
       error: 'Wallet required',
+    };
+  }
+  if (await isMainnetCartridge({ network: opts.network, gameId })) {
+    return {
+      ok: false,
+      wallet,
+      cartridgeId: opts.cartridgeId || '',
+      parcelInventory: [],
+      installationInventory: [],
+      error: MAINNET_UNSUPPORTED,
+      code: 'MAINNET_UNSUPPORTED',
     };
   }
   try {
@@ -777,6 +909,17 @@ export const importCartridgeInstallations = async (
       error: 'Wallet required',
     };
   }
+  if (await isMainnetCartridge({ network: opts.network, gameId })) {
+    return {
+      ok: false,
+      wallet,
+      cartridgeId: opts.cartridgeId || '',
+      parcelInventory: [],
+      installationInventory: [],
+      error: MAINNET_UNSUPPORTED,
+      code: 'MAINNET_UNSUPPORTED',
+    };
+  }
   try {
     const response = await fetch('/api/aarcade-cartridge-parcels', {
       method: 'POST',
@@ -868,6 +1011,17 @@ export const mintCartridgeInstallation = async (
       parcelInventory: [],
       installationInventory: [],
       error: 'Wallet required',
+    };
+  }
+  if (await isMainnetCartridge({ network: opts.network, gameId })) {
+    return {
+      ok: false,
+      wallet,
+      cartridgeId: opts.cartridgeId || '',
+      parcelInventory: [],
+      installationInventory: [],
+      error: MAINNET_UNSUPPORTED,
+      code: 'MAINNET_UNSUPPORTED',
     };
   }
   try {

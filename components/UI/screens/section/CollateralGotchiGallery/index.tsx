@@ -48,6 +48,8 @@ export const CollateralGotchiGallery = ({
   const isRobinhood = network === 'robinhood';
   /** BTC + RH soft tracks: starter collaterals only (no L1 wallet bind). */
   const collateralOnlyTrack = isBitcoin || isRobinhood;
+  /** Base binds onchain for free (gas only); cWearable minting there costs 2 ETH each, so it's off. */
+  const mainnetCartridge = network === 'base';
   /** Soft-launch starter mint price (sim) — RH/BTC $30, Base $5. */
   const starterMintUsd = collateralOnlyTrack ? 30 : 5;
   const items = useMemo(() => getMintableCollateralsForNetwork(network), [network]);
@@ -64,7 +66,8 @@ export const CollateralGotchiGallery = ({
   const [tab, setTab] = useState<MintTab>(() =>
     collateralOnlyTrack ? 'caavegotchi' : walletGotchis.length > 0 ? 'wallet' : 'caavegotchi',
   );
-  const [mintWithWearables, setMintWithWearables] = useState(true);
+  const [mintWithWearablesChoice, setMintWithWearables] = useState(true);
+  const mintWithWearables = mintWithWearablesChoice && !mainnetCartridge;
 
   useEffect(() => {
     if (collateralOnlyTrack) {
@@ -179,8 +182,7 @@ export const CollateralGotchiGallery = ({
               ) : (
                 <>
                   Base-level cAavegotchi — pick a collateral spirit.{' '}
-                  <span className="price-tag">${starterMintUsd} USDC</span>{' '}
-                  <span className="price-note">(sim — not live)</span>
+                  <span className="price-tag free">FREE</span> <span className="price-note">(onchain · gas only)</span>
                 </>
               )}
             </p>
@@ -202,21 +204,37 @@ export const CollateralGotchiGallery = ({
                 {minting
                   ? 'Binding…'
                   : label
-                    ? `Bind ${label} · $${starterMintUsd} USDC`
+                    ? mainnetCartridge
+                      ? `Bind ${label} · FREE`
+                      : `Bind ${label} · $${starterMintUsd} USDC`
                     : 'Select a Collateral'}
               </Button>
-              <p className="mint-hint">Payment sim not live — bind proceeds without charge for now.</p>
+              <p className="mint-hint">
+                {mainnetCartridge
+                  ? 'Binds onchain on Base. You only pay gas.'
+                  : 'Payment sim not live — bind proceeds without charge for now.'}
+              </p>
               {mintError ? <p className="mint-error">{mintError}</p> : null}
             </div>
           </>
         ) : (
           <>
             <p className="gallery-caption">
-              Gotchi mint is <span className="price-tag free">FREE</span>. Optional wearables mint as individual
-              cWearables (owned free · borrowed rarity fees) then equip automatically.
+              {mainnetCartridge ? (
+                <>
+                  Gotchi mint is <span className="price-tag free">FREE</span> onchain on Base (gas only). One
+                  transaction per gotchi.
+                </>
+              ) : (
+                <>
+                  Gotchi mint is <span className="price-tag free">FREE</span>. Optional wearables mint as individual
+                  cWearables (owned free · borrowed rarity fees) then equip automatically.
+                </>
+              )}
             </p>
 
-            {hasSelectedGear || unmintedOwned.some((g) => listEquippedWearableSlots(g, 'owned').length > 0) ? (
+            {!mainnetCartridge &&
+            (hasSelectedGear || unmintedOwned.some((g) => listEquippedWearableSlots(g, 'owned').length > 0)) ? (
               <label className="wearables-toggle">
                 <input
                   type="checkbox"
@@ -306,9 +324,11 @@ export const CollateralGotchiGallery = ({
                         : `Mint Free · #${selectedWallet.id}`}
               </Button>
               <p className="mint-hint">
-                {mintWithWearables
-                  ? 'Each wearable mints as its own cWearable, then equips onto the new hero.'
-                  : 'Mint without wearables — naked cAavegotchi. Import gear later under cWearables.'}
+                {mainnetCartridge
+                  ? 'Mints onchain on Base. Your wallet asks to confirm each gotchi.'
+                  : mintWithWearables
+                    ? 'Each wearable mints as its own cWearable, then equips onto the new hero.'
+                    : 'Mint without wearables — naked cAavegotchi. Import gear later under cWearables.'}
               </p>
               {mintError ? <p className="mint-error">{mintError}</p> : null}
             </div>
