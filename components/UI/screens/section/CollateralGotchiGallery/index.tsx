@@ -81,6 +81,15 @@ export const CollateralGotchiGallery = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [walletGotchis.length, collateralOnlyTrack]);
 
+  // Wallet tab previews a real gotchi: keep the first unminted one selected, including after each mint.
+  useEffect(() => {
+    if (tab !== 'wallet' || minting) return;
+    if (unmintedOwned.some((g) => g.id === selectedWalletGotchiId)) return;
+    if (unmintedOwned.length > 0) onSelectWalletGotchi?.(unmintedOwned[0]);
+    // onSelectWalletGotchi is an inline parent callback; re-running on its identity would loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, minting, unmintedOwned, selectedWalletGotchiId]);
+
   const handleMintCollateral = () => {
     if (minting || !selectedCollateral) return;
     click();
