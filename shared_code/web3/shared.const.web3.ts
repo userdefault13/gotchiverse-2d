@@ -172,8 +172,19 @@ function defaultSvgUri(): string {
   return DEFAULT_SVG_URI;
 }
 
+/**
+ * Aarcade's /api/subgraph/* rejects unauthenticated browsers, so in the browser route those
+ * URLs through our same-origin passthrough (pages/api/subgraph/[name].ts), which adds the edge proxy key.
+ */
+function viaSameOriginProxy(url: string): string {
+  if (typeof window === 'undefined') return url;
+  const prefix = `${AARCADE_SUBGRAPH_HOME}/api/subgraph/`;
+  if (!url.startsWith(prefix)) return url;
+  return `${window.location.origin}/api/subgraph/${url.slice(prefix.length)}`;
+}
+
 // Subgraph (env-overridable — Base defaults to Aarcade /api/subgraph/*)
-export const coreURI = process.env.NEXT_PUBLIC_CORE_SUBGRAPH_URL || defaultCoreUri();
+export const coreURI = viaSameOriginProxy(process.env.NEXT_PUBLIC_CORE_SUBGRAPH_URL || defaultCoreUri());
 
 export const aavegotchiRealm =
   process.env.NEXT_PUBLIC_REALM_SUBGRAPH_URL || 'https://api.thegraph.com/subgraphs/name/aavegotchi/aavegotchi-realm-matic';
@@ -181,9 +192,11 @@ export const aavegotchiRealm =
 export const gbmSubgraphUser =
   process.env.NEXT_PUBLIC_GBM_SUBGRAPH_URL || 'https://api.thegraph.com/subgraphs/name/aavegotchi/aavegotchi-gbm-v2';
 
-export const aavegotchiSvgSubgraph = process.env.NEXT_PUBLIC_SVG_SUBGRAPH_URL || defaultSvgUri();
+export const aavegotchiSvgSubgraph = viaSameOriginProxy(process.env.NEXT_PUBLIC_SVG_SUBGRAPH_URL || defaultSvgUri());
 
-export const gotchiverseSubgraph = process.env.NEXT_PUBLIC_GOTCHIVERSE_SUBGRAPH_URL || defaultGotchiverseUri();
+export const gotchiverseSubgraph = viaSameOriginProxy(
+  process.env.NEXT_PUBLIC_GOTCHIVERSE_SUBGRAPH_URL || defaultGotchiverseUri(),
+);
 
 /** Build an Aarcade subgraph URL for a named Base indexer. */
 export function aarcadeSubgraphUrl(
@@ -194,5 +207,5 @@ export function aarcadeSubgraphUrl(
     | 'aavegotchi-gbm-baazaar-base'
     | string,
 ): string {
-  return `${AARCADE_SUBGRAPH_HOME}/api/subgraph/${name}`;
+  return viaSameOriginProxy(`${AARCADE_SUBGRAPH_HOME}/api/subgraph/${name}`);
 }
