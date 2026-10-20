@@ -1,12 +1,15 @@
 import { ContractType } from 'types';
 
 
-/** Envio/Hasura (gotchiverse-base): User relation is unusable — filter/select owner_id. Classic The Graph keeps owner { id } / owner_in. */
-const useHasuraParcelOwnerFields = (): boolean => {
+/** Envio/Hasura (gotchiverse-base) rather than classic The Graph. */
+export const isEnvioGotchiverseSubgraph = (): boolean => {
   const url = process.env.NEXT_PUBLIC_GOTCHIVERSE_SUBGRAPH_URL || '';
   if (url.includes('gotchiverse-base')) return true;
   return process.env.REALM_NETWORK === 'base' || process.env.NETWORK === 'base';
 };
+
+/** Envio/Hasura (gotchiverse-base): User relation is unusable — filter/select owner_id. Classic The Graph keeps owner { id } / owner_in. */
+const useHasuraParcelOwnerFields = isEnvioGotchiverseSubgraph;
 
 export const getAllAavegotchisOfOwner = (owner: string, sortValue?: string, searchValue?: string): string => {
   const getSortQuery = (sort: string) => {

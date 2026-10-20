@@ -1,6 +1,12 @@
 import { aavegotchiSvgSubgraph, gotchiverseSubgraph, varsForNetwork } from 'shared_code/web3/shared.const.web3';
 import { useSubgraph } from 'web3/subgraph';
-import { getAavegotchiSvg, getAllAavegotchisOfOwner, getAavegotchiSideSVGs, getAavegotchiLastChanneled } from 'web3/subgraph/queries';
+import {
+  getAavegotchiSvg,
+  getAllAavegotchisOfOwner,
+  getAavegotchiSideSVGs,
+  getAavegotchiLastChanneled,
+  isEnvioGotchiverseSubgraph,
+} from 'web3/subgraph/queries';
 import { ethers } from 'ethers';
 import type {
   AavegotchiObject,
@@ -75,10 +81,10 @@ export async function fetchAndSetGlobalAavegotchis(
 
   if (!res) return;
 
-  // Gotchiverse Envio indexes lastChanneledAlchemica on parcels, not gotchis yet.
-  // Soft-fail so wallet gotchi list still loads without channel enrichment.
+  // Gotchiverse Envio indexes lastChanneledAlchemica on parcels only (no gotchis entity), so skip
+  // channel enrichment there. Soft-fail elsewhere so the wallet gotchi list still loads.
   let gotchiverseRes: { gotchis?: Array<{ lastChanneledAlchemica: string; id: string }> } = { gotchis: [] };
-  if (res.length) {
+  if (res.length && !isEnvioGotchiverseSubgraph()) {
     try {
       const gotchiverseQuery = getAavegotchiLastChanneled(res.map((gotchi) => Number(gotchi.id)));
       gotchiverseRes = await useSubgraph<{ gotchis: Array<{ lastChanneledAlchemica: string; id: string }> }>(
