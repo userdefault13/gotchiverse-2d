@@ -44,7 +44,7 @@ import { collateralByAddress, getRhH3Collaterals, isRhH3BrandName, maxQuantityTo
 import { traitNumber } from './composeGotchi';
 import React from 'react';
 import { showNotificationWithTimeout } from 'contexts/NotificationContext/actions';
-import { secondsUntilGotchiCanChannel } from './parcels.helper';
+import { getContractGotchiLastChannel, secondsUntilGotchiCanChannel } from './parcels.helper';
 import GlobalState from 'contexts/GlobalState';
 import { defaultGotchi } from './aavegotchi/svg';
 import { ObservorIdle, ObservorLive } from 'assets';
@@ -81,10 +81,27 @@ export async function fetchAndSetGlobalAavegotchis(
 
   if (!res) return;
 
-  // Gotchiverse Envio indexes lastChanneledAlchemica on parcels only (no gotchis entity), so skip
-  // channel enrichment there. Soft-fail elsewhere so the wallet gotchi list still loads.
+  // Soft-fail channel enrichment so the wallet gotchi list still loads.
   let gotchiverseRes: { gotchis?: Array<{ lastChanneledAlchemica: string; id: string }> } = { gotchis: [] };
-  if (res.length && !isEnvioGotchiverseSubgraph()) {
+  if (res.length && isEnvioGotchiverseSubgraph()) {
+    // Gotchiverse Envio indexes lastChanneledAlchemica on parcels only (no gotchis entity),
+    // so read each gotchi's channel time from the Realm diamond instead.
+    const { globalProvider, currentNetwork } = GlobalState.WEB3.state;
+    if (globalProvider) {
+      const gotchis: Array<{ lastChanneledAlchemica: string; id: string }> = [];
+      // Small batches keep public Base RPCs under their rate limit.
+      for (let i = 0; i < res.length; i += 10) {
+        const batch = await Promise.all(
+          res.slice(i, i + 10).map(async (gotchi) => ({
+            id: gotchi.id,
+            lastChanneledAlchemica: await getContractGotchiLastChannel(globalProvider, currentNetwork, gotchi.id),
+          })),
+        );
+        gotchis.push(...batch);
+      }
+      gotchiverseRes = { gotchis };
+    }
+  } else if (res.length) {
     try {
       const gotchiverseQuery = getAavegotchiLastChanneled(res.map((gotchi) => Number(gotchi.id)));
       gotchiverseRes = await useSubgraph<{ gotchis: Array<{ lastChanneledAlchemica: string; id: string }> }>(
