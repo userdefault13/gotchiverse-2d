@@ -142,9 +142,8 @@ const revertReason = (err: unknown): string => {
 };
 
 /**
- * Bind a wallet-owned gotchi as a cAavegotchi (no fee on mainnet). Simulated first: the live
- * cartridge facet reverts without a reason on real Base Aavegotchis (it decodes getAavegotchi
- * with a shorter struct than the Aavegotchi diamond returns), so say that instead of a gas error.
+ * Bind a wallet-owned gotchi as a cAavegotchi (no fee on mainnet). Simulated first so a revert
+ * surfaces its Cartridge reason (e.g. already bound) instead of a wallet gas-estimation error.
  */
 export async function bindOwnedGotchi(signer: Signer | undefined, cartridgeId: string, sourceTokenId: string): Promise<void> {
   const cartridge = new Contract(BASE_CARTRIDGE_CHAIN.cartridgeDiamond, CARTRIDGE_ABI, await baseSigner(signer));
@@ -153,7 +152,7 @@ export async function bindOwnedGotchi(signer: Signer | undefined, cartridgeId: s
   } catch (err) {
     const reason = revertReason(err);
     if (/Cartridge: /.test(reason)) throw new Error(reason.match(/Cartridge: [^"']*/)?.[0] || reason);
-    throw new Error("Wallet gotchis can't be bound on the mainnet cartridge yet (Aarcade contract issue).");
+    throw new Error(reason || 'This gotchi could not be bound to your cartridge.');
   }
   const tx = await cartridge.bindOwned(cartridgeId, sourceTokenId);
   await tx.wait();
@@ -187,16 +186,13 @@ export async function bindRentalGotchi(
   cartridgeId: string,
   sourceTokenId: string,
 ): Promise<void> {
-  // bindRental isn't deployed on the mainnet cartridge diamond yet ("Diamond: Function does not exist").
-  await assertFreeBind('rental').catch(() => {
-    throw new Error("Borrowed gotchis can't be bound on the mainnet cartridge yet.");
-  });
+  await assertFreeBind('rental');
   const cartridge = new Contract(BASE_CARTRIDGE_CHAIN.cartridgeDiamond, CARTRIDGE_ABI, await baseSigner(signer));
   try {
     await cartridge.callStatic.bindRental(cartridgeId, sourceTokenId, constants.AddressZero);
   } catch (err) {
     const reason = revertReason(err);
-    throw new Error(/Cartridge: /.test(reason) ? reason : "Borrowed gotchis can't be bound on the mainnet cartridge yet.");
+    throw new Error(/Cartridge: !rental/.test(reason) ? 'This gotchi is not lent to you.' : reason || 'This gotchi could not be bound to your cartridge.');
   }
   const tx = await cartridge.bindRental(cartridgeId, sourceTokenId, constants.AddressZero);
   await tx.wait();
