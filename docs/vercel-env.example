@@ -23,6 +23,8 @@ NEXT_PUBLIC_COLYSEUS_URL=https://realm.aarcadeghst.com
 NEXT_PUBLIC_CORE_SUBGRAPH_URL=https://aarcadeghst.com/api/subgraph/aavegotchi-core-base
 NEXT_PUBLIC_GOTCHIVERSE_SUBGRAPH_URL=https://aarcadeghst.com/api/subgraph/gotchiverse-base
 NEXT_PUBLIC_SVG_SUBGRAPH_URL=https://aarcadeghst.com/api/subgraph/aavegotchi-svg-base
+# Server-only; pages/api/subgraph/[name].ts sends it as X-Subgraph-Proxy-Key to subgraph.aarcadeghst.com
+SUBGRAPH_PROXY_SECRET=
 NEXT_PUBLIC_BASE_RPC=https://mainnet.base.org
 
 # ── Production only ───────────────────────────────────────────
