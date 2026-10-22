@@ -1,0 +1,19 @@
+{
+  "name": "gotchiverse-parcel-sim",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Seeded headless sim of one Gotchiverse parcel for training and scoring parcel-steward policies",
+  "type": "module",
+  "scripts": {
+    "sim": "node src/run.ts",
+    "test": "node --test 'test/**/*.test.ts'",
+    "fixtures": "python3 -I scripts/fetch-fixtures.py",
+    "typecheck": "tsc --noEmit",
+    "gen": "node src/train/gen.ts",
+    "fit": "node src/train/fit.ts",
+    "plan": "node src/plan-cli.ts"
+  },
+  "engines": {
+    "node": ">=23.6.0"
+  }
+}
