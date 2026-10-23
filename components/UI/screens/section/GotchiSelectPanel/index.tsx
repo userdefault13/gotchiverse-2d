@@ -93,19 +93,21 @@ export const GotchiSelectPanel = ({
   const [channelReady, setChannelReady] = useState<boolean>();
   const [optionLoaded, setOptionLoaded] = useState<boolean>(false);
 
-  // RH/BTC have no mainnet gotchis: left rail is Freebie + Manage + bound cAavegotchis (cartridge sim).
-  // Base is mainnet only: wallet gotchis play directly, no cartridge rail.
-  const cartridgeSelectMode = currentNetwork === 'robinhood' || currentNetwork === 'bitcoin';
+  // Soft-launch Base/RH/BTC: left rail is Freebie + Manage + bound cAavegotchis (wallet gotchis mint from right tab).
+  const cartridgeSelectMode =
+    currentNetwork === 'base' || currentNetwork === 'robinhood' || currentNetwork === 'bitcoin';
   const wearablesManageMode = mintStep === 'wearables';
   const paarcelsManageMode = mintStep === 'paarcels';
   const installationsManageMode = mintStep === 'installations';
   const inventoryManageMode = wearablesManageMode || paarcelsManageMode || installationsManageMode;
   /** After Manage: show cWearables (+ Base cPaarcels / cInstallations) entry + keep roster. */
-  const manageRailActive = Boolean(cartridgeSelectMode && mintMode && hasCartridge);
+  const manageRailActive = Boolean(mintMode && hasCartridge);
+  // cPaarcels / cInstallations were Base cartridge-sim inventory; Base cartridges are onchain now
+  // and the mainnet cartridge has no parcels, so Base spawns on real parcels instead.
   const showPaarcelsCard =
-    manageRailActive && currentNetwork !== 'robinhood' && currentNetwork !== 'bitcoin';
+    manageRailActive && currentNetwork !== 'base' && currentNetwork !== 'robinhood' && currentNetwork !== 'bitcoin';
   const showInstallationsCard =
-    manageRailActive && currentNetwork !== 'robinhood' && currentNetwork !== 'bitcoin';
+    manageRailActive && currentNetwork !== 'base' && currentNetwork !== 'robinhood' && currentNetwork !== 'bitcoin';
 
   const unequippedInstallCount = useMemo(
     () => (installationInventory || []).filter((i) => !i.equippedToParcelId).length,
@@ -134,7 +136,7 @@ export const GotchiSelectPanel = ({
     [paarcelsManageMode, parcelInventory],
   );
 
-  // Mainnet (Base / matic): show wallet gotchis in the left rail.
+  // Legacy (matic / non–soft-launch): show L1 wallet gotchis in the left rail.
   const showWalletGotchis = !cartridgeSelectMode && !inventoryManageMode;
 
   const loadOptions = () => {
@@ -209,10 +211,10 @@ export const GotchiSelectPanel = ({
 
   // Freebie + Manage/Mint (+ cWearables / cPaarcels / cInstallations while managing) + heroes/stacks + wallet.
   const placeholderAavegotchis = useMemo(() => {
-    const fixed = 1 + (cartridgeSelectMode ? 1 : 0) + (manageRailActive ? 1 : 0) + (showPaarcelsCard ? 1 : 0) + (showInstallationsCard ? 1 : 0);
+    const fixed = 2 + (manageRailActive ? 1 : 0) + (showPaarcelsCard ? 1 : 0) + (showInstallationsCard ? 1 : 0);
     const filled = gridItemCount + fixed;
     return Array.from({ length: Math.max((placeholderCount || 0) - filled, 0) }, (_, i) => i);
-  }, [gridItemCount, placeholderCount, cartridgeSelectMode, manageRailActive, showPaarcelsCard, showInstallationsCard]);
+  }, [gridItemCount, placeholderCount, manageRailActive, showPaarcelsCard, showInstallationsCard]);
 
   const handleCartridgeGotchiClick = (gotchi: GotchiverseAavegotchi) => {
     // Manage rail: keep mint open and sync selection; play select still works via Freebie / exit Manage.
@@ -321,16 +323,14 @@ export const GotchiSelectPanel = ({
                 handleSelect={joinAsObservoor}
               />
             </div>
-            {cartridgeSelectMode ? (
-              <div className="gotchi-card">
-                <MintCartridgeCard
-                  network={currentNetwork}
-                  isSelected={!!mintMode && mintStep !== 'wearables-import'}
-                  hasCartridge={!!hasCartridge}
-                  onClick={onMintCartridgeClick}
-                />
-              </div>
-            ) : null}
+            <div className="gotchi-card">
+              <MintCartridgeCard
+                network={currentNetwork}
+                isSelected={!!mintMode && mintStep !== 'wearables-import'}
+                hasCartridge={!!hasCartridge}
+                onClick={onMintCartridgeClick}
+              />
+            </div>
             {manageRailActive ? (
               <div className="gotchi-card">
                 <ManageWearablesCard
