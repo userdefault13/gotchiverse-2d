@@ -231,6 +231,8 @@ export default css`
 
     .gotchi-details.mint-mode {
       flex: 1 1 46rem;
+      min-height: 0;
+      overflow: hidden;
       padding-top: 2rem;
       max-width: 48rem;
       min-width: 34rem;

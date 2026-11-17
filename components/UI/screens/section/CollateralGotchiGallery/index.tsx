@@ -8,7 +8,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useUser } from 'contexts/UserContext';
 import { useWeb3 } from 'contexts/Web3Context';
 import type { GotchiverseAavegotchi } from 'types';
-import LazyLoad from 'react-lazyload';
 import { mintedSourceTokenIds } from 'helpers/cartridgeHero.helper';
 import { listEquippedWearableSlots, slotLabel } from 'helpers/cartridgeWearable.helper';
 
@@ -353,16 +352,14 @@ export const CollateralGotchiGallery = ({
                         key={gotchi.id}
                         className={`gotchi-card ${alreadyMinted ? 'already-minted' : ''}`}
                       >
-                        <LazyLoad once overflow={true} height={160}>
-                          <GotchiSelectCard
-                            gotchi={gotchi}
-                            isSelected={gotchi.id === selectedWalletGotchiId}
-                            handleSelect={(g) => {
-                              if (alreadyMinted) return;
-                              onSelectWalletGotchi?.(g);
-                            }}
-                          />
-                        </LazyLoad>
+                        <GotchiSelectCard
+                          gotchi={gotchi}
+                          isSelected={gotchi.id === selectedWalletGotchiId}
+                          handleSelect={(g) => {
+                            if (alreadyMinted) return;
+                            onSelectWalletGotchi?.(g);
+                          }}
+                        />
                         {alreadyMinted ? <span className="minted-badge">Minted</span> : null}
                       </div>
                     );
