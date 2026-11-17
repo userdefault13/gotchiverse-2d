@@ -72,8 +72,11 @@ export default css`
 
   .gotchi-list-container {
     position: relative;
+    display: flex;
+    flex-direction: column;
     flex: 1;
     min-height: 0;
+    overflow: hidden;
     width: 100%;
   }
 
@@ -86,13 +89,18 @@ export default css`
     justify-content: center;
     padding: 0.5rem 0.25rem 3rem;
     width: 100%;
-    max-height: calc(100vh - 42rem);
+    max-height: none;
+    height: 100%;
     overflow-y: auto;
   }
 
   .gotchi-list-inner.wallet-grid {
     grid-template-columns: 1fr 1fr;
-    max-height: calc(100vh - 48rem);
+    flex: 1 1 0;
+    min-height: 0;
+    max-height: none;
+    height: 100%;
+    overflow-y: auto;
   }
 
   .gotchi-card {
