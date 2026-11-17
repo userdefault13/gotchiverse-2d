@@ -1,0 +1,584 @@
+{
+  "decorIdOffset": 1000,
+  "rule": "GV decor ERC1155 id = L1 installationType=7 itemId + 1000. Avoids collision with soft tiles 8-47 on the same GV diamond balances mapping. L1 Base Installation diamond type-7 is a different contract \u2014 no double-mint.",
+  "count": 48,
+  "paymentEnabled": false,
+  "items": {
+    "19": {
+      "gvId": 1019,
+      "name": "Common Rofl Gnome",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        101,
+        9.6,
+        53,
+        13.9
+      ]
+    },
+    "20": {
+      "gvId": 1020,
+      "name": "Uncommon Rofl Gnome",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        151.5,
+        14.4,
+        79.5,
+        20.9
+      ]
+    },
+    "21": {
+      "gvId": 1021,
+      "name": "Rare Rofl Gnome",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        202,
+        19.2,
+        106,
+        27.8
+      ]
+    },
+    "22": {
+      "gvId": 1022,
+      "name": "Legendary Rofl Gnome",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        404,
+        38.4,
+        212,
+        55.6
+      ]
+    },
+    "23": {
+      "gvId": 1023,
+      "name": "Mythical Rofl Gnome",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        808,
+        76.8,
+        424,
+        111.2
+      ]
+    },
+    "24": {
+      "gvId": 1024,
+      "name": "Godlike Rofl Gnome",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        1616,
+        153.6,
+        848,
+        222.4
+      ]
+    },
+    "25": {
+      "gvId": 1025,
+      "name": "Common REALM Globe",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        101,
+        9.6,
+        53,
+        13.9
+      ]
+    },
+    "26": {
+      "gvId": 1026,
+      "name": "Uncommon REALM Globe",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        151.5,
+        14.4,
+        79.5,
+        20.9
+      ]
+    },
+    "27": {
+      "gvId": 1027,
+      "name": "Rare REALM Globe",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        202,
+        19.2,
+        106,
+        27.8
+      ]
+    },
+    "28": {
+      "gvId": 1028,
+      "name": "Legendary REALM Globe",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        404,
+        38.4,
+        212,
+        55.6
+      ]
+    },
+    "29": {
+      "gvId": 1029,
+      "name": "Mythical REALM Globe",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        808,
+        76.8,
+        424,
+        111.2
+      ]
+    },
+    "30": {
+      "gvId": 1030,
+      "name": "Godlike REALM Globe",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        1616,
+        153.6,
+        848,
+        222.4
+      ]
+    },
+    "31": {
+      "gvId": 1031,
+      "name": "Common Smol Flower",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        101,
+        9.6,
+        53,
+        13.9
+      ]
+    },
+    "32": {
+      "gvId": 1032,
+      "name": "Uncommon Smol Flower",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        151.5,
+        14.4,
+        79.5,
+        20.9
+      ]
+    },
+    "33": {
+      "gvId": 1033,
+      "name": "Rare Smol Flower",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        202,
+        19.2,
+        106,
+        27.8
+      ]
+    },
+    "34": {
+      "gvId": 1034,
+      "name": "Legendary Smol Flower",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        404,
+        38.4,
+        212,
+        55.6
+      ]
+    },
+    "35": {
+      "gvId": 1035,
+      "name": "Mythical Smol Flower",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        808,
+        76.8,
+        424,
+        111.2
+      ]
+    },
+    "36": {
+      "gvId": 1036,
+      "name": "Godlike Smol Flower",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        1616,
+        153.6,
+        848,
+        222.4
+      ]
+    },
+    "37": {
+      "gvId": 1037,
+      "name": "Common Laava Lamp",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        101,
+        9.6,
+        53,
+        13.9
+      ]
+    },
+    "38": {
+      "gvId": 1038,
+      "name": "Uncommon Laava Lamp",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        151.5,
+        14.4,
+        79.5,
+        20.9
+      ]
+    },
+    "39": {
+      "gvId": 1039,
+      "name": "Rare Laava Lamp",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        202,
+        19.2,
+        106,
+        27.8
+      ]
+    },
+    "40": {
+      "gvId": 1040,
+      "name": "Legendary Laava Lamp",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        404,
+        38.4,
+        212,
+        55.6
+      ]
+    },
+    "41": {
+      "gvId": 1041,
+      "name": "Mythical Laava Lamp",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        808,
+        76.8,
+        424,
+        111.2
+      ]
+    },
+    "42": {
+      "gvId": 1042,
+      "name": "Godlike Laava Lamp",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        1616,
+        153.6,
+        848,
+        222.4
+      ]
+    },
+    "43": {
+      "gvId": 1043,
+      "name": "Common GM Light",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        101,
+        9.6,
+        53,
+        13.9
+      ]
+    },
+    "44": {
+      "gvId": 1044,
+      "name": "Uncommon GM Light",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        151.5,
+        14.4,
+        79.5,
+        20.9
+      ]
+    },
+    "45": {
+      "gvId": 1045,
+      "name": "Rare GM Light",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        202,
+        19.2,
+        106,
+        27.8
+      ]
+    },
+    "46": {
+      "gvId": 1046,
+      "name": "Legendary GM Light",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        404,
+        38.4,
+        212,
+        55.6
+      ]
+    },
+    "47": {
+      "gvId": 1047,
+      "name": "Mythical GM Light",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        808,
+        76.8,
+        424,
+        111.2
+      ]
+    },
+    "48": {
+      "gvId": 1048,
+      "name": "Godlike GM Light",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        1616,
+        153.6,
+        848,
+        222.4
+      ]
+    },
+    "49": {
+      "gvId": 1049,
+      "name": "Common Caamp Fire",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        101,
+        9.6,
+        53,
+        13.9
+      ]
+    },
+    "50": {
+      "gvId": 1050,
+      "name": "Uncommon Caamp Fire",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        151.5,
+        14.4,
+        79.5,
+        20.9
+      ]
+    },
+    "51": {
+      "gvId": 1051,
+      "name": "Rare Caamp Fire",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        202,
+        19.2,
+        106,
+        27.8
+      ]
+    },
+    "52": {
+      "gvId": 1052,
+      "name": "Legendary Caamp Fire",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        404,
+        38.4,
+        212,
+        55.6
+      ]
+    },
+    "53": {
+      "gvId": 1053,
+      "name": "Mythical Caamp Fire",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        808,
+        76.8,
+        424,
+        111.2
+      ]
+    },
+    "54": {
+      "gvId": 1054,
+      "name": "Godlike Caamp Fire",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        1616,
+        153.6,
+        848,
+        222.4
+      ]
+    },
+    "55": {
+      "gvId": 1055,
+      "name": "Graand Fountain",
+      "width": 4,
+      "height": 4,
+      "alchemicaCost": [
+        101,
+        9.6,
+        53,
+        13.9
+      ]
+    },
+    "146": {
+      "gvId": 1146,
+      "name": "Paampkin Trio",
+      "width": 2,
+      "height": 1,
+      "alchemicaCost": [
+        101,
+        9.6,
+        53,
+        13.9
+      ]
+    },
+    "147": {
+      "gvId": 1147,
+      "name": "Roflkin",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        101,
+        9.6,
+        53,
+        13.9
+      ]
+    },
+    "148": {
+      "gvId": 1148,
+      "name": "Scareye Crow",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        101,
+        9.6,
+        53,
+        13.9
+      ]
+    },
+    "149": {
+      "gvId": 1149,
+      "name": "Gotchi Caandle",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        101,
+        9.6,
+        53,
+        13.9
+      ]
+    },
+    "150": {
+      "gvId": 1150,
+      "name": "Sus Baatterfly",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        101,
+        9.6,
+        53,
+        13.9
+      ]
+    },
+    "151": {
+      "gvId": 1151,
+      "name": "Skeledator",
+      "width": 2,
+      "height": 1,
+      "alchemicaCost": [
+        101,
+        9.6,
+        53,
+        13.9
+      ]
+    },
+    "152": {
+      "gvId": 1152,
+      "name": "Feelin' Lit",
+      "width": 2,
+      "height": 2,
+      "alchemicaCost": [
+        101,
+        9.6,
+        53,
+        13.9
+      ]
+    },
+    "153": {
+      "gvId": 1153,
+      "name": "Bulby",
+      "width": 2,
+      "height": 2,
+      "alchemicaCost": [
+        101,
+        9.6,
+        53,
+        13.9
+      ]
+    },
+    "154": {
+      "gvId": 1154,
+      "name": "Rednosed Rofl",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        101,
+        9.6,
+        53,
+        13.9
+      ]
+    },
+    "155": {
+      "gvId": 1155,
+      "name": "Brrrooorrr",
+      "width": 1,
+      "height": 1,
+      "alchemicaCost": [
+        101,
+        9.6,
+        53,
+        13.9
+      ]
+    },
+    "156": {
+      "gvId": 1156,
+      "name": "Aangel Tree",
+      "width": 2,
+      "height": 2,
+      "alchemicaCost": [
+        101,
+        9.6,
+        53,
+        13.9
+      ]
+    }
+  }
+}

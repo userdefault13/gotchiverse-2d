@@ -105,6 +105,34 @@ function ensureTileInventorySlot(itemId: number): Installation | undefined {
   return item;
 }
 
+/**
+ * Apply an absolute ERC1155 balance (or +delta) into local inventory display.
+ * Used after GV-2D diamond mint / balanceOf sync. Prefer absolute when known.
+ */
+export function applyCTileInventoryBalance(
+  itemId: number,
+  absoluteQty?: number,
+  deltaQty?: number,
+): number {
+  if (!isCTileItemId(itemId)) return 0;
+  ensureTileInventorySlot(itemId);
+  const item = getLocalInventoryItem(itemId, 'TILE');
+  let next: number;
+  if (absoluteQty !== undefined && absoluteQty !== null && Number.isFinite(Number(absoluteQty))) {
+    next = Math.max(0, Math.floor(Number(absoluteQty)));
+  } else {
+    const cur = Number(item?.quantity || 0);
+    next = Math.max(0, cur + Math.floor(Number(deltaQty) || 0));
+  }
+  if (item) item.quantity = next;
+  setOffchainInventoryQty(itemId, next);
+  return next;
+}
+
+/**
+ * Legacy soft-launch local craft. Gated off when NEXT_PUBLIC_USE_GV2D_DIAMOND is on
+ * (Crafting Table routes soft cTiles 8–47 through helpers/gv2dDiamond.helper.ts instead).
+ */
 export function craftCTileLocally(
   recipe: Recipe,
   quantity: number,

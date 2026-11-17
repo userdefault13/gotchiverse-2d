@@ -154,6 +154,13 @@ export function isOwnedById(id: string, walletParcels?: boolean): Parcel | false
   } else return false;
 }
 
+/** All L1 type-7 Decor itemIds (level-1 catalog rows). */
+export const isL1DecorItemId = (itemId: number | string): boolean => {
+  const id = Number(itemId);
+  if (!Number.isFinite(id)) return false;
+  return (id >= 19 && id <= 55) || (id >= 146 && id <= 156);
+};
+
 export const isHalloweenDecoration = (itemId: number | string) => {
   return Number(itemId) >= 146 && Number(itemId) <= 151;
 };

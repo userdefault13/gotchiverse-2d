@@ -429,12 +429,17 @@ export function craftConsoleFurniture(
   };
 }
 
+/** When skipInventory is set, layout-only mutate (diamond bag SoT already synced). */
+export type FurnitureInventoryOpts = { skipInventory?: boolean };
+
 export function placeLodgeFurniture(
   layout: LodgeLayout,
   itemId: number,
   x: number,
   y: number,
+  opts?: FurnitureInventoryOpts,
 ): { ok: boolean; message: string; layout: LodgeLayout } {
+  const skipInventory = Boolean(opts?.skipInventory);
   if (x < 0 || y < 0 || x > 15 || y > 15) {
     return { ok: false, message: 'Out of bounds', layout };
   }
@@ -450,10 +455,32 @@ export function placeLodgeFurniture(
       idx = 0;
     }
     if (idx < 0) {
-      return { ok: false, message: 'No Console in bag — craft first', layout };
+      if (!skipInventory) {
+        return { ok: false, message: 'No Console in bag — craft first', layout };
+      }
+      // Diamond path: fungible ERC1155 already burned; layout mirror with empty titles.
+      const piece: LodgeFurniturePiece = {
+        id: `f_${itemId}_${x}_${y}_${Date.now()}`,
+        itemId: Number(itemId),
+        x,
+        y,
+        listing: null,
+        loadedTitles: [],
+      };
+      const next = saveLodgeLayout({
+        ...layout,
+        furniture: [...layout.furniture, piece],
+      });
+      return { ok: true, message: 'Placed Console', layout: next };
     }
     const [instance] = bag.splice(idx, 1);
-    saveConsoleBag(bag);
+    if (!skipInventory) {
+      saveConsoleBag(bag);
+    } else {
+      // Still consume titled instance for layout, but diamond SoT owns bag qty —
+      // persist the splice so titles move onto the piece (instance leaves bag).
+      saveConsoleBag(bag);
+    }
     const piece: LodgeFurniturePiece = {
       id: `f_${instance.itemId}_${x}_${y}_${Date.now()}`,
       itemId: Number(instance.itemId),
@@ -477,10 +504,12 @@ export function placeLodgeFurniture(
   ) {
     return { ok: false, message: 'Invalid furniture', layout };
   }
-  if (getLodgeFurnitureQty(itemId) < 1) {
-    return { ok: false, message: 'No furniture in inventory — craft first', layout };
+  if (!skipInventory) {
+    if (getLodgeFurnitureQty(itemId) < 1) {
+      return { ok: false, message: 'No furniture in inventory — craft first', layout };
+    }
+    adjustLodgeFurnitureQty(itemId, -1);
   }
-  adjustLodgeFurnitureQty(itemId, -1);
   const piece: LodgeFurniturePiece = {
     id: `f_${itemId}_${x}_${y}_${Date.now()}`,
     itemId,
@@ -503,20 +532,27 @@ export function placeLodgeFurniture(
   return { ok: true, message: `Placed ${label}`, layout: next };
 }
 
-export function removeLodgeFurniture(layout: LodgeLayout, furnitureId: string): { ok: boolean; layout: LodgeLayout } {
+export function removeLodgeFurniture(
+  layout: LodgeLayout,
+  furnitureId: string,
+  opts?: FurnitureInventoryOpts,
+): { ok: boolean; layout: LodgeLayout } {
   const piece = layout.furniture.find((f) => f.id === furnitureId);
   if (!piece) return { ok: false, layout };
+  const skipInventory = Boolean(opts?.skipInventory);
 
-  if (isConsoleItemId(piece.itemId)) {
-    const bag = loadConsoleBag();
-    bag.push({
-      bagId: `console_reclaim_${piece.id}_${Date.now()}`,
-      itemId: Number(piece.itemId),
-      loadedTitles: normalizeLoadedTitles(piece.loadedTitles),
-    });
-    saveConsoleBag(bag);
-  } else {
-    adjustLodgeFurnitureQty(piece.itemId, 1);
+  if (!skipInventory) {
+    if (isConsoleItemId(piece.itemId)) {
+      const bag = loadConsoleBag();
+      bag.push({
+        bagId: `console_reclaim_${piece.id}_${Date.now()}`,
+        itemId: Number(piece.itemId),
+        loadedTitles: normalizeLoadedTitles(piece.loadedTitles),
+      });
+      saveConsoleBag(bag);
+    } else {
+      adjustLodgeFurnitureQty(piece.itemId, 1);
+    }
   }
 
   const next = saveLodgeLayout({

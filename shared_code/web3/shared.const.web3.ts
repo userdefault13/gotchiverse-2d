@@ -133,6 +133,7 @@ export function varsForNetwork(currentNetwork): WEB_3_VARS {
   if (!currentNetwork && process.env.APP_ENV === 'production') return maticVars;
   if (!currentNetwork && process.env.APP_ENV !== 'production') return mumbaiVars;
   else if (currentNetwork === 'base') return baseVars;
+  else if (currentNetwork === 'base-sepolia') return baseVars; // GV-2D soft mint; alchemica unused while paymentEnabled=false
   else if (currentNetwork === 'robinhood') return baseVars; // RH aarena uses soft ids; diamond addrs unused
   else if (currentNetwork === 'bitcoin') return baseVars; // BTC soft track — no Realm diamond
   else if (currentNetwork === 'matic') return maticVars;

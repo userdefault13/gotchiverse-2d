@@ -2,7 +2,7 @@ import _ from 'lodash';
 import installationTypes from 'shared_code/data/installations.json';
 import GlobalState from 'contexts/GlobalState';
 import { AlchemicaBalance, Installation, InstallationIdData, Recipe } from 'types';
-import { getTypeByItemId, setLocalInventory, getLocalInventoryItem } from './installations.helper';
+import { getTypeByItemId, setLocalInventory, getLocalInventoryItem, isL1DecorItemId } from './installations.helper';
 import { getInstallationIdDataById } from 'shared_code/utils/shared.utils.installations';
 import { isWaallItemId, isWaallInstallationId } from './waalls.helper';
 import { isStoreInstallationId, isStoreItemId } from './store.installation.helper';
@@ -46,7 +46,8 @@ export function isLocalOffchainItemId(itemId: number | string): boolean {
     isBazaarItemId(itemId) ||
     isDaoOfficeItemId(itemId) ||
     isPotionShopItemId(itemId) ||
-    isBounceGateItemId(itemId)
+    isBounceGateItemId(itemId) ||
+    isL1DecorItemId(itemId)
   );
 }
 

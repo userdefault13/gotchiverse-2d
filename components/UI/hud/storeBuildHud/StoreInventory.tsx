@@ -12,9 +12,9 @@ import {
   TERMINAL_ITEM_ID,
   STORE_FURNITURE_TYPE,
   getFurnitureQty,
-  getConsoleBagCount,
   shelfDisplayName,
 } from 'helpers/store.layout.helper';
+import { getConsolePlaceableQty } from 'helpers/gv2dDiamond.helper';
 import inventoryStyles from '../components/Inventory/styles';
 
 export type StoreFurnitureBrush =
@@ -83,7 +83,7 @@ function buildStoreInstallations(): StoreInstallCard[] {
       id: CONSOLE_ITEM_ID,
       itemId: CONSOLE_ITEM_ID,
       name: 'Console Level 1',
-      quantity: getConsoleBagCount(),
+      quantity: getConsolePlaceableQty(),
       level: 1,
       itemType: STORE_FURNITURE_TYPE,
       type: 'INSTALLATION',

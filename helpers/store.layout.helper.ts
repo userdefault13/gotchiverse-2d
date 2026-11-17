@@ -631,12 +631,17 @@ function tileOccupied(
   });
 }
 
+/** When skipInventory is set, layout-only mutate (diamond bag SoT already synced). */
+export type FurnitureInventoryOpts = { skipInventory?: boolean };
+
 export function placeFurniture(
   layout: StoreLayout,
   itemId: number,
   x: number,
   y: number,
+  opts?: FurnitureInventoryOpts,
 ): { ok: boolean; message: string; layout: StoreLayout } {
+  const skipInventory = Boolean(opts?.skipInventory);
   const fp = isShelfItemId(itemId) ? shelfFootprint(itemId) : { width: 1, height: 1 };
   if (x < 0 || y < 0 || x + fp.width - 1 > 15 || y + fp.height - 1 > 15) {
     return { ok: false, message: 'Out of bounds', layout };
@@ -662,7 +667,22 @@ export function placeFurniture(
       idx = 0;
     }
     if (idx < 0) {
-      return { ok: false, message: 'No Console in bag — craft first', layout };
+      if (!skipInventory) {
+        return { ok: false, message: 'No Console in bag — craft first', layout };
+      }
+      const piece: StoreFurniturePiece = {
+        id: `f_${itemId}_${x}_${y}_${Date.now()}`,
+        itemId: Number(itemId),
+        x,
+        y,
+        listing: null,
+        loadedTitles: [],
+      };
+      const next = saveStoreLayout({
+        ...layout,
+        furniture: [...layout.furniture, piece],
+      });
+      return { ok: true, message: 'Placed Console', layout: next };
     }
     const [instance] = bag.splice(idx, 1);
     saveConsoleBag(bag);
@@ -684,10 +704,12 @@ export function placeFurniture(
   if (!isShelfItemId(itemId) && !isCashierItemId(itemId) && !isTerminalItemId(itemId)) {
     return { ok: false, message: 'Invalid furniture', layout };
   }
-  if (getFurnitureQty(itemId) < 1) {
-    return { ok: false, message: 'No furniture in inventory — craft first', layout };
+  if (!skipInventory) {
+    if (getFurnitureQty(itemId) < 1) {
+      return { ok: false, message: 'No furniture in inventory — craft first', layout };
+    }
+    adjustFurnitureQty(itemId, -1);
   }
-  adjustFurnitureQty(itemId, -1);
 
   const kind = shelfKindFromItemId(itemId);
   let piece: StoreFurniturePiece = {
@@ -719,20 +741,27 @@ export function placeFurniture(
   return { ok: true, message: `Placed ${label}`, layout: next };
 }
 
-export function removeFurniture(layout: StoreLayout, furnitureId: string): { ok: boolean; layout: StoreLayout } {
+export function removeFurniture(
+  layout: StoreLayout,
+  furnitureId: string,
+  opts?: FurnitureInventoryOpts,
+): { ok: boolean; layout: StoreLayout } {
   const piece = layout.furniture.find((f) => f.id === furnitureId);
   if (!piece) return { ok: false, layout };
+  const skipInventory = Boolean(opts?.skipInventory);
 
-  if (isConsoleItemId(piece.itemId)) {
-    const bag = loadConsoleBag();
-    bag.push({
-      bagId: `console_reclaim_${piece.id}_${Date.now()}`,
-      itemId: Number(piece.itemId),
-      loadedTitles: normalizeLoadedTitles(piece.loadedTitles),
-    });
-    saveConsoleBag(bag);
-  } else {
-    adjustFurnitureQty(piece.itemId, 1);
+  if (!skipInventory) {
+    if (isConsoleItemId(piece.itemId)) {
+      const bag = loadConsoleBag();
+      bag.push({
+        bagId: `console_reclaim_${piece.id}_${Date.now()}`,
+        itemId: Number(piece.itemId),
+        loadedTitles: normalizeLoadedTitles(piece.loadedTitles),
+      });
+      saveConsoleBag(bag);
+    } else {
+      adjustFurnitureQty(piece.itemId, 1);
+    }
   }
 
   const next = saveStoreLayout({
